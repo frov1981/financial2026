@@ -5,7 +5,11 @@
     
     "build:css": "npm exec tailwindcss -- -i ./src/public/css/input.css -o ./dist/public/css/styles.css --minify",
     "build:ts": "tsc",
-    "build": "npm run build:css && npm run build:ts",
+    
+
+    "copy:views": "cp -r src/views dist/views",
+    "copy:public": "cp -r src/public dist/public",
+    "build": "npm run build:css && npm run build:ts && npm run copy:views && npm run copy:public",
 
     "start": "node dist/server.js",
     "seed": "ts-node src/seeds/seed.ts"
