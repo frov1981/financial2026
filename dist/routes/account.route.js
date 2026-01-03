@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const account_controller_1 = require("../controllers/account.controller");
+const router = (0, express_1.Router)();
+router.get('/', account_controller_1.accountsPage);
+router.get('/insert', account_controller_1.insertAccountFormPage);
+router.get('/update/:id', account_controller_1.updateAccountFormPage);
+router.get('/status/:id', account_controller_1.updateAccountStatusFormPage);
+router.post('/', account_controller_1.saveAccount);
+exports.default = router;
