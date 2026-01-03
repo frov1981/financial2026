@@ -4,7 +4,7 @@
     "debug": "nodemon --exec node --inspect-brk -r ts-node/register src/server.ts",
     "seed": "ts-node src/seeds/seed.ts",
 
-    "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./dist/public/css/styles.css --minify",
+    "build:css": "./node_modules/.bin/tailwindcss -i ./src/public/css/input.css -o ./dist/public/css/styles.css --minify",
     "build:ts": "tsc",
     "copy:views": "cpx \"src/views/**/*\" dist/views",
     "copy:public": "cpx \"src/public/**/*\" dist/public",
