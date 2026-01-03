@@ -1,0 +1,62 @@
+.amount-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px; /* controla qué tan cerca está el $ del número */
+  min-width: 110px;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount-currency {
+  color: #6b7280;
+  text-align: right;
+}
+
+.amount-value {
+  text-align: right;
+  font-weight: 500;
+}
+
+/* Small utilities for balance display */
+.amount-positive {
+  color: #065f46;
+  font-weight: 600;
+}
+
+.amount-negative {
+  color: #991b1b;
+  font-weight: 600;
+}
+
+/* Balance inputs styling */
+input[data-balance-target], input[data-balance-final] {
+  background-color: #fff;
+}
+
+/* Autocomplete two-column styling */
+[data-autocomplete-list] li .autocomplete-label {
+  display: inline-block;
+  max-width: calc(100% - 90px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-autocomplete-list] li .autocomplete-balance {
+  min-width: 80px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Positive balance: green and bold */
+.amount-positive {
+  color: #065f46;
+  font-weight: 600;
+}
+
+/* Negative or zero: red and bold */
+.amount-negative {
+  color: #991b1b;
+  font-weight: 600;
+}

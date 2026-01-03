@@ -1,0 +1,95 @@
+import { AppDataSource } from '../config/datasource'
+import { Account } from '../entities/Account.entity'
+import { Transaction } from '../entities/Transaction.entity'
+import { Category } from '../entities/Category.entity'
+import { AuthRequest } from '../types/AuthRequest'
+import { MoreThan } from 'typeorm'
+
+export const getActiveAccountsByUser = async (authReq: AuthRequest): Promise<Account[]> => {
+  const repo = AppDataSource.getRepository(Account)
+  const accounts = await repo.find({
+    where: {
+      user: { id: authReq.user.id },
+      is_active: true,
+      balance: MoreThan(0)
+    },
+    order: { name: 'ASC' }
+  })
+  return accounts
+}
+
+export const getActiveCategoriesByUser = async (authReq: AuthRequest): Promise<Category[]> => {
+  const repo = AppDataSource.getRepository(Category)
+  const categories = await repo.find({
+    where: {
+      user: { id: authReq.user.id },
+      is_active: true
+    },
+    order: { name: 'ASC' }
+  })
+  return categories
+}
+
+export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise<Date> => {
+  const userId = authReq.user.id
+
+  const now = new Date()
+
+  const startOfDay = new Date(now)
+  startOfDay.setHours(0, 0, 0, 0)
+
+  const endOfDay = new Date(now)
+  endOfDay.setHours(23, 59, 59, 999)
+
+  const lastTxToday = await AppDataSource
+    .getRepository(Transaction)
+    .createQueryBuilder('t')
+    .where('t.user_id = :userId', { userId })
+    .andWhere('t.date BETWEEN :start AND :end', {
+      start: startOfDay,
+      end: endOfDay
+    })
+    .orderBy('t.date', 'DESC')
+    .getOne()
+
+  if (!lastTxToday) return now
+  if (lastTxToday.date > now) return now
+
+  const next = new Date(lastTxToday.date)
+  const minutes = next.getMinutes()
+  const remainder = minutes % 5
+  const increment = remainder === 0 ? 5 : 5 - remainder
+
+  next.setMinutes(minutes + increment)
+  next.setSeconds(0, 0)
+
+  return next > now ? next : now
+}
+
+// Agrupa categorías por tipo (income / expense)
+export const splitCategoriesByType = (categories: Category[]): {
+  incomeCategories: Category[]
+  expenseCategories: Category[]
+} => {
+  const incomeCategories: Category[] = []
+  const expenseCategories: Category[] = []
+
+  categories.forEach(category => {
+    if (category.type === 'income') {
+      incomeCategories.push(category)
+    }
+
+    if (category.type === 'expense') {
+      expenseCategories.push(category)
+    }
+  })
+
+  return {
+    incomeCategories,
+    expenseCategories
+  }
+}
+
+
+
+

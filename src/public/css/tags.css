@@ -1,0 +1,110 @@
+.tx-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2px 12px;
+  border-radius: 9999px;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* INCOME */
+.tx-income {
+  background-color: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+/* EXPENSE */
+.tx-expense {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+/* TRANSFER */
+.tx-transfer {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  border-color: #a5b4fc;
+}
+
+/* Estado: activo / inactivo */
+.tag-active {
+  background-color: #dcfce7; /* verde claro */
+  color: #166534;           /* verde oscuro */
+  border: 1px solid #86efac;
+}
+
+.tag-inactive {
+  background-color: #fee2e2; /* rojo claro */
+  color: #991b1b;            /* rojo oscuro */
+  border: 1px solid #fca5a5;
+}
+
+/* Base común (si no existe aún) */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+/* =======================
+   Account tags (base)
+   ======================= */
+.acc-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2px 12px;
+  border-radius: 9999px;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* =======================
+   Account: Cash
+   ======================= */
+.tag-cash {
+  background-color: #dcfce7; /* verde claro */
+  color: #166534;            /* verde oscuro */
+  border-color: #86efac;
+}
+
+/* =======================
+   Account: Bank
+   ======================= */
+.tag-bank {
+  background-color: #dbeafe; /* azul claro */
+  color: #1e3a8a;            /* azul oscuro */
+  border-color: #93c5fd;
+}
+
+/* =======================
+   Account: Card
+   ======================= */
+.tag-card {
+  background-color: #ede9fe; /* morado claro */
+  color: #4c1d95;            /* morado oscuro */
+  border-color: #c4b5fd;
+}
+
+
+

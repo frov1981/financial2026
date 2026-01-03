@@ -1,0 +1,102 @@
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6">
+    <%= mode === 'insert'
+      ? 'Nueva Categoría'
+      : mode === 'update'
+      ? 'Editar Categoría'
+      : 'Editar Estado Categoría'
+    %>
+  </h1>
+
+  <form method="post" action="/categories/">
+    <% if (errors?._form) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors._form %>
+      </div>
+    <% } %>
+
+    <!-- ID -->
+    <input type="hidden" name="id" value="<%= category?.id || '' %>">
+
+    <!-- Tipo de categoría -->
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Tipo</label>
+
+      <div class="flex gap-6">
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type"
+            value="income"
+            <%= category?.type === 'income' || !category ? 'checked' : '' %>
+            <%= mode !== 'insert' ? 'disabled' : '' %>
+          >
+          Ingreso
+        </label>
+
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type"
+            value="expense"
+            <%= category?.type === 'expense' ? 'checked' : '' %>
+            <%= mode !== 'insert' ? 'disabled' : '' %>
+          >
+          Gasto
+        </label>
+      </div>
+
+      <% if (errors?.type) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.type %></p>
+      <% } %>
+    </div>
+
+    <!-- Nombre -->
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Nombre</label>
+      <input
+        type="text"
+        name="name"
+        class="w-full border rounded px-3 py-2"
+        value="<%= category?.name || '' %>"
+        <%= mode === 'status' ? 'readonly' : '' %>
+        required
+      >
+
+      <% if (errors?.name) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
+      <% } %>
+    </div>
+
+    <!-- Estado (solo activar / inactivar) -->
+    <% if (mode === 'status') { %>
+      <div class="mb-6">
+        <label class="block font-medium mb-1">Estado</label>
+
+        <select name="is_active" class="w-full border rounded px-3 py-2">
+          <option value="true" <%= category?.is_active ? 'selected' : '' %>>
+            Activa
+          </option>
+          <option value="false" <%= !category?.is_active ? 'selected' : '' %>>
+            Inactiva
+          </option>
+        </select>
+
+        <% if (errors?.is_active) { %>
+          <p class="text-red-600 text-sm mt-1"><%= errors.is_active %></p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <!-- Acciones -->
+    <div class="flex justify-end gap-2">
+      <a href="/categories" class="px-4 py-2 bg-gray-200 rounded">
+        Cancelar
+      </a>
+
+      <button class="px-4 py-2 bg-blue-600 text-white rounded">
+        Guardar
+      </button>
+    </div>
+  </form>
+</div>

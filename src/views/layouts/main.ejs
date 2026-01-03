@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <%= title || 'SSR App' %>
+    </title>
+
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/output.css">
+    <link rel="stylesheet" href="/css/tags.css">
+    <link rel="stylesheet" href="/css/amount.css">
+
+    <script src="/js/helpers/type-tags-helper.js"></script>
+    <script src="/js/helpers/amount-helper.js"></script>
+    <script src="/js/helpers/storage-helper.js"></script>
+    <script src="/js/helpers/autocomplete-helper.js"></script>
+
+    <% if (view==='pages/transactions/form' ) { %>
+        <script src="/js/forms/transactions-form.js"></script>
+    <% } %>
+    <% if (view==='pages/accounts/index' ) { %>
+        <script src="/js/forms/account-form.js"></script>
+    <% } %>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Overlay global (bloqueo de pantalla) -->
+    <div id="overlay" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center">
+        <div class="bg-white px-6 py-4 rounded shadow">
+            Procesando, por favor espere...
+        </div>
+    </div>
+
+    <!-- MessageBox global centrado -->
+    <div  id="message-container"
+        class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">
+    </div>
+
+    <%- include('../partials/navbar') %>
+
+    <main class="max-w-7xl mx-auto p-6">
+        <%- include('../' + view) %>
+    </main>
+
+    <!-- Helper global de mensajes -->
+    <script src="/js/helpers/message-box-helper.js"></script>
+
+</body>
+
+</html>

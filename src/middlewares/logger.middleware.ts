@@ -1,0 +1,22 @@
+import { Request, Response, NextFunction, RequestHandler } from 'express'
+import { logger } from '../utils/logger.util'
+
+export const httpLogger: RequestHandler = (req, res, next) => {
+  const start = Date.now()
+
+  logger.debug(`${req.method} ${req.originalUrl}`, { headers: req.headers, query: req.query, body: req.body })
+  const referer = req.get('referer') || req.get('referrer') || 'no referer'
+  logger.debug(`${referer}`)
+
+  res.on('finish', () => {
+    const duration = Date.now() - start
+    logger.debug(`${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${duration}ms`)
+  })
+
+  res.on('close', () => {
+    const duration = Date.now() - start
+    logger.debug(`${req.method} ${req.originalUrl} - Connection closed - ${duration}ms`)
+  })
+
+  next()
+}

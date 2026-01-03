@@ -1,0 +1,234 @@
+<script>
+  window.USER_ID = "<%= USER_ID %>"
+</script>
+
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-4">Cuentas</h1>
+
+  <!-- Toolbar -->
+  <div class="mb-3 flex items-center gap-2 flex-nowrap">
+
+    <!-- Nuevo -->
+    <button
+      onclick="location.href='/accounts/insert'"
+      class="icon-btn bg-gray-200 hover:bg-gray-300"
+      title="Nueva Cuenta">
+
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 4v16m8-8H4" />
+      </svg>
+
+      <span class="btn-text">Nuevo</span>
+    </button>
+
+    <!-- Filtrar -->
+    <button
+      class="icon-btn bg-gray-200 hover:bg-gray-300"
+      title="Filtrar">
+
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M3 4h18l-7 8v6l-4-2v-4L3 4z" />
+      </svg>
+
+      <span class="btn-text">Filtrar</span>
+    </button>
+
+    <!-- Recalcular -->
+    <button
+      id="btnRecalculate"
+      class="icon-btn bg-blue-600 text-white hover:bg-blue-700"
+      title="Recalcular balances">
+
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-7M19 5a9 9 0 00-14 7" />
+      </svg>
+
+      <span class="btn-text">Recalcular</span>
+    </button>
+
+    <!-- Buscador -->
+    <div class="relative flex-1 min-w-0">
+
+      <!-- Limpiar -->
+      <button
+        id="clear-search-btn"
+        class="icon-btn absolute left-0 top-0 h-full text-gray-400 hover:text-red-500 hidden"
+        title="Limpiar">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <input
+        id="search-input"
+        type="text"
+        placeholder="Buscar cuentas..."
+        class="w-full border rounded-lg pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+      <!-- Buscar -->
+      <button
+        id="search-btn"
+        class="icon-btn absolute right-0 top-0 h-full text-gray-600 hover:text-blue-600"
+        title="Buscar">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
+        </svg>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="overflow-x-auto border rounded-lg shadow-md">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Nombre</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Tipo</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 hidden sm:table-cell">Estado</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Balance</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="accounts-table" class="bg-white divide-y divide-gray-200"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const API_BASE = '/api/accounts'
+  const FILTER_KEY = `accounts.filters.${window.USER_ID}`
+
+  let allAccounts = []
+
+  const searchInput = document.getElementById('search-input')
+  const clearBtn = document.getElementById('clear-search-btn')
+  const searchBtn = document.getElementById('search-btn')
+  const tableBody = document.getElementById('accounts-table')
+
+  function debounce(fn, delay) {
+    let t
+    return (...args) => {
+      clearTimeout(t)
+      t = setTimeout(() => fn(...args), delay)
+    }
+  }
+
+  function renderRow(account) {
+    const rowClass = account.is_active ? '' : 'bg-red-50'
+    const statusButton = account.is_active
+      ? `
+        <button
+          class="icon-btn deactivate"
+          title="Desactivar"
+          onclick="updateAccountStatus(${account.id})">
+
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8"/>
+          <circle cx="12" cy="12" r="3"/>
+          <line x1="2" y1="2" x2="22" y2="22"/>
+        </svg>
+        <span class="btn-text">Desactivar</span>
+        </button>
+      `
+      : `
+        <button
+          class="icon-btn activate"
+          title="Activar"
+          onclick="updateAccountStatus(${account.id})">
+
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span class="btn-text">Activar</span>
+        </button>
+      `
+
+    return `
+      <tr id="account-${account.id}" class="${rowClass}">
+        <td class="px-4 py-2">${account.name}</td>
+        <td class="px-4 py-2">${accountTypeTag(account.type)}</td>
+        <td class="px-4 py-2 hidden sm:table-cell">${statusTag(account.is_active)}</td>
+        <td class="px-4 py-2">${amountBox(account.balance)}</td>
+        <td class="px-4 py-2">
+          <div class="icon-actions">
+            <button
+              class="icon-btn edit"
+              title="Editar"
+              onclick="window.location.href='/accounts/update/${account.id}'"
+              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+            <span class="btn-text">Editar</span>
+            </button>
+            ${statusButton}
+          </div>
+        </td>
+      </tr>
+    `
+  }
+
+  function renderTable(data) {
+    tableBody.innerHTML = data.map(renderRow).join('')
+  }
+
+  async function loadAccounts() {
+    const res = await fetch(API_BASE)
+    allAccounts = await res.json()
+
+    const cached = loadFilters(FILTER_KEY)
+    if (cached?.term) {
+      searchInput.value = cached.term
+      clearBtn.classList.remove('hidden')
+      filterAccounts()
+    } else {
+      renderTable(allAccounts)
+    }
+  }
+
+  function filterAccounts() {
+    const term = searchInput.value.trim().toLowerCase()
+    saveFilters(FILTER_KEY, { term })
+
+    renderTable(
+      !term
+        ? allAccounts
+        : allAccounts.filter(a =>
+            a.name.toLowerCase().includes(term) ||
+            a.type.toLowerCase().includes(term)
+          )
+    )
+  }
+
+  const debouncedFilter = debounce(filterAccounts, 300)
+
+  function updateAccountStatus(id) {
+    location.href = `/accounts/status/${id}`
+  }
+
+  searchBtn.addEventListener('click', filterAccounts)
+
+  searchInput.addEventListener('input', () => {
+    clearBtn.classList.toggle('hidden', !searchInput.value)
+    debouncedFilter()
+  })
+
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = ''
+    clearBtn.classList.add('hidden')
+    clearFilters(FILTER_KEY)
+    renderTable(allAccounts)
+  })
+
+  loadAccounts()
+</script>
