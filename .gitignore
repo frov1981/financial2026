@@ -1,8 +1,19 @@
+# Dependencias
 node_modules/
+
+# Build
 dist/
+
+# Entornos
 .env
 .env.*
+
+# Logs
 logs/
 *.log
+
+# Coverage
 coverage/
+
+# Editor
 .vscode/

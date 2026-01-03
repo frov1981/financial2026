@@ -12,6 +12,8 @@ import apiRoutes from './routes/api.route'
 
 export const app = express()
 
+const isProd = process.env.NODE_ENV === 'production'
+
 /* =======================
    Middlewares base
 ======================= */
@@ -20,11 +22,20 @@ app.use(express.urlencoded({ extended: true }))
 app.use(httpLogger)
 
 /* =======================
-   View engine
+   Views y estáticos
 ======================= */
 app.set('view engine', 'ejs')
-app.set('views', path.join(process.cwd(), 'src/views'))
-app.use(express.static(path.join(process.cwd(), 'src/public')))
+
+const viewsPath = isProd
+  ? path.join(process.cwd(), 'dist/views')
+  : path.join(process.cwd(), 'src/views')
+
+const publicPath = isProd
+  ? path.join(process.cwd(), 'dist/public')
+  : path.join(process.cwd(), 'src/public')
+
+app.set('views', viewsPath)
+app.use(express.static(publicPath))
 
 /* =======================
    Auth global
@@ -35,8 +46,8 @@ app.use(authMiddleware)
    Variables globales EJS
 ======================= */
 app.use((req, res, next) => {
-    res.locals.errors = {}
-    next()
+  res.locals.errors = {}
+  next()
 })
 
 /* =======================
