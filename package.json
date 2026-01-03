@@ -3,10 +3,9 @@
     "dev": "nodemon --exec ts-node src/server.ts",
     "debug": "nodemon --exec node --inspect-brk -r ts-node/register src/server.ts",
     "seed": "ts-node src/seeds/seed.ts",
-    "build:css": "./node_modules/.bin/tailwindcss -i ./src/public/css/input.css -o ./dist/public/css/styles.css --minify",
-    "build:ts": "tsc",
-    "copy:views": "cpx \"src/views/**/*\" dist/views",
-    "copy:public": "cpx \"src/public/**/*\" dist/public",
+
+    "copy:views": "node -e \"require('fs').cpSync('src/views','dist/views',{recursive:true})\"",
+    "copy:public": "node -e \"require('fs').cpSync('src/public','dist/public',{recursive:true})\"",
     "build": "npm run build:ts && npm run copy:views && npm run copy:public",
     "start": "node dist/server.js"
   },
