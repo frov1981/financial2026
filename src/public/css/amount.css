@@ -1,24 +1,31 @@
+/* ===============================
+   Amount box (tabla / balances)
+=============================== */
 .amount-box {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px; /* controla qué tan cerca está el $ del número */
-  min-width: 110px;
+  gap: 4px;
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.amount-currency {
-  color: #6b7280;
-  text-align: right;
-}
-
+/* Valor numérico */
 .amount-value {
   text-align: right;
   font-weight: 500;
 }
 
-/* Small utilities for balance display */
+/* Símbolo monetario (al final) */
+.amount-currency {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+/* ===============================
+   Estados de monto
+=============================== */
 .amount-positive {
   color: #065f46;
   font-weight: 600;
@@ -29,34 +36,45 @@
   font-weight: 600;
 }
 
-/* Balance inputs styling */
-input[data-balance-target], input[data-balance-final] {
+/* ===============================
+   Inputs de balance
+=============================== */
+input[data-balance-target],
+input[data-balance-final] {
   background-color: #fff;
 }
 
-/* Autocomplete two-column styling */
+/* ===============================
+   Autocomplete (label + balance)
+=============================== */
+[data-autocomplete-list] li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 [data-autocomplete-list] li .autocomplete-label {
-  display: inline-block;
-  max-width: calc(100% - 90px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 [data-autocomplete-list] li .autocomplete-balance {
-  min-width: 80px;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-/* Positive balance: green and bold */
-.amount-positive {
-  color: #065f46;
-  font-weight: 600;
-}
+/* ===============================
+   Mobile optimizations
+=============================== */
+@media (max-width: 639px) {
+  .amount-box {
+    font-size: 0.8125rem;
+  }
 
-/* Negative or zero: red and bold */
-.amount-negative {
-  color: #991b1b;
-  font-weight: 600;
+  .amount-currency {
+    display: none;
+  }
 }

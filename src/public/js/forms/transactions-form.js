@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ================================
      UTILIDADES
-  ================================= */
+  ================================= */ 
 
   function format(n) {
     return (Number(n) || 0).toFixed(2)

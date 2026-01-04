@@ -1,24 +1,49 @@
 <nav class="bg-blue-600 text-white">
-    <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
 
-        <div class="font-semibold text-lg">
-            App Contable V1
-        </div>
-
-        <ul class="flex space-x-6">
-            <li>
-                <a href="/home" class="hover:underline">Inicio</a>
-            </li>
-            <li>
-                <a href="/accounts" class="hover:underline">Cuentas</a>
-            </li>
-            <li>
-                <a href="/categories" class="hover:underline">Categorías</a>
-            </li>
-            <li>
-                <a href="/transactions" class="hover:underline">Transacciones</a>
-            </li>
-        </ul>
-
+    <div class="font-semibold text-lg">
+      App Contable V1
     </div>
+
+    <!-- Botón hamburguesa (solo móvil) -->
+    <button
+      id="mobile-menu-btn"
+      class="sm:hidden focus:outline-none"
+      aria-label="Abrir menú">
+
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+        viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <!-- Menú desktop -->
+    <ul class="hidden sm:flex space-x-6">
+      <li><a href="/home" class="hover:underline">Inicio</a></li>
+      <li><a href="/accounts" class="hover:underline">Cuentas</a></li>
+      <li><a href="/categories" class="hover:underline">Categorías</a></li>
+      <li><a href="/transactions" class="hover:underline">Transacciones</a></li>
+    </ul>
+  </div>
+
+  <!-- Menú móvil -->
+  <ul
+    id="mobile-menu"
+    class="sm:hidden hidden bg-blue-700 px-4 py-3 space-y-2">
+
+    <li><a href="/home" class="block py-2">Inicio</a></li>
+    <li><a href="/accounts" class="block py-2">Cuentas</a></li>
+    <li><a href="/categories" class="block py-2">Categorías</a></li>
+    <li><a href="/transactions" class="block py-2">Transacciones</a></li>
+  </ul>
 </nav>
+
+<script>
+  const btn = document.getElementById('mobile-menu-btn')
+  const menu = document.getElementById('mobile-menu')
+
+  btn.addEventListener('click', () => {
+    menu.classList.toggle('hidden')
+  })
+</script>
