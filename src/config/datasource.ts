@@ -8,6 +8,7 @@ import { LoanPayment } from '../entities/LoanPayment.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
+import { AuthCode } from '../entities/AuthCode.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -16,7 +17,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [User, Account, Category, Lender, Loan, LoanPayment, Transaction],
+  entities: [User, AuthCode, Account, Category, Lender, Loan, LoanPayment, Transaction],
   synchronize: true,
   logging: process.env.DB_LOGGING === 'true' ? true : false,
   logger: new OneLineSqlLogger()

@@ -1,16 +1,14 @@
-import express, { Request, Response, NextFunction } from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import session from 'express-session'
 import path from 'path'
-
-import { authMiddleware } from './middlewares/auth.middleware'
 import { httpLogger } from './middlewares/logger.middleware'
-
-import indexRoutes from './routes/index.route'
-import accountRoutes from './routes/account.route'
-import categoryRoutes from './routes/category.route'
-import transactionRoutes from './routes/transaction.route'
-import apiRoutes from './routes/api.route'
 import { sessionAuthMiddleware } from './middlewares/sessionAuth.middleware'
+import accountRoutes from './routes/account.route'
+import apiRoutes from './routes/api.route'
+import authRoutes from './routes/auth.route'
+import categoryRoutes from './routes/category.route'
+import indexRoutes from './routes/index.route'
+import transactionRoutes from './routes/transaction.route'
 
 export const app = express()
 
@@ -63,6 +61,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
    Routes
 ======================= */
 app.use('/', indexRoutes)
+app.use('/', authRoutes)
 app.use('/api', sessionAuthMiddleware, apiRoutes)
 app.use('/accounts', sessionAuthMiddleware, accountRoutes)
 app.use('/categories', sessionAuthMiddleware, categoryRoutes)

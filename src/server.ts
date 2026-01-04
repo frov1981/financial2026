@@ -12,5 +12,5 @@ AppDataSource.initialize().then(() => {
     logger.info('Server started on port', { port: PORT })
   })
 }).catch(error => {
-  logger.error('Error initializing data source', { error })
+  logger.error('Error initializing backend', { error })
 })

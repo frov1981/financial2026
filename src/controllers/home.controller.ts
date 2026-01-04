@@ -3,6 +3,7 @@ import { AppDataSource } from '../config/datasource'
 import { User } from '../entities/User.entity'
 import bcrypt from 'bcryptjs'
 import { logger } from '../utils/logger.util'
+import { send2FACode } from '../services/2fa.service'
 
 // GET /
 export const root = (req: Request, res: Response) => {
@@ -17,7 +18,7 @@ export const showLogin = (req: Request, res: Response) => {
 }
 
 // POST /login
-export const doLogin = async (req: Request, res: Response) => {
+/*export const doLogin = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body   
     const userRepo = AppDataSource.getRepository(User)
@@ -36,7 +37,32 @@ export const doLogin = async (req: Request, res: Response) => {
     console.error(error)
     res.render('pages/login', { error: 'Error interno, intenta de nuevo' })
   }
+}*/
+
+// POST /login
+export const doLogin = async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body
+
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await userRepo.findOneBy({ name: username })
+
+    if (!user) return res.render('pages/login', { error: 'Usuario no encontrado' })
+
+    const validPassword = await bcrypt.compare(password, user.password_hash)
+    if (!validPassword) return res.render('pages/login', { error: 'Contraseña incorrecta' })
+
+    // NUEVO: 2FA pendiente
+    await send2FACode(user)
+      ; (req.session as any).pending2FAUserId = user.id
+
+    res.redirect('/2fa')
+  } catch (error) {
+    logger.error('Error en doLogin:', error)
+    res.render('pages/login', { error: 'Error interno, intenta de nuevo' })
+  }
 }
+
 
 // GET /home
 export const home = async (req: Request, res: Response) => {
