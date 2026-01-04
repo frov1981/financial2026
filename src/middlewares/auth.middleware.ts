@@ -2,12 +2,9 @@ import { RequestHandler } from 'express'
 import { AppDataSource } from '../config/datasource'
 import { User } from '../entities/User.entity'
 import { AuthRequest } from '../types/AuthRequest'
+import express, { Request, Response, NextFunction } from 'express'
 
-export const authMiddleware: RequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const authMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userRepo = AppDataSource.getRepository(User)
 
@@ -28,7 +25,7 @@ export const authMiddleware: RequestHandler = async (
           .json({ error: 'DEV_USER_ID no existe en la base de datos' })
       }
 
-      ;(req as AuthRequest).user = devUser
+      ; (req as AuthRequest).user = devUser
       return next()
     }
 
@@ -53,7 +50,7 @@ export const authMiddleware: RequestHandler = async (
       return res.status(401).json({ error: 'Usuario no encontrado' })
     }
 
-    ;(req as AuthRequest).user = user
+    ; (req as AuthRequest).user = user
 
     next()
   } catch (error) {

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express'
 import { logger } from '../utils/logger.util'
 
-export const httpLogger: RequestHandler = (req, res, next) => {
+export const httpLogger: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now()
 
   logger.debug(`${req.method} ${req.originalUrl}`, { headers: req.headers, query: req.query, body: req.body })

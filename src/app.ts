@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { Request, Response, NextFunction } from 'express'
 import path from 'path'
 
 import { authMiddleware } from './middlewares/auth.middleware'
@@ -45,7 +45,7 @@ app.use(authMiddleware)
 /* =======================
    Variables globales EJS
 ======================= */
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   res.locals.errors = {}
   next()
 })
