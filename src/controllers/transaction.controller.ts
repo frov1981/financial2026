@@ -6,8 +6,10 @@ import { getActiveAccountsByUser, getActiveCategoriesByUser, getNextValidTransac
 import { formatDateForInputLocal } from '../utils/date.util'
 import { logger } from '../utils/logger.util'
 export { saveTransaction } from './transaction.controller.saving'
+import express, { Request, Response, NextFunction } from 'express'
 
-export const listTransactionsPaginatedAPI: RequestHandler = async (req, res) => {
+
+export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest
 
@@ -54,7 +56,7 @@ export const listTransactionsPaginatedAPI: RequestHandler = async (req, res) => 
   }
 }
 
-export const insertTransactionFormPage: RequestHandler = async (req, res) => {
+export const insertTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 
   const defaultDate = await getNextValidTransactionDate(authReq)
@@ -77,7 +79,7 @@ export const insertTransactionFormPage: RequestHandler = async (req, res) => {
   })
 }
 
-export const updateTransactionFormPage: RequestHandler = async (req, res) => {
+export const updateTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
 
@@ -124,7 +126,7 @@ export const updateTransactionFormPage: RequestHandler = async (req, res) => {
 
 }
 
-export const transactionsPage: RequestHandler = (req, res) => {
+export const transactionsPage: RequestHandler = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 
   res.render('layouts/main', {

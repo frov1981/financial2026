@@ -43,7 +43,7 @@ export const recalculateBalancesAPI: RequestHandler = async (req: Request, res: 
   }
 }
 
-export const insertAccountFormPage: RequestHandler = async (req, res) => {
+export const insertAccountFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const mode = 'insert'
 
@@ -56,7 +56,7 @@ export const insertAccountFormPage: RequestHandler = async (req, res) => {
   })
 }
 
-export const updateAccountFormPage: RequestHandler = async (req, res) => {
+export const updateAccountFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
   const mode = 'update'
@@ -84,7 +84,7 @@ export const updateAccountFormPage: RequestHandler = async (req, res) => {
   })
 }
 
-export const updateAccountStatusFormPage: RequestHandler = async (req, res) => {
+export const updateAccountStatusFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
   const mode = 'status'

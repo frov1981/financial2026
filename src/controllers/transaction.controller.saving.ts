@@ -7,8 +7,9 @@ import { AuthRequest } from '../types/AuthRequest'
 import { logger } from '../utils/logger.util'
 import { getActiveAccountsByUser, getActiveCategoriesByUser, splitCategoriesByType } from './transaction.controller.auxiliar'
 import { validateTransaction } from './transaction.controller.validator'
+import express, { Request, Response, NextFunction } from 'express'
 
-export const saveTransaction: RequestHandler = async (req, res) => {
+export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const repo = AppDataSource.getRepository(Transaction)
   const txId = req.body.id ? Number(req.body.id) : req.params.id ? Number(req.params.id) : undefined

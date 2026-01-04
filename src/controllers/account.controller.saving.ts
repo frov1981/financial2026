@@ -4,8 +4,9 @@ import { Account } from '../entities/Account.entity'
 import { AuthRequest } from '../types/AuthRequest'
 import { logger } from '../utils/logger.util'
 import { validateAccount } from './account.controller.validator'
+import express, { Request, Response, NextFunction } from 'express'
 
-export const saveAccount: RequestHandler = async (req, res) => {
+export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const repo = AppDataSource.getRepository(Account)
   const txId = req.body.id ? Number(req.body.id) : req.params.id ? Number(req.params.id) : undefined

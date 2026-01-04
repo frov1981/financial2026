@@ -5,8 +5,9 @@ import { Category } from '../entities/Category.entity'
 import { AuthRequest } from '../types/AuthRequest'
 import { logger } from '../utils/logger.util'
 import { validateCategory } from './category.controller.validator'
+import express, { Request, Response, NextFunction } from 'express'
 
-export const saveCategory: RequestHandler = async (req, res) => {
+export const saveCategory: RequestHandler = async (req: Request, res: Response) => {
     const authReq = req as AuthRequest
     const repo = AppDataSource.getRepository(Category)
     const txId = req.body.id ? Number(req.body.id) : req.params.id ? Number(req.params.id) : undefined

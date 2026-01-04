@@ -21,7 +21,7 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
   }
 }
 
-export const insertCategoryFormPage: RequestHandler = async (req, res) => {
+export const insertCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
 
   res.render('layouts/main', {
@@ -33,7 +33,7 @@ export const insertCategoryFormPage: RequestHandler = async (req, res) => {
   })
 }
 
-export const updateCategoryFormPage: RequestHandler = async (req, res) => {
+export const updateCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const categoryId = Number(req.params.id)
   const mode = 'update'
@@ -61,7 +61,7 @@ export const updateCategoryFormPage: RequestHandler = async (req, res) => {
   })
 }
 
-export const updateCategoryStatusFormPage: RequestHandler = async (req, res) => {
+export const updateCategoryStatusFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const categoryId = Number(req.params.id)
   const mode = 'status'
