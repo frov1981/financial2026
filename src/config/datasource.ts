@@ -1,14 +1,13 @@
 import 'reflect-metadata'
 import { DataSource } from 'typeorm'
 import { Account } from '../entities/Account.entity'
+import { AuthCode } from '../entities/AuthCode.entity'
 import { Category } from '../entities/Category.entity'
-import { Lender } from '../entities/Lender.entity'
 import { Loan } from '../entities/Loan.entity'
 import { LoanPayment } from '../entities/LoanPayment.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
-import { AuthCode } from '../entities/AuthCode.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -17,7 +16,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [User, AuthCode, Account, Category, Lender, Loan, LoanPayment, Transaction],
+  entities: [User, AuthCode, Account, Category, Loan, LoanPayment, Transaction],
   synchronize: true,
   logging: process.env.DB_LOGGING === 'true' ? true : false,
   logger: new OneLineSqlLogger()

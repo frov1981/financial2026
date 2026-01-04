@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { listAccountsAPI, recalculateBalancesAPI } from '../controllers/account.controller'
-import { listTransactionsPaginatedAPI } from '../controllers/transaction.controller'
-import { listCategoriesAPI } from '../controllers/category.controller'
+import { listAccountsAPI, recalculateBalancesAPI } from '../controllers/account/account.controller'
+import { listTransactionsPaginatedAPI } from '../controllers/transaction/transaction.controller'
+import { listCategoriesAPI } from '../controllers/category/category.controller'
 
 const router = Router()
 

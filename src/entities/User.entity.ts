@@ -1,9 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { Account } from './Account.entity'
 import { Category } from './Category.entity'
-import { Transaction } from './Transaction.entity'
 import { Loan } from './Loan.entity'
-import { Lender } from './Lender.entity'
+import { Transaction } from './Transaction.entity'
 
 @Entity('users')
 export class User {
@@ -35,6 +34,4 @@ export class User {
   @OneToMany(() => Loan, loan => loan.user)
   loans!: Loan[]
 
-  @OneToMany(() => Lender, lender => lender.user)
-  lenders!: Lender[]
 }

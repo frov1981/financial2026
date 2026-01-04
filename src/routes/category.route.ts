@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { categoriesPage, insertCategoryFormPage, updateCategoryFormPage, updateCategoryStatusFormPage } from '../controllers/category.controller'
-import { saveCategory } from '../controllers/category.controller.saving'
+import { categoriesPage, insertCategoryFormPage, updateCategoryFormPage, updateCategoryStatusFormPage } from '../controllers/category/category.controller'
+import { saveCategory } from '../controllers/category/category.controller.saving'
 
 const router = Router()
 

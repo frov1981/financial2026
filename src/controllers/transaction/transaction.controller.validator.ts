@@ -1,9 +1,9 @@
 import { validate } from 'class-validator'
-import { AppDataSource } from '../config/datasource'
-import { Account } from '../entities/Account.entity'
-import { logger } from '../utils/logger.util'
-import { Transaction } from '../entities/Transaction.entity'
-import { AuthRequest } from '../types/AuthRequest'
+import { AppDataSource } from '../../config/datasource'
+import { Account } from '../../entities/Account.entity'
+import { logger } from '../../utils/logger.util'
+import { Transaction } from '../../entities/Transaction.entity'
+import { AuthRequest } from '../../types/AuthRequest'
 
 export const validateTransaction = async (tx: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
     const errors = await validate(tx)

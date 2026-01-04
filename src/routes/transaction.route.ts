@@ -4,7 +4,7 @@ import {
   insertTransactionFormPage,
   saveTransaction,
   updateTransactionFormPage
-} from '../controllers/transaction.controller'
+} from '../controllers/transaction/transaction.controller'
 
 const router = Router()
 

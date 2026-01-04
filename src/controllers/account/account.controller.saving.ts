@@ -1,8 +1,8 @@
 import { RequestHandler } from 'express'
-import { AppDataSource } from '../config/datasource'
-import { Account } from '../entities/Account.entity'
-import { AuthRequest } from '../types/AuthRequest'
-import { logger } from '../utils/logger.util'
+import { AppDataSource } from '../../config/datasource'
+import { Account } from '../../entities/Account.entity'
+import { AuthRequest } from '../../types/AuthRequest'
+import { logger } from '../../utils/logger.util'
 import { validateAccount } from './account.controller.validator'
 import express, { Request, Response, NextFunction } from 'express'
 

@@ -1,7 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, JoinColumn } from 'typeorm'
-import { User } from './User.entity'
-import { Lender } from './Lender.entity'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { LoanPayment } from './LoanPayment.entity'
+import { User } from './User.entity'
 
 @Entity('loans')
 export class Loan {
@@ -12,10 +11,6 @@ export class Loan {
   @ManyToOne(() => User, user => user.loans)
   @JoinColumn({ name: 'user_id' })
   user!: User
-
-  @ManyToOne(() => Lender, lender => lender.loans)
-  @JoinColumn({ name: 'lender_id' })
-  lender!: Lender
 
   @Column({ nullable: true})
   loan_number!: string
@@ -34,6 +29,9 @@ export class Loan {
 
   @Column({ type: 'timestamp' })
   start_date!: Date
+
+  @Column({ type: 'timestamp' })
+  end_date!: Date
 
   @Column({ default: 'active' })
   status!: 'active' | 'closed'

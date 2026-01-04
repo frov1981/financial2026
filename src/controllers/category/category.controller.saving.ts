@@ -1,9 +1,9 @@
 // controllers/category.controller.saving.ts
 import { RequestHandler } from 'express'
-import { AppDataSource } from '../config/datasource'
-import { Category } from '../entities/Category.entity'
-import { AuthRequest } from '../types/AuthRequest'
-import { logger } from '../utils/logger.util'
+import { AppDataSource } from '../../config/datasource'
+import { Category } from '../../entities/Category.entity'
+import { AuthRequest } from '../../types/AuthRequest'
+import { logger } from '../../utils/logger.util'
 import { validateCategory } from './category.controller.validator'
 import express, { Request, Response, NextFunction } from 'express'
 

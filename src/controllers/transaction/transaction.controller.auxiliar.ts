@@ -1,8 +1,8 @@
-import { AppDataSource } from '../config/datasource'
-import { Account } from '../entities/Account.entity'
-import { Transaction } from '../entities/Transaction.entity'
-import { Category } from '../entities/Category.entity'
-import { AuthRequest } from '../types/AuthRequest'
+import { AppDataSource } from '../../config/datasource'
+import { Account } from '../../entities/Account.entity'
+import { Transaction } from '../../entities/Transaction.entity'
+import { Category } from '../../entities/Category.entity'
+import { AuthRequest } from '../../types/AuthRequest'
 import { MoreThan } from 'typeorm'
 
 export const getActiveAccountsByUser = async (authReq: AuthRequest): Promise<Account[]> => {

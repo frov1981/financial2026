@@ -1,9 +1,9 @@
 // controllers/account.controller.ts
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../config/datasource'
-import { Account } from '../entities/Account.entity'
-import { AuthRequest } from '../types/AuthRequest'
-import { logger } from '../utils/logger.util'
+import { AppDataSource } from '../../config/datasource'
+import { Account } from '../../entities/Account.entity'
+import { AuthRequest } from '../../types/AuthRequest'
+import { logger } from '../../utils/logger.util'
 import { recalculateAllAccountBalances } from './account.controller.auxiliar'
 export { saveAccount } from './account.controller.saving'
 

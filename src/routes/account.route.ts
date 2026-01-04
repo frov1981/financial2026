@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { accountsPage, insertAccountFormPage, saveAccount, updateAccountFormPage, updateAccountStatusFormPage } from '../controllers/account.controller'
+import { accountsPage, insertAccountFormPage, saveAccount, updateAccountFormPage, updateAccountStatusFormPage } from '../controllers/account/account.controller'
 
 const router = Router()
 

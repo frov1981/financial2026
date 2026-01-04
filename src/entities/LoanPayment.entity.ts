@@ -1,8 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm'
-import { Loan } from './Loan.entity'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Account } from './Account.entity'
+import { Loan } from './Loan.entity'
 import { Transaction } from './Transaction.entity'
-import { join } from 'node:path'
 
 @Entity('loan_payments')
 export class LoanPayment {

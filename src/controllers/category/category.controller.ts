@@ -1,9 +1,9 @@
 // controllers/category.controller.ts
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../config/datasource'
-import { Category } from '../entities/Category.entity'
-import { AuthRequest } from '../types/AuthRequest'
-import { logger } from '../utils/logger.util'
+import { AppDataSource } from '../../config/datasource'
+import { Category } from '../../entities/Category.entity'
+import { AuthRequest } from '../../types/AuthRequest'
+import { logger } from '../../utils/logger.util'
 
 export const listCategoriesAPI: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest

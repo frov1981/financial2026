@@ -1,9 +1,9 @@
 import { validate } from 'class-validator'
-import { AppDataSource } from '../config/datasource'
-import { Account } from '../entities/Account.entity'
-import { AuthRequest } from '../types/AuthRequest'
-import { logger } from '../utils/logger.util'
-import { mapValidationErrors } from '../validators/mapValidationErrors.validator'
+import { AppDataSource } from '../../config/datasource'
+import { Account } from '../../entities/Account.entity'
+import { AuthRequest } from '../../types/AuthRequest'
+import { logger } from '../../utils/logger.util'
+import { mapValidationErrors } from '../../validators/mapValidationErrors.validator'
 
 export const validateAccount = async (account: Account, authReq: AuthRequest): Promise<Record<string, string> | null> => {
     const userId = authReq.user.id
