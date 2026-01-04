@@ -9,6 +9,7 @@ body {
   align-items: center;
   height: 100vh;
   margin: 0;
+  font-size: 1rem; /* base responsive */
 }
 
 /* ===============================
@@ -19,7 +20,7 @@ body {
   padding: 2rem;
   border-radius: 0.5rem;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  width: 100%;
+  width: 90%;
   max-width: 400px;
   display: flex;
   flex-direction: column;
@@ -30,6 +31,7 @@ body {
 .login-container h1 {
   text-align: center;
   margin: 0;
+  font-size: 1.5rem; /* tamaño adecuado en desktop */
 }
 
 /* Formulario apilado verticalmente */
@@ -42,6 +44,7 @@ form {
 /* Labels */
 label {
   font-weight: bold;
+  font-size: 1rem;
 }
 
 /* Inputs */
@@ -50,6 +53,7 @@ input {
   padding: 0.5rem;
   border-radius: 0.25rem;
   border: 1px solid #ccc;
+  font-size: 1rem;
 }
 
 /* Botón */
@@ -61,6 +65,7 @@ button {
   border: none;
   border-radius: 0.25rem;
   cursor: pointer;
+  font-size: 1rem;
 }
 
 button:hover {
@@ -71,4 +76,28 @@ button:hover {
 p {
   color: red;
   text-align: center;
+  font-size: 0.9rem;
+}
+
+/* ===============================
+   Media queries para móviles
+=============================== */
+@media (max-width: 480px) {
+  body {
+    font-size: 1.1rem; /* aumenta la base para móviles */
+  }
+
+  .login-container {
+    padding: 1.5rem; /* menos padding para móvil */
+    width: 95%;
+  }
+
+  .login-container h1 {
+    font-size: 1.25rem;
+  }
+
+  input, button {
+    font-size: 1rem; /* asegura legibilidad */
+    padding: 0.6rem;
+  }
 }
