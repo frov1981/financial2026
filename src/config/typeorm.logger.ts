@@ -1,5 +1,5 @@
-import { Logger as TypeOrmLogger, QueryRunner } from 'typeorm'
-import { logger } from '../utils/logger.util'
+import { QueryRunner, Logger as TypeOrmLogger } from 'typeorm';
+import { logger } from '../utils/logger.util';
 
 export class OneLineSqlLogger implements TypeOrmLogger {
   private enabled = process.env.DB_LOGGING === 'true';

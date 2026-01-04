@@ -1,8 +1,11 @@
 import { Router } from 'express'
-import { homePage } from '../controllers/home.controller'
+import { root, showLogin, doLogin, home } from '../controllers/home.controller'
 
 const router = Router()
 
-router.get('/', homePage)
+router.get('/', root)
+router.get('/login', showLogin)
+router.post('/login', doLogin)
+router.get('/home', home)
 
 export default router

@@ -1,12 +1,12 @@
 import 'reflect-metadata'
 import { DataSource } from 'typeorm'
-import { User } from '../entities/User.entity'
 import { Account } from '../entities/Account.entity'
 import { Category } from '../entities/Category.entity'
 import { Lender } from '../entities/Lender.entity'
 import { Loan } from '../entities/Loan.entity'
 import { LoanPayment } from '../entities/LoanPayment.entity'
 import { Transaction } from '../entities/Transaction.entity'
+import { User } from '../entities/User.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
 
 export const AppDataSource = new DataSource({
