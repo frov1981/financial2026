@@ -1,5 +1,5 @@
 // controllers/category.controller.ts
-import { Request, RequestHandler, Response } from 'express'
+import { Request, RequestHandler, Response } from 'express' 
 import { AppDataSource } from '../../config/datasource'
 import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/AuthRequest'
@@ -55,6 +55,34 @@ export const updateCategoryFormPage: RequestHandler = async (req: Request, res: 
       id: category.id,
       name: category.name,
       type: category.type
+    },
+    errors: {},
+    mode
+  })
+}
+
+export const deleteCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest
+  const txId = Number(req.params.id)
+  const mode = 'delete'
+
+  const repo = AppDataSource.getRepository(Category)
+
+  const tx = await repo.findOne({
+    where: { id: txId, user: { id: authReq.user.id } },
+  })
+
+  if (!tx) {
+    return res.redirect('/categories')
+  }
+
+  res.render('layouts/main', {
+    title: 'Eliminar Categoría',
+    view: 'pages/categories/form',
+    category: {
+      id: tx.id,
+      type: tx.type,
+      name: tx.name
     },
     errors: {},
     mode

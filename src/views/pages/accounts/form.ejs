@@ -9,7 +9,8 @@
     ? 'Editar Estado de la Cuenta' 
     : mode === 'delete'
     ? 'Eliminar Cuenta'
-    : mode %>
+    : mode 
+    %>
   </h1>
 
   <form method="post" action="/accounts/">

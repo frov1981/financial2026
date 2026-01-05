@@ -74,11 +74,27 @@ function renderRow(category) {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 20h9"/>
               <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-            </svg>
+            </svg> 
             <span class="btn-text">Editar</span>
           </button>
 
+          <!-- Botón Eliminar -->
+          <button
+            class="icon-btn delete"
+            title="Eliminar"
+            onclick="window.location.href='/categories/delete/${category.id}'">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6 17.5 20H6.5L5 6"/>
+              <path d="M10 11v6"/>
+              <path d="M14 11v6"/>
+            </svg>
+            <span class="btn-text">Eliminar</span>
+          </button>
+
+          <!-- Botón Activar / Inactivar -->
           ${statusButton}
+          
         </div>
       </td>
     </tr>

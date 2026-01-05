@@ -18,30 +18,18 @@ export const showLogin = (req: Request, res: Response) => {
 }
 
 // POST /login
-/*export const doLogin = async (req: Request, res: Response) => {
-  try {
-    const { username, password } = req.body   
-    const userRepo = AppDataSource.getRepository(User)
-    const user = await userRepo.findOneBy({ name: username })
-    logger.info(`Usuario encontrado: ${user ? 'sí' : 'no'}`)
-
-    if (!user) return res.render('pages/login', { error: 'Usuario no encontrado' })
-
-    const validPassword = await bcrypt.compare(password, user.password_hash)
-    if (!validPassword) return res.render('pages/login', { error: 'Contraseña incorrecta' })
-
-    // Guardar en session
-    ;(req.session as any).userId = user.id
-    res.redirect('/home')
-  } catch (error) {
-    console.error(error)
-    res.render('pages/login', { error: 'Error interno, intenta de nuevo' })
-  }
-}*/
-
-// POST /login
 export const doLogin = async (req: Request, res: Response) => {
   try {
+    // SALTAR login y 2FA en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      const userRepo = AppDataSource.getRepository(User)
+      const devUser = await userRepo.findOneBy({ id: 1 }) // Usuario fijo de desarrollo
+      if (devUser) {
+        (req.session as any).userId = devUser.id
+        return res.redirect('/home') // o la ruta principal de tu app
+      }
+    }
+
     const { username, password } = req.body
 
     const userRepo = AppDataSource.getRepository(User)

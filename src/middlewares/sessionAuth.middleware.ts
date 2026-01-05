@@ -5,6 +5,16 @@ import { AuthRequest } from '../types/AuthRequest'
 
 export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
+
+    // SALTAR autenticación en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      const devUser = await AppDataSource.getRepository(User).findOneBy({ id: 1 }) // o cualquier ID que tengas
+      if (devUser) {
+        (req as AuthRequest).user = devUser
+        return next()
+      }
+    }
+
     const sessionUserId = (req.session as any)?.userId
 
     if (!sessionUserId) {
