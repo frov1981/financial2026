@@ -11,9 +11,9 @@
 
   <form method="post" action="/transactions">
 
-    <% if (errors?._form) { %>
+    <% if (errors?.general) { %>
     <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
-      <%= errors._form %>
+      <%= errors.general %>
     </div>
     <% } %>
      

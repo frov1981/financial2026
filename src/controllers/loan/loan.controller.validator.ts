@@ -81,8 +81,7 @@ export const validateLoan = async (
         loan.total_amount !== undefined &&
         Number(loan.total_amount) < totalPrincipalPaid
       ) {
-        fieldErrors.total_amount =
-          'El monto total no puede ser menor al capital ya pagado'
+        fieldErrors.total_amount = 'El monto total no puede ser menor al capital ya pagado'
       }
 
       // Protección: no permitir cambio de usuario

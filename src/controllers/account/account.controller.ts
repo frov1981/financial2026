@@ -84,6 +84,34 @@ export const updateAccountFormPage: RequestHandler = async (req: Request, res: R
   })
 }
 
+export const deleteAccountFormPage: RequestHandler = async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest
+  const txId = Number(req.params.id)
+  const mode = 'delete'
+
+  const repo = AppDataSource.getRepository(Account)
+
+  const tx = await repo.findOne({
+    where: { id: txId, user: { id: authReq.user.id } },
+  })
+
+  if (!tx) {
+    return res.redirect('/accounts')
+  }
+
+  res.render('layouts/main', {
+    title: 'Eliminar Cuenta',
+    view: 'pages/accounts/form',
+    account: {
+      id: tx.id,
+      type: tx.type,
+      name: tx.name
+    },
+    errors: {},
+    mode
+  })
+}
+
 export const updateAccountStatusFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
@@ -111,13 +139,14 @@ export const updateAccountStatusFormPage: RequestHandler = async (req: Request, 
     errors: {},
     mode
   })
-} 
+}
 
 export const accountsPage = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
+
   res.render('layouts/main', {
     title: 'Cuentas',
-    view: 'pages/accounts/index',    
+    view: 'pages/accounts/index',
     USER_ID: authReq.user?.id || 'guest'
   })
 }

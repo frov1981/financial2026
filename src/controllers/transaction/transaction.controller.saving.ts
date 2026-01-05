@@ -152,7 +152,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       title: '',
       view: 'pages/transactions/form',
       transaction: { ...req.body },
-      errors: { _form: 'Error al guardar transacción' },
+      errors: { general: 'Error al guardar transacción' },
       accounts,
       incomeCategories,
       expenseCategories,

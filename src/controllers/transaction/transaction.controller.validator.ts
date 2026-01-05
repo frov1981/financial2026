@@ -33,7 +33,7 @@ export const validateTransaction = async (tx: Transaction, authReq: AuthRequest)
                     fieldErrors.category = message
                     break
                 default:
-                    fieldErrors._form = message
+                    fieldErrors.general = message
             }
         })
     }

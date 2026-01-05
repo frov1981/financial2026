@@ -5,7 +5,7 @@ import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { mapValidationErrors } from '../../validators/mapValidationErrors.validator'
 
-export const validateAccount = async (account: Account, authReq: AuthRequest): Promise<Record<string, string> | null> => {
+export const validateSaveAccount = async (account: Account, authReq: AuthRequest): Promise<Record<string, string> | null> => {
     const userId = authReq.user.id
     const errors = await validate(account)
     const fieldErrors = errors.length > 0 ? mapValidationErrors(errors) : {}
@@ -29,6 +29,19 @@ export const validateAccount = async (account: Account, authReq: AuthRequest): P
         }
     }
 
-    logger.warn(`Account validation`, { userId, fieldErrors })
+    logger.warn(`Account save validation`, { userId, fieldErrors })
+    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+}
+
+export const validateDeleteAccount = async (account: Account, authReq: AuthRequest): Promise<Record<string, string> | null> => {
+    const userId = authReq.user.id
+    const fieldErrors: Record<string, string> = {}
+
+    if (Number(account.balance) !== 0) {
+        fieldErrors.general = 'No se puede eliminar la cuenta porque tiene balance distinto de cero'
+    }
+
+    // Si no hay errores
+    logger.warn(`Account delete validation`, { userId, fieldErrors })
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }

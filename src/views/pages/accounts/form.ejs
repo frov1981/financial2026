@@ -1,21 +1,27 @@
 <div class="max-w-xl mx-auto">
   <h1 class="text-2xl font-semibold mb-6">
-    <%= mode === 'insert' 
-    ? 'Nueva Cuenta' 
+    <%=
+    mode === 'insert' 
+    ? 'Insertar Cuenta' 
     : mode === 'update' 
     ? 'Editar Cuenta' 
-    : 'Editar Estado Cuenta' %>
+    : mode === 'status' 
+    ? 'Editar Estado de la Cuenta' 
+    : mode === 'delete'
+    ? 'Eliminar Cuenta'
+    : mode %>
   </h1>
 
   <form method="post" action="/accounts/">
-    <% if (errors?._form) { %>
+    <% if (errors?.general) { %>
     <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
-      <%= errors._form %>
+      <%= errors.general %>
     </div>
     <% } %>
 
     <!-- ID -->
     <input type="hidden" name="id" value="<%= account?.id || '' %>">
+    <input type="hidden" name="action" value="save">
 
     <!-- Tipo de cuenta -->
     <div class="mb-4">
@@ -69,7 +75,7 @@
         name="name"
         class="w-full border rounded px-3 py-2"
         value="<%= account?.name || '' %>"
-        <%= mode === 'status' ? 'readonly' : '' %>
+        <%= (mode === 'status' || mode === 'delete') ? 'readonly' : '' %>
         required
       >
 
@@ -104,9 +110,15 @@
         Cancelar
       </a>
 
-      <button class="px-4 py-2 bg-blue-600 text-white rounded">
+      <% if (mode === 'delete') { %>
+      <button class="px-4 py-2 bg-red-600 text-white rounded" onclick="this.form.action.value='delete'">
+        Eliminar  
+      </button>
+      <% } else { %> 
+      <button class="px-4 py-2 bg-blue-600 text-white rounded" >
         Guardar
       </button>
+      <% } %>
     </div>
 
   </form>
