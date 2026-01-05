@@ -1,10 +1,9 @@
-import { RequestHandler } from 'express'
+import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/datasource'
 import { Account } from '../../entities/Account.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { validateAccount } from './account.controller.validator'
-import express, { Request, Response, NextFunction } from 'express'
 
 export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest

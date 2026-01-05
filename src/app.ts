@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.route'
 import categoryRoutes from './routes/category.route'
 import indexRoutes from './routes/index.route'
 import transactionRoutes from './routes/transaction.route'
+import loanRoutes from './routes/loan.route'
 
 export const app = express()
 
@@ -66,3 +67,4 @@ app.use('/api', sessionAuthMiddleware, apiRoutes)
 app.use('/accounts', sessionAuthMiddleware, accountRoutes)
 app.use('/categories', sessionAuthMiddleware, categoryRoutes)
 app.use('/transactions', sessionAuthMiddleware, transactionRoutes)
+app.use('/loans', sessionAuthMiddleware, loanRoutes)

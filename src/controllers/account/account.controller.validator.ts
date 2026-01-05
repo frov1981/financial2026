@@ -29,6 +29,6 @@ export const validateAccount = async (account: Account, authReq: AuthRequest): P
         }
     }
 
-  logger.warn(`Account validation`, { userId, fieldErrors })
+    logger.warn(`Account validation`, { userId, fieldErrors })
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }

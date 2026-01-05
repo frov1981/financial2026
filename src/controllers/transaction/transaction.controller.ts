@@ -1,12 +1,11 @@
-import { RequestHandler } from 'express'
+import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/datasource'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/AuthRequest'
-import { getActiveAccountsByUser, getActiveCategoriesByUser, getNextValidTransactionDate, splitCategoriesByType } from './transaction.controller.auxiliar'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
+import { getActiveAccountsByUser, getActiveCategoriesByUser, getNextValidTransactionDate, splitCategoriesByType } from './transaction.controller.auxiliar'
 export { saveTransaction } from './transaction.controller.saving'
-import express, { Request, Response, NextFunction } from 'express'
 
 
 export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request, res: Response) => {

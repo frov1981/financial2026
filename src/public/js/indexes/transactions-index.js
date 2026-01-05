@@ -155,14 +155,14 @@ clearBtn.addEventListener('click', () => {
   loadTransactions(1)
 })
 
-;['top', 'bottom'].forEach(pos => {
-  document.getElementById(`prev-page-${pos}`).onclick = () => {
-    if (currentPage > 1) loadTransactions(currentPage - 1)
-  }
-  document.getElementById(`next-page-${pos}`).onclick = () => {
-    if (currentPage < totalPages) loadTransactions(currentPage + 1)
-  }
-})
+  ;['top', 'bottom'].forEach(pos => {
+    document.getElementById(`prev-page-${pos}`).onclick = () => {
+      if (currentPage > 1) loadTransactions(currentPage - 1)
+    }
+    document.getElementById(`next-page-${pos}`).onclick = () => {
+      if (currentPage < totalPages) loadTransactions(currentPage + 1)
+    }
+  })
 
 const cached = loadFilters(FILTER_KEY)
 if (cached) {
