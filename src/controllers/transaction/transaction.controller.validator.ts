@@ -5,7 +5,7 @@ import { logger } from '../../utils/logger.util'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 
-export const validateTransaction = async (tx: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
+export const validateSaveTransaction = async (tx: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
     const errors = await validate(tx)
     const fieldErrors: Record<string, string> = {}
 
@@ -96,4 +96,24 @@ export const validateTransaction = async (tx: Transaction, authReq: AuthRequest)
 
     logger.warn(`Transaction validation errors for user ${authReq.user.id}: ${JSON.stringify(fieldErrors)}`)
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+}
+
+export const validateDeleteTransaction = async (transaction: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
+  const userId = authReq.user.id
+  const fieldErrors: Record<string, string> = {}
+
+  if (!transaction.date) {
+    fieldErrors.general = 'La transacción no tiene fecha registrada'
+  } else {
+    const txDate = new Date(transaction.date)
+    const now = new Date()
+
+    if (txDate.getFullYear() < now.getFullYear() || 
+        (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() < now.getMonth())) {
+      fieldErrors.general = 'No se puede eliminar transacciones de meses anteriores'
+    }
+  }
+
+  logger.warn(`Transaction delete validation`, { userId, transactionId: transaction.id, fieldErrors })
+  return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }

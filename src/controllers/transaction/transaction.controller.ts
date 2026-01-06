@@ -57,6 +57,7 @@ export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request,
 
 export const insertTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
+  const mode = 'insert'
 
   const defaultDate = await getNextValidTransactionDate(authReq)
 
@@ -64,23 +65,27 @@ export const insertTransactionFormPage: RequestHandler = async (req: Request, re
   const categories = await getActiveCategoriesByUser(authReq)
   const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
 
-  res.render('layouts/main', {
-    title: 'Nueva Transacción',
-    view: 'pages/transactions/form',
-    transaction: {
-      date: formatDateForInputLocal(defaultDate).slice(0, 16),
-      amount: '0.00',
-    },
-    errors: {},
-    accounts,
-    incomeCategories,
-    expenseCategories,
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Insertar Transacción',
+      view: 'pages/transactions/form',
+      transaction: {
+        date: formatDateForInputLocal(defaultDate).slice(0, 16),
+        amount: '0.00',
+      },
+      errors: {},
+      accounts,
+      incomeCategories,
+      expenseCategories,
+      mode
+    })
 }
 
 export const updateTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
+  const mode = 'update'
 
   const repo = AppDataSource.getRepository(Transaction)
 
@@ -97,43 +102,101 @@ export const updateTransactionFormPage: RequestHandler = async (req: Request, re
   const categories = await getActiveCategoriesByUser(authReq)
   const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
 
-  res.render('layouts/main', {
-    title: 'Editar Transacción',
-    view: 'pages/transactions/form',
-    transaction: {
-      id: tx.id,
-      type: tx.type,
+  res.render(
+    'layouts/main',
+    {
+      title: 'Editar Transacción',
+      view: 'pages/transactions/form',
+      transaction: {
+        id: tx.id,
+        type: tx.type,
 
-      account_id: tx.account ? tx.account.id : '',
-      account_name: tx.account ? tx.account.name : '',
+        account_id: tx.account ? tx.account.id : '',
+        account_name: tx.account ? tx.account.name : '',
 
-      to_account_id: tx.to_account ? tx.to_account.id : '',
-      to_account_name: tx.to_account ? tx.to_account.name : '',
+        to_account_id: tx.to_account ? tx.to_account.id : '',
+        to_account_name: tx.to_account ? tx.to_account.name : '',
 
-      category_id: tx.category ? tx.category.id : '',
-      category_name: tx.category ? tx.category.name : '',
+        category_id: tx.category ? tx.category.id : '',
+        category_name: tx.category ? tx.category.name : '',
 
-      amount: Number(tx.amount),
-      date: formatDateForInputLocal(tx.date).slice(0, 16),
-      description: tx.description ?? ''
-    },
-    accounts,
-    incomeCategories,
-    expenseCategories,
-    errors: {}
+        amount: Number(tx.amount),
+        date: formatDateForInputLocal(tx.date).slice(0, 16),
+        description: tx.description ?? ''
+      },
+      accounts,
+      incomeCategories,
+      expenseCategories,
+      errors: {},
+      mode
+    })
+
+}
+
+
+
+export const deleteTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest
+  const txId = Number(req.params.id)
+  const mode = 'delete'
+
+  const repo = AppDataSource.getRepository(Transaction)
+
+  const tx = await repo.findOne({
+    where: { id: txId, user: { id: authReq.user.id } },
+    relations: ['account', 'to_account', 'category']
   })
+
+  if (!tx) {
+    return res.redirect('/transactions')
+  }
+
+  const accounts = await getActiveAccountsByUser(authReq)
+  const categories = await getActiveCategoriesByUser(authReq)
+  const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
+
+  res.render(
+    'layouts/main',
+    {
+      title: 'Eliminar Transacción',
+      view: 'pages/transactions/form',
+      transaction: {
+        id: tx.id,
+        type: tx.type,
+
+        account_id: tx.account ? tx.account.id : '',
+        account_name: tx.account ? tx.account.name : '',
+
+        to_account_id: tx.to_account ? tx.to_account.id : '',
+        to_account_name: tx.to_account ? tx.to_account.name : '',
+
+        category_id: tx.category ? tx.category.id : '',
+        category_name: tx.category ? tx.category.name : '',
+
+        amount: Number(tx.amount),
+        date: formatDateForInputLocal(tx.date).slice(0, 16),
+        description: tx.description ?? ''
+      },
+      accounts,
+      incomeCategories,
+      expenseCategories,
+      errors: {},
+      mode
+    })
 
 }
 
 export const transactionsPage: RequestHandler = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 
-  res.render('layouts/main', {
-    title: 'Transacciones',
-    view: 'pages/transactions/index',
-    incomeCategories: [],
-    expenseCategories: [],
-    USER_ID: authReq.user?.id || 'guest'
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Transacciones',
+      view: 'pages/transactions/index',
+      incomeCategories: [],
+      expenseCategories: [],
+      USER_ID: authReq.user?.id || 'guest'
+    })
 }
 

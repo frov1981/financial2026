@@ -65,8 +65,6 @@ export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise
 
   return next > now ? next : now
 }
-
-// Agrupa categorías por tipo (income / expense)
 export const splitCategoriesByType = (categories: Category[]): {
   incomeCategories: Category[]
   expenseCategories: Category[]
@@ -90,6 +88,38 @@ export const splitCategoriesByType = (categories: Category[]): {
   }
 }
 
+export const calculateTransactionDeltas = (
+  tx: Transaction,
+  factor: 1 | -1
+): Map<number, number> => {
+  const deltas = new Map<number, number>()
+  const amount = Number(tx.amount)
+
+  const addDelta = (accountId?: number, value?: number) => {
+    if (!accountId || !value) return
+    const prev = deltas.get(accountId) || 0
+    deltas.set(accountId, prev + value)
+  }
+
+  if (tx.type === 'income' && tx.account?.id) {
+    addDelta(tx.account.id, amount * factor)
+  }
+
+  if (tx.type === 'expense' && tx.account?.id) {
+    addDelta(tx.account.id, -amount * factor)
+  }
+
+  if (tx.type === 'transfer') {
+    if (tx.account?.id) {
+      addDelta(tx.account.id, -amount * factor)
+    }
+    if (tx.to_account?.id) {
+      addDelta(tx.to_account.id, amount * factor)
+    }
+  }
+
+  return deltas
+}
 
 
 

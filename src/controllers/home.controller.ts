@@ -14,7 +14,11 @@ export const root = (req: Request, res: Response) => {
 // GET /login
 export const showLogin = (req: Request, res: Response) => {
   // Solo renderiza login limpio, sin navbar
-  res.render('pages/login', { error: null })
+  res.render(
+    'pages/login',
+    {
+      error: null
+    })
 }
 
 // POST /login
@@ -35,10 +39,22 @@ export const doLogin = async (req: Request, res: Response) => {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOneBy({ name: username })
 
-    if (!user) return res.render('pages/login', { error: 'Usuario no encontrado' })
+    if (!user) {
+      return res.render(
+        'pages/login',
+        {
+          error: 'Usuario no encontrado'
+        })
+    }
 
     const validPassword = await bcrypt.compare(password, user.password_hash)
-    if (!validPassword) return res.render('pages/login', { error: 'Contraseña incorrecta' })
+    if (!validPassword) {
+      return res.render(
+        'pages/login',
+        {
+          error: 'Contraseña incorrecta'
+        })
+    }
 
     // NUEVO: 2FA pendiente
     await send2FACode(user)
@@ -47,7 +63,11 @@ export const doLogin = async (req: Request, res: Response) => {
     res.redirect('/2fa')
   } catch (error) {
     logger.error('Error en doLogin:', error)
-    res.render('pages/login', { error: 'Error interno, intenta de nuevo' })
+    res.render(
+      'pages/login',
+      {
+        error: 'Error interno, intenta de nuevo'
+      })
   }
 }
 
@@ -62,9 +82,11 @@ export const home = async (req: Request, res: Response) => {
   if (!user) return res.redirect('/login')
 
   // Renderiza main.ejs con navbar y el contenido de home
-  res.render('layouts/main', {
-    title: 'Inicio',
-    view: 'pages/home',
-    user
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Inicio',
+      view: 'pages/home',
+      user
+    })
 }

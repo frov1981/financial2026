@@ -49,16 +49,18 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
         const errors = await validateCategory(tx, authReq)
 
         if (errors) {
-            return res.render('layouts/main', {
-                title: '',
-                view: 'pages/categories/form',
-                category: {
-                    ...req.body,
-                    is_active: req.body.is_active === 'true' ? true : false
-                },
-                errors,
-                mode
-            })
+            return res.render(
+                'layouts/main',
+                {
+                    title: mode === 'insert' ? 'Insertar Categoría' : mode === 'update' ? 'Editar Categoría' : 'Cambiar Estado de Categoría',
+                    view: 'pages/categories/form',
+                    category: {
+                        ...req.body,
+                        is_active: req.body.is_active === 'true' ? true : false
+                    },
+                    errors,
+                    mode
+                })
         }
 
         await repo.save(tx)
@@ -80,16 +82,18 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
         const errors = await validateDeleteCategory(existing, authReq)
 
         if (errors) {
-            return res.render('layouts/main', {
-                title: '',
-                view: 'pages/categories/form',
-                category: {
-                    ...req.body,
-                    is_active: req.body.is_active === 'true' ? true : false
-                },
-                errors,
-                mode,
-            })
+            return res.render(
+                'layouts/main',
+                {
+                    title: mode === 'delete' ? 'Eliminar Categoría' : '',
+                    view: 'pages/categories/form',
+                    category: {
+                        ...req.body,
+                        is_active: req.body.is_active === 'true' ? true : false
+                    },
+                    errors,
+                    mode,
+                })
         }
 
         await repo.delete(existing.id)

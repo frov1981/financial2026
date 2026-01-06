@@ -46,16 +46,18 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     const errors = await validateSaveAccount(tx, authReq)
 
     if (errors) {
-      return res.render('layouts/main', {
-        title: '',
-        view: 'pages/accounts/form',
-        account: {
-          ...req.body,
-          is_active: req.body.is_active === 'true' ? true : false
-        },
-        errors,
-        mode,
-      })
+      return res.render(
+        'layouts/main',
+        {
+          title: mode === 'insert' ? 'Insertar Cuenta' : mode === 'update' ? 'Editar Cuenta' : 'Cambiar Estado de Cuenta',
+          view: 'pages/accounts/form',
+          account: {
+            ...req.body,
+            is_active: req.body.is_active === 'true' ? true : false
+          },
+          errors,
+          mode,
+        })
     }
 
     await repo.save(tx)
@@ -67,7 +69,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     if (!existing) {
       return res.redirect('/accounts')
     }
-    
+
     mode = 'delete'
     if (req.body.type) { existing.type = req.body.type }
     if (req.body.name) { existing.name = req.body.name }
@@ -77,16 +79,18 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     const errors = await validateDeleteAccount(existing, authReq)
 
     if (errors) {
-      return res.render('layouts/main', {
-        title: '',
-        view: 'pages/accounts/form',
-        account: {
-          ...req.body,
-          is_active: req.body.is_active === 'true' ? true : false
-        },
-        errors,
-        mode,
-      })
+      return res.render(
+        'layouts/main',
+        {
+          title: mode === 'delete' ? 'Eliminar Cuenta' : '',
+          view: 'pages/accounts/form',
+          account: {
+            ...req.body,
+            is_active: req.body.is_active === 'true' ? true : false
+          },
+          errors,
+          mode,
+        })
     }
 
     await repo.delete(existing.id)

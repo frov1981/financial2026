@@ -47,13 +47,15 @@ export const insertAccountFormPage: RequestHandler = async (req: Request, res: R
   const authReq = req as AuthRequest
   const mode = 'insert'
 
-  res.render('layouts/main', {
-    title: 'Nueva Cuenta',
-    view: 'pages/accounts/form',
-    account: {},
-    errors: {},
-    mode,
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Insertar Cuenta',
+      view: 'pages/accounts/form',
+      account: {},
+      errors: {},
+      mode,
+    })
 }
 
 export const updateAccountFormPage: RequestHandler = async (req: Request, res: Response) => {
@@ -71,17 +73,19 @@ export const updateAccountFormPage: RequestHandler = async (req: Request, res: R
     return res.redirect('/accounts')
   }
 
-  res.render('layouts/main', {
-    title: 'Editar Cuenta',
-    view: 'pages/accounts/form',
-    account: {
-      id: tx.id,
-      type: tx.type,
-      name: tx.name
-    },
-    errors: {},
-    mode
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Editar Cuenta',
+      view: 'pages/accounts/form',
+      account: {
+        id: tx.id,
+        type: tx.type,
+        name: tx.name
+      },
+      errors: {},
+      mode
+    })
 }
 
 export const deleteAccountFormPage: RequestHandler = async (req: Request, res: Response) => {
@@ -99,17 +103,19 @@ export const deleteAccountFormPage: RequestHandler = async (req: Request, res: R
     return res.redirect('/accounts')
   }
 
-  res.render('layouts/main', {
-    title: 'Eliminar Cuenta',
-    view: 'pages/accounts/form',
-    account: {
-      id: tx.id,
-      type: tx.type,
-      name: tx.name
-    },
-    errors: {},
-    mode
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Eliminar Cuenta',
+      view: 'pages/accounts/form',
+      account: {
+        id: tx.id,
+        type: tx.type,
+        name: tx.name
+      },
+      errors: {},
+      mode
+    })
 }
 
 export const updateAccountStatusFormPage: RequestHandler = async (req: Request, res: Response) => {
@@ -127,26 +133,30 @@ export const updateAccountStatusFormPage: RequestHandler = async (req: Request, 
     return res.redirect('/accounts')
   }
 
-  res.render('layouts/main', {
-    title: 'Editar Estado Cuenta',
-    view: 'pages/accounts/form',
-    account: {
-      id: tx.id,
-      type: tx.type,
-      name: tx.name,
-      is_active: tx.is_active
-    },
-    errors: {},
-    mode
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Cambiar Estado de Cuenta',
+      view: 'pages/accounts/form',
+      account: {
+        id: tx.id,
+        type: tx.type,
+        name: tx.name,
+        is_active: tx.is_active
+      },
+      errors: {},
+      mode
+    })
 }
 
 export const accountsPage = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 
-  res.render('layouts/main', {
-    title: 'Cuentas',
-    view: 'pages/accounts/index',
-    USER_ID: authReq.user?.id || 'guest'
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Cuentas',
+      view: 'pages/accounts/index',
+      USER_ID: authReq.user?.id || 'guest'
+    })
 }

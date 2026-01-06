@@ -1,5 +1,5 @@
 // controllers/category.controller.ts
-import { Request, RequestHandler, Response } from 'express' 
+import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/datasource'
 import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/AuthRequest'
@@ -24,13 +24,15 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
 export const insertCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
 
-  res.render('layouts/main', {
-    title: 'Nueva Categoría',
-    view: 'pages/categories/form',
-    category: {},
-    errors: {},
-    mode
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Insertar Categoría',
+      view: 'pages/categories/form',
+      category: {},
+      errors: {},
+      mode
+    })
 }
 
 export const updateCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
@@ -48,17 +50,19 @@ export const updateCategoryFormPage: RequestHandler = async (req: Request, res: 
     return res.redirect('/categories')
   }
 
-  res.render('layouts/main', {
-    title: 'Editar Categoría',
-    view: 'pages/categories/form',
-    category: {
-      id: category.id,
-      name: category.name,
-      type: category.type
-    },
-    errors: {},
-    mode
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Editar Categoría',
+      view: 'pages/categories/form',
+      category: {
+        id: category.id,
+        name: category.name,
+        type: category.type
+      },
+      errors: {},
+      mode
+    })
 }
 
 export const deleteCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
@@ -76,17 +80,19 @@ export const deleteCategoryFormPage: RequestHandler = async (req: Request, res: 
     return res.redirect('/categories')
   }
 
-  res.render('layouts/main', {
-    title: 'Eliminar Categoría',
-    view: 'pages/categories/form',
-    category: {
-      id: tx.id,
-      type: tx.type,
-      name: tx.name
-    },
-    errors: {},
-    mode
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Eliminar Categoría',
+      view: 'pages/categories/form',
+      category: {
+        id: tx.id,
+        type: tx.type,
+        name: tx.name
+      },
+      errors: {},
+      mode
+    })
 }
 
 export const updateCategoryStatusFormPage: RequestHandler = async (req: Request, res: Response) => {
@@ -104,26 +110,30 @@ export const updateCategoryStatusFormPage: RequestHandler = async (req: Request,
     return res.redirect('/categories')
   }
 
-  res.render('layouts/main', {
-    title: 'Editar Estado Categoría',
-    view: 'pages/categories/form',
-    category: {
-      id: category.id,
-      name: category.name,
-      type: category.type,
-      is_active: category.is_active
-    },
-    errors: {},
-    mode
-  })
-} 
+  res.render(
+    'layouts/main',
+    {
+      title: 'Cambiar Estado de Categoría',
+      view: 'pages/categories/form',
+      category: {
+        id: category.id,
+        name: category.name,
+        type: category.type,
+        is_active: category.is_active
+      },
+      errors: {},
+      mode
+    })
+}
 
 export const categoriesPage: RequestHandler = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 
-  res.render('layouts/main', {
-    title: 'Categorías',
-    view: 'pages/categories/index',
-    USER_ID: authReq.user?.id || 'guest'
-  })
+  res.render(
+    'layouts/main',
+    {
+      title: 'Categorías',
+      view: 'pages/categories/index',
+      USER_ID: authReq.user?.id || 'guest'
+    })
 }

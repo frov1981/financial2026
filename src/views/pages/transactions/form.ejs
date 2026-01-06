@@ -1,39 +1,75 @@
 <div class="max-w-3xl mx-auto">
   <input
-  type="hidden"
-  id="original-transaction-type"
-  value="<%= transaction?.type || '' %>"
+    type="hidden"
+    id="original-transaction-type"
+    value="<%= transaction?.type || '' %>"
   >
 
   <h1 class="text-2xl font-semibold mb-6">
-    <%= transaction?.id ? 'Editar Transacción' : 'Nueva Transacción' %>
+    <%= 
+      mode === 'insert'
+        ? 'Insertar Transacción'
+        : mode === 'update'
+        ? 'Editar Transacción'
+        : mode === 'delete'
+        ? 'Eliminar Transacción'
+        : mode
+    %>
   </h1>
 
   <form method="post" action="/transactions">
 
     <% if (errors?.general) { %>
-    <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
-      <%= errors.general %>
-    </div>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors.general %>
+      </div>
     <% } %>
-     
+
     <!-- ID -->
     <input type="hidden" name="id" value="<%= transaction?.id || '' %>">
+    <input type="hidden" name="action" value="save">
 
-    <!-- Tipo --> 
+    <!-- BLINDAJE DEL TIPO -->
+    <input
+      type="hidden"
+      name="type"
+      value="<%= transaction?.type || '' %>"
+    >
+
+    <!-- Tipo -->
     <div class="mb-4">
       <label class="block font-medium mb-1">Tipo</label>
       <div class="flex gap-6">
         <label class="flex items-center gap-1">
-          <input type="radio" name="type" value="income" <%= transaction?.type !== 'expense' && transaction?.type !== 'transfer' ? 'checked' : '' %>>
+          <input
+            type="radio"
+            name="type"
+            value="income"
+            <%= transaction?.type !== 'expense' && transaction?.type !== 'transfer' ? 'checked' : '' %>
+            <%= mode !== 'insert' ? 'disabled' : '' %>
+          >
           Ingreso
         </label>
+
         <label class="flex items-center gap-1">
-          <input type="radio" name="type" value="expense" <%= transaction?.type === 'expense' ? 'checked' : '' %>>
+          <input
+            type="radio"
+            name="type"
+            value="expense"
+            <%= transaction?.type === 'expense' ? 'checked' : '' %>
+            <%= mode !== 'insert' ? 'disabled' : '' %>
+          >
           Egreso
         </label>
+
         <label class="flex items-center gap-1">
-          <input type="radio" name="type" value="transfer" <%= transaction?.type === 'transfer' ? 'checked' : '' %>>
+          <input
+            type="radio"
+            name="type"
+            value="transfer"
+            <%= transaction?.type === 'transfer' ? 'checked' : '' %>
+            <%= mode !== 'insert' ? 'disabled' : '' %>
+          >
           Transferencia
         </label>
       </div>
@@ -43,7 +79,6 @@
     <div class="mb-4" data-field="account" data-autocomplete>
       <label class="block font-medium mb-1">Cuenta</label>
 
-      <!-- Wrapper del input -->
       <div class="relative">
         <input
           type="text"
@@ -52,12 +87,10 @@
           data-autocomplete-input
           autocomplete="off"
           value="<%= transaction?.account_name || '' %>"
+          <%= mode === 'delete' ? 'readonly' : '' %>
         >
 
-        <!-- Balance visual centrado -->
-        <div
-          class="absolute inset-y-0 right-3 flex items-center pointer-events-none"
-        >
+        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
           <span
             class="autocomplete-balance"
             data-autocomplete-display-balance
@@ -65,7 +98,6 @@
         </div>
       </div>
 
-      <!-- Hidden -->
       <input
         type="hidden"
         name="account_id"
@@ -73,7 +105,7 @@
         value="<%= transaction?.account_id || '' %>"
       >
 
-      <!-- Lista -->
+      <% if (mode !== 'delete') { %>
       <div class="relative">
         <ul
           class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
@@ -97,6 +129,7 @@
           <% }) %>
         </ul>
       </div>
+      <% } %>
 
       <% if (errors?.account) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.account %></p>
@@ -107,22 +140,18 @@
     <div class="mb-4 hidden" data-field="to_account" data-autocomplete>
       <label class="block font-medium mb-1">Cuenta destino</label>
 
-      <!-- Wrapper del input -->
       <div class="relative">
-        <!-- Input real -->
         <input
           type="text"
           class="w-full border rounded px-3 py-2 pr-24 bg-white cursor-text"
           placeholder="Buscar cuenta destino…"
           data-autocomplete-input
           autocomplete="off"
-          value="<%= transaction?.to_account_name || '' %>"
+          value="<%= transaction?.to_account_name || '' %>"          
+          <%= mode === 'delete' ? 'readonly' : '' %>
         >
 
-        <!-- Balance visual centrado -->
-        <div
-          class="absolute inset-y-0 right-3 flex items-center pointer-events-none"
-        >
+        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
           <span
             class="autocomplete-balance"
             data-autocomplete-display-balance
@@ -130,7 +159,6 @@
         </div>
       </div>
 
-      <!-- Hidden -->
       <input
         type="hidden"
         name="to_account_id"
@@ -138,7 +166,7 @@
         value="<%= transaction?.to_account_id || '' %>"
       >
 
-      <!-- Lista -->
+      <% if (mode !== 'delete') { %>
       <div class="relative">
         <ul
           class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
@@ -162,6 +190,7 @@
           <% }) %>
         </ul>
       </div>
+      <% } %>
 
       <% if (errors?.to_account) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.to_account %></p>
@@ -179,6 +208,7 @@
         data-autocomplete-input
         autocomplete="off"
         value="<%= transaction?.category_name || '' %>"
+        <%= mode === 'delete' ? 'readonly' : '' %>
       >
 
       <input
@@ -188,13 +218,11 @@
         value="<%= transaction?.category_id || '' %>"
       >
 
+      <% if (mode !== 'delete') { %>
       <div class="relative">
-
-        <!-- Income categories -->
         <ul
           class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
           data-autocomplete-list
-          data-category-list
           data-category-type="income"
         >
           <% (incomeCategories || []).forEach(c => { %>
@@ -209,11 +237,9 @@
           <% }) %>
         </ul>
 
-        <!-- Expense categories -->
         <ul
           class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
           data-autocomplete-list
-          data-category-list
           data-category-type="expense"
         >
           <% (expenseCategories || []).forEach(c => { %>
@@ -227,8 +253,8 @@
             </li>
           <% }) %>
         </ul>
-
       </div>
+      <% } %>
 
       <% if (errors?.category) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
@@ -238,19 +264,16 @@
     <!-- Monto -->
     <div class="mb-4">
       <label class="block font-medium mb-1">Monto</label>
-
       <input
-        id="amount-input"
         type="number"
         step="0.01"
         min="0.01"
         name="amount"
         class="w-full border rounded px-3 py-2"
         value="<%= transaction?.amount || '' %>"
-        oninput="if(this.value && Number(this.value) < 0) this.value = ''"
+        <%= mode === 'delete' ? 'readonly' : '' %>
         required
       >
-
       <% if (errors?.amount) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.amount %></p>
       <% } %>
@@ -264,11 +287,9 @@
         name="date"
         class="w-full border rounded px-3 py-2"
         value="<%= transaction?.date || '' %>"
+        <%= mode === 'delete' ? 'readonly' : '' %>
         required
       >
-      <% if (errors?.date) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.date %></p>
-      <% } %>
     </div>
 
     <!-- Descripción -->
@@ -278,20 +299,28 @@
         name="description"
         rows="3"
         class="w-full border rounded px-3 py-2"
+        <%= mode === 'delete' ? 'readonly' : '' %>
       ><%= transaction?.description || '' %></textarea>
-
-      <% if (errors?.description) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.description %></p>
-      <% } %>
     </div>
 
     <div class="flex justify-end gap-2">
       <a href="/transactions" class="px-4 py-2 bg-gray-200 rounded">
         Cancelar
       </a>
-      <button class="px-4 py-2 bg-blue-600 text-white rounded">
-        Guardar
-      </button>
+
+      <% if (mode === 'delete') { %>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-red-600 text-white rounded"
+          onclick="this.form.action.value='delete'"
+        >
+          Eliminar
+        </button>
+      <% } else { %>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+          Guardar
+        </button>
+      <% } %>
     </div>
 
   </form>

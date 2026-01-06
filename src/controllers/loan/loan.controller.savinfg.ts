@@ -50,8 +50,9 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     const errors = await validateLoan(tx, authReq)
 
     if (errors) {
-        return res.render('layouts/main', {
-            title: '',
+        return res.render(
+            'layouts/main', {
+            title: mode === 'insert' ? 'Insertar Préstamo' : 'Editar Préstamo',
             view: 'pages/loans/form',
             loan: {
                 ...req.body
