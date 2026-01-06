@@ -17,3 +17,6 @@ coverage/
 
 # Editor
 .vscode/
+
+# Seeds
+/src/seeds/
