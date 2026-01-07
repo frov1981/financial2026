@@ -30,11 +30,13 @@
     <input type="hidden" name="action" value="save">
 
     <!-- BLINDAJE DEL TIPO -->
+     <% if (mode !== 'insert') { %>
     <input
       type="hidden"
       name="type"
       value="<%= transaction?.type || '' %>"
     >
+    <% } %>
 
     <!-- Tipo -->
     <div class="mb-4">
@@ -119,9 +121,15 @@
               data-label="<%= a.name %>"
               data-balance="<%= Number(a.balance).toFixed(2) %>"
             >
-              <div class="flex items-center justify-between">
-                <span class="truncate autocomplete-label"><%= a.name %></span>
-                <span class="autocomplete-balance <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>">
+              <div class="flex items-center gap-2 min-w-0 w-full">
+                <span class="flex-1 truncate autocomplete-label">
+                  <%= a.name %>
+                </span>
+
+                <span
+                  class="autocomplete-balance text-right whitespace-nowrap
+                  <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>"
+                >
                   <%= Number(a.balance).toFixed(2) %>
                 </span>
               </div>
@@ -180,9 +188,15 @@
               data-label="<%= a.name %>"
               data-balance="<%= Number(a.balance).toFixed(2) %>"
             >
-              <div class="flex items-center justify-between">
-                <span class="truncate autocomplete-label"><%= a.name %></span>
-                <span class="autocomplete-balance <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>">
+              <div class="flex items-center gap-2 min-w-0 w-full">
+                <span class="flex-1 truncate autocomplete-label">
+                  <%= a.name %>
+                </span>
+
+                <span
+                  class="autocomplete-balance text-right whitespace-nowrap
+                  <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>"
+                >
                   <%= Number(a.balance).toFixed(2) %>
                 </span>
               </div>
