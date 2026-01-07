@@ -1,14 +1,14 @@
 <nav class="bg-blue-600 text-white">
-  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+  <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-14 flex items-center justify-between">
 
-    <div class="font-semibold text-lg">
+    <div class="font-semibold text-base sm:text-lg">
       App Contable V1
     </div>
 
     <!-- Botón hamburguesa (solo móvil) -->
     <button
       id="mobile-menu-btn"
-      class="sm:hidden focus:outline-none"
+      class="sm:hidden p-1 focus:outline-none"
       aria-label="Abrir menú">
 
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
@@ -19,7 +19,7 @@
     </button>
 
     <!-- Menú desktop -->
-    <ul class="hidden sm:flex space-x-6">
+    <ul class="hidden sm:flex items-center space-x-4 lg:space-x-6 text-sm lg:text-base">
       <li><a href="/home" class="hover:underline">Inicio</a></li>
       <li><a href="/accounts" class="hover:underline">Cuentas</a></li>
       <li><a href="/categories" class="hover:underline">Categorías</a></li>
@@ -31,7 +31,7 @@
   <!-- Menú móvil -->
   <ul
     id="mobile-menu"
-    class="sm:hidden hidden bg-blue-700 px-4 py-3 space-y-2">
+    class="sm:hidden hidden bg-blue-700 px-3 py-2 space-y-1 text-sm">
 
     <li><a href="/home" class="block py-2">Inicio</a></li>
     <li><a href="/accounts" class="block py-2">Cuentas</a></li>
