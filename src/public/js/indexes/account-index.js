@@ -1,3 +1,45 @@
+document.addEventListener('DOMContentLoaded', () => {
+
+  console.log('DOM ready')
+
+  const btnRecalculate = document.getElementById('btnRecalculate')
+  const overlay = document.getElementById('overlay')
+
+  if (!btnRecalculate) {
+    console.error('btnRecalculate not found')
+    return
+  }
+
+  btnRecalculate.addEventListener('click', async () => {
+
+    overlay.classList.remove('hidden')
+    btnRecalculate.disabled = true
+
+    try {
+      const response = await fetch('/api/accounts/recalculate-balances', {
+        method: 'POST'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        MessageBox.success(result.message)
+        await loadAccounts()
+      } else {
+        MessageBox.error(result.message)
+      }
+
+    } catch (error) {
+      console.error(error)
+      MessageBox.error('Error inesperado')
+    } finally {
+      overlay.classList.add('hidden')
+      btnRecalculate.disabled = false
+    }
+  })
+
+})
+
 /* ============================
    Variables globales
 ============================ */
@@ -68,7 +110,6 @@ function renderRow(account) {
     <td class="px-4 py-2">
       <div class="icon-actions">
 
-        <!-- Botón Editar -->
         <button
           class="icon-btn edit"
           title="Editar"
@@ -80,7 +121,6 @@ function renderRow(account) {
           <span class="btn-text">Editar</span>
         </button>
 
-        <!-- Botón Eliminar -->
         <button
           class="icon-btn delete"
           title="Eliminar"
@@ -94,14 +134,12 @@ function renderRow(account) {
           <span class="btn-text">Eliminar</span>
         </button>
 
-        <!-- Botón Activar / Inactivar -->
         ${statusButton}
 
       </div>
     </td>
   </tr>
-`;
-
+`
 }
 
 function renderTable(data) {

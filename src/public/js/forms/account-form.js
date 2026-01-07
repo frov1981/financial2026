@@ -1,40 +1,23 @@
+/*
+  category-form.js
+
+  Archivo intencionalmente vacío de lógica.
+  Este formulario es procesado completamente por el backend.
+
+  Responsabilidades del backend:
+  - Validación de campos
+  - Control de modos (insert / update / status)
+  - Persistencia en base de datos
+  - Manejo de errores y mensajes
+
+  Este archivo existe solo para:
+  - Mantener coherencia estructural del proyecto
+  - Facilitar futuras extensiones (si fueran necesarias)
+*/
+
 document.addEventListener('DOMContentLoaded', () => {
-
-  console.log('DOM ready')
-
-  const btnRecalculate = document.getElementById('btnRecalculate')
-  const overlay = document.getElementById('overlay')
-
-  if (!btnRecalculate) {
-    console.error('btnRecalculate not found')
-    return
-  } 
-
-  btnRecalculate.addEventListener('click', async () => {
-
-    overlay.classList.remove('hidden')
-    btnRecalculate.disabled = true
-
-    try {
-      const response = await fetch('/api/accounts/recalculate-balances', {
-        method: 'POST'
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        MessageBox.success(result.message)
-        await loadAccounts()
-      } else {
-        MessageBox.error(result.message)
-      }
-
-    } catch (error) {
-      console.error(error)
-      MessageBox.error('Error inesperado')
-    } finally {
-      overlay.classList.add('hidden')
-      btnRecalculate.disabled = false
-    }
-  })
+  /* 
+    No se requiere lógica de frontend para este formulario.
+    El submit es tradicional (POST) y el backend controla el flujo.
+  */
 })
