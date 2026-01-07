@@ -103,12 +103,12 @@ function renderRow(account) {
 
   return `
   <tr id="account-${account.id}" class="${rowClass}">
-    <td class="px-4 py-2">${account.name}</td>
-    <td class="px-4 py-2">${accountTypeTag(account.type)}</td>
-    <td class="px-4 py-2 hidden sm:table-cell">${statusTag(account.is_active)}</td>
-    <td class="px-4 py-2">${amountBox(account.balance)}</td>
-    <td class="px-4 py-2">
-      <div class="icon-actions">
+    <td class="px-3 py-2 text-xs sm:text-sm">${account.name}</td>
+    <td class="px-3 py-2 text-xs sm:text-sm">${accountTypeTag(account.type)}</td>
+    <td class="px-3 py-2 text-xs sm:text-sm hidden sm:table-cell">${statusTag(account.is_active)}</td>
+    <td class="px-3 py-2 text-xs sm:text-sm text-right whitespace-nowrap">${amountBox(account.balance)}</td>
+    <td class="px-3 py-2 text-xs sm:text-sm text-center w-full">
+      <div class="icon-actions justify-end">
 
         <button
           class="icon-btn edit"
@@ -133,9 +133,7 @@ function renderRow(account) {
           </svg>
           <span class="btn-text">Eliminar</span>
         </button>
-
         ${statusButton}
-
       </div>
     </td>
   </tr>

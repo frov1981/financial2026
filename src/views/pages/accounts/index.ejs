@@ -2,11 +2,11 @@
   window.USER_ID = "<%= USER_ID %>"
 </script>
 
-<div class="max-w-4xl mx-auto">
-  <h1 class="text-2xl font-semibold mb-4">Cuentas</h1>
+<div class="max-w-4xl mx-auto space-y-3 sm:space-y-4">
+  <h1 class="text-xl sm:text-2xl font-semibold">Cuentas</h1>
 
   <!-- Toolbar -->
-  <div class="mb-3 flex items-center gap-2 flex-nowrap">
+  <div class="flex items-center gap-1 sm:gap-2 flex-nowrap">
 
     <!-- Nuevo -->
     <button
@@ -68,7 +68,7 @@
         id="search-input"
         type="text"
         placeholder="Buscar cuentas..."
-        class="w-full border rounded-lg pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        class="w-full border rounded-lg pl-9 pr-9 py-1.5 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
       <!-- Buscar -->
       <button
@@ -87,14 +87,14 @@
 
   <!-- Tabla -->
   <div class="overflow-x-auto border rounded-lg shadow-md">
-    <table class="min-w-full divide-y divide-gray-200">
+    <table class="min-w-full table-fixed divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Nombre</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Tipo</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 hidden sm:table-cell">Estado</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Balance</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Acciones</th>
+          <th class="px-3 py-2 text-xs sm:text-sm text-left font-medium text-gray-700">Nombre</th>
+          <th class="px-3 py-2 text-xs sm:text-sm text-left font-medium text-gray-700">Tipo</th>
+          <th class="px-3 py-2 text-xs sm:text-sm text-left font-medium text-gray-700 hidden sm:table-cell">Estado</th>
+          <th class="px-3 py-2 text-xs sm:text-sm text-left font-medium text-gray-700">Balance</th>
+          <th class="px-3 py-2 text-xs sm:text-sm text-center font-medium text-gray-700">Acciones</th>
         </tr>
       </thead>
       <tbody id="accounts-table" class="bg-white divide-y divide-gray-200"></tbody>
