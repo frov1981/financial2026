@@ -3,10 +3,10 @@
 </script>
 
 <div class="max-w-4xl mx-auto">
-  <h1 class="text-2xl font-semibold mb-4">Cuentas</h1>
+  <h1 class="ui-title">Cuentas</h1>
 
   <!-- Toolbar -->
-  <div class="mb-3 flex items-center gap-2 flex-nowrap">
+  <div class="ui-toolbar">
 
     <!-- Nuevo -->
     <%- include('../../partials/btn-new', { href: '/accounts/insert' , title: 'Nueva cuenta' , text: 'Nuevo' }) %>
@@ -18,57 +18,49 @@
         <!-- Recalcular -->
         <%- include('../../partials/btn-recalculate') %>
 
-    <!-- Buscador -->
-    <div class="relative flex-1 min-w-0">
+          <!-- Buscador -->
+          <%- include('../../partials/search-box', { placeholder: 'Buscar cuentas...' }) %>
 
-      <!-- Limpiar -->
-      <button
-        id="clear-search-btn"
-        class="icon-btn absolute left-0 top-0 h-full text-gray-400 hover:text-red-500 hidden"
-        title="Limpiar">
+            <!-- Limpiar -->
+            <button id="clear-search-btn"
+              class="icon-btn absolute left-0 top-0 h-full text-gray-400 hover:text-red-500 hidden" title="Limpiar">
 
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-      <input
-        id="search-input"
-        type="text"
-        placeholder="Buscar cuentas..."
-        class="w-full border rounded-lg pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input id="search-input" type="text" placeholder="Buscar cuentas..."
+              class="w-full border rounded-lg pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
-      <!-- Buscar -->
-      <button
-        id="search-btn"
-        class="icon-btn absolute right-0 top-0 h-full text-gray-600 hover:text-blue-600"
-        title="Buscar">
+            <!-- Buscar -->
+            <button id="search-btn" class="icon-btn absolute right-0 top-0 h-full text-gray-600 hover:text-blue-600"
+              title="Buscar">
 
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
-        </svg>
-      </button>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
+              </svg>
+            </button>
 
-    </div>
   </div>
+</div>
 
-  <!-- Tabla -->
-  <div class="overflow-x-auto border rounded-lg shadow-md">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Nombre</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Tipo</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 hidden sm:table-cell">Estado</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Balance</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="accounts-table" class="bg-white divide-y divide-gray-200"></tbody>
-    </table>
-  </div>
+<!-- Tabla -->
+<div class="ui-table-wrapper">
+  <table class="ui-table">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Nombre</th>
+        <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Tipo</th>
+        <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 hidden sm:table-cell">Estado</th>
+        <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Balance</th>
+        <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="accounts-table" class="bg-white divide-y divide-gray-200"></tbody>
+  </table>
+</div>
 </div>
 
 <script src="/js/indexes/account-index.js"></script>
