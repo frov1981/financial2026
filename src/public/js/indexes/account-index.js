@@ -133,9 +133,7 @@ function renderRow(account) {
           </svg>
           <span class="ui-btn-text">Eliminar</span>
         </button>
-
         ${statusButton}
-
       </div>
     </td>
   </tr>
