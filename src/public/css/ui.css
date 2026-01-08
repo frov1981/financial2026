@@ -185,3 +185,51 @@
     display: table-cell;
   }
 }
+
+/* ===============================
+   UI TABLE – BASE
+   =============================== */
+
+.ui-th,
+.ui-td {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.ui-th {
+  font-weight: 500;
+  background: #f9fafb;
+}
+
+/* ===============================
+   Alineación semántica
+   =============================== */
+
+.col-left {
+  text-align: left;
+}
+
+.col-center {
+  text-align: center;
+}
+
+.col-right {
+  text-align: right;
+}
+
+/* ===============================
+   Responsive columns
+   =============================== */
+
+.col-sm {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .col-sm {
+    display: table-cell;
+  }
+}
+

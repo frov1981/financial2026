@@ -103,11 +103,11 @@ function renderRow(account) {
 
   return `
   <tr id="account-${account.id}" class="${rowClass}">
-    <td class="px-4 py-2">${account.name}</td>
-    <td class="px-4 py-2">${accountTypeTag(account.type)}</td>
-    <td class="px-4 py-2 ui-col-sm">${statusTag(account.is_active)}</td>
-    <td class="px-4 py-2">${amountBox(account.balance)}</td>
-    <td class="px-4 py-2">
+    <td class="ui-td col-left">${account.name}</td>
+    <td class="ui-td col-left">${accountTypeTag(account.type)}</td>
+    <td class="ui-td col-left col-sm">${statusTag(account.is_active)}</td>
+    <td class="ui-td col-right">${amountBox(account.balance)}</td>
+    <td class="ui-td col-center">
       <div class="icon-actions">
 
         <button

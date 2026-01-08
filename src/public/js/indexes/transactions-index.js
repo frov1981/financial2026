@@ -87,18 +87,18 @@ function renderRow(tx) {
   const timeStr =
     String(d.getHours()).padStart(2, '0') + ':' +
     String(d.getMinutes()).padStart(2, '0')
-
+ 
   return `
     <tr class="${rowClassByType(tx.type)}">
       <td class="px-4 py-2 text-center whitespace-nowrap leading-tight">
         <div>${dateStr}</div>
         <div class="text-xs font-semibold text-gray-600">${timeStr}</div>
       </td>
-      <td class="px-4 py-2 ui-col-sm">${transactionTypeTag(tx.type)}</td>
-      <td class="px-1 sm:px-2 py-2 text-right text-sm whitespace-nowrap">${amountBox(tx.amount)}</td>
-      <td class="px-4 py-2">${accountCell(tx)}</td>
-      <td class="px-4 py-2">${tx.category?.name || '-'}</td>
-      <td class="px-4 py-2">
+      <td class="ui-td col-left col-sm">${transactionTypeTag(tx.type)}</td>
+      <td class="ui-td col-right">${amountBox(tx.amount)}</td>
+      <td class="ui-td col-left">${accountCell(tx)}</td>
+      <td class="ui-td col-left">${tx.category?.name || '-'}</td>
+      <td class="ui-td col-center">
         <div class="icon-actions">
           <button
             class="icon-btn edit"

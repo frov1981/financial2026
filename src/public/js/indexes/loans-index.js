@@ -43,34 +43,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     filteredLoans.forEach(loan => {
-      const tr = document.createElement('tr')
+      const tr = document.createElement('tr') 
 
       tr.innerHTML = `
-        <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
+        <td class="ui-td col-left">
           ${loan.name}
         </td>
 
-        <td class="px-4 py-2 text-sm text-right whitespace-nowrap">
+        <td class="ui-td col-right">
           ${formatAmount(loan.total_amount)}
         </td>
 
-        <td class="px-4 py-2 text-sm text-right whitespace-nowrap font-semibold">
+        <td class="ui-td col-right">
           ${formatAmount(loan.balance)}
         </td>
 
-        <td class="px-4 py-2 text-sm text-right whitespace-nowrap ui-col-sm">
+        <td class="ui-td col-right col-sm">
           ${loan.interest_rate ? loan.interest_rate + '%' : '-'}
         </td>
 
-        <td class="px-4 py-2 text-sm hidden md:table-cell whitespace-nowrap">
+        <td class="ui-td col-left col-sm">
           ${formatDate(loan.start_date)}
         </td>
 
-        <td class="px-4 py-2 text-sm whitespace-nowrap">
+        <td class="ui-td col-left col-sm">
           ${renderStatus(loan.status)}
         </td>
 
-        <td class="px-4 py-2 whitespace-nowrap">
+        <td class="ui-td col-center">
           <div class="icon-actions">
             <button
               class="icon-btn edit"

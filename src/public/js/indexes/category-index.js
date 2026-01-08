@@ -61,10 +61,10 @@ function renderRow(category) {
 
   return `
     <tr id="category-${category.id}" class="${rowClass}">
-      <td class="px-4 py-2">${category.name}</td>
-      <td class="px-4 py-2">${categoryTypeTag(category.type)}</td>
-      <td class="px-4 py-2 ui-col-sm">${statusTag(category.is_active)}</td>
-      <td class="px-4 py-2">
+      <td class="ui-td col-left">${category.name}</td>
+      <td class="ui-td col-left">${categoryTypeTag(category.type)}</td>
+      <td class="ui-td col-left ui-col-sm">${statusTag(category.is_active)}</td>
+      <td class="ui-td col-center">
         <div class="icon-actions">
           <button
             class="icon-btn edit"
