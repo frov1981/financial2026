@@ -94,7 +94,7 @@ function renderRow(tx) {
         <div>${dateStr}</div>
         <div class="text-xs font-semibold text-gray-600">${timeStr}</div>
       </td>
-      <td class="px-4 py-2 hidden sm:table-cell">${transactionTypeTag(tx.type)}</td>
+      <td class="px-4 py-2 ui-col-sm">${transactionTypeTag(tx.type)}</td>
       <td class="px-1 sm:px-2 py-2 text-right text-sm whitespace-nowrap">${amountBox(tx.amount)}</td>
       <td class="px-4 py-2">${accountCell(tx)}</td>
       <td class="px-4 py-2">${tx.category?.name || '-'}</td>
@@ -108,7 +108,7 @@ function renderRow(tx) {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4Z" />
             </svg>
-            <span class="btn-text">Editar</span>
+            <span class="ui-btn-text">Editar</span>
           </button>
 
           <!-- Botón Eliminar -->
@@ -122,7 +122,7 @@ function renderRow(tx) {
               <path d="M10 11v6"/> 
               <path d="M14 11v6"/>
             </svg>
-            <span class="btn-text">Eliminar</span>
+            <span class="ui-btn-text">Eliminar</span>
           </button>
         </div>
       </td>

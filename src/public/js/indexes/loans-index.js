@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ${formatAmount(loan.balance)}
         </td>
 
-        <td class="px-4 py-2 text-sm text-right hidden sm:table-cell whitespace-nowrap">
+        <td class="px-4 py-2 text-sm text-right whitespace-nowrap ui-col-sm">
           ${loan.interest_rate ? loan.interest_rate + '%' : '-'}
         </td>
 
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
               title="Editar"
               onclick="location.href='/loans/update/${loan.id}'">
               ${iconEdit()}
-              <span class="btn-text">Editar</span>
+              <span class="ui-btn-text">Editar</span>
             </button>
 
             <button
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
               title="Ver pagos"
               onclick="location.href='/loans/${loan.id}'">
               ${iconList()}
-              <span class="btn-text">Pagos</span>
+              <span class="ui-btn-text">Pagos</span>
             </button>
           </div>
         </td>

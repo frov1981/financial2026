@@ -42,7 +42,7 @@ function renderRow(category) {
           <circle cx="12" cy="12" r="3"/>
           <line x1="2" y1="2" x2="22" y2="22"/>
         </svg>
-        <span class="btn-text">Desactivar</span>
+        <span class="ui-btn-text">Desactivar</span>
       </button>
     `
     : `
@@ -55,7 +55,7 @@ function renderRow(category) {
           <path d="M1 12s4-8 11-8 11 8 11 8"/>
           <circle cx="12" cy="12" r="3"/>
         </svg>
-        <span class="btn-text">Activar</span>
+        <span class="ui-btn-text">Activar</span>
       </button>
     `
 
@@ -63,7 +63,7 @@ function renderRow(category) {
     <tr id="category-${category.id}" class="${rowClass}">
       <td class="px-4 py-2">${category.name}</td>
       <td class="px-4 py-2">${categoryTypeTag(category.type)}</td>
-      <td class="px-4 py-2 hidden sm:table-cell">${statusTag(category.is_active)}</td>
+      <td class="px-4 py-2 ui-col-sm">${statusTag(category.is_active)}</td>
       <td class="px-4 py-2">
         <div class="icon-actions">
           <button
@@ -75,7 +75,7 @@ function renderRow(category) {
               <path d="M12 20h9"/>
               <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
             </svg> 
-            <span class="btn-text">Editar</span>
+            <span class="ui-btn-text">Editar</span>
           </button>
 
           <!-- Botón Eliminar -->
@@ -89,7 +89,7 @@ function renderRow(category) {
               <path d="M10 11v6"/>
               <path d="M14 11v6"/>
             </svg>
-            <span class="btn-text">Eliminar</span>
+            <span class="ui-btn-text">Eliminar</span>
           </button>
 
           <!-- Botón Activar / Inactivar -->

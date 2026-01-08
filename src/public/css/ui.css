@@ -1,0 +1,187 @@
+/* =========================================================
+   UI GLOBAL – MOBILE FIRST
+   Usar en todas las vistas
+   ========================================================= */
+
+/* ---------------------------
+   Layout
+   --------------------------- */
+
+.ui-container {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 0.1rem;
+}
+
+/* ---------------------------
+   Títulos
+   --------------------------- */
+
+.ui-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* ---------------------------
+   Toolbar
+   --------------------------- */
+
+.ui-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 639px) {
+  .ui-toolbar {
+    overflow-x: auto;
+  }
+}
+
+/* ---------------------------
+   Botones
+   --------------------------- */
+
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+  background: transparent;
+}
+
+.ui-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Variantes */
+
+.ui-btn-default {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.ui-btn-default:hover {
+  background: #d1d5db;
+}
+
+.ui-btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.ui-btn-primary:hover {
+  background: #1d4ed8;
+}
+
+/* Texto responsive */
+
+.ui-btn-text {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .ui-btn-text {
+    display: inline;
+  }
+}
+
+
+/* ---------------------------
+   Buscador
+   --------------------------- */
+
+.ui-search {
+  position: relative;
+  flex: 1;
+  min-width: 120px;
+}
+
+.ui-search input {
+  width: 100%;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+}
+
+.ui-search input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* ---------------------------
+   Botones del search (WRAPPERS)
+   --------------------------- */
+
+.ui-search-clear,
+.ui-search-search {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.ui-search-clear {
+  left: 0;
+}
+
+.ui-search-search {
+  right: 0;
+}
+
+
+/* ---------------------------
+   Tablas
+   --------------------------- */
+
+.ui-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ui-table th {
+  background: #f9fafb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  color: #374151;
+}
+
+.ui-table th,
+.ui-table td {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+/* Columnas responsive */
+
+.ui-col-sm {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .ui-col-sm {
+    display: table-cell;
+  }
+}

@@ -2,87 +2,31 @@
   window.USER_ID = "<%= USER_ID %>"
 </script>
 
-<div class="max-w-4xl mx-auto">
-  <h1 class="text-2xl font-semibold mb-4">Categorías</h1>
+<div class="ui-container">
+  <h1 class="ui-title">Categorías</h1>
 
+  <!-- Toolbar -->
+  <div class="ui-toolbar">
 
-<!-- Toolbar -->
-<div class="mb-3 flex items-center gap-2 flex-nowrap">
+    <!-- Botón Nuevo -->
+    <%- include('../../partials/btn-new', { href: '/categories/insert' , title: 'Nueva categoría' , text: 'Nuevo' }) %>
 
-  <!-- Botón Nuevo -->
-  <button
-    onclick="location.href='/categories/insert'"
-    class="icon-btn bg-gray-200 hover:bg-gray-300"
-    title="Nueva Categoría">
+      <!-- Filtrar -->
+      <%- include('../../partials/btn-filter', { onclick: 'openFilters()' , title: 'Filtrar categorías' , text: 'Filtrar'
+        }) %>
 
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M12 4v16m8-8H4" />
-    </svg>
-
-    <span class="btn-text">Nuevo</span>
-  </button>
-
-  <!-- Botón Filtrar -->
-  <button
-    class="icon-btn bg-gray-200 hover:bg-gray-300"
-    title="Filtrar">
-
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M3 4h18l-7 8v6l-4-2v-4L3 4z" />
-    </svg>
-
-    <span class="btn-text">Filtrar</span>
-  </button>
-
-  <!-- Buscador -->
-  <div class="relative flex-1 min-w-0">
-
-    <!-- Limpiar -->
-    <button
-      id="clear-search-btn"
-      class="icon-btn absolute left-0 top-0 h-full text-gray-400 hover:text-red-500 hidden"
-      title="Limpiar">
-
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-
-    <input
-      id="search-input"
-      type="text"
-      placeholder="Buscar..."
-      class="w-full border rounded-lg pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-
-    <!-- Buscar -->
-    <button
-      id="search-btn"
-      class="icon-btn absolute right-0 top-0 h-full text-gray-600 hover:text-blue-600"
-      title="Buscar">
-
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
-      </svg>
-    </button>
-
+        <!-- Buscador -->
+        <%- include('../../partials/search-box', { placeholder: 'Buscar categorías...' }) %>
   </div>
-</div>
-
-
-
 
   <!-- Tabla -->
-  <div class="overflow-x-auto border rounded-lg shadow-md">
-    <table class="min-w-full divide-y divide-gray-200">
+  <div class="ui-table-wrapper">
+    <table class="ui-table">
       <thead class="bg-gray-50">
         <tr>
           <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Nombre</th>
           <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Tipo</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 hidden sm:table-cell">Estado</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 ui-col-sm">Estado</th>
           <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Acciones</th>
         </tr>
       </thead>

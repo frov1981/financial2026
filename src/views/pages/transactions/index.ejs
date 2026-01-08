@@ -3,76 +3,36 @@
 </script>
 
 <div class="max-w-6xl mx-auto">
-  <h1 class="text-2xl font-semibold mb-4">Transacciones</h1>
+  <h1 class="ui-title">Transacciones</h1>
 
-  <div class="mb-3 flex items-center gap-2 flex-nowrap">
+  <div class="ui-toolbar">
 
-    <button
-      onclick="location.href='/transactions/insert'"
-      class="icon-btn bg-gray-200 hover:bg-gray-300"
-      title="Nueva Transacción">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M12 4v16m8-8H4" />
-      </svg>
-      <span class="btn-text">Nuevo</span>
-    </button>
+    <!-- Botón Nuevo -->
+    <%- include('../../partials/btn-new', { href: '/transactions/insert' , title: 'Nueva transacción' , text: 'Nuevo' })
+      %>
 
-    <button
-      class="icon-btn bg-gray-200 hover:bg-gray-300"
-      title="Filtrar">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M3 4h18l-7 8v6l-4-2v-4L3 4z" />
-      </svg>
-      <span class="btn-text">Filtrar</span>
-    </button>
+      <!-- Filtrar -->
+      <%- include('../../partials/btn-filter', { onclick: 'openFilters()' , title: 'Filtrar transacción' , text: 'Filtrar'
+        }) %>
 
-    <div class="relative flex-1 min-w-0">
-
-      <button
-        id="clear-search-btn"
-        class="icon-btn absolute left-0 top-0 h-full text-gray-400 hover:text-red-500 hidden"
-        title="Limpiar">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      <input
-        id="search-input"
-        type="text"
-        placeholder="Buscar..."
-        class="w-full border rounded-lg pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-
-      <button
-        id="search-btn"
-        class="icon-btn absolute right-0 top-0 h-full text-gray-600 hover:text-blue-600"
-        title="Buscar">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
-        </svg>
-      </button>
-
-    </div>
+        <!-- Buscador -->
+        <%- include('../../partials/search-box', { placeholder: 'Buscar transacciones...' }) %>
   </div>
 
   <div class="mb-2 flex justify-between items-center text-sm">
     <div id="page-info-top"></div>
     <div class="flex gap-2">
-      <button id="prev-page-top" class="icon-btn bg-gray-200 hover:bg-gray-300">Anterior</button>
-      <button id="next-page-top" class="icon-btn bg-gray-200 hover:bg-gray-300">Siguente</button>
+      <button id="prev-page-top" class="ui-btn ui-btn-default">Anterior</button>
+      <button id="next-page-top" class="ui-btn ui-btn-default">Siguente</button>
     </div>
   </div>
 
-  <div class="overflow-x-auto border rounded-lg shadow-md">
-    <table class="min-w-full divide-y divide-gray-200">
+  <div class="ui-table-wrapper">
+    <table class="ui-table">
       <thead class="bg-gray-50">
         <tr>
           <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Fecha</th>
-          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 hidden sm:table-cell">Tipo</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 ui-col-sm">Tipo</th>
           <th class="px-1 sm:px-2 py-2 text-right text-sm font-medium text-gray-700 whitespace-nowrap">Monto</th>
           <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Cuenta</th>
           <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Categoría</th>
@@ -86,8 +46,8 @@
   <div class="mt-3 flex justify-between items-center text-sm">
     <div id="page-info-bottom"></div>
     <div class="flex gap-2">
-      <button id="prev-page-bottom" class="icon-btn bg-gray-200 hover:bg-gray-300">Anterior</button>
-      <button id="next-page-bottom" class="icon-btn bg-gray-200 hover:bg-gray-300">Siguiente</button>
+      <button id="prev-page-bottom" class="ui-btn ui-btn-default">Anterior</button>
+      <button id="next-page-bottom" class="ui-btn ui-btn-default">Siguiente</button>
     </div>
   </div>
 </div>
