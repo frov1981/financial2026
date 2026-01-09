@@ -23,13 +23,17 @@ export const listLoansAPI: RequestHandler = async (req: Request, res: Response) 
 export const insertLoanFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const mode = 'insert'
+  const defaultDate = new Date()
 
   res.render(
     'layouts/main',
     {
       title: 'Insertar Préstamo',
       view: 'pages/loans/form',
-      loan: {},
+      loan: {
+        start_date: formatDateForInputLocal(defaultDate).slice(0, 16),
+        total_amount: '0.00',
+      },
       errors: {},
       mode,
     })
@@ -57,13 +61,43 @@ export const updateLoanFormPage: RequestHandler = async (req: Request, res: Resp
       view: 'pages/loans/form',
       loan: {
         id: tx.id,
-        loan_number: tx.loan_number,
         name: tx.name,
         total_amount: tx.total_amount,
         balance: tx.balance,
-        interest_rate: tx.interest_rate,
         start_date: formatDateForInputLocal(tx.start_date).slice(0, 16),
-        end_date: formatDateForInputLocal(tx.end_date).slice(0, 16),
+        status: tx.status,
+      },
+      errors: {},
+      mode
+    })
+}
+
+export const deleteLoanFormPage: RequestHandler = async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest
+  const txId = Number(req.params.id)
+  const mode = 'delete'
+
+  const repo = AppDataSource.getRepository(Loan)
+
+  const tx = await repo.findOne({
+    where: { id: txId, user: { id: authReq.user.id } },
+  })
+
+  if (!tx) {
+    return res.redirect('/loans')
+  }
+
+  res.render(
+    'layouts/main',
+    {
+      title: 'Eliminar Préstamo',
+      view: 'pages/loans/form',
+      loan: {
+        id: tx.id,
+        name: tx.name,
+        total_amount: tx.total_amount,
+        balance: tx.balance,
+        start_date: formatDateForInputLocal(tx.start_date).slice(0, 16),
         status: tx.status,
       },
       errors: {},

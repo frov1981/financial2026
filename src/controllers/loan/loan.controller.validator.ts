@@ -6,10 +6,7 @@ import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { mapValidationErrors } from '../../validators/mapValidationErrors.validator'
 
-export const validateLoan = async (
-  loan: Loan,
-  authReq: AuthRequest
-): Promise<Record<string, string> | null> => {
+export const validateLoan = async (loan: Loan, authReq: AuthRequest): Promise<Record<string, string> | null> => {
 
   const userId = authReq.user.id
   const errors = await validate(loan)
@@ -30,6 +27,10 @@ export const validateLoan = async (
     if (existingByName && existingByName.id !== loan.id) {
       fieldErrors.name = 'Ya existe un préstamo con este nombre'
     }
+  }
+
+  if (loan.total_amount !== undefined && Number(loan.total_amount) <= 0) {
+    fieldErrors.total_amount = 'El monto total del préstamo no puede ser negativo o cero'
   }
 
   // Validaciones solo aplican en edición
@@ -95,3 +96,28 @@ export const validateLoan = async (
 
   return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
+
+export const validateDeleteLoan = async (
+  loan: Loan,
+  authReq: AuthRequest
+): Promise<Record<string, string> | null> => {
+
+  const userId = authReq.user.id
+  const fieldErrors: Record<string, string> = {}
+
+  const loanPaymentRepo = AppDataSource.getRepository(LoanPayment)
+
+  const paymentsCount = await loanPaymentRepo.count({
+    where: { loan: { id: loan.id } }
+  })
+
+  if (paymentsCount > 0) {
+    fieldErrors.general = 'No se puede eliminar un préstamo con pagos registrados'
+  }
+
+  logger.warn('Loan delete validation', { userId, fieldErrors })
+
+  return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+}
+
+

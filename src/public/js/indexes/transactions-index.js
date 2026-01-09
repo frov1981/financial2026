@@ -28,11 +28,7 @@ function accountCell(tx) {
   if (tx.type === 'income') {
     return `
       <div class="flex items-center gap-1 whitespace-nowrap leading-tight">
-        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2"
-          viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M5 12h14M12 5l7 7-7 7"/>
-        </svg>
+        ${iconArrowRight({ size: 4, color: '#16a34a' })}
         <span>${tx.account?.name || '-'}</span>
       </div>
     `
@@ -41,11 +37,7 @@ function accountCell(tx) {
   if (tx.type === 'expense') {
     return `
       <div class="flex items-center gap-1 whitespace-nowrap leading-tight">
-        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2"
-          viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
+        ${iconArrowLeft({ size: 4, color: '#dc2626' })}
         <span>${tx.account?.name || '-'}</span>
       </div>
     `
@@ -55,20 +47,12 @@ function accountCell(tx) {
     return `
       <div class="flex flex-col gap-0.5 leading-tight whitespace-nowrap">
         <div class="flex items-center gap-1">
-          <svg class="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" stroke-width="2"
-            viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
+          ${iconArrowLeft({ size: 3.5, color: '#dc2626' })}
           <span>${tx.account?.name || '-'}</span>
         </div>
 
         <div class="flex items-center gap-1">
-          <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" stroke-width="2"
-            viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
+          ${iconArrowRight({ size: 3.5, color: '#16a34a' })}
           <span>${tx.to_account?.name || '-'}</span>
         </div>
       </div>
@@ -104,10 +88,7 @@ function renderRow(tx) {
             class="icon-btn edit"
             onclick="location.href='/transactions/update/${tx.id}'"
             title="Editar">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4Z" />
-            </svg>
+            ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
 
@@ -116,12 +97,7 @@ function renderRow(tx) {
             class="icon-btn delete"
             title="Eliminar"
             onclick="window.location.href='/transactions/delete/${tx.id}'">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6 17.5 20H6.5L5 6"/>
-              <path d="M10 11v6"/> 
-              <path d="M14 11v6"/>
-            </svg>
+            ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
         </div>

@@ -32,7 +32,7 @@ export class Loan {
   @Column({ type: 'timestamp' })
   start_date!: Date
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamp', nullable: true })
   end_date!: Date
 
   @Column({ default: 'active' })

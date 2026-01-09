@@ -75,7 +75,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     if (req.body.name) { existing.name = req.body.name }
 
     logger.info(`Before deleting account`, { userId: authReq.user.id, mode, existing })
-
+ 
     const errors = await validateDeleteAccount(existing, authReq)
 
     if (errors) {

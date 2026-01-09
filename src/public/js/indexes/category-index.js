@@ -35,13 +35,8 @@ function renderRow(category) {
       <button
         class="icon-btn deactivate"
         title="Desactivar"
-        onclick="updateCategoryStatus(${category.id})"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M1 12s4-8 11-8 11 8 11 8"/>
-          <circle cx="12" cy="12" r="3"/>
-          <line x1="2" y1="2" x2="22" y2="22"/>
-        </svg>
+        onclick="updateCategoryStatus(${category.id})">
+        ${iconViewOff()}
         <span class="ui-btn-text">Desactivar</span>
       </button>
     `
@@ -49,12 +44,8 @@ function renderRow(category) {
       <button
         class="icon-btn activate"
         title="Activar"
-        onclick="updateCategoryStatus(${category.id})"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M1 12s4-8 11-8 11 8 11 8"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
+        onclick="updateCategoryStatus(${category.id})">
+        ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
     `
@@ -69,12 +60,8 @@ function renderRow(category) {
           <button
             class="icon-btn edit"
             title="Editar"
-            onclick="window.location.href='/categories/update/${category.id}'"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 20h9"/>
-              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-            </svg> 
+            onclick="window.location.href='/categories/update/${category.id}'">
+            ${iconEdit()} 
             <span class="ui-btn-text">Editar</span>
           </button>
 
@@ -83,12 +70,7 @@ function renderRow(category) {
             class="icon-btn delete"
             title="Eliminar"
             onclick="window.location.href='/categories/delete/${category.id}'">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6 17.5 20H6.5L5 6"/>
-              <path d="M10 11v6"/>
-              <path d="M14 11v6"/>
-            </svg>
+            ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
 

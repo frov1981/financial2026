@@ -133,8 +133,6 @@ export const updateTransactionFormPage: RequestHandler = async (req: Request, re
 
 }
 
-
-
 export const deleteTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
@@ -183,7 +181,6 @@ export const deleteTransactionFormPage: RequestHandler = async (req: Request, re
       errors: {},
       mode
     })
-
 }
 
 export const transactionsPage: RequestHandler = (req: Request, res: Response) => {
