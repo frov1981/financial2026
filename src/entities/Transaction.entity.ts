@@ -1,26 +1,12 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  CreateDateColumn,
-  JoinColumn
-} from 'typeorm'
-import {
-  IsIn,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsPositive,
-  MaxLength,
-  Validate,
-  ValidateIf
-} from 'class-validator'
 import { Transform } from 'class-transformer'
-import { User } from './User.entity'
+import { IsIn, IsNotEmpty, IsNumber, IsPositive, MaxLength, Validate, ValidateIf } from 'class-validator'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { DecimalTransformer } from '../config/decimal.transformer'
+import { NotSameAccount } from '../validators/notSameAccount.validator'
 import { Account } from './Account.entity'
 import { Category } from './Category.entity'
-import { NotSameAccount } from '../validators/notSameAccount.validator'
+import { Loan } from './Loan.entity'
+import { User } from './User.entity'
 
 @Entity('transactions')
 export class Transaction {
@@ -29,7 +15,7 @@ export class Transaction {
   id!: number
 
   @ManyToOne(() => User, user => user.transactions)
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_transactions_user' })
   user!: User
 
   @Column({ type: 'varchar' })
@@ -39,7 +25,7 @@ export class Transaction {
   type!: 'income' | 'expense' | 'transfer'
 
   @ManyToOne(() => Account)
-  @JoinColumn({ name: 'account_id' })
+  @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_transactions_account' })
   @IsNotEmpty({ message: 'La cuenta es obligatoria' })
   account!: Account
 
@@ -55,7 +41,7 @@ export class Transaction {
   @IsNotEmpty({ message: 'La categoría es obligatoria' })
   category!: Category | null
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
   @IsNumber({}, { message: 'El monto debe ser numérico' })
   @IsPositive({ message: 'El monto debe ser mayor a cero' })
   amount!: number
@@ -68,6 +54,9 @@ export class Transaction {
   @IsNotEmpty({ message: 'La descripción es obligatoria' })
   @MaxLength(200, { message: 'Máximo 200 caracteres' })
   description!: string
+
+  @OneToOne(() => Loan, loan => loan.transaction)
+  loan!: Loan
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date

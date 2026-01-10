@@ -1,0 +1,42 @@
+<script>
+  window.USER_ID = "<%= USER_ID %>"
+  window.LOAN_ID = "<%= loan.id %>"
+</script>
+
+<div class="max-w-6xl mx-auto">
+  <h1 class="ui-title">Pagos – <%= loan.name %>
+  </h1>
+
+  <div class="ui-toolbar">
+
+    <!-- Volver -->
+    <%- include('../../partials/btn-back', { href: '/loans' , title: 'Volver a préstamos' , text: 'Volver' }) %>
+
+      <!-- Nuevo pago -->
+      <%- include('../../partials/btn-new', { href: `/payments/insert/${loan.id}`, title: 'Nuevo Pago' , text: 'Nuevo'
+        }) %>
+
+        <!-- Buscador -->
+        <%- include('../../partials/search-box', { placeholder: 'Buscar pagos...' }) %>
+
+  </div>
+
+  <div class="ui-table-wrapper">
+    <table class="ui-table">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="ui-th col-left">Fecha</th>
+          <th class="ui-th col-left">Monto</th>
+          <th class="ui-th col-left">Interés</th>
+          <th class="ui-th col-left col-sm">Cuenta</th>
+          <th class="ui-th col-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="payments-table" class="bg-white divide-y divide-gray-200">
+      </tbody>
+
+    </table>
+  </div>
+</div>
+
+<script src="/js/indexes/payments-index.js"></script>

@@ -1,5 +1,7 @@
 import { IsBoolean, IsIn, IsNotEmpty } from 'class-validator'
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { DecimalTransformer } from '../config/decimal.transformer'
+import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
@@ -11,7 +13,7 @@ export class Account {
   id!: number
 
   @ManyToOne(() => User, user => user.accounts)
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_accounts_user' })
   user!: User
 
   @Column()
@@ -22,7 +24,7 @@ export class Account {
   @IsIn(['cash', 'bank', 'card'], { message: 'El tipo debe ser cash, bank o card' })
   type!: 'cash' | 'bank' | 'card'
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
   balance!: number
 
   @Column({ default: true })
@@ -34,4 +36,7 @@ export class Account {
 
   @OneToMany(() => LoanPayment, payment => payment.account)
   loanPayments!: LoanPayment[]
+
+  @OneToMany(() => Loan, loan => loan.disbursement_account)
+  loans!: Loan[]
 }
