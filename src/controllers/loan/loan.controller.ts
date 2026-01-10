@@ -4,6 +4,7 @@ import { Loan } from "../../entities/Loan.entity"
 import { AppDataSource } from "../../config/datasource"
 import { logger } from "../../utils/logger.util"
 import { formatDateForInputLocal } from '../../utils/date.util'
+import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
 
 export const listLoansAPI: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
@@ -11,8 +12,9 @@ export const listLoansAPI: RequestHandler = async (req: Request, res: Response) 
   try {
     const loans = await AppDataSource.getRepository(Loan).find({
       where: { user: { id: authReq.user.id } },
+      relations: ['disbursement_account', 'transaction'],
       order: { name: 'ASC' }
-    })
+    }) 
     res.json(loans)
   } catch (err) {
     logger.error('Error al listar préstamos:', err)
@@ -24,6 +26,7 @@ export const insertLoanFormPage: RequestHandler = async (req: Request, res: Resp
   const authReq = req as AuthRequest
   const mode = 'insert'
   const defaultDate = new Date()
+  const disbursement_accounts = await getActiveAccountsByUser(authReq)
 
   res.render(
     'layouts/main',
@@ -33,8 +36,11 @@ export const insertLoanFormPage: RequestHandler = async (req: Request, res: Resp
       loan: {
         start_date: formatDateForInputLocal(defaultDate).slice(0, 16),
         total_amount: '0.00',
+        disbursement_account_id: '',
+        disbursement_account_name: '',
       },
       errors: {},
+      disbursement_accounts,
       mode,
     })
 }
@@ -45,9 +51,11 @@ export const updateLoanFormPage: RequestHandler = async (req: Request, res: Resp
   const mode = 'update'
 
   const repo = AppDataSource.getRepository(Loan)
+  const disbursement_accounts = await getActiveAccountsByUser(authReq)
 
   const tx = await repo.findOne({
     where: { id: txId, user: { id: authReq.user.id } },
+    relations: ['disbursement_account']
   })
 
   if (!tx) {
@@ -65,9 +73,13 @@ export const updateLoanFormPage: RequestHandler = async (req: Request, res: Resp
         total_amount: tx.total_amount,
         balance: tx.balance,
         start_date: formatDateForInputLocal(tx.start_date).slice(0, 16),
+        disbursement_account_id: tx.disbursement_account?.id || '',
+        disbursement_account_name: tx.disbursement_account?.name || '',
+        transaction_id: tx.transaction?.id || '',
         status: tx.status,
       },
       errors: {},
+      disbursement_accounts,
       mode
     })
 }
@@ -78,9 +90,11 @@ export const deleteLoanFormPage: RequestHandler = async (req: Request, res: Resp
   const mode = 'delete'
 
   const repo = AppDataSource.getRepository(Loan)
+  const disbursement_accounts = await getActiveAccountsByUser(authReq)
 
   const tx = await repo.findOne({
     where: { id: txId, user: { id: authReq.user.id } },
+    relations: ['disbursement_account']
   })
 
   if (!tx) {
@@ -98,9 +112,12 @@ export const deleteLoanFormPage: RequestHandler = async (req: Request, res: Resp
         total_amount: tx.total_amount,
         balance: tx.balance,
         start_date: formatDateForInputLocal(tx.start_date).slice(0, 16),
+        disbursement_account_id: tx.disbursement_account?.id || '',
+        disbursement_account_name: tx.disbursement_account?.name || '',
         status: tx.status,
       },
       errors: {},
+      disbursement_accounts,
       mode
     })
 }
@@ -113,6 +130,7 @@ export const loansPage: RequestHandler = (req: Request, res: Response) => {
     {
       title: 'Préstamos',
       view: 'pages/loans/index',
+      disbursement_accounts: [],
       USER_ID: authReq.user?.id || 'guest'
     })
 }

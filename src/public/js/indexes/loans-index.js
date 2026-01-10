@@ -43,6 +43,7 @@ const renderStatus = status =>
    Render
 ============================ */
 function renderRow(loan) {
+  console.log(loan)
   const rowClass = loan.status === 'active' ? '' : 'bg-red-50'
   return `    
     <tr class="${rowClass}">
@@ -52,6 +53,7 @@ function renderRow(loan) {
       <td class="ui-td col-right col-sm">${loan.interest_rate ? loan.interest_rate + '%' : '-'}</td>
       <td class="ui-td col-left col-sm">${formatDate(loan.start_date)}</td>
       <td class="ui-td col-left col-sm">${renderStatus(loan.status)}</td>
+      <td class="ui-td col-left col-sm">${loan.disbursement_account.name}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button
@@ -87,7 +89,7 @@ function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="7" class="ui-td col-center text-gray-500">
+        <td colspan="8" class="ui-td col-center text-gray-500">
           No se encontraron préstamos
         </td>
       </tr>

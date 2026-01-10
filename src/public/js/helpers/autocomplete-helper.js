@@ -129,7 +129,7 @@ function initAutocomplete(container) {
       balanceDisplay.classList.toggle('amount-negative', bal <= 0)
     }
 
-    if (fieldName === 'account' || fieldName === 'to_account') {
+    if (fieldName === 'account' || fieldName === 'to_account' || fieldName === 'disbursement_account') {
       document.dispatchEvent(
         new CustomEvent('account:balance', {
           detail: { balance: bal, field: fieldName }

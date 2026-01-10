@@ -84,8 +84,20 @@ function renderRow(category) {
 }
 
 function renderTable(data) {
+  if (!data.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="ui-td col-center text-gray-500">
+          No se encontraron categorías
+        </td>
+      </tr>
+    `
+    return
+  }
+
   tableBody.innerHTML = data.map(renderRow).join('')
 }
+
 
 /* ============================
    Data
@@ -112,9 +124,9 @@ function filterCategories() {
     !term
       ? allCategories
       : allCategories.filter(c =>
-          c.name.toLowerCase().includes(term) ||
-          c.type.toLowerCase().includes(term)
-        )
+        c.name.toLowerCase().includes(term) ||
+        c.type.toLowerCase().includes(term)
+      )
   )
 }
 

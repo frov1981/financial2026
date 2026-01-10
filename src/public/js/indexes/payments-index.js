@@ -84,7 +84,7 @@ function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="4" class="ui-td col-center text-gray-500">
+        <td colspan="8" class="ui-td col-center text-gray-500">
           No se encontraron pagos
         </td>
       </tr>

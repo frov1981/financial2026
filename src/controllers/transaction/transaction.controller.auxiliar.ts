@@ -3,7 +3,7 @@ import { Account } from '../../entities/Account.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/AuthRequest'
-import { MoreThan } from 'typeorm'
+import { MoreThanOrEqual  } from 'typeorm'
 
 export const getActiveAccountsByUser = async (authReq: AuthRequest): Promise<Account[]> => {
   const repo = AppDataSource.getRepository(Account)
@@ -11,7 +11,7 @@ export const getActiveAccountsByUser = async (authReq: AuthRequest): Promise<Acc
     where: {
       user: { id: authReq.user.id },
       is_active: true,
-      balance: MoreThan(0)
+      balance: MoreThanOrEqual (0)
     },
     order: { name: 'ASC' }
   })

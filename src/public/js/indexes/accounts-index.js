@@ -91,7 +91,7 @@ function renderRow(account) {
         <span class="ui-btn-text">Activar</span>
       </button>
     `
- 
+
   return `
   <tr id="account-${account.id}" class="${rowClass}">
     <td class="ui-td col-left">${account.name}</td>
@@ -125,8 +125,20 @@ function renderRow(account) {
 }
 
 function renderTable(data) {
+  if (!data.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="ui-td col-center text-gray-500">
+          No se encontraron cuentas
+        </td>
+      </tr>
+    `
+    return
+  }
+
   tableBody.innerHTML = data.map(renderRow).join('')
 }
+
 
 /* ============================
    Data

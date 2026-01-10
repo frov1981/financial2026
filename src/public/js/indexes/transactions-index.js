@@ -71,7 +71,7 @@ function renderRow(tx) {
   const timeStr =
     String(d.getHours()).padStart(2, '0') + ':' +
     String(d.getMinutes()).padStart(2, '0')
- 
+
   return `
     <tr class="${rowClassByType(tx.type)}">
       <td class="px-4 py-2 text-center whitespace-nowrap leading-tight">
@@ -122,8 +122,20 @@ async function loadTransactions(page = 1) {
   totalPages = Math.ceil(data.total / PAGE_SIZE)
   currentPage = page
 
-  document.getElementById('transactions-table').innerHTML =
-    data.items.map(renderRow).join('')
+  const tableBody = document.getElementById('transactions-table')
+
+  if (!data.items.length) {
+    tableBody.innerHTML = `
+    <tr>
+      <td colspan="6" class="ui-td col-center text-gray-500">
+        No se encontraron transacciones
+      </td>
+    </tr>
+  `
+  } else {
+    tableBody.innerHTML = data.items.map(renderRow).join('')
+  }
+
 
   saveFilters(FILTER_KEY, { page, search: currentSearch })
   updatePaginationInfo()

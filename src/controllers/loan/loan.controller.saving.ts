@@ -6,35 +6,38 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteLoan, validateLoan } from './loan.controller.validator'
+import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
 
 export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const loanId = req.body.id ? Number(req.body.id) : undefined
   const action = req.body.action || 'save'
 
+  const disbursement_accounts = await getActiveAccountsByUser(authReq)
   const queryRunner = AppDataSource.createQueryRunner()
+
   await queryRunner.connect()
   await queryRunner.startTransaction()
 
   try {
     const loanRepo = queryRunner.manager.getRepository(Loan)
-    const accountRepo = queryRunner.manager.getRepository(Account)
-    const transactionRepo = queryRunner.manager.getRepository(Transaction)
 
     let loan: Loan
-    let oldLoan: Loan | null = null
     let mode: 'insert' | 'update'
 
     // =========================
-    // SAVE
+    // SAVE (INSERT / UPDATE)
     // =========================
     if (action === 'save') {
       if (loanId) {
+        // =========================
+        // UPDATE
+        // =========================
         mode = 'update'
 
-        oldLoan = await loanRepo.findOne({
+        const oldLoan = await loanRepo.findOne({
           where: { id: loanId, user: { id: authReq.user.id } },
-          relations: { disbursement_account: true }
+          relations: { disbursement_account: true, transaction: true }
         })
 
         if (!oldLoan) {
@@ -42,30 +45,105 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
           return res.redirect('/loans')
         }
 
+        // ===== Valores previos =====
+        const previousAmount = oldLoan.total_amount
+        const previousBalance = oldLoan.balance
+        const previousAccountId = oldLoan.disbursement_account.id
+
+        // ===== Cuentas =====
+        const oldAccount = await queryRunner.manager.findOneByOrFail(Account, {
+          id: previousAccountId,
+          user: { id: authReq.user.id }
+        })
+
+        const newAccount = await queryRunner.manager.findOneByOrFail(Account, {
+          id: Number(req.body.disbursement_account_id),
+          user: { id: authReq.user.id }
+        })
+
+        // =========================
+        // Actualizar préstamo
+        // =========================
         loan = oldLoan
         loan.name = req.body.name
         loan.total_amount = Number(req.body.total_amount)
         loan.start_date = new Date(req.body.start_date)
         loan.status = req.body.status
-        loan.disbursement_account = { id: Number(req.body.disbursement_account_id) } as any
+        if (req.body.end_date) loan.end_date = new Date(req.body.end_date)
 
-        if (req.body.end_date) {
-          loan.end_date = new Date(req.body.end_date)
+        // =========================
+        // Recalcular balance del préstamo
+        // =========================
+        const paidAmount = previousAmount - previousBalance
+        loan.balance = loan.total_amount - paidAmount
+
+        // =========================
+        // Ajuste de balances de cuentas
+        // =========================
+        if (oldAccount.id === newAccount.id) {
+          const delta = loan.total_amount - previousAmount
+          oldAccount.balance += delta
+          await queryRunner.manager.save(oldAccount)
+        } else {
+          oldAccount.balance -= previousAmount
+          newAccount.balance += loan.total_amount
+          await queryRunner.manager.save([oldAccount, newAccount])
         }
+
+        loan.disbursement_account = newAccount
+
+        // =========================
+        // Actualizar transacción
+        // =========================
+        if (loan.transaction?.id) {
+          loan.transaction.amount = loan.total_amount
+          loan.transaction.date = loan.start_date
+          loan.transaction.description = loan.name
+          loan.transaction.account = newAccount
+          await queryRunner.manager.save(loan.transaction)
+        }
+
       } else {
+        // =========================
+        // INSERT
+        // =========================
         mode = 'insert'
 
-        loan = loanRepo.create({
-          user: { id: authReq.user.id } as any,
+        const account = await queryRunner.manager.findOneByOrFail(Account, {
+          id: Number(req.body.disbursement_account_id),
+          user: { id: authReq.user.id }
+        })
+
+        const amount = Number(req.body.total_amount)
+        account.balance += amount
+        await queryRunner.manager.save(account)
+
+        loan = queryRunner.manager.create(Loan, {
+          user: { id: authReq.user.id },
           name: req.body.name,
-          total_amount: Number(req.body.total_amount),
-          balance: Number(req.body.total_amount),
+          total_amount: amount,
+          balance: amount,
           start_date: new Date(req.body.start_date),
           status: 'active',
-          disbursement_account: { id: Number(req.body.disbursement_account_id) } as any
+          disbursement_account: account
         })
+
+        const trx = queryRunner.manager.create(Transaction, {
+          user: { id: authReq.user.id },
+          type: 'income',
+          amount,
+          account,
+          date: loan.start_date,
+          description: loan.name
+        })
+
+        await queryRunner.manager.save(trx)
+        loan.transaction = trx
       }
 
+      // =========================
+      // Validación
+      // =========================
       const errors = await validateLoan(loan, authReq)
       if (errors) {
         await queryRunner.rollbackTransaction()
@@ -73,41 +151,13 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
           title: mode === 'insert' ? 'Insertar Préstamo' : 'Editar Préstamo',
           view: 'pages/loans/form',
           loan: { ...req.body },
+          disbursement_accounts,
           errors,
           mode
         })
       }
 
-      // =========================
-      // Ajuste de cuenta (delta)
-      // =========================
-      const account = await accountRepo.findOneByOrFail({
-        id: loan.disbursement_account.id
-      })
-
-      let delta = loan.total_amount
-      if (mode === 'update') {
-        delta = loan.total_amount - oldLoan!.total_amount
-      }
-
-      account.balance += delta
-      await accountRepo.save(account)
-
-      // =========================
-      // Transacción financiera
-      // =========================
-      const trx = transactionRepo.create({
-        user: { id: authReq.user.id } as any,
-        type: 'income',
-        amount: loan.total_amount,
-        account,
-        date: loan.start_date,
-        description: loan.name
-      })
-
-      await transactionRepo.save(trx)
-      await loanRepo.save(loan)
-
+      await queryRunner.manager.save(loan)
       await queryRunner.commitTransaction()
       return res.redirect('/loans')
     }
@@ -118,7 +168,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (action === 'delete') {
       const existing = await loanRepo.findOne({
         where: { id: loanId, user: { id: authReq.user.id } },
-        relations: { disbursement_account: true }
+        relations: { disbursement_account: true, transaction: true }
       })
 
       if (!existing) {
@@ -133,22 +183,25 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
           title: 'Eliminar Préstamo',
           view: 'pages/loans/form',
           loan: { ...req.body },
+          disbursement_accounts,
           errors,
           mode: 'delete'
         })
       }
 
-      // =========================
-      // Reverso de cuenta
-      // =========================
-      const account = await accountRepo.findOneByOrFail({
-        id: existing.disbursement_account.id
+      const account = await queryRunner.manager.findOneByOrFail(Account, {
+        id: existing.disbursement_account.id,
+        user: { id: authReq.user.id }
       })
 
       account.balance -= existing.total_amount
-      await accountRepo.save(account)
+      await queryRunner.manager.save(account)
+      
+      await queryRunner.manager.delete(Loan, existing.id)
 
-      await loanRepo.delete(existing.id)
+      if (existing.transaction?.id) {
+        await queryRunner.manager.delete(Transaction, existing.transaction.id)
+      }
 
       await queryRunner.commitTransaction()
       return res.redirect('/loans')
