@@ -6,8 +6,8 @@ import { mapValidationErrors } from '../../validators/mapValidationErrors.valida
 import { logger } from '../../utils/logger.util'
 
 export const validateSavePayment = async (
-    payment: LoanPayment,
     authReq: AuthRequest,
+    payment: LoanPayment,
     oldPayment: LoanPayment | null
 ): Promise<Record<string, string> | null> => {
 
@@ -57,8 +57,8 @@ export const validateSavePayment = async (
 }
 
 export const validateDeletePayment = async (
+    authReq: AuthRequest,
     payment: LoanPayment,
-    authReq: AuthRequest
 ): Promise<Record<string, string> | null> => {
 
     const userId = authReq.user.id

@@ -117,7 +117,7 @@ export const deletePaymentFormPage: RequestHandler = async (req: Request, res: R
                 account_id: tx.account ? tx.account.id : '',
                 account_name: tx.account ? tx.account.name : '',
             },
-            loan_id: tx.loan.id,
+            loan_id: tx.loan.id, 
             errors: {},
             accounts,
             mode

@@ -2,7 +2,7 @@ import { IsNull } from 'typeorm'
 import { AppDataSource } from '../config/datasource'
 import { AuthCode } from '../entities/AuthCode.entity'
 import { User } from '../entities/User.entity'
-import { generateNumericCode, hashCode } from '../utils/authCode.util'
+import { generateNumericCode, hashCode } from '../utils/auth.code.util'
 import { logger } from '../utils/logger.util'
 import { send2FACodeMail } from './mail.service'
 
