@@ -12,6 +12,7 @@ import { validateDeletePayment, validateSavePayment } from './payment.controller
 
 export const savePayment: RequestHandler = async (req: Request, res: Response) => {
     const authReq = req as AuthRequest
+    // Como viene desde un POST se busca en el body
     const loanId = getNumberFromBody(req, 'loan_id')
     const paymentId = getNumberFromBody(req, 'id')
     const action = getStringFromBody(req, 'action') || 'save'
