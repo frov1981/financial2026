@@ -37,7 +37,7 @@
         data-autocomplete-input
         autocomplete="off"
         value="<%= payment?.account_name || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= mode !== 'insert' ? 'readonly' : '' %>
         >
 
         <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
@@ -55,7 +55,7 @@
         value="<%= payment?.account_id || '' %>"
     >
 
-    <% if (mode !== 'delete') { %>
+    <% if (mode === 'insert') { %>
     <div class="relative">
         <ul
         class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"

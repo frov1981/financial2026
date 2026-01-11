@@ -67,6 +67,9 @@ export const validateDeletePayment = async (
     const now = new Date()
     const paymentDate = new Date(payment.payment_date)
 
+    // =========================
+    // SAME MONTH VALIDATION
+    // =========================
     const sameMonth =
         paymentDate.getFullYear() === now.getFullYear() &&
         paymentDate.getMonth() === now.getMonth()
@@ -75,7 +78,32 @@ export const validateDeletePayment = async (
         fieldErrors.general = 'Solo se pueden eliminar pagos del mes en curso'
     }
 
-    logger.warn('Payment delete validation', { userId, fieldErrors })
+    // =========================
+    // LAST PAYMENT VALIDATION
+    // =========================
+    const paymentRepo = AppDataSource.getRepository(LoanPayment)
+
+    const lastPayment = await paymentRepo.findOne({
+        where: {
+            loan: { id: payment.loan.id }
+        },
+        order: {
+            payment_date: 'DESC',
+            id: 'DESC'
+        }
+    })
+
+    if (!lastPayment || lastPayment.id !== payment.id) {
+        fieldErrors.general =
+            'Solo se puede eliminar el último pago registrado del préstamo'
+    }
+
+    logger.warn('Payment delete validation', {
+        userId,
+        paymentId: payment.id,
+        fieldErrors
+    })
 
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
+

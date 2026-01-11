@@ -107,3 +107,19 @@ export const getIdFromParams = (req: Request): number | undefined => {
     const parsed = Number(id)
     return Number.isNaN(parsed) ? undefined : parsed
 }
+
+/**
+ * =========================
+ * Number from params
+ * =========================
+ */
+export const getNumberFromParams = (
+    req: Request,
+    paramName: string
+): number | undefined => {
+    const value = req.params[paramName]
+    if (value === undefined) return undefined
+
+    const parsed = Number(value)
+    return Number.isNaN(parsed) ? undefined : parsed
+}

@@ -6,7 +6,7 @@ import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
-import { getDateTimeFromBody, getIdFromParams, getNumberFromBody, getStringFromBody } from '../../utils/req.params.util'
+import { getDateTimeFromBody, getNumberFromBody, getStringFromBody } from '../../utils/req.params.util'
 import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
 import { validateDeletePayment, validateSavePayment } from './payment.controller.validator'
 
@@ -15,6 +15,15 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     const loanId = getNumberFromBody(req, 'loan_id')
     const paymentId = getNumberFromBody(req, 'id')
     const action = getStringFromBody(req, 'action') || 'save'
+
+
+    const accounts = await getActiveAccountsByUser(authReq)
+    const formState = {
+        payment: { ...req.body },
+        loan_id: loanId,
+        accounts,
+        mode: action === 'delete' ? 'delete' : paymentId ? 'update' : 'insert'
+    }
 
     const queryRunner = AppDataSource.createQueryRunner()
     await queryRunner.connect()
@@ -26,7 +35,6 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         const transactionRepo = queryRunner.manager.getRepository(Transaction)
         const accountRepo = queryRunner.manager.getRepository(Account)
 
-        const accounts = await getActiveAccountsByUser(authReq)
         const loan = await loanRepo.findOneByOrFail({ id: loanId })
         let payment: LoanPayment
         let oldPayment: LoanPayment | null = null
@@ -83,13 +91,8 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
                 return res.render('layouts/main', {
                     title: mode === 'insert' ? 'Insertar Pago' : 'Editar Pago',
                     view: 'pages/payments/form',
-                    payment: {
-                        ...req.body
-                    },
-                    loan_id: loanId,
-                    accounts,
+                    ...formState,
                     errors,
-                    mode
                 })
             }
 
@@ -150,7 +153,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         if (action === 'delete') {
             const payment = await paymentRepo.findOne({
                 where: { id: paymentId },
-                relations: { transaction: true, account: true }
+                relations: { transaction: true, account: true, loan: true }
             })
             if (!payment) throw new Error('Pago no encontrado')
 
@@ -162,13 +165,8 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
                 return res.render('layouts/main', {
                     title: 'Eliminar Pago',
                     view: 'pages/payments/form',
-                    payment: {
-                        ...req.body
-                    },
-                    loan_id: loanId,
-                    accounts,
+                    ...formState,
                     errors,
-                    mode
                 })
             }
 
@@ -191,7 +189,13 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     } catch (err) {
         await queryRunner.rollbackTransaction()
         logger.error('Error saving payment', err)
-        res.status(500).send('Error interno')
+
+        return res.render('layouts/main', {
+            title: 'Error',
+            view: 'pages/payments/form',
+            ...formState,
+            errors: { general: 'Ocurrió un error inesperado. Intenta nuevamente. O usa la opción de "Recalcular"' }
+        })
     } finally {
         await queryRunner.release()
     }
