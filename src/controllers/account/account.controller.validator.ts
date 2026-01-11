@@ -4,8 +4,9 @@ import { Account } from '../../entities/Account.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { mapValidationErrors } from '../../validators/mapValidationErrors.validator'
+import { Transaction } from '../../entities/Transaction.entity'
 
-export const validateSaveAccount = async (account: Account, authReq: AuthRequest): Promise<Record<string, string> | null> => {
+export const validateSaveAccount = async (authReq: AuthRequest, account: Account): Promise<Record<string, string> | null> => {
     const userId = authReq.user.id
     const errors = await validate(account)
     const fieldErrors = errors.length > 0 ? mapValidationErrors(errors) : {}
@@ -33,15 +34,39 @@ export const validateSaveAccount = async (account: Account, authReq: AuthRequest
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
 
-export const validateDeleteAccount = async (account: Account, authReq: AuthRequest): Promise<Record<string, string> | null> => {
+export const validateDeleteAccount = async (
+    authReq: AuthRequest,
+    account: Account
+): Promise<Record<string, string> | null> => {
+
     const userId = authReq.user.id
     const fieldErrors: Record<string, string> = {}
 
+    // =========================
+    // BALANCE VALIDATION
+    // =========================
     if (Number(account.balance) !== 0) {
-        fieldErrors.general = 'No se puede eliminar la cuenta porque tiene balance distinto de cero'
+        fieldErrors.general =
+            'No se puede eliminar la cuenta porque tiene balance distinto de cero'
     }
 
-    // Si no hay errores
-    logger.warn(`Account delete validation`, { userId, fieldErrors })
+    // =========================
+    // TRANSACTION REFERENCE VALIDATION
+    // =========================
+    const transactionRepo = AppDataSource.getRepository(Transaction)
+
+    const usedInTransactions = await transactionRepo.existsBy([
+        { account: { id: account.id } },
+        { to_account: { id: account.id } }
+    ])
+
+    if (usedInTransactions) {
+        fieldErrors.general =
+            'No se puede eliminar la cuenta porque tiene transacciones asociadas'
+    }
+
+    logger.warn('Account delete validation', { userId, accountId: account.id, fieldErrors })
+
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
+

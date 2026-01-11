@@ -4,19 +4,21 @@ import { Account } from '../../entities/Account.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteAccount, validateSaveAccount } from './account.controller.validator'
+import { getNumberFromBody } from '../../utils/req.params.util'
 
 export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
-  const repo = AppDataSource.getRepository(Account)
-  const txId = req.body.id ? Number(req.body.id) : req.params.id ? Number(req.params.id) : undefined
+  const repo = AppDataSource.getRepository(Account)  
+    // Como viene desde un POST se busca en el body
+  const accountId = getNumberFromBody(req, 'id')  
   const action = req.body.action || 'save'
 
   let tx: Account
-  let mode
+  let mode 
 
   if (action === 'save') {
-    if (txId) {
-      const existing = await repo.findOne({ where: { id: txId, user: { id: authReq.user.id } } })
+    if (accountId) {
+      const existing = await repo.findOne({ where: { id: accountId, user: { id: authReq.user.id } } })
       if (!existing) {
         return res.redirect('/accounts')
       }
@@ -43,7 +45,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
 
     logger.info(`Before saving account`, { userId: authReq.user.id, mode, tx })
 
-    const errors = await validateSaveAccount(tx, authReq)
+    const errors = await validateSaveAccount(authReq, tx)
 
     if (errors) {
       return res.render(
@@ -65,7 +67,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     res.redirect('/accounts')
 
   } else if (action === 'delete') {
-    const existing = await repo.findOne({ where: { id: txId, user: { id: authReq.user.id } } })
+    const existing = await repo.findOne({ where: { id: accountId, user: { id: authReq.user.id } } })
     if (!existing) {
       return res.redirect('/accounts')
     }
@@ -75,8 +77,8 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     if (req.body.name) { existing.name = req.body.name }
 
     logger.info(`Before deleting account`, { userId: authReq.user.id, mode, existing })
- 
-    const errors = await validateDeleteAccount(existing, authReq)
+
+    const errors = await validateDeleteAccount(authReq, existing)
 
     if (errors) {
       return res.render(
