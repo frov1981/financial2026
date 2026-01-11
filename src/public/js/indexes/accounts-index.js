@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  console.log('DOM ready')
-
   const btnRecalculate = document.getElementById('btnRecalculate')
   const overlay = document.getElementById('overlay')
 

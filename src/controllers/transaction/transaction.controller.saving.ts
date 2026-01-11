@@ -6,6 +6,7 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { getNumberFromBody, getStringFromBody } from '../../utils/req.params.util'
+import { getSqlErrorMessage } from '../../utils/sql.err.util'
 import { calculateTransactionDeltas, getActiveAccountsByUser, getActiveCategoriesByUser, splitCategoriesByType } from './transaction.controller.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from './transaction.controller.validator'
 
@@ -194,7 +195,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       accounts,
       incomeCategories,
       expenseCategories,
-      errors: { general: 'Ocurrió un error inesperado. Intenta nuevamente' }
+      errors: { general: 'Ocurrió un error inesperado. Intenta nuevamente.\n' + getSqlErrorMessage(err) }
     })
   }
   finally {

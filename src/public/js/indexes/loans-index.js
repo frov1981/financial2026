@@ -43,7 +43,6 @@ const renderStatus = status =>
    Render
 ============================ */
 function renderRow(loan) {
-  console.log(loan)
   const rowClass = loan.status === 'active' ? '' : 'bg-red-50'
   return `    
     <tr class="${rowClass}">
