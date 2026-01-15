@@ -50,9 +50,9 @@ export class Transaction {
   @Transform(({ value }) => value ? new Date(value) : new Date())
   date!: Date
 
-  @Column({ nullable: true, length: 200 })
+  @Column({ nullable: true, length: 1000 })
   @IsNotEmpty({ message: 'La descripción es obligatoria' })
-  @MaxLength(200, { message: 'Máximo 200 caracteres' })
+  @MaxLength(1000, { message: 'Máximo 1000 caracteres' })
   description!: string
 
   @OneToOne(() => Loan, loan => loan.transaction)

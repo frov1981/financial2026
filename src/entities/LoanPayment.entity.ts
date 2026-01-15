@@ -43,4 +43,7 @@ export class LoanPayment {
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
+
+  @Column({ nullable: true })
+  loan_name_tmp!: string
 }
