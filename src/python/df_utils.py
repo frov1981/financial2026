@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 
 def get_column_widths(df: pd.DataFrame, padding: int = 5) -> list[int]:
     widths = []
@@ -39,7 +40,7 @@ def write_df_to_txt(df: pd.DataFrame, widths: list[int], file_path: str) -> None
                 f.write(text.ljust(w))
             f.write("\n")
 
-    print("✅ TXT escrito correctamente:", file_path)
+    #print("✅ TXT escrito correctamente:", file_path)
 
 def sql_safe_text(value):
     if pd.isna(value):
@@ -59,6 +60,27 @@ def sql_safe_text(value):
     text = text.replace("'", "''")
 
     return text
+
+def normalize_account_name(name: str) -> str:
+    name = str(name).upper()
+
+    # Eliminar (INTERES) o (PAGOS) al final
+    name = re.sub(r"\s*\((INTERES|PAGOS)\)$", "", name)
+
+    # Eliminar # seguido de números al final
+    name = re.sub(r"\s*#\s*\d+$", "", name)
+
+    # Eliminar número final de 4 dígitos SOLO si hay espacio antes
+    name = re.sub(r"\s+\d{4}$", "", name)
+
+    # Eliminar 6TO o 7MO
+    name = re.sub(r"\b(6TO|7MO)\b", "", name)
+
+    # Limpiar espacios
+    name = name.strip()
+    name = re.sub(r"\s+", " ", name)
+
+    return name
 
 def normalize_loan_name(name):
     if not name:

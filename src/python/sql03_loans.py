@@ -1,7 +1,12 @@
 import pandas as pd
-from df_utils import normalize_loan_name, sql_safe_text
+from df_utils import normalize_account_name, normalize_loan_name, sql_safe_text
 
-def build_bulk_insert_loans_multiline(df, loans_table="loans", transactions_table="transactions"):
+def build_bulk_insert_loans_multiline(
+    df,
+    categories_array,
+    loans_table="loans",
+    transactions_table="transactions"
+):
     # Reutilizar lógica de préstamos
     df1 = df[
         (df["moveType"] == 1)
@@ -13,9 +18,9 @@ def build_bulk_insert_loans_multiline(df, loans_table="loans", transactions_tabl
         raise ValueError("No hay registros de préstamos")
 
     # Ordenar para asegurar fecha inicial correcta
-    df1 = df1.sort_values(by=["accountName", "movedAt"])
+    df1 = df1.sort_values(by=["accountName"])
 
-    # Agrupar por préstamo
+    # Agrupar por préstamo (se preserva el nombre completo)
     grouped = (
         df1
         .groupby("accountName", as_index=False)
@@ -27,9 +32,19 @@ def build_bulk_insert_loans_multiline(df, loans_table="loans", transactions_tabl
 
     loan_values = []
     trx_values = []
+    loan_array = []
+
+    # Índice de categorías por nombre normalizado
+    categories_index = {
+        cat["name"]: cat["id"]
+        for cat in categories_array
+    }
+
+    loan_seq = 1
 
     for _, row in grouped.iterrows():
-        name = sql_safe_text(row["accountName"])
+        raw_name = row["accountName"]
+        name = sql_safe_text(raw_name)
         amount = abs(float(row["total_amount"]))
 
         start_date = pd.to_datetime(
@@ -39,13 +54,27 @@ def build_bulk_insert_loans_multiline(df, loans_table="loans", transactions_tabl
 
         # INSERT loans
         loan_values.append(
-            f"(NULL,'{name}',{amount},0,0.00,'{start_date}',NULL,'active',1,2,NULL)"
+            f"({loan_seq},'{name}',{amount},0,0.00,'{start_date}',NULL,'active',1,2,NULL)"
         )
+
+        # Resolver category_id normalizando accountName
+        category_id = "NULL"
+        if raw_name:
+            clean_name = normalize_account_name(raw_name)
+            category_id = categories_index.get(clean_name, "NULL")
 
         # INSERT transactions (desembolso del préstamo)
         trx_values.append(
-            f"('income',{amount},'{start_date}','{name}',1,2,NULL,NULL)"
+            f"('income',{amount},'{start_date}','{name}',1,2,NULL,{category_id})"
         )
+
+        # Arreglo de préstamos (sin normalizar, préstamos separados)
+        loan_array.append({
+            "id": loan_seq,
+            "name": raw_name
+        })
+
+        loan_seq += 1
 
     if not loan_values:
         raise ValueError("No hay préstamos para insertar")
@@ -83,7 +112,7 @@ def build_bulk_insert_loans_multiline(df, loans_table="loans", transactions_tabl
         f"WHERE l.transaction_id IS NULL;"
     )
 
-    return sql_loans, sql_transactions, sql_update_relation
+    return sql_loans, sql_transactions, sql_update_relation, loan_array
 
 def build_bulk_insert_loan_payments_and_update_balance(
     df,
