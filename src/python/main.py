@@ -6,7 +6,8 @@ from df_utils import get_column_widths, write_df_to_txt
 from sql00_accounts import build_accounts_insert
 from sql01_categories import build_bulk_insert_categories_multiline
 from sql02_moves import build_bulk_insert_expense_transactions_multiline, build_bulk_insert_income_transactions_multiline
-from sql03_loans import build_bulk_insert_loan_payments_and_update_balance, build_bulk_insert_loans_multiline
+from sql03_loans import build_bulk_insert_loans_multiline
+from sql03_payments import build_bulk_insert_loan_payments_and_update_balance
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -18,7 +19,8 @@ txt_path2 = os.path.join(BASE_DIR, '01_acc_expense.txt')
 txt_path3 = os.path.join(BASE_DIR, '02_mov_income.txt')
 txt_path4 = os.path.join(BASE_DIR, '02_mov_expense.txt')
 txt_path5 = os.path.join(BASE_DIR, '03_loan_income.txt')
-txt_path6 = os.path.join(BASE_DIR, '02_paym_expense.txt')
+txt_path6 = os.path.join(BASE_DIR, '03_paym_expense.txt')
+txt_path7 = os.path.join(BASE_DIR, '03_inte_expense.txt')
 
 with open(json_path, 'r', encoding='utf-8') as f:
     data = json.load(f)
@@ -57,6 +59,11 @@ dfl = dfl[[c for c in cols if c in dfl.columns]]
 df5 = dfl[(dfl["moveType"] == 1) & (dfl["accountType"] == 3) & (dfl["trxType"].isin([1,7]))]
 df5 = df5.sort_values(by=["accountName"])
 
+df6 = dfl[(dfl["moveType"] == 2) & (dfl["accountType"] == 4) & (dfl["trxType"].isin([2,6]))]
+df6 = df6.sort_values(by=["accountName"])
+df7 = dfl[(dfl["moveType"] == 2) & (dfl["accountType"] == 5) & (dfl["trxType"].isin([2,6]))]
+df7 = df7.sort_values(by=["accountName"])
+
 print("Accounts:", len(dfa), "filas")
 print("Income accounts:", len(df1), "filas")
 print("Expense accounts:", len(df2), "filas")
@@ -64,6 +71,8 @@ print("Moves", len(dfm), "filas.")
 print("Income Moves:", len(df3), "filas")
 print("Expense Moves:", len(df4), "filas.")
 print("Loan Moves:", len(df5), "filas.")
+print("Loan Payment Moves:", len(df6), "filas.")
+print("Loan Interest Moves:", len(df7), "filas.")
 
 # Escribiendo DataFrames a TXT
 widths = get_column_widths(df1, padding=5)
@@ -76,6 +85,10 @@ widths = get_column_widths(df4, padding=5)
 write_df_to_txt(df4, widths, txt_path4)
 widths = get_column_widths(df5, padding=5)
 write_df_to_txt(df5, widths, txt_path5)
+widths = get_column_widths(df6, padding=5)
+write_df_to_txt(df6, widths, txt_path6)
+widths = get_column_widths(df7, padding=5)
+write_df_to_txt(df7, widths, txt_path7)
 
 
 sql_accounts = build_accounts_insert()
@@ -83,12 +96,14 @@ sql_categories, accounts_array = build_bulk_insert_categories_multiline(df_accou
 sql_incomes_transactions = build_bulk_insert_income_transactions_multiline(df=df_moves, categories_array=accounts_array, table_name="transactions")
 sql_expenses_transactions = build_bulk_insert_expense_transactions_multiline(df=df_moves, categories_array=accounts_array, table_name="transactions")
 sql_loans, sql_transactions, sql_update_relation, loan_array = build_bulk_insert_loans_multiline(df=df_loans, loans_table="loans", transactions_table="transactions", categories_array=accounts_array)
+sql_insert_payments, sql_insert_transactions, sql_update_payment_transaction, sql_update_balance, sql_update_total_interest, sql_close_loans = build_bulk_insert_loan_payments_and_update_balance(df=df_loans, loan_array=loan_array, categories_array=accounts_array, loans_table="loans", payments_table="loan_payments", transactions_table="transactions")
 
 print("Total de cuentas SQL:", len(sql_accounts.splitlines()))
 print("Total de categorias SQL:", len(sql_categories.splitlines()))
 print("Total de transacciones income SQL:", len(sql_incomes_transactions.splitlines()))
 print("Total de transacciones expense SQL:", len(sql_expenses_transactions.splitlines()))
 print("Total de préstamos SQL:", len(sql_loans.splitlines()))
+print("Total de pagos de préstamos SQL:", len(sql_insert_payments.splitlines()))    
 
 sql = (
     sql_accounts.strip()
@@ -104,6 +119,18 @@ sql = (
     + sql_transactions.strip()
     + "\n\n"
     + sql_update_relation.strip()
+    + "\n\n"
+    + sql_insert_payments.strip()
+    + "\n\n"
+    + sql_insert_transactions.strip()
+    + "\n\n"
+    + sql_update_payment_transaction.strip()
+    + "\n\n"            
+    + sql_update_balance.strip()
+    + "\n\n"
+    + sql_update_total_interest.strip()
+    + "\n\n"
+    + sql_close_loans.strip()
 )
 with open(sql_path1, "w", encoding="utf-8") as f:
     f.write(sql) 

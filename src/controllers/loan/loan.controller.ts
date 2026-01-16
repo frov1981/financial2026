@@ -12,9 +12,9 @@ export const listLoansAPI: RequestHandler = async (req: Request, res: Response) 
   try {
     const loans = await AppDataSource.getRepository(Loan).find({
       where: { user: { id: authReq.user.id } },
-      relations: ['disbursement_account', 'transaction'],
+      relations: { disbursement_account: true, transaction: true, payments: true },
       order: { name: 'ASC' }
-    }) 
+    })
     res.json(loans)
   } catch (err) {
     logger.error('Error al listar préstamos:', err)

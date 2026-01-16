@@ -27,10 +27,10 @@ export class Loan {
   total_amount!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  balance!: number;
+  interest_amount!: number | null
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  interest_rate!: number | null
+  balance!: number;
 
   @Column({ type: 'timestamp' })
   start_date!: Date

@@ -96,3 +96,14 @@ def normalize_loan_name(name):
     )
 
     return text.strip()
+
+def normalize_loan_base_name(name: str) -> str:
+    return (
+        str(name).upper()
+        .replace("(PAGOS)", "")
+        .replace("(INTERES)", "")
+        .strip()
+    )
+
+def extract_payment_date(value) -> str:
+    return pd.to_datetime(value, utc=True).strftime("%Y-%m-%d")

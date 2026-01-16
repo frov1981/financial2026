@@ -39,17 +39,18 @@ const renderStatus = status =>
     : '<span class="text-blue-600 font-semibold">Activo</span>'
 
 
-/* ============================
+/* ============================ 
    Render
 ============================ */
 function renderRow(loan) {
+  console.log(loan)
   const rowClass = loan.status === 'active' ? '' : 'bg-red-50'
   return `    
     <tr class="${rowClass}">
       <td class="ui-td col-left">${loan.name}</td>
       <td class="ui-td col-right">${formatAmount(loan.total_amount)}</td>
+      <td class="ui-td col-right col-sm">${formatAmount(loan.interest_amount)}</td>
       <td class="ui-td col-right">${formatAmount(loan.balance)}</td>
-      <td class="ui-td col-right col-sm">${loan.interest_rate ? loan.interest_rate + '%' : '-'}</td>
       <td class="ui-td col-left col-sm">${formatDate(loan.start_date)}</td>
       <td class="ui-td col-left col-sm">${renderStatus(loan.status)}</td>
       <td class="ui-td col-left col-sm">${loan.disbursement_account.name}</td>
