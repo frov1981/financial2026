@@ -29,7 +29,6 @@ function debounce(fn, delay) {
    Render
 ============================ */
 function renderRow(category) {
-  console.log(category)
   const rowClass = category.is_active ? '' : 'bg-red-50'
   const statusButton = category.is_active
     ? `

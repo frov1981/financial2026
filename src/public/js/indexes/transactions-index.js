@@ -63,7 +63,6 @@ function accountCell(tx) {
 }
 
 function renderRow(tx) {
-  console.log(tx)
   const d = new Date(tx.date)
   const dateStr =
     String(d.getDate()).padStart(2, '0') + '/' +
