@@ -1,3 +1,6 @@
+/* ============================
+   Variables globales
+============================ */
 const API_BASE = '/api/transactions'
 const FILTER_KEY = `transactions.filters.${window.USER_ID}`
 const SELECTED_KEY = `transactions.selected.${window.USER_ID}`
@@ -7,9 +10,17 @@ let currentPage = 1
 let currentSearch = ''
 let totalPages = 1
 
+/* ============================
+   DOM
+============================ */
 const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
+const searchBtn = document.getElementById('search-btn')
+const tableBody = document.getElementById('transaction-table')
 
+/* ============================
+   Utils
+============================ */
 function debounce(fn, delay) {
   let t
   return (...args) => {
@@ -18,6 +29,9 @@ function debounce(fn, delay) {
   }
 }
 
+/* ============================ 
+   Render
+============================ */
 function rowClassByType(type) {
   if (type === 'income') return 'bg-green-50'
   if (type === 'expense') return 'bg-red-50'
@@ -74,7 +88,7 @@ function renderRow(tx) {
     String(d.getMinutes()).padStart(2, '0')
 
   return `
-    <tr class="${rowClassByType(tx.type)}">
+    <tr id="transaction-${tx.id}" class="${rowClassByType(tx.type)}">
       <td class="px-4 py-2 text-center whitespace-nowrap leading-tight">
         <div>${dateStr}</div>
         <div class="text-xs font-semibold text-gray-600">${timeStr}</div>
@@ -87,7 +101,7 @@ function renderRow(tx) {
         <div class="icon-actions">
           <button
             class="icon-btn edit"
-            onclick="location.href='/transactions/update/${tx.id}'"
+            onclick="goToTransactionUpdate(${tx.id})"
             title="Editar">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
@@ -96,8 +110,8 @@ function renderRow(tx) {
           <!-- Botón Eliminar -->
           <button
             class="icon-btn delete"
-            title="Eliminar"
-            onclick="window.location.href='/transactions/delete/${tx.id}'">
+            onclick="goToTransactionDelete(${tx.id})"
+            title="Eliminar">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
@@ -107,6 +121,9 @@ function renderRow(tx) {
   `
 }
 
+/* ============================
+   Data
+============================ */
 function updatePaginationInfo() {
   const text = `Página ${currentPage} de ${totalPages}`
   document.getElementById('page-info-top').textContent = text
@@ -127,21 +144,45 @@ async function loadTransactions(page = 1) {
 
   if (!data.items.length) {
     tableBody.innerHTML = `
-    <tr>
-      <td colspan="6" class="ui-td col-center text-gray-500">
-        No se encontraron transacciones
-      </td>
-    </tr>
-  `
+      <tr>
+        <td colspan="6" class="ui-td col-center text-gray-500">
+          No se encontraron transacciones
+        </td>
+      </tr>
+    `
   } else {
     tableBody.innerHTML = data.items.map(renderRow).join('')
   }
 
+  // restaurar fila seleccionada (si existe en esta página)
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`transaction-${selected.id}`)
+    if (row) {
+      row.classList.add('tr-selected')
+    }
+  }
 
-  saveFilters(FILTER_KEY, { page, search: currentSearch })
+  // guardar SOLO la página (NO search)
+  saveFilters(FILTER_KEY, { page })
+
   updatePaginationInfo()
 }
 
+/* ============================
+   Acciones (GLOBAL)
+============================ */
+function goToTransactionUpdate(id) {
+  window.location.href = `/transactions/update/${id}`
+}
+
+function goToTransactionDelete(id) {
+  window.location.href = `/transactions/delete/${id}`
+}
+
+/* ============================
+   Filtro
+============================ */
 function applySearch() {
   currentSearch = searchInput.value.trim()
   clearBtn.classList.toggle('hidden', !currentSearch)
@@ -151,10 +192,15 @@ function applySearch() {
 const debouncedSearch = debounce(applySearch, 300)
 
 searchInput.addEventListener('input', debouncedSearch)
+
 clearBtn.addEventListener('click', () => {
   searchInput.value = ''
+  currentSearch = ''          
   clearBtn.classList.add('hidden')
+
   clearFilters(FILTER_KEY)
+  clearFilters(SELECTED_KEY)
+
   loadTransactions(1)
 })
 
@@ -174,5 +220,30 @@ if (cached) {
   searchInput.value = currentSearch
   clearBtn.classList.toggle('hidden', !currentSearch)
 }
+
+/* ============================
+   Selección de fila
+============================ */
+document
+  .querySelector('.ui-table')
+  .addEventListener('click', (event) => {
+
+    if (event.target.closest('button') || event.target.closest('a')) {
+      return
+    }
+
+    const row = event.target.closest('tr[id^="transaction-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#transactions-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+
+    const txId = row.id.replace('transaction-', '')
+    saveFilters(SELECTED_KEY, { id: txId })
+  })
+
 
 loadTransactions(currentPage)

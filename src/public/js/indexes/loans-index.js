@@ -29,12 +29,11 @@ function debounce(fn, delay) {
 const formatDate = value =>
   value ? new Date(value).toLocaleDateString('es-EC') : '-'
 
-
 /* ============================ 
    Render
 ============================ */
 function renderRow(loan) {
-  const rowClass = loan.status === 'active' ? '' : 'bg-red-50'
+  const rowClass = loan.is_active ? '' : 'bg-red-50'
   return `    
     <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">${loan.name}</td>
