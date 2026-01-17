@@ -4,10 +4,9 @@ node_modules/
 # Build
 dist/
 
-# Entornos virtuales
-venv/
-.env/
-.env*/
+# Entornos
+.env
+.env.*
 
 # Logs
 logs/
@@ -29,4 +28,5 @@ __pycache__/
 # Archivos de texto
 *.txt
 
-
+# Logs
+*.log
