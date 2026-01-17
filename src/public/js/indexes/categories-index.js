@@ -3,6 +3,7 @@
 ============================ */
 const API_BASE = '/api/categories'
 const FILTER_KEY = `categories.filters.${window.USER_ID}`
+const SELECTED_KEY = `categories.selected.${window.USER_ID}`
 
 let allCategories = []
 
@@ -35,7 +36,7 @@ function renderRow(category) {
       <button
         class="icon-btn deactivate"
         title="Desactivar"
-        onclick="updateCategoryStatus(${category.id})">
+        onclick="goToCategoryUpdateStatus(${category.id})">
         ${iconViewOff()}
         <span class="ui-btn-text">Desactivar</span>
       </button>
@@ -44,7 +45,7 @@ function renderRow(category) {
       <button
         class="icon-btn activate"
         title="Activar"
-        onclick="updateCategoryStatus(${category.id})">
+        onclick="goToCategoryUpdateStatus(${category.id})">
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
@@ -61,7 +62,7 @@ function renderRow(category) {
           <button
             class="icon-btn edit"
             title="Editar"
-            onclick="window.location.href='/categories/update/${category.id}'">
+            onclick="goToCategoryUpdate(${category.id})">
             ${iconEdit()} 
             <span class="ui-btn-text">Editar</span>
           </button>
@@ -70,7 +71,7 @@ function renderRow(category) {
           <button
             class="icon-btn delete"
             title="Eliminar"
-            onclick="window.location.href='/categories/delete/${category.id}'">
+            onclick="goToCategoryDelete(${category.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
@@ -97,8 +98,15 @@ function renderTable(data) {
   }
 
   tableBody.innerHTML = data.map(renderRow).join('')
-}
 
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`category-${selected.id}`)
+    if (row) {
+      row.classList.add('tr-selected')
+    }
+  }
+}
 
 /* ============================
    Data
@@ -117,6 +125,9 @@ async function loadCategories() {
   }
 }
 
+/* ============================
+   Filtro
+============================ */
 function filterCategories() {
   const term = searchInput.value.trim().toLowerCase()
   saveFilters(FILTER_KEY, { term })
@@ -136,8 +147,16 @@ const debouncedFilter = debounce(filterCategories, 300)
 /* ============================
    Acciones (GLOBAL)
 ============================ */
-function updateCategoryStatus(id) {
+function goToCategoryUpdateStatus(id) {
   location.href = `/categories/status/${id}`
+}
+
+function goToCategoryUpdate(id) {
+  window.location.href = `/categories/update/${id}`
+}
+
+function goToCategoryDelete(id) {
+  window.location.href = `/categories/delete/${id}`
 }
 
 /* ============================
@@ -154,8 +173,34 @@ clearBtn.addEventListener('click', () => {
   searchInput.value = ''
   clearBtn.classList.add('hidden')
   clearFilters(FILTER_KEY)
+  clearFilters(SELECTED_KEY)
   renderTable(allCategories)
 })
+
+/* ============================
+   Selección de fila
+============================ */
+document
+  .querySelector('.ui-table')
+  .addEventListener('click', (event) => {
+
+    if (event.target.closest('button') || event.target.closest('a')) {
+      return
+    }
+
+    const row = event.target.closest('tr[id^="category-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#categories-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+
+    // guardar selección
+    const categoryId = row.id.replace('category-', '')
+    saveFilters(SELECTED_KEY, { id: categoryId })
+  })
 
 /* ============================
    Init

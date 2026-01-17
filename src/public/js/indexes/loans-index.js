@@ -3,15 +3,17 @@
 ============================ */
 const API_BASE = '/api/loans'
 const FILTER_KEY = `loans.filters.${window.USER_ID}`
+const SELECTED_KEY = `loans.selected.${window.USER_ID}`
 
 let allLoans = []
 
 /* ============================
    DOM
 ============================ */
-const tableBody = document.getElementById('loans-table')
 const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
+const searchBtn = document.getElementById('search-btn')
+const tableBody = document.getElementById('loans-table')
 
 /* ============================
    Utils
@@ -38,14 +40,13 @@ const renderStatus = status =>
     ? '<span class="text-green-600 font-semibold">Cerrado</span>'
     : '<span class="text-blue-600 font-semibold">Activo</span>'
 
-
 /* ============================ 
    Render
 ============================ */
 function renderRow(loan) {
   const rowClass = loan.status === 'active' ? '' : 'bg-red-50'
   return `    
-    <tr class="${rowClass}">
+    <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">${loan.name}</td>
       <td class="ui-td col-right">${formatAmount(loan.total_amount)}</td>
       <td class="ui-td col-right col-sm">${formatAmount(loan.interest_amount)}</td>
@@ -58,7 +59,7 @@ function renderRow(loan) {
           <button
             class="icon-btn edit"
             title="Editar"
-            onclick="location.href='/loans/update/${loan.id}'">
+            onclick="goToLoanUpdate(${loan.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
@@ -66,7 +67,7 @@ function renderRow(loan) {
           <button
             class="icon-btn delete"
             title="Eliminar"
-            onclick="location.href='/loans/delete/${loan.id}'">
+            onclick="goToLoanDelete(${loan.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
@@ -74,7 +75,7 @@ function renderRow(loan) {
           <button
             class="icon-btn"
             title="Detalles"
-            onclick="location.href='/loans/${loan.id}'">
+            onclick="goToLoanView(${loan.id})">
             ${iconList()}
             <span class="ui-btn-text">Detalles</span>
           </button>
@@ -97,26 +98,30 @@ function renderTable(data) {
   }
 
   tableBody.innerHTML = data.map(renderRow).join('')
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`loan-${selected.id}`)
+    if (row) {
+      row.classList.add('tr-selected')
+    }
+  }
 }
 
 /* ============================
    Data
 ============================ */
 async function loadLoans() {
-  try {
-    const res = await fetch(API_BASE)
-    allLoans = await res.json()
+  const res = await fetch(API_BASE)
+  allLoans = await res.json()
 
-    const cached = loadFilters(FILTER_KEY)
-    if (cached?.term) {
-      searchInput.value = cached.term
-      clearBtn.classList.remove('hidden')
-      filterLoans()
-    } else {
-      renderTable(allLoans)
-    }
-  } catch (error) {
-    console.error('Error al cargar préstamos', error)
+  const cached = loadFilters(FILTER_KEY)
+  if (cached?.term) {
+    searchInput.value = cached.term
+    clearBtn.classList.remove('hidden')
+    filterLoans()
+  } else {
+    renderTable(allLoans)
   }
 }
 
@@ -137,16 +142,66 @@ function filterLoans() {
   )
 }
 
+const debouncedFilter = debounce(filterLoans, 300)
+
+/* ============================
+   Acciones (GLOBAL)
+============================ */
+function goToLoanUpdate(id) {
+  window.location.href = `/loans/update/${id}`
+}
+
+function goToLoanDelete(id) {
+  window.location.href = `/loans/delete/${id}`
+}
+
+function goToLoanView(id) {
+  window.location.href = `/loans/${id}`
+  "location.href='/loans/${loan.id}'"
+}
+
 /* ============================
    Eventos
 ============================ */
-searchInput.addEventListener('input', debounce(filterLoans, 300))
+searchBtn.addEventListener('click', filterLoans)
+
+searchInput.addEventListener('input', () => {
+  clearBtn.classList.toggle('hidden', !searchInput.value)
+  debouncedFilter()
+})
 
 clearBtn.addEventListener('click', () => {
   searchInput.value = ''
+  clearBtn.classList.add('hidden')
   clearFilters(FILTER_KEY)
+  clearFilters(SELECTED_KEY)
   renderTable(allLoans)
 })
+
+/* ============================
+   Selección de fila
+============================ */
+document
+  .querySelector('.ui-table')
+  .addEventListener('click', (event) => {
+
+    if (event.target.closest('button') || event.target.closest('a')) {
+      return
+    }
+
+    const row = event.target.closest('tr[id^="loan-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#loans-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+
+    // guardar selección
+    const loanId = row.id.replace('loan-', '')
+    saveFilters(SELECTED_KEY, { id: loanId })
+  })
 
 /* ============================
    Init

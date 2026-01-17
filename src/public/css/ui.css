@@ -174,8 +174,23 @@
   white-space: nowrap;
 }
 
-/* Columnas responsive */
+.ui-table tr {
+  cursor: pointer;
+}
 
+.ui-table tr:hover {
+  background-color: #f3f4f6;
+}
+
+.ui-table tr.tr-selected {
+  background-color: #dbeafe; /* azul suave */
+}
+
+.ui-table tr.tr-selected:hover {
+  background-color: #bfdbfe;
+}
+
+/* Columnas responsive */
 .ui-col-sm {
   display: none;
 }

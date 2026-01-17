@@ -1,9 +1,10 @@
 const API_BASE = '/api/transactions'
 const FILTER_KEY = `transactions.filters.${window.USER_ID}`
+const SELECTED_KEY = `transactions.selected.${window.USER_ID}`
 
+const PAGE_SIZE = 10
 let currentPage = 1
 let currentSearch = ''
-const PAGE_SIZE = 10
 let totalPages = 1
 
 const searchInput = document.getElementById('search-input')

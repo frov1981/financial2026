@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ============================ */
 const API_BASE = '/api/accounts'
 const FILTER_KEY = `accounts.filters.${window.USER_ID}`
+const SELECTED_KEY = `accounts.selected.${window.USER_ID}`
 
 let allAccounts = []
 
@@ -75,7 +76,7 @@ function renderRow(account) {
       <button
         class="icon-btn deactivate"
         title="Desactivar"
-        onclick="updateAccountStatus(${account.id})">
+        onclick="goToAccountUpdateStatus(${account.id})">
         ${iconViewOff()}
         <span class="ui-btn-text">Desactivar</span>
       </button>
@@ -84,7 +85,7 @@ function renderRow(account) {
       <button
         class="icon-btn activate"
         title="Activar"
-        onclick="updateAccountStatus(${account.id})">
+        onclick="goToAccountUpdateStatus(${account.id})">
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
@@ -102,7 +103,7 @@ function renderRow(account) {
         <button
           class="icon-btn edit"
           title="Editar"
-          onclick="window.location.href='/accounts/update/${account.id}'">
+          onclick="goToAccountUpdate(${account.id})">
           ${iconEdit()}
           <span class="ui-btn-text">Editar</span>
         </button>
@@ -110,7 +111,7 @@ function renderRow(account) {
         <button
           class="icon-btn delete"
           title="Eliminar"
-          onclick="window.location.href='/accounts/delete/${account.id}'">
+          onclick="goToAccountDelete(${account.id})">
           ${iconDelete()}
           <span class="ui-btn-text">Eliminar</span>
         </button>
@@ -136,8 +137,15 @@ function renderTable(data) {
   }
 
   tableBody.innerHTML = data.map(renderRow).join('')
-}
 
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`account-${selected.id}`)
+    if (row) {
+      row.classList.add('tr-selected')
+    }
+  }
+}
 
 /* ============================
    Data
@@ -175,9 +183,18 @@ const debouncedFilter = debounce(filterAccounts, 300)
 /* ============================
    Acciones (GLOBAL)
 ============================ */
-function updateAccountStatus(id) {
+function goToAccountUpdateStatus(id) {
   location.href = `/accounts/status/${id}`
 }
+
+function goToAccountUpdate(id) {
+  window.location.href = `/accounts/update/${id}`
+}
+
+function goToAccountDelete(id) {
+  window.location.href = `/accounts/delete/${id}`
+}
+
 
 /* ============================
    Eventos
@@ -193,8 +210,34 @@ clearBtn.addEventListener('click', () => {
   searchInput.value = ''
   clearBtn.classList.add('hidden')
   clearFilters(FILTER_KEY)
+  clearFilters(SELECTED_KEY)
   renderTable(allAccounts)
 })
+
+/* ============================
+   Selección de fila
+============================ */
+document
+  .querySelector('.ui-table')
+  .addEventListener('click', (event) => {
+
+    if (event.target.closest('button') || event.target.closest('a')) {
+      return
+    }
+
+    const row = event.target.closest('tr[id^="account-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#accounts-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+
+    // guardar selección
+    const accountId = row.id.replace('account-', '')
+    saveFilters(SELECTED_KEY, { id: accountId })
+  })
 
 /* ============================
    Init
