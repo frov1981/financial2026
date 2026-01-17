@@ -24,7 +24,6 @@ export class LoanPayment {
   @JoinColumn({ name: 'transaction_id', foreignKeyConstraintName: 'fk_loan_payments_transaction' })
   transaction!: Transaction
 
-
   @IsNumber({}, { message: 'El monto debe ser numérico' })
   @IsPositive({ message: 'El monto debe ser mayor a cero' })
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
@@ -44,6 +43,4 @@ export class LoanPayment {
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
 
-  @Column({ nullable: true })
-  loan_name_tmp!: string
 }

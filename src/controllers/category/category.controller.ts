@@ -9,10 +9,25 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
   const authReq = req as AuthRequest
 
   try {
-    const categories = await AppDataSource.getRepository(Category).find({
-      where: { user: { id: authReq.user.id } },
-      order: { name: 'ASC' }
-    })
+    const repository = AppDataSource.getRepository(Category)
+
+    const result = await repository
+      .createQueryBuilder('category')
+      .where('category.user_id = :userId', { userId: authReq.user.id })
+      .addSelect(subQuery =>
+        subQuery
+          .select('COUNT(t.id)')
+          .from('transactions', 't')
+          .where('t.category_id = category.id'),
+        'transactions_count'
+      )
+      .orderBy('category.name', 'ASC')
+      .getRawAndEntities()
+
+    const categories = result.entities.map((category, index) => ({
+      ...category,
+      transactions_count: Number(result.raw[index].transactions_count)
+    }))
 
     res.json(categories)
   } catch (error) {
@@ -20,6 +35,7 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
     res.status(500).json({ error: 'Error al listar categorías' })
   }
 }
+
 
 export const insertCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'

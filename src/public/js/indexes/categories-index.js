@@ -29,6 +29,7 @@ function debounce(fn, delay) {
    Render
 ============================ */
 function renderRow(category) {
+  console.log(category)
   const rowClass = category.is_active ? '' : 'bg-red-50'
   const statusButton = category.is_active
     ? `
@@ -54,6 +55,7 @@ function renderRow(category) {
     <tr id="category-${category.id}" class="${rowClass}">
       <td class="ui-td col-left">${category.name}</td>
       <td class="ui-td col-left">${categoryTypeTag(category.type)}</td>
+      <td class="ui-td col-right ui-col-sm">${numberBox(category.transactions_count)}</td>
       <td class="ui-td col-left ui-col-sm">${statusTag(category.is_active)}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
@@ -87,7 +89,7 @@ function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="4" class="ui-td col-center text-gray-500">
+        <td colspan="5" class="ui-td col-center text-gray-500">
           No se encontraron categorías
         </td>
       </tr>

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, RelationCount } from 'typeorm'
 import { User } from './User.entity'
 import { Transaction } from './Transaction.entity'
 import { IsBoolean, IsIn, IsNotEmpty } from 'class-validator'
@@ -34,4 +34,5 @@ export class Category {
 
   @OneToMany(() => Transaction, transaction => transaction.category)
   transactions!: Transaction[]
+
 }
