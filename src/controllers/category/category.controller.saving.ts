@@ -1,4 +1,3 @@
-// controllers/category.controller.saving.ts
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/datasource'
 import { Category } from '../../entities/Category.entity'

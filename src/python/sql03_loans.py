@@ -54,7 +54,7 @@ def build_bulk_insert_loans_multiline(
 
         # INSERT loans
         loan_values.append(
-            f"({loan_seq},'{name}',{amount},0,0.00,'{start_date}',NULL,'active',1,2,NULL)"
+            f"({loan_seq},'{name}',{amount},0,0.00,'{start_date}',NULL,true,1,2,NULL)"
         )
 
         # Resolver category_id normalizando accountName
@@ -82,7 +82,7 @@ def build_bulk_insert_loans_multiline(
     # SQL préstamos
     sql_loans = (
         f"INSERT INTO {loans_table} "
-        f"(loan_number,name,total_amount,balance,interest_amount,start_date,end_date,status,user_id,disbursement_account_id,transaction_id)\n"
+        f"(loan_number,name,total_amount,balance,interest_amount,start_date,end_date,is_active,user_id,disbursement_account_id,transaction_id)\n"
         f"VALUES\n"
         + ",\n".join(loan_values)
         + ";"

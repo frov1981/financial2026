@@ -5,8 +5,8 @@ import { Loan } from '../../entities/Loan.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
-import { validateDeleteLoan, validateLoan } from './loan.controller.validator'
 import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
+import { validateDeleteLoan, validateLoan } from './loan.controller.validator'
 
 export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
@@ -68,7 +68,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         loan.name = req.body.name
         loan.total_amount = Number(req.body.total_amount)
         loan.start_date = new Date(req.body.start_date)
-        loan.status = req.body.status
+        loan.is_active = req.body.is_active === 'true'
         if (req.body.end_date) loan.end_date = new Date(req.body.end_date)
 
         // =========================
@@ -124,7 +124,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
           total_amount: amount,
           balance: amount,
           start_date: new Date(req.body.start_date),
-          status: 'active',
+          is_active: true,
           disbursement_account: account
         })
 

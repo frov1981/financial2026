@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty } from 'class-validator'
+import { IsBoolean, IsIn, IsNotEmpty } from 'class-validator'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/decimal.transformer'
 import { Account } from './Account.entity'
@@ -38,9 +38,9 @@ export class Loan {
   @Column({ type: 'timestamp', nullable: true })
   end_date!: Date | null
 
-  @Column({ default: 'active' })
-  @IsIn(['active', 'closed'], { message: 'El tipo debe ser active o closed' })
-  status!: 'active' | 'closed'
+  @Column({ default: true })
+  @IsBoolean({ message: 'El estado debe ser true o false' })
+  is_active!: boolean
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date

@@ -76,7 +76,7 @@ export const updateLoanFormPage: RequestHandler = async (req: Request, res: Resp
         disbursement_account_id: tx.disbursement_account?.id || '',
         disbursement_account_name: tx.disbursement_account?.name || '',
         transaction_id: tx.transaction?.id || '',
-        status: tx.status,
+        
       },
       errors: {},
       disbursement_accounts,
@@ -114,7 +114,7 @@ export const deleteLoanFormPage: RequestHandler = async (req: Request, res: Resp
         start_date: formatDateForInputLocal(tx.start_date).slice(0, 16),
         disbursement_account_id: tx.disbursement_account?.id || '',
         disbursement_account_name: tx.disbursement_account?.name || '',
-        status: tx.status,
+        is_active: tx.is_active,
       },
       errors: {},
       disbursement_accounts,

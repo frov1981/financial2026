@@ -131,9 +131,9 @@ def build_bulk_insert_loan_payments_and_update_balance(
 
     sql_close_loans = (
         f"UPDATE {loans_table}\n"
-        f"SET status = 'closed'\n"
+        f"SET is_active = false\n"
         f"WHERE balance <= 0\n"
-        f"AND status <> 'closed';"
+        f"AND is_active <> false;"
     )
 
     return (

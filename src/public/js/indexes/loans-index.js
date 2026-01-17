@@ -26,19 +26,9 @@ function debounce(fn, delay) {
   }
 }
 
-const formatAmount = value =>
-  Number(value).toLocaleString('es-EC', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-
 const formatDate = value =>
   value ? new Date(value).toLocaleDateString('es-EC') : '-'
 
-const renderStatus = status =>
-  status === 'closed'
-    ? '<span class="text-green-600 font-semibold">Cerrado</span>'
-    : '<span class="text-blue-600 font-semibold">Activo</span>'
 
 /* ============================ 
    Render
@@ -48,11 +38,11 @@ function renderRow(loan) {
   return `    
     <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">${loan.name}</td>
-      <td class="ui-td col-right">${formatAmount(loan.total_amount)}</td>
-      <td class="ui-td col-right col-sm">${formatAmount(loan.interest_amount)}</td>
-      <td class="ui-td col-right">${formatAmount(loan.balance)}</td>
+      <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
+      <td class="ui-td col-right col-sm">${amountBox(loan.interest_amount)}</td>
+      <td class="ui-td col-right">${amountBox(loan.balance)}</td>
       <td class="ui-td col-left col-sm">${formatDate(loan.start_date)}</td>
-      <td class="ui-td col-left col-sm">${renderStatus(loan.status)}</td>
+      <td class="ui-td col-left col-sm">${statusTag(loan.is_active)}</td>
       <td class="ui-td col-left col-sm">${loan.disbursement_account.name}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
