@@ -451,7 +451,8 @@ VALUES
 ('income',540.8,'2025-11-13 16:05:24','QUINCENA NOVIEMBRE\nPago quincena',1,2,NULL,198),
 ('income',940.0,'2025-11-28 17:35:07','FIN DE MES\nCorrespondiente a noviembre',1,2,NULL,198),
 ('income',540.8,'2025-12-11 19:54:36','QUINCENA DICIEMBRE\nPago quincena',1,2,NULL,198),
-('income',950.0,'2025-12-20 13:18:29','FIN DE MES\nCorrespondiente a diciembre',1,2,NULL,198);
+('income',950.0,'2025-12-20 13:18:29','FIN DE MES\nCorrespondiente a diciembre',1,2,NULL,198),
+('income',540.8,'2026-01-13 23:54:21','QUINCENA ENERO\nPago quincena',1,2,NULL,198);
 
 INSERT INTO transactions (type,amount,date,description,user_id,account_id,to_account_id,category_id)
 VALUES
@@ -3951,7 +3952,16 @@ VALUES
 ('expense',13.0,'2026-01-10 19:25:47','PAGO CONSUMO\nMes: enero\nValor: 12,65\nComisión: 0,35',1,2,NULL,35),
 ('expense',24.5,'2026-01-10 19:30:47','PAGO SERVICIO HOGAR\nMes: enero\nCosto: 24,00\nComisión: 0,46',1,2,NULL,91),
 ('expense',30.8,'2026-01-10 19:35:47','PAGO LUZ DICIEMBRE\nPago luz\nContrato 200016703783',1,2,NULL,192),
-('expense',40.0,'2026-01-10 14:40:47','VÍVERES DIARIOS\nCompra de víveres',1,2,NULL,219);
+('expense',40.0,'2026-01-10 14:40:47','VÍVERES DIARIOS\nCompra de víveres',1,2,NULL,219),
+('expense',30.0,'2026-01-12 02:32:14','COMBUSTIBLE DIMAX\nCombustible dimax',1,2,NULL,40),
+('expense',5.5,'2026-01-12 02:49:57','ASADERO ZOILITA\nCompra de comida',1,2,NULL,43),
+('expense',122.0,'2026-01-12 14:48:39','PAGO DE ENERO #10\nPago de 1 mes\nEnero 2026. $122',1,2,NULL,96),
+('expense',110.0,'2026-01-12 14:53:39','EVENTO DE GRADUACIÓN\nEvento de Graduación para 7mo B, en la escuela letras y vida.',1,2,NULL,94),
+('expense',20.0,'2026-01-16 17:59:21','ALMUERZOS CONECEL\nAlmuerzos en el local: los monos',1,2,NULL,44),
+('expense',300.0,'2026-01-14 12:06:41','VÍVERES QUINCENA ENERO\nvíveres',1,2,NULL,221),
+('expense',2.0,'2026-01-14 14:11:41','GASTOS ADMINISTRATIVOS BANQUITO\nGastos administrativos del mes enero',1,2,NULL,84),
+('expense',7.0,'2026-01-14 21:01:06','MEMBRESÍA\nDesde 19 de diciembre al 19 de marzo',1,2,NULL,75),
+('expense',20.0,'2026-01-14 21:06:06','GASTOS PARA NANDA\nVarios',1,2,NULL,216);
 
 INSERT INTO loans (loan_number,name,total_amount,balance,interest_amount,start_date,end_date,status,user_id,disbursement_account_id,transaction_id)
 VALUES
@@ -4798,13 +4808,14 @@ VALUES
 (NULL,32.19,18.95,'2025-11-28',NULL,57,2,NULL),
 (NULL,0.0,5.0,'2025-11-28',NULL,9,2,NULL),
 (NULL,100.0,15.0,'2025-12-13',NULL,8,2,NULL),
-(NULL,74.8,21.96,'2025-12-20',NULL,18,2,NULL),
+(NULL,74.84,21.96,'2025-12-20',NULL,18,2,NULL),
 (NULL,31.59,4.3,'2025-12-20',NULL,55,2,NULL),
 (NULL,20.42,3.54,'2025-12-20',NULL,56,2,NULL),
 (NULL,32.54,18.6,'2025-12-20',NULL,57,2,NULL),
 (NULL,0.01,0.0,'2026-01-30',NULL,57,2,NULL),
 (NULL,0.0,10.0,'2026-01-04',NULL,9,2,NULL),
-(NULL,0.0,5.0,'2026-01-10',NULL,19,2,NULL);
+(NULL,0.0,5.0,'2026-01-10',NULL,19,2,NULL),
+(NULL,100.0,15.0,'2026-01-14',NULL,8,2,NULL);
 
 INSERT INTO transactions (id,type,amount,date,description,user_id,account_id,to_account_id,category_id)
 VALUES
@@ -5503,13 +5514,14 @@ VALUES
 (NULL,'expense',51.14,'2025-11-28','Pago préstamo',1,2,NULL,184),
 (NULL,'expense',5.0,'2025-11-28','Pago préstamo',1,2,NULL,26),
 (NULL,'expense',115.0,'2025-12-13','Pago préstamo',1,2,NULL,21),
-(NULL,'expense',96.75999999999999,'2025-12-20','Pago préstamo',1,2,NULL,50),
+(NULL,'expense',96.80000000000001,'2025-12-20','Pago préstamo',1,2,NULL,50),
 (NULL,'expense',35.89,'2025-12-20','Pago préstamo',1,2,NULL,184),
 (NULL,'expense',23.96,'2025-12-20','Pago préstamo',1,2,NULL,184),
 (NULL,'expense',51.14,'2025-12-20','Pago préstamo',1,2,NULL,184),
 (NULL,'expense',0.01,'2026-01-30','Pago préstamo',1,2,NULL,184),
 (NULL,'expense',10.0,'2026-01-04','Pago préstamo',1,2,NULL,26),
-(NULL,'expense',5.0,'2026-01-10','Pago préstamo',1,2,NULL,50);
+(NULL,'expense',5.0,'2026-01-10','Pago préstamo',1,2,NULL,50),
+(NULL,'expense',115.0,'2026-01-14','Pago préstamo',1,2,NULL,21);
 
 UPDATE loan_payments lp
 JOIN transactions t ON (
@@ -5541,3 +5553,340 @@ UPDATE loans
 SET status = 'closed'
 WHERE balance <= 0
 AND status <> 'closed';
+
+INSERT INTO transactions (id,type,amount,date,description,user_id,account_id,to_account_id,category_id)
+VALUES
+(NULL,'transfer',437.0,'2020-08-01 05:00:00','Saldo Inicial Saldo Inicial',1,2,4,NULL),
+(NULL,'transfer',416.7,'2020-08-01 05:00:00','Saldo Inicial Saldo Inicial',1,2,4,NULL),
+(NULL,'transfer',22.5,'2020-08-01 05:00:00','Saldo Inicial Saldo Inicial',1,2,4,NULL),
+(NULL,'transfer',0.0,'2020-08-01 05:00:00','Saldo Inicial Saldo Inicial',1,2,2,NULL),
+(NULL,'transfer',41.67,'2020-09-29 18:35:00','Ahorro Meta Conecel # 11 Ahorro Meta Conecel # 11',1,2,4,NULL),
+(NULL,'transfer',22.5,'2020-09-29 18:40:00','Ahorro Meta Conecel # 2 Ahorro Meta Conecel # 2',1,2,4,NULL),
+(NULL,'transfer',75.0,'2020-09-29 18:45:00','Ahorro Conecel Cuenta Principal Ahorro Conecel Cuenta Principal',1,2,4,NULL),
+(NULL,'transfer',40.12,'2020-10-30 23:25:00','Ahorro Meta Conecel # 12 Ahorro Meta Conecel # 12',1,2,4,NULL),
+(NULL,'transfer',22.5,'2020-10-30 23:35:00','Ahorro Meta Conecel # 3 Ahorro Meta Conecel # 3',1,2,4,NULL),
+(NULL,'transfer',75.0,'2020-10-30 15:50:00','Ahorro Conecel Cuenta Principal Ahorro Conecel Cuenta Principal',1,2,4,NULL),
+(NULL,'transfer',75.0,'2020-11-28 00:00:00','Ahorro Conecel Cuenta Principal Ahorro Conecel Cuenta Principal',1,2,4,NULL),
+(NULL,'transfer',20.0,'2020-11-28 00:05:00','Ahorro Meta Conecel # 13 Ahorro Meta Conecel # 13',1,2,4,NULL),
+(NULL,'transfer',22.5,'2020-11-28 00:15:00','Ahorro Meta Conecel # 4 Ahorro Meta Conecel # 4',1,2,4,NULL),
+(NULL,'transfer',75.0,'2020-12-19 02:30:00','Ahorro Conecel Cuenta Principal Ahorro Conecel Cuenta Principal',1,2,4,NULL),
+(NULL,'transfer',10.0,'2020-12-19 02:35:00','Ahorro Meta Conecel # 14 Ahorro Meta Conecel # 14',1,2,4,NULL),
+(NULL,'transfer',22.5,'2020-12-19 02:40:00','Ahorro Meta Conecel # 5 Ahorro Meta Conecel # 5',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-01-29 14:25:00','Ahorro Conecel Cuenta Principal Ahorro Conecel Cuenta Principal',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-01-29 14:30:00','Ahorro Meta Conecel # 15 Ahorro Meta Conecel # 15',1,2,4,NULL),
+(NULL,'transfer',22.5,'2021-01-29 14:35:00','Ahorro Meta Conecel # 6 Ahorro Meta Conecel # 6',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-02-27 14:35:00','Ahorro Conecel Cuenta Principal Ahorro Conecel Cuenta Principal',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-02-27 14:40:00','Ahorro Meta Conecel # 16 Ahorro Meta Conecel # 16',1,2,4,NULL),
+(NULL,'transfer',22.5,'2021-02-27 14:45:00','Ahorro Meta Conecel # 7 Ahorro Meta Conecel # 7',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-03-30 15:00:00','Ahorro Conecel Cuenta Principal Ahorro Conecel Cuenta Principal',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-03-30 15:05:00','Ahorro Meta Conecel # 17 Ahorro Meta Conecel # 17',1,2,4,NULL),
+(NULL,'transfer',22.5,'2021-03-30 15:20:00','Ahorro Meta Conecel # 8 Ahorro Meta Conecel # 8',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-05-01 03:00:00','AHORRO META CONECEL # 18 Ahorro Meta Conecel # 18',1,2,4,NULL),
+(NULL,'transfer',22.5,'2021-05-01 03:15:00','AHORRO META CONECEL # 9 Ahorro Meta Conecel # 9',1,2,4,NULL),
+(NULL,'transfer',47.31,'2021-05-01 02:45:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25 Interes o varios remanentes: $22.31',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-05-29 01:00:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-05-29 01:15:00','AHORRO META CONECEL # 19 Ahorro Meta Conecel # 19',1,2,4,NULL),
+(NULL,'transfer',22.5,'2021-05-29 01:45:00','AHORRO META CONECEL # 10 Ahorro Meta Conecel # 10',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-06-29 23:30:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-06-29 23:45:00','AHORRO META CONECEL # 20 Ahorro Meta Conecel # 20',1,2,4,NULL),
+(NULL,'transfer',22.5,'2021-06-30 00:00:00','AHORRO META CONECEL # 11 Ahorro Meta Conecel # 11',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-07-30 18:00:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-07-30 18:15:00','AHORRO META CONECEL # 21 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',22.5,'2021-07-30 18:45:00','AHORRO META CONECEL # 11 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-08-31 16:53:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-08-31 16:54:00','AHORRO META CONECEL # 22 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',22.5,'2021-08-31 17:04:00','AHORRO META CONECEL # 12 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-09-29 20:08:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-09-29 20:19:00','AHORRO META CONECEL # 14 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',58.33,'2021-09-29 20:20:00','AHORRO META CONECEL # 1 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2021-09-30 03:34:00','CUOTA OCTUBRE Cuota octubre 2021',1,2,5,NULL),
+(NULL,'transfer',25.0,'2021-10-28 22:09:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-10-28 22:29:00','AHORRO META CONECEL # 15 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',58.33,'2021-10-28 22:40:00','AHORRO META CONECEL # 2 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2021-10-30 21:15:00','CUOTA NOVIEMBRE Cuota noviembre 2021',1,2,5,NULL),
+(NULL,'transfer',40.0,'2021-11-30 01:56:00','CUOTA DICIEMBRE Cuota diciembre 2021',1,2,5,NULL),
+(NULL,'transfer',25.0,'2021-11-30 15:06:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-11-30 15:17:00','AHORRO META CONECEL # 16 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',58.33,'2021-11-30 15:28:00','AHORRO META CONECEL # 3 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',25.0,'2021-12-21 15:08:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2021-12-21 15:19:00','AHORRO META CONECEL # 17 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',58.33,'2021-12-21 15:29:00','AHORRO META CONECEL # 4 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2021-12-21 18:56:00','CUOTA ENERO Cuota Enero 2022',1,2,5,NULL),
+(NULL,'transfer',25.0,'2022-01-29 22:15:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',58.33,'2022-01-29 22:20:00','AHORRO META CONECEL # 5 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',10.0,'2022-01-29 22:16:00','AHORRO META CONECEL # 18 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-02-01 14:23:00','CUOTA FEBRERO Cuota Febrero 2022',1,2,5,NULL),
+(NULL,'transfer',25.0,'2022-02-28 15:01:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2022-02-28 15:06:00','AHORRO META CONECEL # 19 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',58.33,'2022-02-28 15:16:00','AHORRO META CONECEL # 6 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-03-02 14:28:00','CUOTA MARZO Cuota Marzo 2022',1,2,5,NULL),
+(NULL,'transfer',25.0,'2022-03-31 15:45:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2022-03-31 15:50:00','AHORRO META CONECEL # 20 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',58.33,'2022-03-31 15:50:00','AHORRO META CONECEL # 7 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-04-01 19:56:00','CUOTA ABRIL Cuota abril',1,2,5,NULL),
+(NULL,'transfer',25.0,'2022-04-30 14:39:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',58.33,'2022-04-30 14:40:00','AHORRO META CONECEL # 8 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',10.0,'2022-04-30 14:45:00','AHORRO META CONECEL # 21 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-04-30 16:27:00','CUOTA MAYO Cuota',1,2,5,NULL),
+(NULL,'transfer',25.0,'2022-05-31 11:47:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',58.33,'2022-05-31 11:48:00','AHORRO META CONECEL # 9 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-05-31 12:42:00','CUOTA JUNIO Cuota',1,2,5,NULL),
+(NULL,'transfer',10.0,'2022-05-31 11:51:00','AHORRO META CONECEL # 22 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',100.0,'2022-06-09 15:02:00','COUTA DE NIVELACIÓN 100 DE 280 Cuota de nivelación: $100 de $280. Pendiente $180',1,2,5,NULL),
+(NULL,'transfer',25.0,'2022-06-29 17:15:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',58.33,'2022-06-29 17:20:00','AHORRO META CONECEL # 10 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-06-30 12:34:00','CUOTA JULIO Cuota',1,2,5,NULL),
+(NULL,'transfer',25.0,'2022-07-29 17:48:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',58.33,'2022-07-29 17:49:00','AHORRO META CONECEL # 11 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-07-30 15:28:00','CUOTA AGOSTO Cuota',1,2,5,NULL),
+(NULL,'transfer',25.0,'2022-08-31 00:50:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',58.33,'2022-08-31 00:45:00','AHORRO META CONECEL # 12 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-08-31 13:30:00','CUOTA SEPTIEMBRE Cuota',1,2,5,NULL),
+(NULL,'transfer',10.0,'2022-09-30 21:41:00','AHORRO META CONECEL # 13 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',25.0,'2022-09-30 21:47:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-10-01 21:09:00','CUOTA OCTUBRE Cuota',1,2,5,NULL),
+(NULL,'transfer',10.0,'2022-10-29 13:23:00','AHORRO META CONECEL # 14 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',25.0,'2022-10-29 13:28:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-10-29 15:51:00','CUOTA NOVIEMBRE Cuota',1,2,5,NULL),
+(NULL,'transfer',10.0,'2022-11-30 02:48:00','AHORRO META CONECEL # 15 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',25.0,'2022-11-30 02:53:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',40.0,'2022-12-02 12:21:00','CUOTA DICIEMBRE Cuota',1,2,5,NULL),
+(NULL,'transfer',10.0,'2022-12-22 13:46:00','AHORRO META CONECEL # 16 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',25.0,'2022-12-22 13:51:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-01-14 13:37:00','CUOTA ENERO Cuota',1,2,5,NULL),
+(NULL,'transfer',10.0,'2023-01-31 23:19:00','AHORRO META CONECEL # 16 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',25.0,'2023-01-31 23:14:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-02-01 14:30:00','CUOTA FEBRERO Cuota',1,2,5,NULL),
+(NULL,'transfer',25.0,'2023-02-28 01:05:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-02-28 01:10:00','AHORRO META CONECEL # 17 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-03-15 00:01:00','CUOTA MARZO Cuota',1,2,5,NULL),
+(NULL,'transfer',25.0,'2023-03-29 23:07:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-03-29 23:08:00','AHORRO META CONECEL # 19 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-04-07 14:09:00','CUOTA ABRIL Cuota',1,2,5,NULL),
+(NULL,'transfer',180.0,'2023-04-11 14:33:00','CUOTAS PENDIENTES INICIALES Cuotas pendientes que corresponden al inicio del banquito y por los dos números corresponden $90 cada uno = $180',1,2,5,NULL),
+(NULL,'transfer',25.0,'2023-04-28 22:32:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-04-28 22:42:00','AHORRO META CONECEL # 20 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-04-29 13:49:00','CUOTA MAYO Cuota',1,2,5,NULL),
+(NULL,'transfer',25.0,'2023-05-30 01:07:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-05-30 01:12:00','AHORRO META CONECEL # 21 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-06-06 00:16:00','CUOTA JUNIO Cuota',1,2,5,NULL),
+(NULL,'transfer',25.0,'2023-06-30 15:08:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-06-30 15:13:00','AHORRO META CONECEL # 22 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-07-01 14:30:00','CUOTA JULIO Cuota',1,2,5,NULL),
+(NULL,'transfer',116.0,'2023-07-05 12:50:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-07-29 17:40:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $25',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-07-29 17:45:00','AHORRO META CONECEL # 23 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-08-15 13:11:00','CUOTA AGOSTO Cuota',1,2,5,NULL),
+(NULL,'transfer',40.0,'2023-08-30 01:03:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $40',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-08-30 01:04:00','AHORRO META CONECEL # 24 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-09-15 01:32:00','CUOTA SEPTIEMBRE Cuota',1,2,5,NULL),
+(NULL,'transfer',40.0,'2023-09-29 23:20:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $40',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-09-29 23:25:00','AHORRO META CONECEL # 25 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-10-14 15:04:00','CUOTA OCTUBRE Cuota',1,2,5,NULL),
+(NULL,'transfer',40.0,'2023-10-30 14:43:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $40',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-10-30 14:48:00','AHORRO META CONECEL # 26 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-11-14 01:33:00','CUOTA NOVIEMBRE Cuota',1,2,5,NULL),
+(NULL,'transfer',40.0,'2023-11-29 22:01:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $40',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-11-29 22:02:00','AHORRO META CONECEL # 27 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2023-12-12 01:46:00','CUOTA DICIEMBRE Cuota',1,2,5,NULL),
+(NULL,'transfer',40.0,'2023-12-20 22:07:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $40',1,2,4,NULL),
+(NULL,'transfer',10.0,'2023-12-20 22:08:00','AHORRO META CONECEL # 28 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-01-13 01:42:00','CUOTA ENERO Cuota',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-01-31 11:01:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $40',1,2,4,NULL),
+(NULL,'transfer',10.0,'2024-01-31 11:06:00','AHORRO META CONECEL # 29 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-02-16 14:36:00','CUOTA FEBRERO Cuota',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-02-29 12:24:00','AHORRO CONECEL CUENTA PRINCIPAL Ahorro Conecel Cuenta Principal Ahorro mensual: $40',1,2,4,NULL),
+(NULL,'transfer',10.0,'2024-02-29 12:25:00','AHORRO META CONECEL # 30 Ahorro Meta Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-03-13 20:15:00','CUOTA MARZO Cuota',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-03-28 12:09:36','AHORROS CONECEL MARZO Ahorros conecel marzo 2024',1,2,4,NULL),
+(NULL,'transfer',10.0,'2024-03-28 12:10:27','AHORROS CONECEL MARZO AHORROS CONECEL MARZO',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-04-15 16:02:09','BANQUITO ABRIL BANQUITO ABRIL',1,2,5,NULL),
+(NULL,'transfer',20.0,'2024-04-15 17:47:11','AHORRO Apertura de cuenta corriente del banco pichincha',1,2,2,NULL),
+(NULL,'transfer',10.0,'2024-04-30 21:47:18','AHORRO CONECEL ABRIL AHORRO CONECEL abril',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-04-30 21:42:17','AHORRO CONECEL ABRIL AHORRO CONECEL ABRIL',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-05-15 16:38:18','BANQUITO MES MAYO BANQUITO MES MAYO',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-06-14 01:42:00','BANQUITO MES JUNIO BANQUITO MES Junio',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-07-13 22:01:44','BANQUITO MES JULIO BANQUITO MES Julio',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-07-30 01:02:59','AHORRO CONECEL JULIO AHORRO CONECEL julio',1,2,4,NULL),
+(NULL,'transfer',10.0,'2024-07-30 01:07:59','AHORRO CONECEL JULIO AHORRO CONECEL julio',1,2,4,NULL),
+(NULL,'transfer',909.96,'2024-08-06 14:39:52','TRANSFERENCIA Transferencia hacia los ahorros',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-08-15 16:31:45','BANQUITO MES AGOSTO BANQUITO MES Agosto',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-08-29 22:59:55','AHORRO AGOSTO AHORRO AGOSTO',1,2,4,NULL),
+(NULL,'transfer',20.0,'2020-01-01 14:01:23','CERTIFICADO DE APORTACIÓN CERTIFICADO DE APORTACIÓN',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-09-13 20:25:18','BANQUITO MES SEPTIEMBRE BANQUITO MES',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-09-27 20:28:13','AHORROS MES DE SEPTIEMBRE AHORROS MES DE SEPTIEMBRE',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-10-15 16:01:29','BANQUITO MES OCTUBRE BANQUITO MES',1,2,5,NULL),
+(NULL,'transfer',40.0,'2024-10-30 14:12:00','AHORROS MES DE OCTUBRE AHORROS MES DE octubre',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-11-28 17:46:29','AHORROS MES DE NOVIEMBRE Ahorros de fin de mes Coop Conecel',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-11-28 19:16:29','BANQUITO MES NOVIEMBRE BANQUITO MES',1,2,5,NULL),
+(NULL,'transfer',43.0,'2024-12-04 15:32:42','DEPOSITO PARA CERTIFICADO Deposito para Certificado, para completar $100 Al momento van $63',1,2,4,NULL),
+(NULL,'transfer',38.0,'2024-12-04 20:20:23','ABONO CERTIFICADO Abono al certificado',1,2,4,NULL),
+(NULL,'transfer',40.0,'2024-12-13 14:36:45','BANQUITO MES DICIEMBRE BANQUITO MES',1,2,5,NULL),
+(NULL,'transfer',13.0,'2024-12-13 19:02:58','TRANSFERENCIA Transferencia Pichincha',1,2,2,NULL),
+(NULL,'transfer',40.0,'2024-12-21 00:05:15','AHORRO DICIEMBRE Ahorro programado',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-01-29 19:06:16','AHORROS CONECEL Ahorro mensual',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-01-29 21:08:36','AHORRO BANQUITO Ahorro mes enero 2025',1,2,5,NULL),
+(NULL,'transfer',456.0,'2025-02-09 02:07:39','AHORROS PICHINCHA AHORROS PICHINCHA',1,2,2,NULL),
+(NULL,'transfer',40.0,'2025-02-14 15:19:34','AHORRO BANQUITO Ahorro mensual del banquito',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-02-26 21:34:10','AHORROS CONECEL Ahorro mensual',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-03-15 16:35:12','AHORRO BANQUITO Ahorro mensual del banquito',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-03-28 23:36:30','AHORROS CONECEL Ahorro mensual',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-04-14 15:31:02','AHORRO MES DE ABRIL Ahorros del mes de abril',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-04-30 02:37:51','AHORROS CONECEL Ahorro mensual',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-05-16 14:45:15','AHORRO MES DE MAYO Ahorros del mes',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-05-30 02:23:22','AHORROS CONECEL Ahorro mensual',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-06-15 16:16:52','AHORRO MES DE JUNIO Ahorros del mes',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-06-28 02:01:08','AHORROS CONECEL Ahorro mensual',1,2,4,NULL),
+(NULL,'transfer',65.0,'2025-07-16 11:19:47','AHORRO FLEX Mes de julio, apertura.',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-07-16 13:23:48','AHORRO MES DE JULIO Ahorros del mes',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-07-30 00:23:10','AHORROS CONECEL Ahorro mensual',1,2,4,NULL),
+(NULL,'transfer',80.0,'2025-07-30 00:27:30','AHORRO FLEX Ahorro mes de julio',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-08-15 18:43:24','AHORRO MES DE AGOSTO Ahorros del mes',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-08-28 22:07:14','AHORROS MES DE AGOSTO AHORROS MES DE AGOSTO',1,2,4,NULL),
+(NULL,'transfer',80.0,'2025-08-28 22:07:54','AHORRO MES DE AGOSTO AHORRO MES DE AGOSTO',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-09-15 15:47:03','BANQUITO Mes de Septiembre',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-09-30 00:05:29','AHORROS MES DE AGOSTO AHORROS MES DE AGOSTO',1,2,4,NULL),
+(NULL,'transfer',80.0,'2025-09-30 00:10:29','AHORRO MES DE SEPTIEMBRE AHORRO MES DE septiembre',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-10-14 01:52:51','BANQUITO Mes de octubre',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-10-30 11:23:00','AHORROS MES DE OCTUBRE AHORROS MES DE octubre',1,2,4,NULL),
+(NULL,'transfer',80.0,'2025-10-30 11:28:00','AHORRO MES DE OCTUBRE AHORRO MES DE octubre',1,2,4,NULL),
+(NULL,'transfer',0.01,'2025-10-07 00:03:24','DEVOLUCIÓN DEL RETIRO DEVOLUCIÓN DEL RETIRO',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-11-14 01:10:18','BANQUITO Mes de noviembre',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-11-28 17:40:07','AHORROS MES DE NOVIEMBRE AHORROS MES DE noviembre',1,2,4,NULL),
+(NULL,'transfer',80.0,'2025-11-28 17:45:07','AHORRO MES DE NOVIEMBRE AHORRO MES DE noviembre',1,2,4,NULL),
+(NULL,'transfer',40.0,'2025-12-13 17:34:31','BANQUITO Mes de diciembre',1,2,5,NULL),
+(NULL,'transfer',40.0,'2025-12-20 13:23:29','AHORROS MES DE DICIEMBRE AHORRO mensual',1,2,4,NULL),
+(NULL,'transfer',120.0,'2025-12-20 13:28:29','AHORRO MES DE DICIEMBRE Ahorro flex: $80 Compra de boletos coop: $40',1,2,4,NULL),
+(NULL,'transfer',40.0,'2026-01-14 13:56:02','AHORRO MES DE ENERO AHORRO MES DE ENERO',1,2,5,NULL);
+
+INSERT INTO transactions (id,type,amount,date,description,user_id,account_id,to_account_id,category_id)
+VALUES
+(NULL,'transfer',150.0,'2020-09-10 17:30:00','Retiro Cuenta Conecel',1,4,2,NULL),
+(NULL,'transfer',200.0,'2020-09-22 14:00:00','TRANSFERENCIAS Transferencias',1,4,2,NULL),
+(NULL,'transfer',118.0,'2020-11-13 13:30:00','TRANSFERENCIA AHORROS Transferencias',1,4,2,NULL),
+(NULL,'transfer',130.0,'2020-12-29 17:30:00','TRANSFERENCIA DICIEMBRE Transferencias',1,4,2,NULL),
+(NULL,'transfer',85.0,'2021-02-25 14:00:00','TRANSFERENCIA FEBRERO Transferencias',1,4,2,NULL),
+(NULL,'transfer',50.0,'2021-03-26 14:30:00','TRANSFERENCIAS Transferencias',1,4,2,NULL),
+(NULL,'transfer',64.0,'2021-06-15 23:00:00','TRANSFERENCIAS Transferencias',1,4,2,NULL),
+(NULL,'transfer',378.0,'2021-09-29 02:26:00','TRANSFERENCIAS Retiro de la cuenta Conecel # 1, liberado por liquidación del prestamo',1,4,2,NULL),
+(NULL,'transfer',200.0,'2021-11-05 03:27:00','TRANSFERENCIAS Retiro de la cuenta Conecel # 1',1,4,2,NULL),
+(NULL,'transfer',30.49,'2021-12-28 00:37:00','TRANSFERENCIAS CONECEL Retiro de la cuenta 1 de Conecel que correspondía al prestamos de $5000. Proporcional $30.49',1,4,2,NULL),
+(NULL,'transfer',109.51,'2021-12-28 00:52:00','TRANSFERENCIAS CONECEL Retiro de la cuenta principal x109,51',1,4,2,NULL),
+(NULL,'transfer',82.0,'2022-02-04 21:25:00','TRANSFERENCIAS Transferencia para pago de deudas',1,4,2,NULL),
+(NULL,'transfer',54.0,'2022-03-09 02:15:00','TRANSFERENCIAS Transferencia bancaria',1,4,2,NULL),
+(NULL,'transfer',52.0,'2022-05-05 00:30:00','TRANSFERENCIAS Transferencias de mayo',1,4,2,NULL),
+(NULL,'transfer',50.0,'2022-06-17 23:13:00','TRANSFERENCIAS Retiro Conecel',1,4,2,NULL),
+(NULL,'transfer',50.0,'2022-06-23 23:55:00','TRANSFERENCIAS Transferencia',1,4,2,NULL),
+(NULL,'transfer',195.0,'2022-07-04 12:16:00','TRANSFERENCIAS Retiro',1,4,2,NULL),
+(NULL,'transfer',87.5,'2022-07-19 15:15:00','TRANSFERENCIAS Transferencia de ahorro Conecel #2. Quedando un saldo cero.',1,4,2,NULL),
+(NULL,'transfer',7.5,'2022-07-19 15:23:00','TRANSFERENCIAS Retiro de $7,50',1,4,2,NULL),
+(NULL,'transfer',60.0,'2022-08-10 01:05:00','TRANSFERENCIAS Retiros para salud',1,4,2,NULL),
+(NULL,'transfer',30.0,'2022-08-24 14:54:00','TRANSFERENCIAS Retiro de Conecel',1,4,2,NULL),
+(NULL,'transfer',40.0,'2022-10-03 23:32:00','TRANSFERENCIAS Retiro Conecel',1,4,2,NULL),
+(NULL,'transfer',33.0,'2022-11-10 22:43:00','TRANSFERENCIAS Para otros pagos',1,4,2,NULL),
+(NULL,'transfer',40.0,'2023-01-04 22:39:00','TRANSFERENCIAS Retiro de valores',1,4,2,NULL),
+(NULL,'transfer',20.0,'2023-02-08 23:43:00','TRANSFERENCIAS Retiro $20',1,4,2,NULL),
+(NULL,'transfer',21.0,'2023-03-08 14:00:00','TRANSFERENCIAS Retiro de los ahorros',1,4,2,NULL),
+(NULL,'transfer',22.0,'2023-04-05 01:41:00','TRANSFERENCIAS Retiro Conecel',1,4,2,NULL),
+(NULL,'transfer',140.0,'2023-08-02 23:08:00','TRANSFERENCIAS Retiros',1,4,2,NULL),
+(NULL,'transfer',70.0,'2023-08-25 01:59:00','TRANSFERENCIAS Retiros de CONECEL',1,4,2,NULL),
+(NULL,'transfer',50.0,'2023-09-04 21:02:00','TRANSFERENCIAS Transferencia',1,4,2,NULL),
+(NULL,'transfer',32.0,'2023-09-22 16:46:00','TRANSFERENCIAS Transferencia',1,4,2,NULL),
+(NULL,'transfer',57.0,'2023-11-09 11:26:00','TRANSFERENCIAS Retiro CONECEL',1,4,2,NULL),
+(NULL,'transfer',100.0,'2024-01-20 00:21:00','TRANSFERENCIAS Transferencia',1,4,2,NULL),
+(NULL,'transfer',90.0,'2024-03-01 12:03:00','TRANSFERENCIAS Retiro conecel',1,4,2,NULL),
+(NULL,'transfer',50.0,'2024-04-03 00:06:21','RETIRO DE LA CUENTA PRINCIPAL DE CONECEL RETIRO DE LA CUENTA PRINCIPAL DE CONECEL',1,4,2,NULL),
+(NULL,'transfer',20.0,'2024-06-12 20:55:43','RETIRO PICHINCHA Retiro del banco',1,2,2,NULL),
+(NULL,'transfer',909.96,'2024-08-06 14:37:31','TRANSFERENCIA Transferencia para ahorro',1,4,2,NULL),
+(NULL,'transfer',100.0,'2024-08-13 02:23:40','RETIRO CONECEL Retiro para atender la compra de víveres',1,4,2,NULL),
+(NULL,'transfer',400.0,'2024-08-20 03:40:02','RETIROS DE LA CONECEL RETIROS DE LA CONECEL',1,4,2,NULL),
+(NULL,'transfer',250.0,'2024-09-13 00:03:49','RETIROS Retiros',1,4,2,NULL),
+(NULL,'transfer',130.0,'2024-09-19 13:00:38','RETIROS RETIROS',1,4,2,NULL),
+(NULL,'transfer',120.0,'2024-10-04 16:41:30','RETIRO CONECEL RETIRO CONECEL',1,4,2,NULL),
+(NULL,'transfer',110.0,'2024-11-07 11:17:18','RETIRO CONECEL RETIRO CONECEL',1,4,2,NULL),
+(NULL,'transfer',25.0,'2024-11-22 23:23:32','RETIROS DE AHORROS CONECEL RETIROS DE AHORROS CONECEL',1,4,2,NULL),
+(NULL,'transfer',38.0,'2024-12-04 19:19:11','RETIRO CONECEL Retiro de la cuenta conecel para abonar al certificado',1,4,2,NULL),
+(NULL,'transfer',300.0,'2025-02-17 17:49:06','RETIRO DEL PICHINCHA Para tratamiento de espalda',1,2,2,NULL),
+(NULL,'transfer',150.0,'2025-02-21 22:05:34','RETIRO PICHINCHA Por motivo de tratamiento médico',1,2,2,NULL),
+(NULL,'transfer',100.0,'2025-03-07 00:05:26','RETIRO DE LA CONECEL RETIRO DE LA CONECEL',1,4,2,NULL),
+(NULL,'transfer',18.0,'2025-03-31 14:20:43','RETIRO PICHINCHA RETIRO PICHINCHA',1,2,2,NULL),
+(NULL,'transfer',120.0,'2025-06-05 10:28:57','RETIRO EMERGENTE RETIRO EMERGENTE',1,4,2,NULL),
+(NULL,'transfer',65.0,'2025-07-16 11:18:51','RETIRO DE AHORROS Retiro de ahorros de la conecel para movir hacia ahorro flex',1,4,2,NULL),
+(NULL,'transfer',0.01,'2025-10-07 00:02:52','RETIROS DE LA CONECEL RETIROS DE LA CONECEL',1,4,2,NULL),
+(NULL,'transfer',90.0,'2025-10-07 00:04:05','RETIROS DE AHORROS FLEX RETIROS DE AHORROS FLEX',1,4,2,NULL),
+(NULL,'transfer',40.0,'2025-11-13 14:22:59','RETIRO DE AHORROS RETIRO DE AHORROS',1,4,2,NULL),
+(NULL,'transfer',90.0,'2025-11-21 16:36:35','RETIRO DE AHORROS CONECEL RETIRO DE AHORROS CONECEL',1,4,2,NULL),
+(NULL,'transfer',60.0,'2025-12-23 12:51:49','RETIRO AHORROS RETIRO AHORROS',1,4,2,NULL);
+
+START TRANSACTION;
+
+/* =========================================================
+   1) Actualizar monto de la transacción #3
+========================================================= */
+UPDATE transactions
+SET amount = 5445.27
+WHERE id = 3;
+
+/* =========================================================
+   2) Resetear balances de todas las cuentas del usuario
+========================================================= */
+UPDATE accounts
+SET balance = 0
+WHERE user_id = 1;
+
+/* =========================================================
+   3) Aplicar INCOME y EXPENSE
+      income  -> suma
+      expense -> resta
+========================================================= */
+UPDATE accounts a
+JOIN (
+    SELECT
+        account_id,
+        SUM(
+            CASE
+                WHEN type = 'income' THEN amount
+                WHEN type = 'expense' THEN -amount
+                ELSE 0
+            END
+        ) AS balance_delta
+    FROM transactions
+    WHERE user_id = 1
+    GROUP BY account_id
+) t ON t.account_id = a.id
+SET a.balance = a.balance + t.balance_delta;
+
+/* =========================================================
+   4) Aplicar TRANSFERS (origen)
+      account_id -> resta
+========================================================= */
+UPDATE accounts a
+JOIN (
+    SELECT
+        account_id,
+        SUM(amount) AS total_out
+    FROM transactions
+    WHERE user_id = 1
+      AND type = 'transfer'
+    GROUP BY account_id
+) t ON t.account_id = a.id
+SET a.balance = a.balance - t.total_out;
+
+/* =========================================================
+   5) Aplicar TRANSFERS (destino)
+      to_account_id -> suma
+========================================================= */
+UPDATE accounts a
+JOIN (
+    SELECT
+        to_account_id,
+        SUM(amount) AS total_in
+    FROM transactions
+    WHERE user_id = 1
+      AND type = 'transfer'
+      AND to_account_id IS NOT NULL
+    GROUP BY to_account_id
+) t ON t.to_account_id = a.id
+SET a.balance = a.balance + t.total_in;
+
+COMMIT;

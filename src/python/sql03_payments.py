@@ -129,7 +129,6 @@ def build_bulk_insert_loan_payments_and_update_balance(
         f"SET l.interest_amount = i.total_interest;"
     )
 
-
     sql_close_loans = (
         f"UPDATE {loans_table}\n"
         f"SET status = 'closed'\n"

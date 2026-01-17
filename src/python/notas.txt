@@ -14,6 +14,7 @@
 
 # Ahorros           (trx_type == 1 and move_type == 1 and account_type == 2) 
                  or (trx_type == 4 and move_type == 1 and account_type == 2)
+                 
 # Retiros           (trx_type == 5 and move_type == 2 and account_type == 2) 
                  or (trx_type == 5 and move_type == 1 and account_type == 2)
 
