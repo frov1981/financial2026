@@ -4,9 +4,10 @@ node_modules/
 # Build
 dist/
 
-# Entornos
-.env
-.env.*
+# Entornos virtuales
+venv/
+.env/
+.env*/
 
 # Logs
 logs/
@@ -20,3 +21,12 @@ coverage/
 
 # Seeds
 /src/seeds/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Archivos de texto
+*.txt
+
+

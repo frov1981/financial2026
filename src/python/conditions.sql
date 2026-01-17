@@ -1,0 +1,29 @@
+
+# Ingresos          (trx_type == 1 and move_type == 1 and account_type == 1)
+# Egresos           (trx_type == 2 and move_type == 2 and account_type == 1)
+
+
+# Prestamos         (trx_type == 1 and move_type == 1 and account_type == 3) 
+                 or (trx_type == 7 and move_type == 1 and account_type == 3)
+                 
+# Pagos Capital     (trx_type == 2 and move_type == 2 and account_type == 4) 
+                 or (trx_type == 6 and move_type == 2 and account_type == 4)
+
+# Pagos Interes     (trx_type == 2 and move_type == 2 and account_type == 5) 
+                 or (trx_type == 6 and move_type == 2 and account_type == 5)
+
+# Ahorros           (trx_type == 1 and move_type == 1 and account_type == 2) 
+                 or (trx_type == 4 and move_type == 1 and account_type == 2)
+                 
+# Retiros           (trx_type == 5 and move_type == 2 and account_type == 2) 
+                 or (trx_type == 5 and move_type == 1 and account_type == 2)
+
+
+# Ingresos      move_type=1 and account_type=1
+# Egresos       move_type=2 and account_type=1
+
+# Prestamos     move_type=1 and account_type=3
+# Pagos Capital move_type=2 and account_type=4
+# Pagos Interes move_type=2 and account_type=5
+
+# Ahorros       move_type=1 and account_type=2
