@@ -95,6 +95,7 @@ function renderRow(account) {
     <td class="ui-td col-left">${account.name}</td>
     <td class="ui-td col-left">${accountTypeTag(account.type)}</td>
     <td class="ui-td col-left col-sm">${statusTag(account.is_active)}</td>
+    <td class="ui-td col-right ui-col-sm">${numberBox(account.transaction_count)}</td>
     <td class="ui-td col-right">${amountBox(account.balance)}</td>
     <td class="ui-td col-center">
       <div class="icon-actions">
@@ -126,7 +127,7 @@ function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="5" class="ui-td col-center text-gray-500">
+        <td colspan="6" class="ui-td col-center text-gray-500">
           No se encontraron cuentas
         </td>
       </tr>

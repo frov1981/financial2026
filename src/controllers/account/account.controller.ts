@@ -11,16 +11,33 @@ export const listAccountsAPI: RequestHandler = async (req: Request, res: Respons
   const authReq = req as AuthRequest
 
   try {
-    const accounts = await AppDataSource.getRepository(Account).find({
-      where: { user: { id: authReq.user.id } },
-      order: { name: 'ASC' }
-    })
+    const repository = AppDataSource.getRepository(Account)
+
+    const result = await repository
+      .createQueryBuilder('account')
+      .where('account.user_id = :userId', { userId: authReq.user.id })
+      .addSelect(subQuery =>
+        subQuery
+          .select('COUNT(t.id)')
+          .from('transactions', 't')
+          .where('t.account_id = account.id'),
+        'transaction_count'
+      )
+      .orderBy('account.name', 'ASC')
+      .getRawAndEntities()
+
+    const accounts = result.entities.map((account, index) => ({
+      ...account,
+      transaction_count: Number(result.raw[index].transaction_count)
+    }))
+
     res.json(accounts)
   } catch (err) {
     logger.error('Error al listar cuentas:', err)
     res.status(500).json({ error: 'Error al listar cuentas' })
   }
 }
+
 
 export const recalculateBalancesAPI: RequestHandler = async (req: Request, res: Response) => {
   try {
