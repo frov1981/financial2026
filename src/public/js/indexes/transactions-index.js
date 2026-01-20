@@ -9,14 +9,14 @@ const PAGE_SIZE = 10
 let currentPage = 1
 let currentSearch = ''
 let totalPages = 1
+let allItems = []
 
 /* ============================
    DOM
 ============================ */
 const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
-const searchBtn = document.getElementById('search-btn')
-const tableBody = document.getElementById('transaction-table')
+const tableBody = document.getElementById('transactions-table')
 
 /* ============================
    Utils
@@ -29,91 +29,44 @@ function debounce(fn, delay) {
   }
 }
 
-/* ============================ 
-   Render
-============================ */
 function rowClassByType(type) {
-  if (type === 'income') return 'bg-green-50'
-  if (type === 'expense') return 'bg-red-50'
-  if (type === 'transfer') return 'bg-purple-50'
+  if (type === 'income') return 'income'
+  if (type === 'expense') return 'expense'
+  if (type === 'transfer') return 'transfer'
   return ''
 }
 
-function accountCell(tx) {
-  if (tx.type === 'income') {
-    return `
-      <div class="flex items-center gap-1 whitespace-nowrap leading-tight">
-        ${iconArrowRight({ size: 4, color: '#16a34a' })}
-        <span>${tx.account?.name || '-'}</span>
-      </div>
-    `
+function formatDateTime(date) {
+  const d = new Date(date)
+  return {
+    date: d.toLocaleDateString('es-EC'),
+    time: d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })
   }
-
-  if (tx.type === 'expense') {
-    return `
-      <div class="flex items-center gap-1 whitespace-nowrap leading-tight">
-        ${iconArrowLeft({ size: 4, color: '#dc2626' })}
-        <span>${tx.account?.name || '-'}</span>
-      </div>
-    `
-  }
-
-  if (tx.type === 'transfer') {
-    return `
-      <div class="flex flex-col gap-0.5 leading-tight whitespace-nowrap">
-        <div class="flex items-center gap-1">
-          ${iconArrowLeft({ size: 3.5, color: '#dc2626' })}
-          <span>${tx.account?.name || '-'}</span>
-        </div>
-
-        <div class="flex items-center gap-1">
-          ${iconArrowRight({ size: 3.5, color: '#16a34a' })}
-          <span>${tx.to_account?.name || '-'}</span>
-        </div>
-      </div>
-    `
-  }
-
-  return '-'
 }
 
+/* ============================
+   Render - Desktop
+============================ */
 function renderRow(tx) {
-  const d = new Date(tx.date)
-  const dateStr =
-    String(d.getDate()).padStart(2, '0') + '/' +
-    String(d.getMonth() + 1).padStart(2, '0') + '/' +
-    d.getFullYear()
-  const timeStr =
-    String(d.getHours()).padStart(2, '0') + ':' +
-    String(d.getMinutes()).padStart(2, '0')
+  const { date, time } = formatDateTime(tx.date)
 
   return `
     <tr id="transaction-${tx.id}" class="${rowClassByType(tx.type)}">
-      <td class="px-4 py-2 text-center whitespace-nowrap leading-tight">
-        <div>${dateStr}</div>
-        <div class="text-xs font-semibold text-gray-600">${timeStr}</div>
+      <td class="px-4 py-2 text-center">
+        <div>${date}</div>
+        <div class="text-xs text-gray-600">${time}</div>
       </td>
       <td class="ui-td col-left col-sm">${transactionTypeTag(tx.type)}</td>
       <td class="ui-td col-right">${amountBox(tx.amount)}</td>
-      <td class="ui-td col-left">${accountCell(tx)}</td>
+      <td class="ui-td col-left">${tx.account?.name || '-'}</td>
       <td class="ui-td col-left">${tx.category?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button
-            class="icon-btn edit"
-            onclick="goToTransactionUpdate(${tx.id})"
-            title="Editar">
+          <button class="icon-btn edit" onclick="goToTransactionUpdate(${tx.id})">
             ${iconEdit()}
-            <span class="ui-btn-text">Editar</span>
           </button>
-
-          <!-- Botón Eliminar -->
-          <button
-            class="icon-btn delete"
-            onclick="goToTransactionDelete(${tx.id})"
-            title="Eliminar">
+          <button class="icon-btn delete" onclick="goToTransactionDelete(${tx.id})">
             ${iconDelete()}
-            <span class="ui-btn-text">Eliminar</span>
           </button>
         </div>
       </td>
@@ -122,62 +75,111 @@ function renderRow(tx) {
 }
 
 /* ============================
-   Data
+   Render - Mobile
+============================ */
+function renderCard(tx) {
+  const { date, time } = formatDateTime(tx.date)
+
+  return `
+    <div class="transaction-card ${rowClassByType(tx.type)}"
+         onclick="goToTransactionUpdate(${tx.id})">
+
+      <div class="card-header">
+        <div>
+          <div class="card-date">${date}</div>
+          <div class="card-time">${time}</div>
+        </div>
+
+        <div class="card-amount">
+          ${amountBox(tx.amount)}
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="card-account">
+          ${tx.account?.name || '-'}
+        </div>
+        <div class="card-category">
+          ${tx.category?.name || '-'}
+        </div>
+
+        ${tx.description
+          ? `<div class="card-description">${tx.description}</div>`
+          : ''
+        }
+      </div>
+
+      <div class="card-actions">
+        <button class="icon-btn edit"
+          onclick="event.stopPropagation(); goToTransactionUpdate(${tx.id})">
+          ${iconEdit()}
+        </button>
+        <button class="icon-btn delete"
+          onclick="event.stopPropagation(); goToTransactionDelete(${tx.id})">
+          ${iconDelete()}
+        </button>
+      </div>
+    </div>
+  `
+}
+
+/* ============================
+   Render helpers
+============================ */
+function renderDesktop(data) {
+  tableBody.innerHTML = data.length
+    ? data.map(renderRow).join('')
+    : `
+      <tr>
+        <td colspan="6" class="ui-td col-center">
+          No se encontraron transacciones
+        </td>
+      </tr>
+    `
+}
+
+function renderMobile(data) {
+  const container = document.getElementById('transactions-mobile')
+  if (!container) return
+
+  container.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="ui-empty">No se encontraron transacciones</div>`
+}
+
+function render(data) {
+  if (window.innerWidth <= 768) {
+    renderMobile(data)
+  } else {
+    renderDesktop(data)
+  }
+}
+
+/* ============================
+   Data + Pagination
 ============================ */
 function updatePaginationInfo() {
-  const text = `Página ${currentPage} de ${totalPages}`
-  document.getElementById('page-info-top').textContent = text
-  document.getElementById('page-info-bottom').textContent = text
+  document.getElementById('page-info-top').textContent =
+    `Página ${currentPage} de ${totalPages}`
 }
 
 async function loadTransactions(page = 1) {
-  const params = new URLSearchParams({ page, limit: PAGE_SIZE })
+  const params = new URLSearchParams({
+    page,
+    limit: PAGE_SIZE
+  })
+
   if (currentSearch) params.append('search', currentSearch)
 
   const res = await fetch(`${API_BASE}?${params}`)
   const data = await res.json()
 
+  allItems = data.items
   totalPages = Math.ceil(data.total / PAGE_SIZE)
   currentPage = page
 
-  const tableBody = document.getElementById('transactions-table')
-
-  if (!data.items.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="ui-td col-center text-gray-500">
-          No se encontraron transacciones
-        </td>
-      </tr>
-    `
-  } else {
-    tableBody.innerHTML = data.items.map(renderRow).join('')
-  }
-
-  // restaurar fila seleccionada (si existe en esta página)
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    const row = document.getElementById(`transaction-${selected.id}`)
-    if (row) {
-      row.classList.add('tr-selected')
-    }
-  }
-
-  // guardar SOLO la página (NO search)
-  saveFilters(FILTER_KEY, { page })
-
+  render(allItems)
   updatePaginationInfo()
-}
-
-/* ============================
-   Acciones (GLOBAL)
-============================ */
-function goToTransactionUpdate(id) {
-  window.location.href = `/transactions/update/${id}`
-}
-
-function goToTransactionDelete(id) {
-  window.location.href = `/transactions/delete/${id}`
 }
 
 /* ============================
@@ -195,55 +197,35 @@ searchInput.addEventListener('input', debouncedSearch)
 
 clearBtn.addEventListener('click', () => {
   searchInput.value = ''
-  currentSearch = ''          
+  currentSearch = ''
   clearBtn.classList.add('hidden')
-
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
-
   loadTransactions(1)
 })
 
-  ;['top', 'bottom'].forEach(pos => {
-    document.getElementById(`prev-page-${pos}`).onclick = () => {
-      if (currentPage > 1) loadTransactions(currentPage - 1)
-    }
-    document.getElementById(`next-page-${pos}`).onclick = () => {
-      if (currentPage < totalPages) loadTransactions(currentPage + 1)
-    }
-  })
+/* ============================
+   Paginado (solo arriba)
+============================ */
+document.getElementById('prev-page-top').onclick = () => {
+  if (currentPage > 1) loadTransactions(currentPage - 1)
+}
 
-const cached = loadFilters(FILTER_KEY)
-if (cached) {
-  currentPage = cached.page || 1
-  currentSearch = cached.search || ''
-  searchInput.value = currentSearch
-  clearBtn.classList.toggle('hidden', !currentSearch)
+document.getElementById('next-page-top').onclick = () => {
+  if (currentPage < totalPages) loadTransactions(currentPage + 1)
 }
 
 /* ============================
-   Selección de fila
+   Acciones
 ============================ */
-document
-  .querySelector('.ui-table')
-  .addEventListener('click', (event) => {
+function goToTransactionUpdate(id) {
+  location.href = `/transactions/update/${id}`
+}
 
-    if (event.target.closest('button') || event.target.closest('a')) {
-      return
-    }
+function goToTransactionDelete(id) {
+  location.href = `/transactions/delete/${id}`
+}
 
-    const row = event.target.closest('tr[id^="transaction-"]')
-    if (!row) return
-
-    document
-      .querySelectorAll('#transactions-table tr')
-      .forEach(tr => tr.classList.remove('tr-selected'))
-
-    row.classList.add('tr-selected')
-
-    const txId = row.id.replace('transaction-', '')
-    saveFilters(SELECTED_KEY, { id: txId })
-  })
-
-
-loadTransactions(currentPage)
+/* ============================
+   Init
+============================ */
+loadTransactions()
+window.addEventListener('resize', () => render(allItems))

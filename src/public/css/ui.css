@@ -417,6 +417,259 @@
   align-items: center;
 }
 
+/* =========================================================
+   LOANS - MOBILE CARDS
+   ========================================================= */
+
+.loans-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .loans-mobile {
+    display: block;
+  }
+
+  .ui-table-wrapper {
+    display: none;
+  }
+}
+
+.loan-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.loan-card + .loan-card {
+  margin-top: 10px;
+}
+
+.loan-card.inactive {
+  background: #fff5f5;
+}
+
+.loan-card .icon-btn {
+  padding: 0.375rem;
+  min-height: auto;
+}
+
+.loan-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.loan-card .card-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.loan-card .card-balance {
+  margin: 8px 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.loan-card .card-sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.loan-card .card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.loan-card .card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+.loan-card .card-tags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* =========================================================
+   PAYMENTS - MOBILE CARDS
+   ========================================================= */
+
+.payments-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .payments-mobile {
+    display: block;
+  }
+
+  .ui-table-wrapper {
+    display: none;
+  }
+}
+
+.payment-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.payment-card + .payment-card {
+  margin-top: 10px;
+}
+
+.payment-card .icon-btn {
+  padding: 0.375rem;
+  min-height: auto;
+}
+
+.payment-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.payment-card .card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.payment-card .card-body {
+  margin: 8px 0;
+}
+
+.payment-card .amount-main {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.payment-card .amount-sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.payment-card .card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* =========================================================
+   TRANSACTIONS - MOBILE CARDS
+   ========================================================= */
+
+.transactions-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .transactions-mobile {
+    display: block;
+  }
+
+  .ui-table-wrapper {
+    display: none;
+  }
+}
+
+.transaction-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #ffffff;
+}
+
+.transaction-card + .transaction-card {
+  margin-top: 6px;
+}
+
+.transaction-card.income {
+  background: #f0fdf4;
+}
+
+.transaction-card.expense {
+  background: #fef2f2;
+}
+
+.transaction-card.transfer {
+  background: #faf5ff;
+}
+
+.transaction-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.transaction-card .card-date {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.transaction-card .card-time {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.transaction-card .card-amount {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.transaction-card .card-body {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.transaction-card .card-account {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.transaction-card .card-category {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.transaction-card .card-description {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.transaction-card .card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.transaction-card .icon-btn {
+  padding: 0.25rem;
+  min-height: auto;
+}
+
 
 /* =========================================================
    NUMERIC VALUES — AMOUNTS

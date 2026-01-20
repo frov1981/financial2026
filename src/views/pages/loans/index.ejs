@@ -2,38 +2,58 @@
   window.USER_ID = "<%= USER_ID %>"
 </script>
 
-<div class="max-w-6xl mx-auto">
-  <h1 class="ui-title">Préstamos</h1>
+<div class="max-w-6xl mx-auto ui-page">
 
-  <div class="ui-toolbar">
+  <!-- Header -->
+  <div class="ui-header">
+    <h1 class="ui-title">Préstamos</h1>
 
-    <!-- Botón Nuevo -->
-    <%- include('../../partials/btn-new', { href: '/loans/insert' , title: 'Nuevo Préstamo' , text: 'Nuevo' }) %>
+    <div class="ui-toolbar">
+      <%- include('../../partials/btn-new', {
+        href: '/loans/insert',
+        title: 'Nuevo Préstamo',
+        text: 'Nuevo'
+      }) %>
 
-      <!-- Filtrar -->
-      <%- include('../../partials/btn-filter', { onclick: 'openFilters()' , title: 'Filtrar préstamos' , text: 'Filtrar'
-        }) %> 
+      <%- include('../../partials/btn-filter', {
+        onclick: 'openFilters()',
+        title: 'Filtrar préstamos',
+        text: 'Filtrar'
+      }) %>
 
-        <!-- Buscador -->
-        <%- include('../../partials/search-box', { placeholder: 'Buscar préstamos...' }) %>
+      <%- include('../../partials/search-box', {
+        placeholder: 'Buscar préstamos...'
+      }) %>
+    </div>
   </div>
 
-  <div class="ui-table-wrapper">
-    <table class="ui-table">
-      <thead class="bg-gray-50"> 
-        <tr>
-          <th class="ui-th col-left">Nombre</th>
-          <th class="ui-th col-left">Monto</th>
-          <th class="ui-th col-left col-sm">Interés</th>
-          <th class="ui-th col-left">Saldo</th>
-          <th class="ui-th col-left col-sm">Inicio</th>
-          <th class="ui-th col-left col-sm">Estado</th>
-          <th class="ui-th col-left col-sm">Cuenta</th>
-          <th class="ui-th col-left">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="loans-table" class="bg-white divide-y divide-gray-200"></tbody>
-    </table>
+  <!-- =========================
+       SCROLL INTERNO
+       ========================= -->
+  <div class="ui-scroll-area">
+
+    <!-- Mobile cards -->
+    <div id="loans-mobile" class="loans-mobile"></div>
+
+    <!-- Desktop table -->
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Nombre</th>
+            <th class="ui-th col-right">Monto</th>
+            <th class="ui-th col-right col-sm">Interés</th>
+            <th class="ui-th col-right">Saldo</th>
+            <th class="ui-th col-left col-sm">Inicio</th>
+            <th class="ui-th col-left col-sm">Estado</th>
+            <th class="ui-th col-left col-sm">Cuenta</th>
+            <th class="ui-th col-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="loans-table"></tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 

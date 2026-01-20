@@ -1,3 +1,8 @@
+document.addEventListener('DOMContentLoaded', () => {
+  loadLoans()
+  window.addEventListener('resize', () => render(allLoans))
+})
+
 /* ============================
    Variables globales
 ============================ */
@@ -29,12 +34,13 @@ function debounce(fn, delay) {
 const formatDate = value =>
   value ? new Date(value).toLocaleDateString('es-EC') : '-'
 
-/* ============================ 
-   Render
+/* ============================
+   Render - Desktop
 ============================ */
 function renderRow(loan) {
   const rowClass = loan.is_active ? '' : 'bg-red-50'
-  return `    
+
+  return `
     <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">${loan.name}</td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
@@ -45,26 +51,15 @@ function renderRow(loan) {
       <td class="ui-td col-left col-sm">${loan.disbursement_account.name}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button
-            class="icon-btn edit"
-            title="Editar"
-            onclick="goToLoanUpdate(${loan.id})">
+          <button class="icon-btn edit" onclick="goToLoanUpdate(${loan.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-
-          <button
-            class="icon-btn delete"
-            title="Eliminar"
-            onclick="goToLoanDelete(${loan.id})">
+          <button class="icon-btn delete" onclick="goToLoanDelete(${loan.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
-
-          <button
-            class="icon-btn"
-            title="Detalles"
-            onclick="goToLoanView(${loan.id})">
+          <button class="icon-btn" onclick="goToLoanView(${loan.id})">
             ${iconList()}
             <span class="ui-btn-text">Detalles</span>
           </button>
@@ -74,26 +69,75 @@ function renderRow(loan) {
   `
 }
 
+/* ============================
+   Render - Mobile
+============================ */
+function renderCard(loan) {
+  return `
+    <div class="loan-card ${loan.is_active ? '' : 'inactive'}"
+         onclick="goToLoanUpdate(${loan.id})">
+
+      <div class="card-header">
+        <div class="card-title">${loan.name}</div>
+
+        <div class="card-actions">
+          <button class="icon-btn edit"
+            onclick="event.stopPropagation(); goToLoanUpdate(${loan.id})">
+            ${iconEdit()}
+          </button>
+          <button class="icon-btn delete"
+            onclick="event.stopPropagation(); goToLoanDelete(${loan.id})">
+            ${iconDelete()}
+          </button>
+          <button class="icon-btn"
+            onclick="event.stopPropagation(); goToLoanView(${loan.id})">
+            ${iconList()}
+          </button>
+        </div>
+      </div>
+
+      <div class="card-balance">
+        ${amountBox(loan.balance)}
+      </div>
+
+      <div class="card-sub">
+        Monto: ${amountBox(loan.total_amount)} · Interés: ${amountBox(loan.interest_amount)}
+      </div>
+
+      <div class="card-footer">
+        <span>${formatDate(loan.start_date)}</span>
+        <div class="card-tags">
+          ${statusTag(loan.is_active)}
+          <span>${loan.disbursement_account.name}</span>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+/* ============================
+   Render helpers
+============================ */
 function renderTable(data) {
-  if (!data.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="8" class="ui-td col-center text-gray-500">
-          No se encontraron préstamos
-        </td>
-      </tr>
-    `
-    return
-  }
+  tableBody.innerHTML = data.length
+    ? data.map(renderRow).join('')
+    : `<tr><td colspan="8" class="ui-td col-center">No se encontraron préstamos</td></tr>`
+}
 
-  tableBody.innerHTML = data.map(renderRow).join('')
+function renderCards(data) {
+  const container = document.getElementById('loans-mobile')
+  if (!container) return
 
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    const row = document.getElementById(`loan-${selected.id}`)
-    if (row) {
-      row.classList.add('tr-selected')
-    }
+  container.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="ui-empty">No se encontraron préstamos</div>`
+}
+
+function render(data) {
+  if (window.innerWidth <= 768) {
+    renderCards(data)
+  } else {
+    renderTable(data)
   }
 }
 
@@ -103,15 +147,7 @@ function renderTable(data) {
 async function loadLoans() {
   const res = await fetch(API_BASE)
   allLoans = await res.json()
-
-  const cached = loadFilters(FILTER_KEY)
-  if (cached?.term) {
-    searchInput.value = cached.term
-    clearBtn.classList.remove('hidden')
-    filterLoans()
-  } else {
-    renderTable(allLoans)
-  }
+  render(allLoans)
 }
 
 /* ============================
@@ -119,80 +155,36 @@ async function loadLoans() {
 ============================ */
 function filterLoans() {
   const term = searchInput.value.trim().toLowerCase()
-  saveFilters(FILTER_KEY, { term })
-
-  renderTable(
+  render(
     !term
       ? allLoans
       : allLoans.filter(l =>
-        l.name.toLowerCase().includes(term) ||
-        l.status.toLowerCase().includes(term)
-      )
+          l.name.toLowerCase().includes(term)
+        )
   )
 }
 
 const debouncedFilter = debounce(filterLoans, 300)
 
-/* ============================
-   Acciones (GLOBAL)
-============================ */
-function goToLoanUpdate(id) {
-  window.location.href = `/loans/update/${id}`
-}
-
-function goToLoanDelete(id) {
-  window.location.href = `/loans/delete/${id}`
-}
-
-function goToLoanView(id) {
-  window.location.href = `/loans/${id}`
-  "location.href='/loans/${loan.id}'"
-}
-
-/* ============================
-   Eventos
-============================ */
 searchBtn.addEventListener('click', filterLoans)
-
-searchInput.addEventListener('input', () => {
-  clearBtn.classList.toggle('hidden', !searchInput.value)
-  debouncedFilter()
-})
+searchInput.addEventListener('input', debouncedFilter)
 
 clearBtn.addEventListener('click', () => {
   searchInput.value = ''
-  clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
-  renderTable(allLoans)
+  render(allLoans)
 })
 
 /* ============================
-   Selección de fila
+   Acciones
 ============================ */
-document
-  .querySelector('.ui-table')
-  .addEventListener('click', (event) => {
+function goToLoanUpdate(id) {
+  location.href = `/loans/update/${id}`
+}
 
-    if (event.target.closest('button') || event.target.closest('a')) {
-      return
-    }
+function goToLoanDelete(id) {
+  location.href = `/loans/delete/${id}`
+}
 
-    const row = event.target.closest('tr[id^="loan-"]')
-    if (!row) return
-
-    document
-      .querySelectorAll('#loans-table tr')
-      .forEach(tr => tr.classList.remove('tr-selected'))
-
-    row.classList.add('tr-selected')
-
-    // guardar selección
-    const loanId = row.id.replace('loan-', '')
-    saveFilters(SELECTED_KEY, { id: loanId })
-  })
-
-/* ============================
-   Init
-============================ */
-loadLoans()
+function goToLoanView(id) {
+  location.href = `/loans/${id}`
+}

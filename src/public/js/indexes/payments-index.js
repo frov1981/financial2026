@@ -1,9 +1,13 @@
+document.addEventListener('DOMContentLoaded', () => {
+  loadPayments()
+  window.addEventListener('resize', () => render(allPayments))
+})
+
 /* ============================
    Variables globales
 ============================ */
 const API_BASE = `/api/payments/${window.LOAN_ID}`
 const FILTER_KEY = `payments.filters.${window.USER_ID}.${window.LOAN_ID}`
-const SELECTED_KEY = `payments.selected.${window.USER_ID}`
 
 let allPayments = []
 
@@ -36,7 +40,7 @@ const formatDate = value =>
   new Date(value).toLocaleDateString('es-EC')
 
 /* ============================
-   Render
+   Render - Desktop
 ============================ */
 function renderRow(p) {
   return `
@@ -47,17 +51,11 @@ function renderRow(p) {
       <td class="ui-td col-left col-sm">${p.account?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button
-            class="icon-btn edit"
-            title="Editar"
-            onclick="goToPaymentUpdate(${p.id})">
+          <button class="icon-btn edit" onclick="goToPaymentUpdate(${p.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-          <button
-            class="icon-btn delete"
-            title="Eliminar"
-            onclick="goToPaymentDelete(${p.id})">
+          <button class="icon-btn delete" onclick="goToPaymentDelete(${p.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
@@ -67,26 +65,76 @@ function renderRow(p) {
   `
 }
 
+/* ============================
+   Render - Mobile
+============================ */
+function renderCard(p) {
+  return `
+    <div class="payment-card"
+         onclick="goToPaymentUpdate(${p.id})">
+
+      <div class="card-header">
+        <div class="card-title">
+          ${formatDate(p.payment_date)}
+        </div>
+
+        <div class="card-actions">
+          <button class="icon-btn edit"
+            onclick="event.stopPropagation(); goToPaymentUpdate(${p.id})">
+            ${iconEdit()}
+          </button>
+          <button class="icon-btn delete"
+            onclick="event.stopPropagation(); goToPaymentDelete(${p.id})">
+            ${iconDelete()}
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="amount-main">
+          ${formatAmount(p.principal_amount)}
+        </div>
+        <div class="amount-sub">
+          Interés: ${formatAmount(p.interest_amount)}
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span>${p.account?.name || '-'}</span>
+      </div>
+    </div>
+  `
+}
+
+/* ============================
+   Render helpers
+============================ */
 function renderTable(data) {
-  if (!data.length) {
-    tableBody.innerHTML = `
+  tableBody.innerHTML = data.length
+    ? data.map(renderRow).join('')
+    : `
       <tr>
-        <td colspan="8" class="ui-td col-center text-gray-500">
+        <td colspan="5" class="ui-td col-center">
           No se encontraron pagos
         </td>
       </tr>
     `
-    return
-  }
+}
 
-  tableBody.innerHTML = data.map(renderRow).join('')
+function renderCards(data) {
+  const container = document.getElementById('payments-mobile')
+  if (!container) return
 
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    const row = document.getElementById(`payment-${selected.id}`)
-    if (row) {
-      row.classList.add('tr-selected')
-    }
+  container.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="ui-empty">No se encontraron pagos</div>`
+}
+
+function render(data) {
+  if (window.innerWidth <= 768) {
+    renderCards(data)
+  } else {
+    renderTable(data)
   }
 }
 
@@ -96,15 +144,7 @@ function renderTable(data) {
 async function loadPayments() {
   const res = await fetch(API_BASE)
   allPayments = await res.json()
-
-  const cached = loadFilters(FILTER_KEY)
-  if (cached?.term) {
-    searchInput.value = cached.term
-    clearBtn.classList.remove('hidden')
-    filterPayments()
-  } else {
-    renderTable(allPayments)
-  }
+  render(allPayments)
 }
 
 /* ============================
@@ -112,75 +152,33 @@ async function loadPayments() {
 ============================ */
 function filterPayments() {
   const term = searchInput.value.trim().toLowerCase()
-  saveFilters(FILTER_KEY, { term })
 
-  renderTable(
+  render(
     !term
       ? allPayments
       : allPayments.filter(p =>
-        p.account?.name.toLowerCase().includes(term) ||
-        p.note?.toLowerCase().includes(term)
-      )
+          p.account?.name.toLowerCase().includes(term)
+        )
   )
 }
 
 const debouncedFilter = debounce(filterPayments, 300)
 
-/* ============================
-   Acciones (GLOBAL) 
-============================ */
-function goToPaymentUpdate(id) {
-  window.location.href = `/payments/update/${id}`
-}
-
-function goToPaymentDelete(id) {
-  window.location.href = `/payments/delete/${id}`
-}
-
-/* ============================
-   Eventos
-============================ */
 searchBtn.addEventListener('click', filterPayments)
-
-searchInput.addEventListener('input', () => {
-  clearBtn.classList.toggle('hidden', !searchInput.value)
-  debouncedFilter()
-})
+searchInput.addEventListener('input', debouncedFilter)
 
 clearBtn.addEventListener('click', () => {
   searchInput.value = ''
-  clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
-  renderTable(allPayments)
+  render(allPayments)
 })
 
 /* ============================
-   Selección de fila
+   Acciones
 ============================ */
-document
-  .querySelector('.ui-table')
-  .addEventListener('click', (event) => {
+function goToPaymentUpdate(id) {
+  location.href = `/payments/update/${id}`
+}
 
-    if (event.target.closest('button') || event.target.closest('a')) {
-      return
-    }
-
-    const row = event.target.closest('tr[id^="payment-"]')
-    if (!row) return
-
-    document
-      .querySelectorAll('#payments-table tr')
-      .forEach(tr => tr.classList.remove('tr-selected'))
-
-    row.classList.add('tr-selected')
-
-    // guardar selección
-    const paymentId = row.id.replace('payment-', '')
-    saveFilters(SELECTED_KEY, { id: paymentId })
-  })
-
-/* ============================
-   Init
-============================ */
-loadPayments()
+function goToPaymentDelete(id) {
+  location.href = `/payments/delete/${id}`
+}

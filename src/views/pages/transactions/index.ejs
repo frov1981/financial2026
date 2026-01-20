@@ -2,53 +2,69 @@
   window.USER_ID = "<%= USER_ID %>"
 </script>
 
-<div class="max-w-6xl mx-auto">
-  <h1 class="ui-title">Transacciones</h1>
+<div class="max-w-6xl mx-auto ui-page">
 
-  <div class="ui-toolbar">
+  <!-- Header -->
+  <div class="ui-header">
+    <h1 class="ui-title">Transacciones</h1>
 
-    <!-- Botón Nuevo -->
-    <%- include('../../partials/btn-new', { href: '/transactions/insert' , title: 'Nueva transacción' , text: 'Nuevo' })
-      %>
+    <div class="ui-toolbar">
 
-      <!-- Filtrar -->
-      <%- include('../../partials/btn-filter', { onclick: 'openFilters()' , title: 'Filtrar transacción' , text: 'Filtrar'
-        }) %>
+      <%- include('../../partials/btn-new', {
+        href: '/transactions/insert',
+        title: 'Nueva transacción',
+        text: 'Nuevo'
+      }) %>
 
-        <!-- Buscador -->
-        <%- include('../../partials/search-box', { placeholder: 'Buscar transacciones...' }) %>
+      <%- include('../../partials/btn-filter', {
+        onclick: 'openFilters()',
+        title: 'Filtrar transacciones',
+        text: 'Filtrar'
+      }) %>
+
+      <%- include('../../partials/search-box', {
+        placeholder: 'Buscar transacciones...'
+      }) %>
+
+    </div>
   </div>
 
+  <!-- =========================
+       PAGINADO SUPERIOR
+       ========================= -->
   <div class="mb-2 flex justify-between items-center text-sm">
     <div id="page-info-top"></div>
     <div class="flex gap-2">
       <button id="prev-page-top" class="ui-btn ui-btn-default">Anterior</button>
-      <button id="next-page-top" class="ui-btn ui-btn-default">Siguente</button>
+      <button id="next-page-top" class="ui-btn ui-btn-default">Siguiente</button>
     </div>
   </div>
 
-  <div class="ui-table-wrapper">
-    <table class="ui-table">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="ui-th col-left">Fecha</th>
-          <th class="ui-th col-left col-sm">Tipo</th>
-          <th class="ui-th col-right">Monto</th>
-          <th class="ui-th col-left">Cuenta</th>
-          <th class="ui-th col-left">Categoría</th>
-          <th class="ui-th col-left">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="transactions-table" class="bg-white divide-y divide-gray-200"></tbody>
-    </table>
-  </div>
+  <!-- =========================
+       SCROLL INTERNO
+       ========================= -->
+  <div class="ui-scroll-area">
 
-  <div class="mt-3 flex justify-between items-center text-sm">
-    <div id="page-info-bottom"></div>
-    <div class="flex gap-2">
-      <button id="prev-page-bottom" class="ui-btn ui-btn-default">Anterior</button>
-      <button id="next-page-bottom" class="ui-btn ui-btn-default">Siguiente</button>
+    <!-- Mobile cards -->
+    <div id="transactions-mobile" class="transactions-mobile"></div>
+
+    <!-- Desktop table -->
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Fecha</th>
+            <th class="ui-th col-left col-sm">Tipo</th>
+            <th class="ui-th col-right">Monto</th>
+            <th class="ui-th col-left">Cuenta</th>
+            <th class="ui-th col-left">Categoría</th>
+            <th class="ui-th col-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="transactions-table"></tbody>
+      </table>
     </div>
+
   </div>
 </div>
 
