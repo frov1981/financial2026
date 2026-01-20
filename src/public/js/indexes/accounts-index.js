@@ -67,83 +67,132 @@ function debounce(fn, delay) {
 }
 
 /* ============================
-   Render
+   Render - Desktop
 ============================ */
 function renderRow(account) {
   const rowClass = account.is_active ? '' : 'bg-red-50'
+
   const statusButton = account.is_active
     ? `
-      <button
-        class="icon-btn deactivate"
-        title="Desactivar"
-        onclick="goToAccountUpdateStatus(${account.id})">
+      <button class="icon-btn deactivate" onclick="goToAccountUpdateStatus(${account.id})">
         ${iconViewOff()}
         <span class="ui-btn-text">Desactivar</span>
       </button>
     `
     : `
-      <button
-        class="icon-btn activate"
-        title="Activar"
-        onclick="goToAccountUpdateStatus(${account.id})">
+      <button class="icon-btn activate" onclick="goToAccountUpdateStatus(${account.id})">
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
     `
 
   return `
-  <tr id="account-${account.id}" class="${rowClass}">
-    <td class="ui-td col-left">${account.name}</td>
-    <td class="ui-td col-left">${accountTypeTag(account.type)}</td>
-    <td class="ui-td col-left col-sm">${statusTag(account.is_active)}</td>
-    <td class="ui-td col-right ui-col-sm">${numberBox(account.transaction_count)}</td>
-    <td class="ui-td col-right">${amountBox(account.balance)}</td>
-    <td class="ui-td col-center">
-      <div class="icon-actions">
-        <button
-          class="icon-btn edit"
-          title="Editar"
-          onclick="goToAccountUpdate(${account.id})">
-          ${iconEdit()}
-          <span class="ui-btn-text">Editar</span>
-        </button>
-
-        <button
-          class="icon-btn delete"
-          title="Eliminar"
-          onclick="goToAccountDelete(${account.id})">
-          ${iconDelete()}
-          <span class="ui-btn-text">Eliminar</span>
-        </button>
-        
-        <!-- Botón Activar / Inactivar -->
-        ${statusButton}
-      </div>
-    </td>
-  </tr>
-`
+    <tr id="account-${account.id}" class="${rowClass}">
+      <td class="ui-td col-left">${account.name}</td>
+      <td class="ui-td col-left">${accountTypeTag(account.type)}</td>
+      <td class="ui-td col-left col-sm">${statusTag(account.is_active)}</td>
+      <td class="ui-td col-right col-sm">${numberBox(account.transaction_count)}</td>
+      <td class="ui-td col-right">${amountBox(account.balance)}</td>
+      <td class="ui-td col-center">
+        <div class="icon-actions">
+          <button class="icon-btn edit" onclick="goToAccountUpdate(${account.id})">
+            ${iconEdit()}
+            <span class="ui-btn-text">Editar</span>
+          </button>
+          <button class="icon-btn delete" onclick="goToAccountDelete(${account.id})">
+            ${iconDelete()}
+            <span class="ui-btn-text">Eliminar</span>
+          </button>
+          ${statusButton}
+        </div>
+      </td>
+    </tr>
+  `
 }
 
-function renderTable(data) {
-  if (!data.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="ui-td col-center text-gray-500">
-          No se encontraron cuentas
-        </td>
-      </tr>
+/* ============================
+   Render - Mobile
+============================ */
+function renderCard(account) {
+
+  const statusButton = account.is_active
+    ? `
+      <button class="icon-btn deactivate"
+        onclick="event.stopPropagation(); goToAccountUpdateStatus(${account.id})">
+        ${iconViewOff()}
+      </button>
     `
-    return
-  }
+    : `
+      <button class="icon-btn activate"
+        onclick="event.stopPropagation(); goToAccountUpdateStatus(${account.id})">
+        ${iconView()}
+      </button>
+    `
 
-  tableBody.innerHTML = data.map(renderRow).join('')
+  return `
+    <div class="account-card ${account.is_active ? '' : 'inactive'}"
+         onclick="goToAccountUpdate(${account.id})">
 
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    const row = document.getElementById(`account-${selected.id}`)
-    if (row) {
-      row.classList.add('tr-selected')
-    }
+      <!-- Header -->
+      <div class="card-header">
+        <div class="card-title">${account.name}</div>
+
+        <div class="card-actions">
+          <button class="icon-btn edit"
+            onclick="event.stopPropagation(); goToAccountUpdate(${account.id})">
+            ${iconEdit()}
+          </button>
+
+          <button class="icon-btn delete"
+            onclick="event.stopPropagation(); goToAccountDelete(${account.id})">
+            ${iconDelete()}
+          </button>
+
+          ${statusButton}
+        </div>
+      </div>
+
+      <!-- Balance -->
+      <div class="card-balance">
+        ${amountBox(account.balance)}
+      </div>
+
+      <!-- Footer -->
+      <div class="card-footer">
+        <span>${numberBox(account.transaction_count)} trx</span>
+        <div class="card-tags">
+          ${accountTypeTag(account.type)}
+          ${statusTag(account.is_active)}
+        </div>
+      </div>
+    </div>
+  `
+}
+
+/* ============================
+   Render helpers
+============================ */
+function renderTable(data) {
+  tableBody.innerHTML = data.length
+    ? data.map(renderRow).join('')
+    : `<tr><td colspan="6" class="ui-td col-center">No se encontraron cuentas</td></tr>`
+}
+
+function renderCards(data) {
+  const container = document.getElementById('accounts-mobile')
+  if (!container) return
+
+  container.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="ui-empty">No se encontraron cuentas</div>`
+}
+
+
+function render(data) {
+  if (window.innerWidth <= 768) {
+    renderCards(data)
+  } else {
+    renderTable(data)
   }
 }
 
@@ -153,93 +202,58 @@ function renderTable(data) {
 async function loadAccounts() {
   const res = await fetch(API_BASE)
   allAccounts = await res.json()
-
-  const cached = loadFilters(FILTER_KEY)
-  if (cached?.term) {
-    searchInput.value = cached.term
-    clearBtn.classList.remove('hidden')
-    filterAccounts()
-  } else {
-    renderTable(allAccounts)
-  }
+  render(allAccounts)
 }
 
+/* ============================
+   Búsqueda
+============================ */
 function filterAccounts() {
   const term = searchInput.value.trim().toLowerCase()
-  saveFilters(FILTER_KEY, { term })
-
-  renderTable(
+  render(
     !term
       ? allAccounts
       : allAccounts.filter(a =>
-        a.name.toLowerCase().includes(term) ||
-        a.type.toLowerCase().includes(term)
-      )
+          a.name.toLowerCase().includes(term) ||
+          a.type.toLowerCase().includes(term)
+        )
   )
 }
 
 const debouncedFilter = debounce(filterAccounts, 300)
 
+searchBtn.addEventListener('click', filterAccounts)
+searchInput.addEventListener('input', debouncedFilter)
+
+clearBtn.addEventListener('click', () => {
+  searchInput.value = ''
+  render(allAccounts)
+})
+
 /* ============================
-   Acciones (GLOBAL)
+   Acciones
 ============================ */
+function goToAccountUpdate(id) {
+  location.href = `/accounts/update/${id}`
+}
+
+function goToAccountDelete(id) {
+  location.href = `/accounts/delete/${id}`
+}
+
 function goToAccountUpdateStatus(id) {
   location.href = `/accounts/status/${id}`
 }
 
-function goToAccountUpdate(id) {
-  window.location.href = `/accounts/update/${id}`
+function openAccountActions(id) {
+  const action = prompt('1 Editar\n2 Activar/Desactivar\n3 Eliminar')
+  if (action === '1') goToAccountUpdate(id)
+  if (action === '2') goToAccountUpdateStatus(id)
+  if (action === '3') goToAccountDelete(id)
 }
-
-function goToAccountDelete(id) {
-  window.location.href = `/accounts/delete/${id}`
-}
-
-
-/* ============================
-   Eventos
-============================ */
-searchBtn.addEventListener('click', filterAccounts)
-
-searchInput.addEventListener('input', () => {
-  clearBtn.classList.toggle('hidden', !searchInput.value)
-  debouncedFilter()
-})
-
-clearBtn.addEventListener('click', () => {
-  searchInput.value = ''
-  clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
-  renderTable(allAccounts)
-})
-
-/* ============================
-   Selección de fila
-============================ */
-document
-  .querySelector('.ui-table')
-  .addEventListener('click', (event) => {
-
-    if (event.target.closest('button') || event.target.closest('a')) {
-      return
-    }
-
-    const row = event.target.closest('tr[id^="account-"]')
-    if (!row) return
-
-    document
-      .querySelectorAll('#accounts-table tr')
-      .forEach(tr => tr.classList.remove('tr-selected'))
-
-    row.classList.add('tr-selected')
-
-    // guardar selección
-    const accountId = row.id.replace('account-', '')
-    saveFilters(SELECTED_KEY, { id: accountId })
-  })
 
 /* ============================
    Init
 ============================ */
 loadAccounts()
+window.addEventListener('resize', () => render(allAccounts))

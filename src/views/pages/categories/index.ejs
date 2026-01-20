@@ -2,37 +2,58 @@
   window.USER_ID = "<%= USER_ID %>"
 </script>
 
-<div class="ui-container">
-  <h1 class="ui-title">Categorías</h1>
+<div class="max-w-4xl mx-auto ui-page">
 
-  <!-- Toolbar -->
-  <div class="ui-toolbar">
+  <!-- Header fijo -->
+  <div class="ui-header">
+    <h1 class="ui-title">Categorías</h1>
 
-    <!-- Botón Nuevo -->
-    <%- include('../../partials/btn-new', { href: '/categories/insert' , title: 'Nueva categoría' , text: 'Nuevo' }) %>
+    <!-- Toolbar -->
+    <div class="ui-toolbar">
 
-      <!-- Filtrar -->
-      <%- include('../../partials/btn-filter', { onclick: 'openFilters()' , title: 'Filtrar categorías' , text: 'Filtrar'
-        }) %>
+      <%- include('../../partials/btn-new', {
+        href: '/categories/insert',
+        title: 'Nueva categoría',
+        text: 'Nuevo'
+      }) %>
 
-        <!-- Buscador -->
-        <%- include('../../partials/search-box', { placeholder: 'Buscar categorías...' }) %>
+      <%- include('../../partials/btn-filter', {
+        onclick: 'openFilters()',
+        title: 'Filtrar categorías',
+        text: 'Filtrar'
+      }) %>
+
+      <%- include('../../partials/search-box', {
+        placeholder: 'Buscar categorías...'
+      }) %>
+
+    </div>
   </div>
 
-  <!-- Tabla -->
-  <div class="ui-table-wrapper">
-    <table class="ui-table">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="ui-th col-left">Nombre</th>
-          <th class="ui-th col-left">Tipo</th>
-          <th class="ui-th col-right col-sm">Cant. Trx.</th>
-          <th class="ui-th col-left col-sm">Estado</th>
-          <th class="ui-th col-left">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="categories-table" class="bg-white divide-y divide-gray-200"></tbody>
-    </table>
+  <!-- =========================
+       SCROLL INTERNO (IGUAL QUE ACCOUNTS)
+       ========================= -->
+  <div class="ui-scroll-area">
+
+    <!-- Mobile cards -->
+    <div id="categories-mobile" class="categories-mobile"></div>
+
+    <!-- Desktop table -->
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Nombre</th>
+            <th class="ui-th col-left">Tipo</th>
+            <th class="ui-th col-right col-sm">Cant. Trx.</th>
+            <th class="ui-th col-left col-sm">Estado</th>
+            <th class="ui-th col-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="categories-table"></tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 

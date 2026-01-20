@@ -85,6 +85,64 @@ function renderRow(category) {
   `
 }
 
+/* ============================
+   Render - Mobile
+============================ */
+function renderCard(category) {
+
+  const statusButton = category.is_active
+    ? `
+      <button class="icon-btn deactivate"
+        onclick="event.stopPropagation(); goToCategoryUpdateStatus(${category.id})">
+        ${iconViewOff()}
+      </button>
+    `
+    : `
+      <button class="icon-btn activate"
+        onclick="event.stopPropagation(); goToCategoryUpdateStatus(${category.id})">
+        ${iconView()}
+      </button>
+    `
+
+  return `
+    <div class="category-card ${category.is_active ? '' : 'inactive'}"
+         onclick="goToCategoryUpdate(${category.id})">
+
+      <div class="card-header">
+        <div class="card-title">${category.name}</div>
+
+        <div class="card-actions">
+          <button class="icon-btn edit"
+            onclick="event.stopPropagation(); goToCategoryUpdate(${category.id})">
+            ${iconEdit()}
+          </button>
+
+          <button class="icon-btn delete"
+            onclick="event.stopPropagation(); goToCategoryDelete(${category.id})">
+            ${iconDelete()}
+          </button>
+
+          ${statusButton}
+        </div>
+      </div>
+
+      <div class="card-body">
+        <span>${numberBox(category.transactions_count)} trx</span>
+      </div>
+
+      <div class="card-footer">
+        <div class="card-tags">
+          ${categoryTypeTag(category.type)}
+          ${statusTag(category.is_active)}
+        </div>
+      </div>
+    </div>
+  `
+}
+
+/* ============================
+   Render helpers
+============================ */
 function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
@@ -108,6 +166,23 @@ function renderTable(data) {
   }
 }
 
+function renderCards(data) {
+  const container = document.getElementById('categories-mobile')
+  if (!container) return
+
+  container.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="ui-empty">No se encontraron categorías</div>`
+}
+
+function render(data) {
+  if (window.innerWidth <= 768) {
+    renderCards(data)
+  } else {
+    renderTable(data)
+  }
+}
+
 /* ============================
    Data
 ============================ */
@@ -121,7 +196,7 @@ async function loadCategories() {
     clearBtn.classList.remove('hidden')
     filterCategories()
   } else {
-    renderTable(allCategories)
+    render(allCategories)
   }
 }
 
@@ -132,7 +207,7 @@ function filterCategories() {
   const term = searchInput.value.trim().toLowerCase()
   saveFilters(FILTER_KEY, { term })
 
-  renderTable(
+  render(
     !term
       ? allCategories
       : allCategories.filter(c =>
@@ -206,3 +281,5 @@ document
    Init
 ============================ */
 loadCategories()
+window.addEventListener('resize', () => render(allCategories))
+
