@@ -4,6 +4,7 @@
 const API_BASE = '/api/categories'
 const FILTER_KEY = `categories.filters.${window.USER_ID}`
 const SELECTED_KEY = `categories.selected.${window.USER_ID}`
+const SCROLL_KEY = `categories.scroll.${window.USER_ID}`
 
 let allCategories = []
 
@@ -14,6 +15,7 @@ const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('categories-table')
+const scrollContainer = document.querySelector('.ui-scroll-area')
 
 /* ============================
    Utils
@@ -106,7 +108,8 @@ function renderCard(category) {
 
   return `
     <div class="category-card ${category.is_active ? '' : 'inactive'}"
-         onclick="goToCategoryUpdate(${category.id})">
+         data-id="${category.id}"
+         onclick="selectCategoryCard(event, ${category.id})">
 
       <div class="card-header">
         <div class="card-title">${category.name}</div>
@@ -152,6 +155,8 @@ function renderTable(data) {
         </td>
       </tr>
     `
+
+    restoreScroll()
     return
   }
 
@@ -164,6 +169,8 @@ function renderTable(data) {
       row.classList.add('tr-selected')
     }
   }
+
+  restoreScroll()
 }
 
 function renderCards(data) {
@@ -173,6 +180,17 @@ function renderCards(data) {
   container.innerHTML = data.length
     ? data.map(renderCard).join('')
     : `<div class="ui-empty">No se encontraron categorías</div>`
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const card = container.querySelector(`[data-id="${selected.id}"]`)
+    if (card) {
+      card.classList.add('card-selected')
+    }
+  }
+
+  restoreScroll()
+
 }
 
 function render(data) {
@@ -206,6 +224,7 @@ async function loadCategories() {
 function filterCategories() {
   const term = searchInput.value.trim().toLowerCase()
   saveFilters(FILTER_KEY, { term })
+  saveFilters(SCROLL_KEY, { y: 0 })
 
   render(
     !term
@@ -232,6 +251,18 @@ function goToCategoryUpdate(id) {
 
 function goToCategoryDelete(id) {
   window.location.href = `/categories/delete/${id}`
+}
+
+function selectCategoryCard(event, id) {
+  if (event.target.closest('button')) {
+    return
+  }
+
+  document.querySelectorAll('.category-card').forEach(card => card.classList.remove('card-selected'))
+  const card = event.currentTarget
+  card.classList.add('card-selected')
+
+  saveFilters(SELECTED_KEY, { id })
 }
 
 /* ============================
@@ -276,6 +307,27 @@ document
     const categoryId = row.id.replace('category-', '')
     saveFilters(SELECTED_KEY, { id: categoryId })
   })
+
+
+/* ============================
+   Scroll actions
+============================ */
+function restoreScroll() {
+  if (!scrollContainer) return
+
+  const saved = loadFilters(SCROLL_KEY)
+  if (!saved?.y) return
+
+  requestAnimationFrame(() => {
+    scrollContainer.scrollTop = saved.y
+  })
+}
+
+if (scrollContainer) {
+  scrollContainer.addEventListener('scroll', () => {
+    saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+  })
+}
 
 /* ============================
    Init
