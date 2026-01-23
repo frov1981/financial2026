@@ -1,14 +1,10 @@
-document.addEventListener('DOMContentLoaded', () => {
-  loadLoans()
-  window.addEventListener('resize', () => render(allLoans))
-})
-
 /* ============================
    Variables globales
 ============================ */
 const API_BASE = '/api/loans'
 const FILTER_KEY = `loans.filters.${window.USER_ID}`
 const SELECTED_KEY = `loans.selected.${window.USER_ID}`
+const SCROLL_KEY = `loans.scroll.${window.USER_ID}`
 
 let allLoans = []
 
@@ -19,6 +15,7 @@ const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('loans-table')
+const scrollContainer = document.querySelector('.ui-scroll-area')
 
 /* ============================
    Utils
@@ -51,15 +48,24 @@ function renderRow(loan) {
       <td class="ui-td col-left col-sm">${loan.disbursement_account.name}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button class="icon-btn edit" onclick="goToLoanUpdate(${loan.id})">
+          <!-- Botón Editar -->
+          <button 
+            class="icon-btn edit" 
+            onclick="goToLoanUpdate(${loan.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-          <button class="icon-btn delete" onclick="goToLoanDelete(${loan.id})">
+          <!-- Botón Eliminar -->
+          <button 
+            class="icon-btn delete" 
+            onclick="goToLoanDelete(${loan.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
-          <button class="icon-btn" onclick="goToLoanView(${loan.id})">
+          <!-- Botón Ver -->
+          <button 
+            class="icon-btn" 
+            onclick="goToLoanView(${loan.id})">
             ${iconList()}
             <span class="ui-btn-text">Detalles</span>
           </button>
@@ -75,7 +81,8 @@ function renderRow(loan) {
 function renderCard(loan) {
   return `
     <div class="loan-card ${loan.is_active ? '' : 'inactive'}"
-         onclick="goToLoanUpdate(${loan.id})">
+         data-id="${loan.id}"
+         onclick="selectLoanCard(event, ${loan.id})">
 
       <div class="card-header">
         <div class="card-title">${loan.name}</div>
@@ -119,9 +126,30 @@ function renderCard(loan) {
    Render helpers
 ============================ */
 function renderTable(data) {
-  tableBody.innerHTML = data.length
-    ? data.map(renderRow).join('')
-    : `<tr><td colspan="8" class="ui-td col-center">No se encontraron préstamos</td></tr>`
+  if (!data.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="ui-td col-center text-gray-500">
+          No se encontraron prestamos
+        </td>
+      </tr>
+    `
+
+    restoreScroll()
+    return
+  }
+
+  tableBody.innerHTML = data.map(renderRow).join('')
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`loan-${selected.id}`)
+    if (row) {
+      row.classList.add('tr-selected')
+    }
+  }
+
+  restoreScroll()
 }
 
 function renderCards(data) {
@@ -131,6 +159,16 @@ function renderCards(data) {
   container.innerHTML = data.length
     ? data.map(renderCard).join('')
     : `<div class="ui-empty">No se encontraron préstamos</div>`
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const card = container.querySelector(`[data-id="${selected.id}"]`)
+    if (card) {
+      card.classList.add('card-selected')
+    }
+  }
+
+  restoreScroll()
 }
 
 function render(data) {
@@ -147,7 +185,15 @@ function render(data) {
 async function loadLoans() {
   const res = await fetch(API_BASE)
   allLoans = await res.json()
-  render(allLoans)
+
+  const cached = loadFilters(FILTER_KEY)
+  if (cached?.term) {
+    searchInput.value = cached.term
+    clearBtn.classList.remove('hidden')
+    filterLoans()
+  } else {
+    render(allLoans)
+  }
 }
 
 /* ============================
@@ -155,24 +201,19 @@ async function loadLoans() {
 ============================ */
 function filterLoans() {
   const term = searchInput.value.trim().toLowerCase()
+  saveFilters(FILTER_KEY, { term })
+  saveFilters(SCROLL_KEY, { y: 0 })
+
   render(
     !term
       ? allLoans
       : allLoans.filter(l =>
-          l.name.toLowerCase().includes(term)
-        )
+        l.name.toLowerCase().includes(term)
+      )
   )
 }
 
 const debouncedFilter = debounce(filterLoans, 300)
-
-searchBtn.addEventListener('click', filterLoans)
-searchInput.addEventListener('input', debouncedFilter)
-
-clearBtn.addEventListener('click', () => {
-  searchInput.value = ''
-  render(allLoans)
-})
 
 /* ============================
    Acciones
@@ -188,3 +229,86 @@ function goToLoanDelete(id) {
 function goToLoanView(id) {
   location.href = `/loans/${id}`
 }
+
+function selectLoanCard(event, id) {
+  if (event.target.closest('button')) {
+    return
+  }
+
+  document.querySelectorAll('.loan-card').forEach(card => card.classList.remove('card-selected'))
+  const card = event.currentTarget
+  card.classList.add('card-selected')
+
+  saveFilters(SELECTED_KEY, { id })
+}
+
+/* ============================
+   Eventos
+============================ */
+searchBtn.addEventListener('click', filterLoans)
+
+searchInput.addEventListener('input', () => {
+  clearBtn.classList.toggle('hidden', !searchInput.value)
+  debouncedFilter()
+})
+
+clearBtn.addEventListener('click', () => {
+  searchInput.value = ''
+  clearBtn.classList.add('hidden')
+  clearFilters(FILTER_KEY)
+  clearFilters(SELECTED_KEY)
+
+  render(allLoans)
+})
+
+
+/* ============================
+   Selección de fila
+============================ */
+document
+  .querySelector('.ui-table')
+  .addEventListener('click', (event) => {
+
+    if (event.target.closest('button') || event.target.closest('a')) {
+      return
+    }
+
+    const row = event.target.closest('tr[id^="loan-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#loans-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+
+    // guardar selección
+    const loanId = row.id.replace('loan-', '')
+    saveFilters(SELECTED_KEY, { id: loanId })
+  })
+
+/* ============================
+   Scroll actions
+============================ */
+function restoreScroll() {
+  if (!scrollContainer) return
+
+  const saved = loadFilters(SCROLL_KEY)
+  if (!saved?.y) return
+
+  requestAnimationFrame(() => {
+    scrollContainer.scrollTop = saved.y
+  })
+}
+
+if (scrollContainer) {
+  scrollContainer.addEventListener('scroll', () => {
+    saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+  })
+}
+
+/* ============================
+   Init
+============================ */
+loadLoans()
+window.addEventListener('resize', () => render(allLoans))

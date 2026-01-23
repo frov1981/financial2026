@@ -456,6 +456,23 @@
   margin-top: 10px;
 }
 
+.loan-card {
+  position: relative;
+}
+
+.loan-card.card-selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid #2563eb;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.loan-card.card-selected {
+  border-color: transparent;
+}
+
 .loan-card.inactive {
   background: #fff5f5;
 }
