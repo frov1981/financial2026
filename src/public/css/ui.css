@@ -302,6 +302,11 @@
   background: #ffffff;
 }
 
+.account-card.card-selected {
+  outline: 2px solid #2563eb;
+  background: #eff6ff;
+}
+
 .account-card.inactive {
   background: #fff5f5;
 }

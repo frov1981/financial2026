@@ -61,6 +61,7 @@ function renderRow(category) {
       <td class="ui-td col-left ui-col-sm">${statusTag(category.is_active)}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
+          <!-- Botón Editar -->
           <button
             class="icon-btn edit"
             title="Editar"
@@ -68,7 +69,6 @@ function renderRow(category) {
             ${iconEdit()} 
             <span class="ui-btn-text">Editar</span>
           </button>
-
           <!-- Botón Eliminar -->
           <button
             class="icon-btn delete"
@@ -77,10 +77,8 @@ function renderRow(category) {
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
-
           <!-- Botón Activar / Inactivar -->
-          ${statusButton}
-          
+          ${statusButton}          
         </div>
       </td>
     </tr>
@@ -110,7 +108,7 @@ function renderCard(category) {
     <div class="category-card ${category.is_active ? '' : 'inactive'}"
          data-id="${category.id}"
          onclick="selectCategoryCard(event, ${category.id})">
-
+      <!-- Header -->
       <div class="card-header">
         <div class="card-title">${category.name}</div>
 
@@ -190,7 +188,6 @@ function renderCards(data) {
   }
 
   restoreScroll()
-
 }
 
 function render(data) {
@@ -280,7 +277,8 @@ clearBtn.addEventListener('click', () => {
   clearBtn.classList.add('hidden')
   clearFilters(FILTER_KEY)
   clearFilters(SELECTED_KEY)
-  renderTable(allCategories)
+  
+  render(allCategories)
 })
 
 /* ============================
@@ -307,7 +305,6 @@ document
     const categoryId = row.id.replace('category-', '')
     saveFilters(SELECTED_KEY, { id: categoryId })
   })
-
 
 /* ============================
    Scroll actions

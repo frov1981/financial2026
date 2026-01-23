@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const API_BASE = '/api/accounts'
 const FILTER_KEY = `accounts.filters.${window.USER_ID}`
 const SELECTED_KEY = `accounts.selected.${window.USER_ID}`
+const SCROLL_KEY = `accounts.scroll.${window.USER_ID}`
 
 let allAccounts = []
 
@@ -54,6 +55,7 @@ const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('accounts-table')
+const scrollContainer = document.querySelector('.ui-scroll-area')
 
 /* ============================
    Utils
@@ -74,13 +76,17 @@ function renderRow(account) {
 
   const statusButton = account.is_active
     ? `
-      <button class="icon-btn deactivate" onclick="goToAccountUpdateStatus(${account.id})">
+      <button 
+        class="icon-btn deactivate" 
+        onclick="goToAccountUpdateStatus(${account.id})">
         ${iconViewOff()}
         <span class="ui-btn-text">Desactivar</span>
       </button>
     `
     : `
-      <button class="icon-btn activate" onclick="goToAccountUpdateStatus(${account.id})">
+      <button 
+        class="icon-btn activate" 
+        onclick="goToAccountUpdateStatus(${account.id})">
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
@@ -95,14 +101,21 @@ function renderRow(account) {
       <td class="ui-td col-right">${amountBox(account.balance)}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button class="icon-btn edit" onclick="goToAccountUpdate(${account.id})">
+          <!-- Botón Editar -->
+          <button 
+            class="icon-btn edit" 
+            onclick="goToAccountUpdate(${account.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-          <button class="icon-btn delete" onclick="goToAccountDelete(${account.id})">
+          <!-- Botón Eliminar -->
+          <button 
+            class="icon-btn delete" 
+            onclick="goToAccountDelete(${account.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
+          <!-- Botón Activar / Inactivar -->
           ${statusButton}
         </div>
       </td>
@@ -131,8 +144,8 @@ function renderCard(account) {
 
   return `
     <div class="account-card ${account.is_active ? '' : 'inactive'}"
-         onclick="goToAccountUpdate(${account.id})">
-
+         data-id="${account.id}"
+         onclick="selectAccountCard(event, ${account.id})">
       <!-- Header -->
       <div class="card-header">
         <div class="card-title">${account.name}</div>
@@ -173,9 +186,30 @@ function renderCard(account) {
    Render helpers
 ============================ */
 function renderTable(data) {
-  tableBody.innerHTML = data.length
-    ? data.map(renderRow).join('')
-    : `<tr><td colspan="6" class="ui-td col-center">No se encontraron cuentas</td></tr>`
+  if (!data.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="ui-td col-center text-gray-500">
+          No se encontraron cuentas
+        </td>
+      </tr>
+    `
+
+    restoreScroll()
+    return
+  }
+
+  tableBody.innerHTML = data.map(renderRow).join('')
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`account-${selected.id}`)
+    if (row) {
+      row.classList.add('tr-selected')
+    }
+  }
+
+  restoreScroll()
 }
 
 function renderCards(data) {
@@ -185,6 +219,16 @@ function renderCards(data) {
   container.innerHTML = data.length
     ? data.map(renderCard).join('')
     : `<div class="ui-empty">No se encontraron cuentas</div>`
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const card = container.querySelector(`[data-id="${selected.id}"]`)
+    if (card) {
+      card.classList.add('card-selected')
+    }
+  }
+
+  restoreScroll()
 }
 
 
@@ -202,33 +246,36 @@ function render(data) {
 async function loadAccounts() {
   const res = await fetch(API_BASE)
   allAccounts = await res.json()
-  render(allAccounts)
+  
+  const cached = loadFilters(FILTER_KEY)
+  if (cached?.term) {
+    searchInput.value = cached.term
+    clearBtn.classList.remove('hidden')
+    filterAccounts()
+  } else {
+    render(allAccounts)
+  }
 }
 
 /* ============================
-   Búsqueda
+   Filtro
 ============================ */
 function filterAccounts() {
-  const term = searchInput.value.trim().toLowerCase()
+  const term = searchInput.value.trim().toLowerCase()  
+  saveFilters(FILTER_KEY, { term })
+  saveFilters(SCROLL_KEY, { y: 0 })
+
   render(
     !term
       ? allAccounts
       : allAccounts.filter(a =>
-          a.name.toLowerCase().includes(term) ||
-          a.type.toLowerCase().includes(term)
-        )
+        a.name.toLowerCase().includes(term) ||
+        a.type.toLowerCase().includes(term)
+      )
   )
 }
 
 const debouncedFilter = debounce(filterAccounts, 300)
-
-searchBtn.addEventListener('click', filterAccounts)
-searchInput.addEventListener('input', debouncedFilter)
-
-clearBtn.addEventListener('click', () => {
-  searchInput.value = ''
-  render(allAccounts)
-})
 
 /* ============================
    Acciones
@@ -245,11 +292,81 @@ function goToAccountUpdateStatus(id) {
   location.href = `/accounts/status/${id}`
 }
 
-function openAccountActions(id) {
-  const action = prompt('1 Editar\n2 Activar/Desactivar\n3 Eliminar')
-  if (action === '1') goToAccountUpdate(id)
-  if (action === '2') goToAccountUpdateStatus(id)
-  if (action === '3') goToAccountDelete(id)
+function selectAccountCard(event, id) {
+  if (event.target.closest('button')) {
+    return
+  }
+
+  document.querySelectorAll('.account-card').forEach(card => card.classList.remove('card-selected'))
+  const card = event.currentTarget
+  card.classList.add('card-selected')
+
+  saveFilters(SELECTED_KEY, { id })
+}
+
+/* ============================
+   Eventos
+============================ */
+searchBtn.addEventListener('click', filterAccounts)
+
+searchInput.addEventListener('input', () => {
+  clearBtn.classList.toggle('hidden', !searchInput.value)
+  debouncedFilter()
+})
+
+clearBtn.addEventListener('click', () => {
+  searchInput.value = ''
+  clearBtn.classList.add('hidden')
+  clearFilters(FILTER_KEY)
+  clearFilters(SELECTED_KEY)
+  
+  render(allAccounts)
+})
+
+/* ============================
+   Selección de fila
+============================ */
+document
+  .querySelector('.ui-table')
+  .addEventListener('click', (event) => {
+
+    if (event.target.closest('button') || event.target.closest('a')) {
+      return
+    }
+
+    const row = event.target.closest('tr[id^="account-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#accounts-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+
+    // guardar selección
+    const accountId = row.id.replace('account-', '')
+    saveFilters(SELECTED_KEY, { id: accountId })
+  })
+
+
+/* ============================
+   Scroll actions
+============================ */
+function restoreScroll() {
+  if (!scrollContainer) return
+
+  const saved = loadFilters(SCROLL_KEY)
+  if (!saved?.y) return
+
+  requestAnimationFrame(() => {
+    scrollContainer.scrollTop = saved.y
+  })
+}
+
+if (scrollContainer) {
+  scrollContainer.addEventListener('scroll', () => {
+    saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+  })
 }
 
 /* ============================
