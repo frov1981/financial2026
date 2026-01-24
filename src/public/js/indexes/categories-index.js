@@ -70,13 +70,17 @@ function renderRow(category) {
 
   const statusButton = category.is_active
     ? `
-      <button class="icon-btn deactivate" onclick="goToCategoryUpdateStatus(${category.id})">
+      <button 
+        class="icon-btn deactivate" 
+        onclick="goToCategoryUpdateStatus(${category.id})">
         ${iconViewOff()}
         <span class="ui-btn-text">Desactivar</span>
       </button>
     `
     : `
-      <button class="icon-btn activate" onclick="goToCategoryUpdateStatus(${category.id})">
+      <button 
+        class="icon-btn activate" 
+        onclick="goToCategoryUpdateStatus(${category.id})">
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
@@ -90,15 +94,25 @@ function renderRow(category) {
       <td class="ui-td col-left col-sm">${statusTag(category.is_active)}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button class="icon-btn edit" onclick="goToCategoryUpdate(${category.id})">
+          <button 
+            class="icon-btn edit" 
+            onclick="goToCategoryUpdate(${category.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-          <button class="icon-btn delete" onclick="goToCategoryDelete(${category.id})">
+          <button 
+            class="icon-btn delete" 
+            onclick="goToCategoryDelete(${category.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
           ${statusButton}
+          <button 
+            class="icon-btn"
+            onclick="goToCategoryList(${category.id})">
+            ${iconList()}
+            <span class="ui-btn-text">Transacciones</span>
+          </button> 
         </div>
       </td>
     </tr>
@@ -108,35 +122,41 @@ function renderRow(category) {
 function renderCard(category) {
   const statusButton = category.is_active
     ? `
-      <button class="icon-btn deactivate"
+      <button 
+        class="icon-btn deactivate"
         onclick="event.stopPropagation(); goToCategoryUpdateStatus(${category.id})">
         ${iconViewOff()}
       </button>
     `
     : `
-      <button class="icon-btn activate"
+      <button 
+        class="icon-btn activate"
         onclick="event.stopPropagation(); goToCategoryUpdateStatus(${category.id})">
         ${iconView()}
       </button>
     `
 
   return `
-    <div class="category-card ${category.is_active ? '' : 'inactive'}"
-         data-id="${category.id}"
-         onclick="selectCategoryCard(event, ${category.id})">
+    <div 
+      class="category-card ${category.is_active ? '' : 'inactive'}"
+      data-id="${category.id}"
+      onclick="selectCategoryCard(event, ${category.id})">
       <div class="card-header">
         <div class="card-title">${category.name}</div>
         <div class="card-actions">
-          <button class="icon-btn edit"
+          <button 
+            class="icon-btn edit"
             onclick="event.stopPropagation(); goToCategoryUpdate(${category.id})">
             ${iconEdit()}
           </button>
-          <button class="icon-btn delete"
+          <button 
+            class="icon-btn delete"
             onclick="event.stopPropagation(); goToCategoryDelete(${category.id})">
             ${iconDelete()}
           </button> 
           ${statusButton}
-          <button class="icon-btn"
+          <button 
+            class="icon-btn"
             onclick="event.stopPropagation(); goToCategoryList(${category.id})">
             ${iconList()}
           </button> 

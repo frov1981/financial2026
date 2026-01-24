@@ -3,7 +3,7 @@
 </script>
 
 <script>
-  window.TRANSACTIONS_CONTEXT = <%- JSON.stringify(context || {}) %>
+  window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
 </script>
 
 <div class="max-w-6xl mx-auto ui-page">
@@ -13,6 +13,14 @@
     <h1 class="ui-title">Transacciones</h1>
 
     <div class="ui-toolbar">
+
+      <% if (context?.from === 'categories') { %>
+        <%- include('../../partials/btn-back', {
+          href: `/categories`,
+          title: 'Volver a categorías',
+          text: 'Volver'
+        }) %>
+      <% } %>
 
       <%- include('../../partials/btn-new', {
         href: '/transactions/insert',
