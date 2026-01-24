@@ -63,14 +63,10 @@ function renderRow(transaction) {
       <td class="ui-td col-left">${transaction.category?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button 
-            class="icon-btn edit" 
-            onclick="goToTransactionUpdate(${transaction.id})">
+          <button class="icon-btn edit" onclick="goToTransactionUpdate(${transaction.id})">
             ${iconEdit()}
           </button>
-          <button 
-            class="icon-btn delete" 
-            onclick="goToTransactionDelete(${transaction.id})">
+          <button class="icon-btn delete" onclick="goToTransactionDelete(${transaction.id})">
             ${iconDelete()}
           </button>
         </div>
@@ -90,7 +86,6 @@ function renderCard(transaction) {
          data-id="${transaction.id}"
          onclick="selectTransactionCard(event, ${transaction.id})">
 
-      <!-- Header -->
       <div class="card-header">
         <div class="card-datetime">
           <span class="card-date">${date}</span>
@@ -109,33 +104,20 @@ function renderCard(transaction) {
         </div>
       </div>
 
-      <!-- Body -->
       <div class="card-content">
         <div class="card-info">
-          <div class="card-account">
-            ${transaction.account?.name || '-'}
-          </div>
-
-          <div class="card-category">
-            ${transaction.category?.name || '-'}
-          </div>
-
-          ${
-            transaction.description
-              ? `<div class="card-description">${transaction.description}</div>`
-              : ''
-          }
+          <div class="card-account">${transaction.account?.name || '-'}</div>
+          <div class="card-category">${transaction.category?.name || '-'}</div>
+          ${transaction.description ? `<div class="card-description">${transaction.description}</div>` : ''}
         </div>
 
         <div class="card-amount">
           ${amountBox(transaction.amount)}
         </div>
       </div>
-
     </div>
   `
 }
-
 
 /* ============================
    Render helpers
@@ -144,13 +126,11 @@ function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="5" class="ui-td col-center text-gray-500">
+        <td colspan="6" class="ui-td col-center text-gray-500">
           No se encontraron transacciones
         </td>
       </tr>
     `
-
-    //restoreScroll()
     return
   }
 
@@ -159,12 +139,8 @@ function renderTable(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const row = document.getElementById(`transaction-${selected.id}`)
-    if (row) {
-      row.classList.add('tr-selected')
-    }
+    if (row) row.classList.add('tr-selected')
   }
-
-  //restoreScroll()
 }
 
 function renderCards(data) {
@@ -178,20 +154,12 @@ function renderCards(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const card = container.querySelector(`[data-id="${selected.id}"]`)
-    if (card) {
-      card.classList.add('card-selected')
-    }
+    if (card) card.classList.add('card-selected')
   }
-
-  //restoreScroll()
 }
 
 function render(data) {
-  if (window.innerWidth <= 768) {
-    renderCards(data)
-  } else {
-    renderTable(data)
-  }
+  window.innerWidth <= 768 ? renderCards(data) : renderTable(data)
 }
 
 /* ============================
@@ -203,11 +171,7 @@ function updatePaginationInfo() {
 }
 
 async function loadTransactions(page = 1) {
-  const params = new URLSearchParams({
-    page,
-    limit: PAGE_SIZE
-  })
-
+  const params = new URLSearchParams({ page, limit: PAGE_SIZE })
   if (currentSearch) params.append('search', currentSearch)
 
   const res = await fetch(`${API_BASE}?${params}`)
@@ -227,36 +191,31 @@ async function loadTransactions(page = 1) {
 function applySearch() {
   currentSearch = searchInput.value.trim()
   saveFilters(FILTER_KEY, { term: currentSearch })
-
   clearBtn.classList.toggle('hidden', !currentSearch)
   loadTransactions(1)
 }
 
-const debouncedSearch = debounce(applySearch, 300)
-
-searchInput.addEventListener('input', debouncedSearch)
+searchInput.addEventListener('input', debounce(applySearch, 300))
 
 clearBtn.addEventListener('click', () => {
   searchInput.value = ''
   currentSearch = ''
   clearBtn.classList.add('hidden')
-
   clearFilters(FILTER_KEY)
   clearFilters(SELECTED_KEY)
-
   loadTransactions(1)
 })
 
 /* ============================
-   Paginado (solo arriba)
+   Paginado
 ============================ */
-document.getElementById('prev-page-top').onclick = () => {
+document.getElementById('prev-page-top')?.addEventListener('click', () => {
   if (currentPage > 1) loadTransactions(currentPage - 1)
-}
+})
 
-document.getElementById('next-page-top').onclick = () => {
+document.getElementById('next-page-top')?.addEventListener('click', () => {
   if (currentPage < totalPages) loadTransactions(currentPage + 1)
-}
+})
 
 /* ============================
    Acciones
@@ -270,44 +229,40 @@ function goToTransactionDelete(id) {
 }
 
 function selectTransactionCard(event, id) {
-  if (event.target.closest('button')) {
-    return
-  }
-
-  document.querySelectorAll('.transaction-card').forEach(card => card.classList.remove('card-selected'))
-  const card = event.currentTarget
-  card.classList.add('card-selected')
-
+  if (event.target.closest('button')) return
+  document.querySelectorAll('.transaction-card').forEach(c => c.classList.remove('card-selected'))
+  event.currentTarget.classList.add('card-selected')
   saveFilters(SELECTED_KEY, { id })
 }
 
 /* ============================
-   Selección de fila
+   Selección de fila (desktop)
 ============================ */
-document
-  .querySelector('.ui-table')
-  .addEventListener('click', (event) => {
+const table = document.querySelector('.ui-table')
 
-    if (event.target.closest('button') || event.target.closest('a')) {
-      return
-    }
-
+if (table) {
+  table.addEventListener('click', event => {
+    if (event.target.closest('button') || event.target.closest('a')) return
     const row = event.target.closest('tr[id^="transaction-"]')
     if (!row) return
 
-    document
-      .querySelectorAll('#transactions-table tr')
+    document.querySelectorAll('#transactions-table tr')
       .forEach(tr => tr.classList.remove('tr-selected'))
 
     row.classList.add('tr-selected')
-
-    // guardar selección
-    const transactionId = row.id.replace('transaction-', '')
-    saveFilters(SELECTED_KEY, { id: transactionId })
+    saveFilters(SELECTED_KEY, { id: row.id.replace('transaction-', '') })
   })
+}
 
 /* ============================
-   Init
+   Restore filters + Init
 ============================ */
+const savedFilters = loadFilters(FILTER_KEY)
+if (savedFilters?.term) {
+  currentSearch = savedFilters.term
+  searchInput.value = savedFilters.term
+  clearBtn.classList.remove('hidden')
+}
+
 loadTransactions()
 window.addEventListener('resize', () => render(allItems))
