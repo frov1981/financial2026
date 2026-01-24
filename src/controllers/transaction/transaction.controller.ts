@@ -25,6 +25,7 @@ export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request,
       .leftJoinAndSelect('t.to_account', 'to_account')
       .leftJoinAndSelect('t.category', 'category')
       .leftJoinAndSelect('t.loan', 'loan')
+      .leftJoinAndSelect('t.loan_payment', 'loan_payment')
       .where('t.user_id = :userId', { userId })
 
     if (search) {

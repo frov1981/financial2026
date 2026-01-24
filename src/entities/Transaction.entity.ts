@@ -7,6 +7,7 @@ import { Account } from './Account.entity'
 import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
 import { User } from './User.entity'
+import { LoanPayment } from './LoanPayment.entity'
 
 @Entity('transactions')
 export class Transaction {
@@ -50,13 +51,16 @@ export class Transaction {
   @Transform(({ value }) => value ? new Date(value) : new Date())
   date!: Date
 
-  @Column({ nullable: true, length: 1000 })
+  @Column({ default: '', length: 1000 })
   @IsNotEmpty({ message: 'La descripción es obligatoria' })
   @MaxLength(1000, { message: 'Máximo 1000 caracteres' })
   description!: string
 
-  @OneToOne(() => Loan, loan => loan.transaction)
+  @OneToOne(() => Loan, loan => loan.transaction, { nullable: true })
   loan!: Loan
+
+  @OneToOne(() => LoanPayment, payment => payment.transaction, { nullable: true })
+  loan_payment!: LoanPayment | null
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
