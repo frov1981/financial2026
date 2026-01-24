@@ -18,6 +18,8 @@ export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request,
     const skip = (page - 1) * limit
     const userId = authReq.user.id
 
+    const categoryId = Number(authReq.query.category_id) || null
+
     const qb = AppDataSource
       .getRepository(Transaction)
       .createQueryBuilder('t')
@@ -27,6 +29,10 @@ export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request,
       .leftJoinAndSelect('t.loan', 'loan')
       .leftJoinAndSelect('t.loan_payment', 'loan_payment')
       .where('t.user_id = :userId', { userId })
+
+    if (categoryId) {
+      qb.andWhere('category.id = :categoryId', { categoryId })
+    }
 
     if (search) {
       qb.andWhere(
@@ -50,7 +56,7 @@ export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request,
       .take(limit)
       .getManyAndCount()
 
-    res.json({ items, total, page, limit })
+    res.json({ items, total, page, limit, category_id: categoryId })
   } catch (error) {
     logger.error('Error al listar transacciones:', error)
     res.status(500).json({ error: 'Error al listar transacciones' })
@@ -187,6 +193,8 @@ export const deleteTransactionFormPage: RequestHandler = async (req: Request, re
 
 export const transactionsPage: RequestHandler = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
+  const categoryId = req.query.category_id || null
+  const from = req.query.from || null
 
   res.render(
     'layouts/main',
@@ -195,7 +203,14 @@ export const transactionsPage: RequestHandler = (req: Request, res: Response) =>
       view: 'pages/transactions/index',
       incomeCategories: [],
       expenseCategories: [],
-      USER_ID: authReq.user?.id || 'guest'
+      USER_ID: authReq.user?.id || 'guest',
+      /* ============================
+        Contexto de navegación
+     ============================ */
+      context: {
+        from,
+        category_id: categoryId
+      },
     })
 }
 

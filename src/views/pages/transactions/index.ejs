@@ -2,6 +2,10 @@
   window.USER_ID = "<%= USER_ID %>"
 </script>
 
+<script>
+  window.TRANSACTIONS_CONTEXT = <%- JSON.stringify(context || {}) %>
+</script>
+
 <div class="max-w-6xl mx-auto ui-page">
 
   <!-- Header -->

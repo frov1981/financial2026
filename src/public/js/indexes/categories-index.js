@@ -134,8 +134,12 @@ function renderCard(category) {
           <button class="icon-btn delete"
             onclick="event.stopPropagation(); goToCategoryDelete(${category.id})">
             ${iconDelete()}
-          </button>
+          </button> 
           ${statusButton}
+          <button class="icon-btn"
+            onclick="event.stopPropagation(); goToCategoryList(${category.id})">
+            ${iconList()}
+          </button> 
         </div>
       </div>
 
@@ -304,6 +308,10 @@ function goToCategoryUpdate(id) {
 
 function goToCategoryDelete(id) {
   location.href = `/categories/delete/${id}`
+}
+
+function goToCategoryList(id) {
+  location.href = `/transactions?category_id=${id}&from=categories`
 }
 
 function selectCategoryCard(event, id) {

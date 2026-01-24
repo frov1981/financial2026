@@ -1,27 +1,34 @@
-/* ============================
-   Variables globales
-============================ */
+/* ============================================================================
+1. Constantes globales
+============================================================================ */
 const API_BASE = '/api/transactions'
 const FILTER_KEY = `transactions.filters.${window.USER_ID}`
 const SELECTED_KEY = `transactions.selected.${window.USER_ID}`
-
 const PAGE_SIZE = 10
+
+const context = window.TRANSACTIONS_CONTEXT || {}
+const CATEGORY_ID = context.category_id || null
+
+/* ============================================================================
+2. Variables de estado
+============================================================================ */
 let currentPage = 1
 let currentSearch = ''
 let totalPages = 1
 let allItems = []
 
-/* ============================
-   DOM
-============================ */
+/* ============================================================================
+3. Selectores DOM
+============================================================================ */
 const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('transactions-table')
+const table = document.querySelector('.ui-table')
 
-/* ============================
-   Utils
-============================ */
+/* ============================================================================
+4. Utils generales
+============================================================================ */
 function debounce(fn, delay) {
   let t
   return (...args) => {
@@ -45,9 +52,48 @@ function formatDateTime(date) {
   }
 }
 
-/* ============================
-   Render - Desktop
-============================ */
+/* ============================================================================
+5. Render helpers (iconos, tags, cajas)
+============================================================================ */
+function renderTable(data) {
+  if (!data.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="ui-td col-center text-gray-500">
+          No se encontraron transacciones
+        </td>
+      </tr>
+    `
+    return
+  }
+
+  tableBody.innerHTML = data.map(renderRow).join('')
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`transaction-${selected.id}`)
+    if (row) row.classList.add('tr-selected')
+  }
+}
+
+function renderCards(data) {
+  const container = document.getElementById('transactions-mobile')
+  if (!container) return
+
+  container.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="ui-empty">No se encontraron transacciones</div>`
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const card = container.querySelector(`[data-id="${selected.id}"]`)
+    if (card) card.classList.add('card-selected')
+  }
+}
+
+/* ============================================================================
+6. Render Desktop / Mobile
+============================================================================ */
 function renderRow(transaction) {
   const { date, time } = formatDateTime(transaction.date)
 
@@ -75,9 +121,6 @@ function renderRow(transaction) {
   `
 }
 
-/* ============================
-   Render - Mobile
-============================ */
 function renderCard(transaction) {
   const { date, time } = formatDateTime(transaction.date)
 
@@ -119,52 +162,16 @@ function renderCard(transaction) {
   `
 }
 
-/* ============================
-   Render helpers
-============================ */
-function renderTable(data) {
-  if (!data.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="ui-td col-center text-gray-500">
-          No se encontraron transacciones
-        </td>
-      </tr>
-    `
-    return
-  }
-
-  tableBody.innerHTML = data.map(renderRow).join('')
-
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    const row = document.getElementById(`transaction-${selected.id}`)
-    if (row) row.classList.add('tr-selected')
-  }
-}
-
-function renderCards(data) {
-  const container = document.getElementById('transactions-mobile')
-  if (!container) return
-
-  container.innerHTML = data.length
-    ? data.map(renderCard).join('')
-    : `<div class="ui-empty">No se encontraron transacciones</div>`
-
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    const card = container.querySelector(`[data-id="${selected.id}"]`)
-    if (card) card.classList.add('card-selected')
-  }
-}
-
+/* ============================================================================
+7. Render principal
+============================================================================ */
 function render(data) {
   window.innerWidth <= 768 ? renderCards(data) : renderTable(data)
 }
 
-/* ============================
-   Data + Pagination
-============================ */
+/* ============================================================================
+8. Data (loadCategories / loadTransactions)
+============================================================================ */
 function updatePaginationInfo() {
   document.getElementById('page-info-top').textContent =
     `Página ${currentPage} de ${totalPages}`
@@ -173,6 +180,7 @@ function updatePaginationInfo() {
 async function loadTransactions(page = 1) {
   const params = new URLSearchParams({ page, limit: PAGE_SIZE })
   if (currentSearch) params.append('search', currentSearch)
+  if (CATEGORY_ID) params.append('category_id', CATEGORY_ID)
 
   const res = await fetch(`${API_BASE}?${params}`)
   const data = await res.json()
@@ -185,9 +193,9 @@ async function loadTransactions(page = 1) {
   updatePaginationInfo()
 }
 
-/* ============================
-   Filtro
-============================ */
+/* ============================================================================
+9. Filtros (texto + estado)
+============================================================================ */
 function applySearch() {
   currentSearch = searchInput.value.trim()
   saveFilters(FILTER_KEY, { term: currentSearch })
@@ -195,6 +203,39 @@ function applySearch() {
   loadTransactions(1)
 }
 
+/* ============================================================================
+10. Status Filter UI
+============================================================================ */
+/* (reservado para futuros filtros visuales) */
+
+/* ============================================================================
+11. Acciones (redirects / selects)
+============================================================================ */
+function goToTransactionUpdate(id) {
+  location.href = `/transactions/update/${id}`
+}
+
+function goToTransactionDelete(id) {
+  location.href = `/transactions/delete/${id}`
+}
+
+function goBackToCategories() {
+  location.href = '/categories'
+}
+
+function selectTransactionCard(event, id) {
+  if (event.target.closest('button')) return
+
+  document.querySelectorAll('.transaction-card')
+    .forEach(c => c.classList.remove('card-selected'))
+
+  event.currentTarget.classList.add('card-selected')
+  saveFilters(SELECTED_KEY, { id })
+}
+
+/* ============================================================================
+12. Eventos
+============================================================================ */
 searchInput.addEventListener('input', debounce(applySearch, 300))
 
 clearBtn.addEventListener('click', () => {
@@ -206,9 +247,6 @@ clearBtn.addEventListener('click', () => {
   loadTransactions(1)
 })
 
-/* ============================
-   Paginado
-============================ */
 document.getElementById('prev-page-top')?.addEventListener('click', () => {
   if (currentPage > 1) loadTransactions(currentPage - 1)
 })
@@ -217,32 +255,10 @@ document.getElementById('next-page-top')?.addEventListener('click', () => {
   if (currentPage < totalPages) loadTransactions(currentPage + 1)
 })
 
-/* ============================
-   Acciones
-============================ */
-function goToTransactionUpdate(id) {
-  location.href = `/transactions/update/${id}`
-}
-
-function goToTransactionDelete(id) {
-  location.href = `/transactions/delete/${id}`
-}
-
-function selectTransactionCard(event, id) {
-  if (event.target.closest('button')) return
-  document.querySelectorAll('.transaction-card').forEach(c => c.classList.remove('card-selected'))
-  event.currentTarget.classList.add('card-selected')
-  saveFilters(SELECTED_KEY, { id })
-}
-
-/* ============================
-   Selección de fila (desktop)
-============================ */
-const table = document.querySelector('.ui-table')
-
 if (table) {
   table.addEventListener('click', event => {
     if (event.target.closest('button') || event.target.closest('a')) return
+
     const row = event.target.closest('tr[id^="transaction-"]')
     if (!row) return
 
@@ -254,9 +270,14 @@ if (table) {
   })
 }
 
-/* ============================
-   Restore filters + Init
-============================ */
+/* ============================================================================
+13. Scroll
+============================================================================ */
+/* (no implementado todavía) */
+
+/* ============================================================================
+14. Init
+============================================================================ */
 const savedFilters = loadFilters(FILTER_KEY)
 if (savedFilters?.term) {
   currentSearch = savedFilters.term
