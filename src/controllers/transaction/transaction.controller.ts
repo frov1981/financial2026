@@ -7,7 +7,6 @@ import { logger } from '../../utils/logger.util'
 import { getActiveAccountsByUser, getActiveCategoriesByUser, getNextValidTransactionDate, splitCategoriesByType } from './transaction.controller.auxiliar'
 export { saveTransaction } from './transaction.controller.saving'
 
-
 export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest
@@ -161,7 +160,6 @@ export const cloneTransactionFormPage: RequestHandler = async (req: Request, res
   const categories = await getActiveCategoriesByUser(authReq)
   const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
 
-  // 👉 fecha sugerida (puedes cambiar esto)
   const defaultDate = await getNextValidTransactionDate(authReq)
 
   res.render(
@@ -174,20 +172,12 @@ export const cloneTransactionFormPage: RequestHandler = async (req: Request, res
 
         account_id: tx.account ? tx.account.id : '',
         account_name: tx.account ? tx.account.name : '',
-
         to_account_id: tx.to_account ? tx.to_account.id : '',
         to_account_name: tx.to_account ? tx.to_account.name : '',
-
         category_id: tx.category ? tx.category.id : '',
         category_name: tx.category ? tx.category.name : '',
-
         amount: Number(tx.amount),
-
-        // 🔁 aquí decides:
         date: formatDateForInputLocal(defaultDate).slice(0, 16),
-        // o:
-        // date: formatDateForInputLocal(tx.date).slice(0, 16),
-
         description: tx.description ?? ''
       },
       accounts,

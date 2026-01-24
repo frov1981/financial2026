@@ -5,7 +5,7 @@ import { AppDataSource } from "../../config/datasource"
 import { logger } from "../../utils/logger.util"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
-import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
+import { getActiveAccountsByUser, getNextValidTransactionDate } from '../transaction/transaction.controller.auxiliar'
 
 export const listPaymentsAPI: RequestHandler = async (req: Request, res: Response) => {
     const authReq = req as AuthRequest
@@ -28,8 +28,9 @@ export const insertPaymentFormPage: RequestHandler = async (req: Request, res: R
     const authReq = req as AuthRequest
     const loanId = Number(req.params.loanId)
     const mode = 'insert'
-    const defaultDate = new Date()
     const accounts = await getActiveAccountsByUser(authReq)
+
+    const defaultDate = await getNextValidTransactionDate(authReq);
 
     res.render(
         'layouts/main',
@@ -84,6 +85,47 @@ export const updatePaymentFormPage: RequestHandler = async (req: Request, res: R
             accounts,
             mode
         })
+}
+
+export const clonePaymentFormPage: RequestHandler = async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest
+  const paymentId = Number(req.params.id)
+  const mode = 'insert'
+
+  const repo = AppDataSource.getRepository(LoanPayment)
+
+  const payment = await repo.findOne({
+    where: { id: paymentId },
+    relations: { loan: true, account: true }
+  })
+
+  if (!payment) {
+    return res.redirect('/loans')
+  }
+
+  const accounts = await getActiveAccountsByUser(authReq)
+
+  const defaultDate = await getNextValidTransactionDate(authReq)
+
+  res.render(
+    'layouts/main',
+    {
+      title: 'Clonar Pago',
+      view: 'pages/payments/form',
+      payment: {
+        note: payment.note ?? '',
+        principal_amount: payment.principal_amount,
+        interest_amount: payment.interest_amount,
+        payment_date: formatDateForInputLocal(defaultDate).slice(0, 16),
+        account_id: payment.account ? payment.account.id : '',
+        account_name: payment.account ? payment.account.name : '',
+      },
+      loan_id: payment.loan.id,
+      errors: {},
+      accounts,
+      mode
+    }
+  )
 }
 
 export const deletePaymentFormPage: RequestHandler = async (req: Request, res: Response) => {

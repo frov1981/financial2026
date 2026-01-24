@@ -124,18 +124,24 @@ function renderRow(transaction) {
         <div class="icon-actions">
           <button 
             class="icon-btn edit" 
+            title="Editar"
             onclick="goToTransactionUpdate(${transaction.id})">
             ${iconEdit()}
+            <span class="ui-btn-text">Editar</span>
           </button>
           <button 
             class="icon-btn clone" 
+            title="Clonar"
             onclick="goToTransactionClone(${transaction.id})">
             ${iconClone()}
+            <span class="ui-btn-text">Clonar</span>
           </button>
           <button 
             class="icon-btn delete" 
+            title="Eliminar"
             onclick="goToTransactionDelete(${transaction.id})">
             ${iconDelete()}
+            <span class="ui-btn-text">Eliminar</span>
           </button>
         </div>
       </td>

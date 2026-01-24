@@ -89,6 +89,13 @@ function renderRow(payment) {
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
+          <button 
+            class="icon-btn clone" 
+            title="Clonar"
+            onclick="goToPaymentClone(${payment.id})">
+            ${iconClone()}
+            <span class="ui-btn-text">Clonar</span>
+          </button>
           <button
             class="icon-btn delete"
             title="Eliminar"
@@ -119,7 +126,11 @@ function renderCard(payment) {
             onclick="event.stopPropagation(); goToPaymentUpdate(${payment.id})">
             ${iconEdit()}
           </button>
-
+          <button 
+            class="icon-btn clone"
+            onclick="event.stopPropagation(); goToPaymentClone(${payment.id})">
+            ${iconClone()}
+          </button>
           <button
             class="icon-btn delete"
             onclick="event.stopPropagation(); goToPaymentDelete(${payment.id})">
@@ -245,6 +256,10 @@ const debouncedFilter = debounce(filterPayments, 300)
 ============================ */
 function goToPaymentUpdate(id) {
   window.location.href = `/payments/update/${id}`
+}
+
+function goToPaymentClone(id) {
+  location.href = `/payments/clone/${id}`
 }
 
 function goToPaymentDelete(id) {
