@@ -1,64 +1,46 @@
-document.addEventListener('DOMContentLoaded', () => {
-
-  const btnRecalculate = document.getElementById('btnRecalculate')
-  const overlay = document.getElementById('overlay')
-
-  if (!btnRecalculate) {
-    console.error('btnRecalculate not found')
-    return
-  }
-
-  btnRecalculate.addEventListener('click', async () => {
-
-    overlay.classList.remove('hidden')
-    btnRecalculate.disabled = true
-
-    try {
-      const response = await fetch('/api/accounts/recalculate-balances', {
-        method: 'POST'
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        MessageBox.success(result.message)
-        await loadAccounts()
-      } else {
-        MessageBox.error(result.message)
-      }
-
-    } catch (error) {
-      console.error(error)
-      MessageBox.error('Error inesperado')
-    } finally {
-      overlay.classList.add('hidden')
-      btnRecalculate.disabled = false
-    }
-  })
-
-})
+/* ============================================================================
+1. Constantes globales
+2. Variables de estado
+3. Selectores DOM
+4. Utils generales
+5. Render helpers (iconos, tags, cajas)
+6. Render Desktop / Mobile
+7. Render principal
+8. Data (loadAccounts)
+9. Filtros (texto + estado)
+10. Status Filter UI
+11. Acciones (redirects / selects)
+12. Eventos
+13. Scroll
+14. Init (DOMContentLoaded + loadAccounts)
+============================================================================ */
 
 /* ============================
-   Variables globales
+   1. Constantes globales
 ============================ */
 const API_BASE = '/api/accounts'
 const FILTER_KEY = `accounts.filters.${window.USER_ID}`
 const SELECTED_KEY = `accounts.selected.${window.USER_ID}`
 const SCROLL_KEY = `accounts.scroll.${window.USER_ID}`
+const STATUS_FILTER_KEY = `accounts.statusFilter.${window.USER_ID}`
 
+/* ============================
+   2. Variables de estado
+============================ */
 let allAccounts = []
 
 /* ============================
-   DOM
+   3. Selectores DOM
 ============================ */
 const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('accounts-table')
 const scrollContainer = document.querySelector('.ui-scroll-area')
+const statusToggleBtn = document.querySelector('.js-status-filter-toggle')
 
 /* ============================
-   Utils
+   4. Utils generales
 ============================ */
 function debounce(fn, delay) {
   let t
@@ -69,24 +51,33 @@ function debounce(fn, delay) {
 }
 
 /* ============================
-   Render - Desktop
+   5. Render helpers (iconos, tags, cajas)
+============================ */
+// iconEdit()
+// iconDelete()
+// iconView()
+// iconViewOff()
+// iconList()
+// amountBox()
+// numberBox()
+// statusTag()
+// accountTypeTag()
+
+/* ============================
+   6. Render Desktop / Mobile
 ============================ */
 function renderRow(account) {
   const rowClass = account.is_active ? '' : 'bg-red-50'
 
   const statusButton = account.is_active
     ? `
-      <button 
-        class="icon-btn deactivate" 
-        onclick="goToAccountUpdateStatus(${account.id})">
+      <button class="icon-btn deactivate" onclick="goToAccountUpdateStatus(${account.id})">
         ${iconViewOff()}
         <span class="ui-btn-text">Desactivar</span>
       </button>
     `
     : `
-      <button 
-        class="icon-btn activate" 
-        onclick="goToAccountUpdateStatus(${account.id})">
+      <button class="icon-btn activate" onclick="goToAccountUpdateStatus(${account.id})">
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
@@ -101,21 +92,14 @@ function renderRow(account) {
       <td class="ui-td col-right">${amountBox(account.balance)}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <!-- Botón Editar -->
-          <button 
-            class="icon-btn edit" 
-            onclick="goToAccountUpdate(${account.id})">
+          <button class="icon-btn edit" onclick="goToAccountUpdate(${account.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-          <!-- Botón Eliminar -->
-          <button 
-            class="icon-btn delete" 
-            onclick="goToAccountDelete(${account.id})">
+          <button class="icon-btn delete" onclick="goToAccountDelete(${account.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
-          <!-- Botón Activar / Inactivar -->
           ${statusButton}
         </div>
       </td>
@@ -123,11 +107,7 @@ function renderRow(account) {
   `
 }
 
-/* ============================
-   Render - Mobile
-============================ */
 function renderCard(account) {
-
   const statusButton = account.is_active
     ? `
       <button class="icon-btn deactivate"
@@ -146,31 +126,25 @@ function renderCard(account) {
     <div class="account-card ${account.is_active ? '' : 'inactive'}"
          data-id="${account.id}"
          onclick="selectAccountCard(event, ${account.id})">
-      <!-- Header -->
       <div class="card-header">
         <div class="card-title">${account.name}</div>
-
         <div class="card-actions">
           <button class="icon-btn edit"
             onclick="event.stopPropagation(); goToAccountUpdate(${account.id})">
             ${iconEdit()}
           </button>
-
           <button class="icon-btn delete"
             onclick="event.stopPropagation(); goToAccountDelete(${account.id})">
             ${iconDelete()}
           </button>
-
           ${statusButton}
         </div>
       </div>
 
-      <!-- Balance -->
       <div class="card-balance">
         ${amountBox(account.balance)}
       </div>
 
-      <!-- Footer -->
       <div class="card-footer">
         <span>${numberBox(account.transaction_count)} trx</span>
         <div class="card-tags">
@@ -183,7 +157,7 @@ function renderCard(account) {
 }
 
 /* ============================
-   Render helpers
+   7. Render principal
 ============================ */
 function renderTable(data) {
   if (!data.length) {
@@ -194,7 +168,6 @@ function renderTable(data) {
         </td>
       </tr>
     `
-
     restoreScroll()
     return
   }
@@ -204,9 +177,7 @@ function renderTable(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const row = document.getElementById(`account-${selected.id}`)
-    if (row) {
-      row.classList.add('tr-selected')
-    }
+    row?.classList.add('tr-selected')
   }
 
   restoreScroll()
@@ -222,63 +193,107 @@ function renderCards(data) {
 
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
-    const card = container.querySelector(`[data-id="${selected.id}"]`)
-    if (card) {
-      card.classList.add('card-selected')
-    }
+    container
+      .querySelector(`[data-id="${selected.id}"]`)
+      ?.classList.add('card-selected')
   }
 
   restoreScroll()
 }
 
-
 function render(data) {
-  if (window.innerWidth <= 768) {
-    renderCards(data)
-  } else {
-    renderTable(data)
-  }
+  window.innerWidth <= 768
+    ? renderCards(data)
+    : renderTable(data)
 }
 
 /* ============================
-   Data
+   8. Data (loadAccounts)
 ============================ */
 async function loadAccounts() {
   const res = await fetch(API_BASE)
   allAccounts = await res.json()
-  
+
   const cached = loadFilters(FILTER_KEY)
+  const statusCached = loadFilters(STATUS_FILTER_KEY)
+  const status = statusCached?.status || 'all'
+
   if (cached?.term) {
     searchInput.value = cached.term
     clearBtn.classList.remove('hidden')
-    filterAccounts()
-  } else {
-    render(allAccounts)
   }
+
+  syncStatusFilterButton(status)
+  applyAllFilters()
 }
 
 /* ============================
-   Filtro
+   9. Filtros (texto + estado)
 ============================ */
+function getFilteredAccounts() {
+  const cached = loadFilters(FILTER_KEY)
+  const statusCached = loadFilters(STATUS_FILTER_KEY)
+
+  const term = cached?.term?.toLowerCase() || ''
+  const status = statusCached?.status || 'all'
+
+  return allAccounts.filter(account => {
+    const matchText =
+      !term ||
+      account.name.toLowerCase().includes(term) ||
+      account.type.toLowerCase().includes(term)
+
+    const matchStatus =
+      status === 'all' ||
+      (status === 'active' && account.is_active) ||
+      (status === 'inactive' && !account.is_active)
+
+    return matchText && matchStatus
+  })
+}
+
+function applyAllFilters() {
+  render(getFilteredAccounts())
+}
+
 function filterAccounts() {
-  const term = searchInput.value.trim().toLowerCase()  
+  const term = searchInput.value.trim().toLowerCase()
   saveFilters(FILTER_KEY, { term })
   saveFilters(SCROLL_KEY, { y: 0 })
-
-  render(
-    !term
-      ? allAccounts
-      : allAccounts.filter(a =>
-        a.name.toLowerCase().includes(term) ||
-        a.type.toLowerCase().includes(term)
-      )
-  )
+  applyAllFilters()
 }
 
-const debouncedFilter = debounce(filterAccounts, 300)
+/* ============================
+   10. Status Filter UI
+============================ */
+function syncStatusFilterButton(status) {
+  if (!statusToggleBtn) return
+
+  const icon = statusToggleBtn.querySelector('.ui-btn-icon')
+  const text = statusToggleBtn.querySelector('.ui-btn-text')
+
+  if (status === 'active') {
+    icon.innerHTML = iconView()
+    text.textContent = 'Activos'
+  } else if (status === 'inactive') {
+    icon.innerHTML = iconViewOff()
+    text.textContent = 'Inactivos'
+  } else {
+    icon.innerHTML = iconList()
+    text.textContent = 'Todos'
+  }
+
+  statusToggleBtn.dataset.status = status
+}
+
+function applyStatusFilter(status) {
+  saveFilters(STATUS_FILTER_KEY, { status })
+  syncStatusFilterButton(status)
+  applyAllFilters()
+}
 
 /* ============================
-   Acciones
+   11. Acciones
 ============================ */
 function goToAccountUpdate(id) {
   location.href = `/accounts/update/${id}`
@@ -293,46 +308,49 @@ function goToAccountUpdateStatus(id) {
 }
 
 function selectAccountCard(event, id) {
-  if (event.target.closest('button')) {
-    return
-  }
+  if (event.target.closest('button')) return
 
-  document.querySelectorAll('.account-card').forEach(card => card.classList.remove('card-selected'))
-  const card = event.currentTarget
-  card.classList.add('card-selected')
+  document
+    .querySelectorAll('.account-card')
+    .forEach(c => c.classList.remove('card-selected'))
 
+  event.currentTarget.classList.add('card-selected')
   saveFilters(SELECTED_KEY, { id })
 }
 
 /* ============================
-   Eventos
+   12. Eventos
 ============================ */
-searchBtn.addEventListener('click', filterAccounts)
+const debouncedFilter = debounce(filterAccounts, 300)
 
-searchInput.addEventListener('input', () => {
+searchBtn?.addEventListener('click', filterAccounts)
+
+searchInput?.addEventListener('input', () => {
   clearBtn.classList.toggle('hidden', !searchInput.value)
   debouncedFilter()
 })
 
-clearBtn.addEventListener('click', () => {
+clearBtn?.addEventListener('click', () => {
   searchInput.value = ''
   clearBtn.classList.add('hidden')
   clearFilters(FILTER_KEY)
   clearFilters(SELECTED_KEY)
-  
   render(allAccounts)
 })
 
-/* ============================
-   Selección de fila
-============================ */
+statusToggleBtn?.addEventListener('click', () => {
+  const current = statusToggleBtn.dataset.status || 'all'
+  const next =
+    current === 'all' ? 'active' :
+    current === 'active' ? 'inactive' : 'all'
+
+  applyStatusFilter(next)
+})
+
 document
   .querySelector('.ui-table')
-  .addEventListener('click', (event) => {
-
-    if (event.target.closest('button') || event.target.closest('a')) {
-      return
-    }
+  ?.addEventListener('click', event => {
+    if (event.target.closest('button') || event.target.closest('a')) return
 
     const row = event.target.closest('tr[id^="account-"]')
     if (!row) return
@@ -342,35 +360,29 @@ document
       .forEach(tr => tr.classList.remove('tr-selected'))
 
     row.classList.add('tr-selected')
-
-    // guardar selección
-    const accountId = row.id.replace('account-', '')
-    saveFilters(SELECTED_KEY, { id: accountId })
+    saveFilters(SELECTED_KEY, { id: row.id.replace('account-', '') })
   })
 
-
 /* ============================
-   Scroll actions
+   13. Scroll
 ============================ */
 function restoreScroll() {
-  if (!scrollContainer) return
-
   const saved = loadFilters(SCROLL_KEY)
-  if (!saved?.y) return
+  if (!saved?.y || !scrollContainer) return
 
   requestAnimationFrame(() => {
     scrollContainer.scrollTop = saved.y
   })
 }
 
-if (scrollContainer) {
-  scrollContainer.addEventListener('scroll', () => {
-    saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
-  })
-}
+scrollContainer?.addEventListener('scroll', () => {
+  saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+})
 
 /* ============================
-   Init
+   14. Init
 ============================ */
-loadAccounts()
-window.addEventListener('resize', () => render(allAccounts))
+document.addEventListener('DOMContentLoaded', () => {
+  loadAccounts()
+  window.addEventListener('resize', () => render(allAccounts))
+})
