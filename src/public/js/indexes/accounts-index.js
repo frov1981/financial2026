@@ -30,6 +30,19 @@ const STATUS_FILTER_KEY = `accounts.statusFilter.${window.USER_ID}`
 let allAccounts = []
 
 /* ============================
+   Layout detection (AGREGADO)
+============================ */
+function getLayoutMode() {
+  const w = window.innerWidth
+
+  if (w >= 1024) return 'desktop'
+  if (w >= 769) return 'tablet'
+  return 'mobile'
+}
+
+let currentLayout = getLayoutMode()
+
+/* ============================
    3. Selectores DOM
 ============================ */
 const searchInput = document.getElementById('search-input')
@@ -261,7 +274,12 @@ function filterAccounts() {
   saveFilters(FILTER_KEY, { term })
   saveFilters(SCROLL_KEY, { y: 0 })
   applyAllFilters()
-}
+}						   
+													 
+								   
+								   
+				   
+ 
 
 /* ============================
    10. Status Filter UI
@@ -384,5 +402,13 @@ scrollContainer?.addEventListener('scroll', () => {
 ============================ */
 document.addEventListener('DOMContentLoaded', () => {
   loadAccounts()
-  window.addEventListener('resize', () => render(allAccounts))
+
+  window.addEventListener('resize', () => {
+    const nextLayout = getLayoutMode()
+
+    if (nextLayout !== currentLayout) {
+      currentLayout = nextLayout
+      applyAllFilters()
+    }
+  })
 })
