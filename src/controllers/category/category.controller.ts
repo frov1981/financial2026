@@ -1,4 +1,4 @@
-// controllers/category.controller.ts
+// controllers/category.controller.ts 
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/datasource'
 import { Category } from '../../entities/Category.entity'
@@ -13,6 +13,7 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
 
     const result = await repository
       .createQueryBuilder('category')
+      .leftJoinAndSelect('category.parent', 'parent')
       .where('category.user_id = :userId', { userId: authReq.user.id })
       .addSelect(subQuery =>
         subQuery
@@ -25,7 +26,18 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
       .getRawAndEntities()
 
     const categories = result.entities.map((category, index) => ({
-      ...category,
+      id: category.id,
+      name: category.name,
+      type: category.type,
+      is_active: category.is_active,
+
+      parent: category.parent
+        ? {
+          id: category.parent.id,
+          name: category.parent.name,
+        }
+        : null,
+
       transactions_count: Number(result.raw[index].transactions_count)
     }))
 
@@ -35,7 +47,6 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
     res.status(500).json({ error: 'Error al listar categorías' })
   }
 }
-
 
 export const insertCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'

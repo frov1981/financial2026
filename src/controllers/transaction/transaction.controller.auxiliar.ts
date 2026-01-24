@@ -1,9 +1,9 @@
+import { IsNull, MoreThanOrEqual, Not } from 'typeorm'
 import { AppDataSource } from '../../config/datasource'
 import { Account } from '../../entities/Account.entity'
-import { Transaction } from '../../entities/Transaction.entity'
 import { Category } from '../../entities/Category.entity'
+import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/AuthRequest'
-import { MoreThanOrEqual  } from 'typeorm'
 
 export const getActiveAccountsByUser = async (authReq: AuthRequest): Promise<Account[]> => {
   const repo = AppDataSource.getRepository(Account)
@@ -23,7 +23,8 @@ export const getActiveCategoriesByUser = async (authReq: AuthRequest): Promise<C
   const categories = await repo.find({
     where: {
       user: { id: authReq.user.id },
-      is_active: true
+      is_active: true,
+      //parent: Not(IsNull())
     },
     order: { name: 'ASC' }
   })
@@ -65,6 +66,7 @@ export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise
 
   return next > now ? next : now
 }
+
 export const splitCategoriesByType = (categories: Category[]): {
   incomeCategories: Category[]
   expenseCategories: Category[]

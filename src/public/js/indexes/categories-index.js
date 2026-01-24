@@ -79,6 +79,7 @@ function debounce(fn, delay) {
    6. Render Desktop / Mobile
 ============================ */
 function renderRow(category) {
+  console.log(category)
   const rowClass = category.is_active ? '' : 'bg-red-50'
 
   const statusButton = category.is_active
@@ -134,6 +135,7 @@ function renderRow(category) {
 }
 
 function renderCard(category) {
+  console.log(category)
   const statusButton = category.is_active
     ? `
       <button 
