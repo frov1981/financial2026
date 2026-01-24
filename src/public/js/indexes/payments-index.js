@@ -1,17 +1,35 @@
-
+/* ============================================================================
+1. Constantes globales
+2. Variables de estado
+3. Selectores DOM
+4. Utils generales
+5. Render helpers (formatters)
+6. Render Desktop / Mobile
+7. Render principal
+8. Data (loadPayments)
+9. Filtros (texto)
+10. Status Filter UI (N/A)
+11. Acciones (redirects / selects)
+12. Eventos
+13. Scroll
+14. Init (DOMContentLoaded + loadPayments)
+============================================================================ */
 
 /* ============================
-   Variables globales
+   1. Constantes globales
 ============================ */
 const API_BASE = `/api/payments/${window.LOAN_ID}`
 const FILTER_KEY = `payments.filters.${window.USER_ID}.${window.LOAN_ID}`
 const SELECTED_KEY = `payments.selected.${window.USER_ID}.${window.LOAN_ID}`
 const SCROLL_KEY = `payments.scroll.${window.USER_ID}.${window.LOAN_ID}`
 
+/* ============================
+   2. Variables de estado
+============================ */
 let allPayments = []
 
 /* ============================
-   DOM
+   3. Selectores DOM
 ============================ */
 const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
@@ -20,7 +38,7 @@ const tableBody = document.getElementById('payments-table')
 const scrollContainer = document.querySelector('.ui-scroll-area')
 
 /* ============================
-   Utils
+   4. Utils generales
 ============================ */
 function debounce(fn, delay) {
   let t
@@ -40,7 +58,7 @@ const formatDate = value =>
   new Date(value).toLocaleDateString('es-EC')
 
 /* ============================
-   Render - Desktop
+   5. Render helpers
 ============================ */
 function renderRow(payment) {
   return `
@@ -51,14 +69,16 @@ function renderRow(payment) {
       <td class="ui-td col-left col-sm">${payment.account?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button 
-            class="icon-btn edit" 
+          <button
+            class="icon-btn edit"
+            title="Editar"
             onclick="goToPaymentUpdate(${payment.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-          <button 
-            class="icon-btn delete" 
+          <button
+            class="icon-btn delete"
+            title="Eliminar"
             onclick="goToPaymentDelete(${payment.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
@@ -69,9 +89,6 @@ function renderRow(payment) {
   `
 }
 
-/* ============================
-   Render - Mobile
-============================ */
 function renderCard(payment) {
   return `
     <div class="payment-card"
@@ -84,12 +101,13 @@ function renderCard(payment) {
         </div>
 
         <div class="card-actions">
-          <button 
+          <button
             class="icon-btn edit"
             onclick="event.stopPropagation(); goToPaymentUpdate(${payment.id})">
             ${iconEdit()}
           </button>
-          <button 
+
+          <button
             class="icon-btn delete"
             onclick="event.stopPropagation(); goToPaymentDelete(${payment.id})">
             ${iconDelete()}
@@ -114,7 +132,7 @@ function renderCard(payment) {
 }
 
 /* ============================
-   Render helpers
+   6. Render Desktop / Mobile
 ============================ */
 function renderTable(data) {
   if (!data.length) {
@@ -125,7 +143,6 @@ function renderTable(data) {
         </td>
       </tr>
     `
-
     restoreScroll()
     return
   }
@@ -135,9 +152,7 @@ function renderTable(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const row = document.getElementById(`payment-${selected.id}`)
-    if (row) {
-      row.classList.add('tr-selected')
-    }
+    if (row) row.classList.add('tr-selected')
   }
 
   restoreScroll()
@@ -154,14 +169,15 @@ function renderCards(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const card = container.querySelector(`[data-id="${selected.id}"]`)
-    if (card) {
-      card.classList.add('card-selected')
-    }
+    if (card) card.classList.add('card-selected')
   }
 
   restoreScroll()
 }
 
+/* ============================
+   7. Render principal
+============================ */
 function render(data) {
   if (window.innerWidth <= 768) {
     renderCards(data)
@@ -171,12 +187,11 @@ function render(data) {
 }
 
 /* ============================
-   Data
+   8. Data (loadPayments)
 ============================ */
 async function loadPayments() {
   const res = await fetch(API_BASE)
   allPayments = await res.json()
-  render(allPayments)
 
   const cached = loadFilters(FILTER_KEY)
   if (cached?.term) {
@@ -189,7 +204,7 @@ async function loadPayments() {
 }
 
 /* ============================
-   Filtro
+   9. Filtros (texto)
 ============================ */
 function filterPayments() {
   const term = searchInput.value.trim().toLowerCase()
@@ -200,37 +215,42 @@ function filterPayments() {
     !term
       ? allPayments
       : allPayments.filter(p =>
-        p.account?.name.toLowerCase().includes(term)
-      )
+          p.account?.name?.toLowerCase().includes(term)
+        )
   )
 }
 
 const debouncedFilter = debounce(filterPayments, 300)
+
 /* ============================
-   Acciones
+   10. Status Filter UI
+============================ */
+// No aplica para Payments
+
+/* ============================
+   11. Acciones (redirects / selects)
 ============================ */
 function goToPaymentUpdate(id) {
-  location.href = `/payments/update/${id}`
+  window.location.href = `/payments/update/${id}`
 }
 
 function goToPaymentDelete(id) {
-  location.href = `/payments/delete/${id}`
+  window.location.href = `/payments/delete/${id}`
 }
 
 function selectPaymentCard(event, id) {
-  if (event.target.closest('button')) {
-    return
-  }
+  if (event.target.closest('button')) return
 
-  document.querySelectorAll('.payment-card').forEach(card => card.classList.remove('card-selected'))
-  const card = event.currentTarget
-  card.classList.add('card-selected')
+  document
+    .querySelectorAll('.payment-card')
+    .forEach(card => card.classList.remove('card-selected'))
 
+  event.currentTarget.classList.add('card-selected')
   saveFilters(SELECTED_KEY, { id })
 }
 
 /* ============================
-   Eventos
+   12. Eventos
 ============================ */
 searchBtn.addEventListener('click', filterPayments)
 
@@ -244,20 +264,14 @@ clearBtn.addEventListener('click', () => {
   clearBtn.classList.add('hidden')
   clearFilters(FILTER_KEY)
   clearFilters(SELECTED_KEY)
-  
   render(allPayments)
 })
 
-/* ============================
-   Selección de fila
-============================ */
 document
   .querySelector('.ui-table')
-  .addEventListener('click', (event) => {
+  ?.addEventListener('click', event => {
 
-    if (event.target.closest('button') || event.target.closest('a')) {
-      return
-    }
+    if (event.target.closest('button') || event.target.closest('a')) return
 
     const row = event.target.closest('tr[id^="payment-"]')
     if (!row) return
@@ -268,13 +282,12 @@ document
 
     row.classList.add('tr-selected')
 
-    // guardar selección
-    const paymentId = row.id.replace('payment-', '')
-    saveFilters(SELECTED_KEY, { id: paymentId })
+    const id = row.id.replace('payment-', '')
+    saveFilters(SELECTED_KEY, { id })
   })
 
 /* ============================
-   Scroll actions
+   13. Scroll
 ============================ */
 function restoreScroll() {
   if (!scrollContainer) return
@@ -287,14 +300,12 @@ function restoreScroll() {
   })
 }
 
-if (scrollContainer) {
-  scrollContainer.addEventListener('scroll', () => {
-    saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
-  })
-}
+scrollContainer?.addEventListener('scroll', () => {
+  saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+})
 
 /* ============================
-   Init
+   14. Init
 ============================ */
 loadPayments()
 window.addEventListener('resize', () => render(allPayments))
