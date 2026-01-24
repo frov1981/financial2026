@@ -1,16 +1,46 @@
+/* ============================================================================
+1. Constantes globales
+2. Variables de estado
+3. Selectores DOM
+4. Utils generales
+5. Render helpers (iconos, tags, cajas)
+6. Render Desktop / Mobile
+7. Render principal
+8. Data (loadAccounts)
+9. Filtros (texto + estado)
+10. Status Filter UI
+11. Acciones (redirects / selects)
+12. Eventos
+13. Scroll
+14. Init (DOMContentLoaded + loadAccounts)
+============================================================================ */
+
 /* =========================================================
 1. Constantes globales
 ========================================================= */
 const API_BASE = '/api/loans'
 const FILTER_KEY = `loans.filters.${window.USER_ID}`
-const STATUS_FILTER_KEY = `loans.status.${window.USER_ID}`
 const SELECTED_KEY = `loans.selected.${window.USER_ID}`
 const SCROLL_KEY = `loans.scroll.${window.USER_ID}`
+const STATUS_FILTER_KEY = `loans.status.${window.USER_ID}`
 
 /* =========================================================
 2. Variables de estado
 ========================================================= */
 let allLoans = []
+
+/* ============================
+   Layout detection (AGREGADO)
+============================ */
+function getLayoutMode() {
+  const w = window.innerWidth
+
+  if (w >= 1024) return 'desktop'
+  if (w >= 769) return 'tablet'
+  return 'mobile'
+}
+
+let currentLayout = getLayoutMode()
 
 /* =========================================================
 3. Selectores DOM
@@ -80,15 +110,21 @@ function renderRow(loan) {
       <td class="ui-td col-left col-sm">${loan.disbursement_account.name}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button class="icon-btn edit" onclick="goToLoanUpdate(${loan.id})">
+          <button 
+            class="icon-btn edit" 
+            onclick="goToLoanUpdate(${loan.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-          <button class="icon-btn delete" onclick="goToLoanDelete(${loan.id})">
+          <button
+            class="icon-btn delete" 
+            onclick="goToLoanDelete(${loan.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
-          <button class="icon-btn" onclick="goToLoanView(${loan.id})">
+          <button 
+            class="icon-btn" 
+            onclick="goToLoanView(${loan.id})">
             ${iconList()}
             <span class="ui-btn-text">Detalles</span>
           </button>
@@ -103,22 +139,26 @@ function renderRow(loan) {
 ========================================================= */
 function renderCard(loan) {
   return `
-    <div class="loan-card ${loan.is_active ? '' : 'inactive'}"
-         data-id="${loan.id}"
-         onclick="selectLoanCard(event, ${loan.id})">
+    <div 
+      class="loan-card ${loan.is_active ? '' : 'inactive'}"
+      data-id="${loan.id}"
+      onclick="selectLoanCard(event, ${loan.id})">
 
       <div class="card-header">
         <div class="card-title">${loan.name}</div>
         <div class="card-actions">
-          <button class="icon-btn edit"
+          <button 
+            class="icon-btn edit"
             onclick="event.stopPropagation(); goToLoanUpdate(${loan.id})">
             ${iconEdit()}
           </button>
-          <button class="icon-btn delete"
+          <button 
+            class="icon-btn delete"
             onclick="event.stopPropagation(); goToLoanDelete(${loan.id})">
             ${iconDelete()}
           </button>
-          <button class="icon-btn"
+          <button 
+            class="icon-btn"
             onclick="event.stopPropagation(); goToLoanView(${loan.id})">
             ${iconList()}
           </button>
@@ -188,6 +228,25 @@ function renderCards(data) {
 
 function render(data) {
   window.innerWidth <= 768 ? renderCards(data) : renderTable(data)
+}
+
+/* ============================
+   8. Data (loadLoans)
+============================ */
+async function loadLoans() {
+  const res = await fetch(API_BASE)
+  allLoans = await res.json()
+
+  const cachedText = loadFilters(FILTER_KEY)
+  const cachedStatus = loadFilters(STATUS_FILTER_KEY)
+
+  if (cachedText?.term) {
+    searchInput.value = cachedText.term
+    clearBtn.classList.remove('hidden')
+  }
+
+  syncStatusFilterButton(cachedStatus?.status || 'all')
+  applyAllFilters()
 }
 
 /* =========================================================
@@ -321,21 +380,16 @@ scrollContainer?.addEventListener('scroll', () => {
 /* =========================================================
 14. Init
 ========================================================= */
-async function loadLoans() {
-  const res = await fetch(API_BASE)
-  allLoans = await res.json()
+document.addEventListener('DOMContentLoaded', () => {
+  loadLoans()
 
-  const cachedText = loadFilters(FILTER_KEY)
-  const cachedStatus = loadFilters(STATUS_FILTER_KEY)
+  window.addEventListener('resize', () => {
+    const nextLayout = getLayoutMode()
 
-  if (cachedText?.term) {
-    searchInput.value = cachedText.term
-    clearBtn.classList.remove('hidden')
-  }
+    if (nextLayout !== currentLayout) {
+      currentLayout = nextLayout
+      applyAllFilters()
+    }
+  })
+})
 
-  syncStatusFilterButton(cachedStatus?.status || 'all')
-  applyAllFilters()
-}
-
-loadLoans()
-window.addEventListener('resize', applyAllFilters)
