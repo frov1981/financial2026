@@ -49,12 +49,20 @@ function initAutocomplete(container) {
 
   input.addEventListener('input', () => {
     const value = input.value.toLowerCase().trim()
+    const list = getActiveList()
     const items = getItems()
+
+    let visibleCount = 0
 
     items.forEach(item => {
       const label = item.dataset.label.toLowerCase()
-      item.classList.toggle('hidden', !label.includes(value))
+      const visible = label.includes(value)
+
+      item.style.display = visible ? '' : 'none'
+      if (visible) visibleCount++
     })
+
+    list.style.display = visibleCount ? '' : 'none'
   })
 
   /* ================================
