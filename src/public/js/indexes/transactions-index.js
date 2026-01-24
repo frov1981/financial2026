@@ -122,10 +122,19 @@ function renderRow(transaction) {
       <td class="ui-td col-left">${transaction.category?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button class="icon-btn edit" onclick="goToTransactionUpdate(${transaction.id})">
+          <button 
+            class="icon-btn edit" 
+            onclick="goToTransactionUpdate(${transaction.id})">
             ${iconEdit()}
           </button>
-          <button class="icon-btn delete" onclick="goToTransactionDelete(${transaction.id})">
+          <button 
+            class="icon-btn clone" 
+            onclick="goToTransactionClone(${transaction.id})">
+            ${iconClone()}
+          </button>
+          <button 
+            class="icon-btn delete" 
+            onclick="goToTransactionDelete(${transaction.id})">
             ${iconDelete()}
           </button>
         </div>
@@ -138,9 +147,10 @@ function renderCard(transaction) {
   const { date, time } = formatDateTime(transaction.date)
 
   return `
-    <div class="transaction-card ${rowClassByType(transaction.type)}"
-         data-id="${transaction.id}"
-         onclick="selectTransactionCard(event, ${transaction.id})">
+    <div 
+      class="transaction-card ${rowClassByType(transaction.type)}"
+      data-id="${transaction.id}"
+      onclick="selectTransactionCard(event, ${transaction.id})">
 
       <div class="card-header">
         <div class="card-datetime">
@@ -149,11 +159,18 @@ function renderCard(transaction) {
         </div>
 
         <div class="card-actions">
-          <button class="icon-btn edit"
+          <button 
+            class="icon-btn edit"
             onclick="event.stopPropagation(); goToTransactionUpdate(${transaction.id})">
             ${iconEdit()}
           </button>
-          <button class="icon-btn delete"
+          <button 
+            class="icon-btn clone"
+            onclick="event.stopPropagation(); goToTransactionClone(${transaction.id})">
+            ${iconClone()}
+            </button>
+          <button 
+            class="icon-btn delete"
             onclick="event.stopPropagation(); goToTransactionDelete(${transaction.id})">
             ${iconDelete()}
           </button>
@@ -226,6 +243,10 @@ function applySearch() {
 ============================================================================ */
 function goToTransactionUpdate(id) {
   location.href = `/transactions/update/${id}`
+}
+
+function goToTransactionClone(id) {
+  location.href = `/transactions/clone/${id}`
 }
 
 function goToTransactionDelete(id) {

@@ -141,6 +141,64 @@ export const updateTransactionFormPage: RequestHandler = async (req: Request, re
 
 }
 
+export const cloneTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest
+  const txId = Number(req.params.id)
+  const mode = 'insert'
+
+  const repo = AppDataSource.getRepository(Transaction)
+
+  const tx = await repo.findOne({
+    where: { id: txId, user: { id: authReq.user.id } },
+    relations: ['account', 'to_account', 'category']
+  })
+
+  if (!tx) {
+    return res.redirect('/transactions')
+  }
+
+  const accounts = await getActiveAccountsByUser(authReq)
+  const categories = await getActiveCategoriesByUser(authReq)
+  const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
+
+  // 👉 fecha sugerida (puedes cambiar esto)
+  const defaultDate = await getNextValidTransactionDate(authReq)
+
+  res.render(
+    'layouts/main',
+    {
+      title: 'Clonar Transacción',
+      view: 'pages/transactions/form',
+      transaction: {
+        type: tx.type,
+
+        account_id: tx.account ? tx.account.id : '',
+        account_name: tx.account ? tx.account.name : '',
+
+        to_account_id: tx.to_account ? tx.to_account.id : '',
+        to_account_name: tx.to_account ? tx.to_account.name : '',
+
+        category_id: tx.category ? tx.category.id : '',
+        category_name: tx.category ? tx.category.name : '',
+
+        amount: Number(tx.amount),
+
+        // 🔁 aquí decides:
+        date: formatDateForInputLocal(defaultDate).slice(0, 16),
+        // o:
+        // date: formatDateForInputLocal(tx.date).slice(0, 16),
+
+        description: tx.description ?? ''
+      },
+      accounts,
+      incomeCategories,
+      expenseCategories,
+      errors: {},
+      mode
+    }
+  )
+}
+
 export const deleteTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
