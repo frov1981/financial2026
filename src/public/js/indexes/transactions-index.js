@@ -90,10 +90,41 @@ function renderCard(transaction) {
          data-id="${transaction.id}"
          onclick="selectTransactionCard(event, ${transaction.id})">
 
+      <!-- Header -->
       <div class="card-header">
-        <div>
-          <div class="card-date">${date}</div>
-          <div class="card-time">${time}</div>
+        <div class="card-datetime">
+          <span class="card-date">${date}</span>
+          <span class="card-time">${time}</span>
+        </div>
+
+        <div class="card-actions">
+          <button class="icon-btn edit"
+            onclick="event.stopPropagation(); goToTransactionUpdate(${transaction.id})">
+            ${iconEdit()}
+          </button>
+          <button class="icon-btn delete"
+            onclick="event.stopPropagation(); goToTransactionDelete(${transaction.id})">
+            ${iconDelete()}
+          </button>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="card-content">
+        <div class="card-info">
+          <div class="card-account">
+            ${transaction.account?.name || '-'}
+          </div>
+
+          <div class="card-category">
+            ${transaction.category?.name || '-'}
+          </div>
+
+          ${
+            transaction.description
+              ? `<div class="card-description">${transaction.description}</div>`
+              : ''
+          }
         </div>
 
         <div class="card-amount">
@@ -101,35 +132,10 @@ function renderCard(transaction) {
         </div>
       </div>
 
-      <div class="card-body">
-        <div class="card-account">
-          ${transaction.account?.name || '-'}
-        </div>
-        <div class="card-category">
-          ${transaction.category?.name || '-'}
-        </div>
-
-        ${transaction.description
-      ? `<div class="card-description">${transaction.description}</div>`
-      : ''
-    }
-      </div>
-
-      <div class="card-actions">
-        <button 
-          class="icon-btn edit"
-          onclick="event.stopPropagation(); goToTransactionUpdate(${transaction.id})">
-          ${iconEdit()}
-        </button>
-        <button 
-          class="icon-btn delete"
-          onclick="event.stopPropagation(); goToTransactionDelete(${transaction.id})">
-          ${iconDelete()}
-        </button>
-      </div>
     </div>
   `
 }
+
 
 /* ============================
    Render helpers
@@ -220,6 +226,8 @@ async function loadTransactions(page = 1) {
 ============================ */
 function applySearch() {
   currentSearch = searchInput.value.trim()
+  saveFilters(FILTER_KEY, { term: currentSearch })
+
   clearBtn.classList.toggle('hidden', !currentSearch)
   loadTransactions(1)
 }
@@ -232,6 +240,10 @@ clearBtn.addEventListener('click', () => {
   searchInput.value = ''
   currentSearch = ''
   clearBtn.classList.add('hidden')
+
+  clearFilters(FILTER_KEY)
+  clearFilters(SELECTED_KEY)
+
   loadTransactions(1)
 })
 

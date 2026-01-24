@@ -616,23 +616,10 @@
 
 /* =========================================================
    TRANSACTIONS - MOBILE CARDS
-   ========================================================= */
-
-.transactions-mobile {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .transactions-mobile {
-    display: block;
-  }
-
-  .ui-table-wrapper {
-    display: none;
-  }
-}
+========================================================= */
 
 .transaction-card {
+  position: relative;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 8px 10px;
@@ -643,16 +630,13 @@
   margin-top: 6px;
 }
 
-.transaction-card {
-  position: relative;
-}
-
+/* selección */
 .transaction-card.card-selected::after {
   content: '';
   position: absolute;
   inset: 0;
   border: 2px solid #2563eb;
-  border-radius: 12px;
+  border-radius: 10px;
   pointer-events: none;
 }
 
@@ -660,6 +644,7 @@
   border-color: transparent;
 }
 
+/* tipos */
 .transaction-card.income {
   background: #f0fdf4;
 }
@@ -672,17 +657,26 @@
   background: #faf5ff;
 }
 
+/* =========================
+   Header
+========================= */
+
 .transaction-card .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.transaction-card .card-datetime {
+  display: flex;
   gap: 6px;
+  align-items: baseline;
 }
 
 .transaction-card .card-date {
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.1;
 }
 
 .transaction-card .card-time {
@@ -690,40 +684,9 @@
   color: #6b7280;
 }
 
-.transaction-card .card-amount {
-  font-size: 18px;
-  font-weight: 600;
-  text-align: right;
-}
-
-.transaction-card .card-body {
-  margin-top: 4px;
-  font-size: 12px;
-}
-
-.transaction-card .card-account {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-}
-
-.transaction-card .card-category {
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.transaction-card .card-description {
-  margin-top: 4px;
-  font-size: 11px;
-  color: #6b7280;
-  line-height: 1.2;
-}
-
 .transaction-card .card-actions {
   display: flex;
   gap: 4px;
-  margin-top: 4px;
 }
 
 .transaction-card .icon-btn {
@@ -731,6 +694,52 @@
   min-height: auto;
 }
 
+/* =========================
+   Body layout
+========================= */
+
+.transaction-card .card-content {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.transaction-card .card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.transaction-card .card-account {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.transaction-card .card-category {
+  font-size: 10px; /* ~20% menos */
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.transaction-card .card-description {
+  margin-top: 2px;
+  font-size: 11px;
+  font-style: italic;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+/* =========================
+   Amount (protagonista)
+========================= */
+
+.transaction-card .card-amount {
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
 
 /* =========================================================
    NUMERIC VALUES — AMOUNTS
