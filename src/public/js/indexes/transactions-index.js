@@ -16,6 +16,7 @@ let allItems = []
 ============================ */
 const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
+const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('transactions-table')
 
 /* ============================
@@ -47,25 +48,29 @@ function formatDateTime(date) {
 /* ============================
    Render - Desktop
 ============================ */
-function renderRow(tx) {
-  const { date, time } = formatDateTime(tx.date)
+function renderRow(transaction) {
+  const { date, time } = formatDateTime(transaction.date)
 
   return `
-    <tr id="transaction-${tx.id}" class="${rowClassByType(tx.type)}">
+    <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction.type)}">
       <td class="px-4 py-2 text-center">
         <div>${date}</div>
         <div class="text-xs text-gray-600">${time}</div>
       </td>
-      <td class="ui-td col-left col-sm">${transactionTypeTag(tx.type)}</td>
-      <td class="ui-td col-right">${amountBox(tx.amount)}</td>
-      <td class="ui-td col-left">${tx.account?.name || '-'}</td>
-      <td class="ui-td col-left">${tx.category?.name || '-'}</td>
+      <td class="ui-td col-left col-sm">${transactionTypeTag(transaction.type)}</td>
+      <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
+      <td class="ui-td col-left">${transaction.account?.name || '-'}</td>
+      <td class="ui-td col-left">${transaction.category?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button class="icon-btn edit" onclick="goToTransactionUpdate(${tx.id})">
+          <button 
+            class="icon-btn edit" 
+            onclick="goToTransactionUpdate(${transaction.id})">
             ${iconEdit()}
           </button>
-          <button class="icon-btn delete" onclick="goToTransactionDelete(${tx.id})">
+          <button 
+            class="icon-btn delete" 
+            onclick="goToTransactionDelete(${transaction.id})">
             ${iconDelete()}
           </button>
         </div>
@@ -77,12 +82,13 @@ function renderRow(tx) {
 /* ============================
    Render - Mobile
 ============================ */
-function renderCard(tx) {
-  const { date, time } = formatDateTime(tx.date)
+function renderCard(transaction) {
+  const { date, time } = formatDateTime(transaction.date)
 
   return `
-    <div class="transaction-card ${rowClassByType(tx.type)}"
-         onclick="goToTransactionUpdate(${tx.id})">
+    <div class="transaction-card ${rowClassByType(transaction.type)}"
+         data-id="${transaction.id}"
+         onclick="selectTransactionCard(event, ${transaction.id})">
 
       <div class="card-header">
         <div>
@@ -91,31 +97,33 @@ function renderCard(tx) {
         </div>
 
         <div class="card-amount">
-          ${amountBox(tx.amount)}
+          ${amountBox(transaction.amount)}
         </div>
       </div>
 
       <div class="card-body">
         <div class="card-account">
-          ${tx.account?.name || '-'}
+          ${transaction.account?.name || '-'}
         </div>
         <div class="card-category">
-          ${tx.category?.name || '-'}
+          ${transaction.category?.name || '-'}
         </div>
 
-        ${tx.description
-          ? `<div class="card-description">${tx.description}</div>`
-          : ''
-        }
+        ${transaction.description
+      ? `<div class="card-description">${transaction.description}</div>`
+      : ''
+    }
       </div>
 
       <div class="card-actions">
-        <button class="icon-btn edit"
-          onclick="event.stopPropagation(); goToTransactionUpdate(${tx.id})">
+        <button 
+          class="icon-btn edit"
+          onclick="event.stopPropagation(); goToTransactionUpdate(${transaction.id})">
           ${iconEdit()}
         </button>
-        <button class="icon-btn delete"
-          onclick="event.stopPropagation(); goToTransactionDelete(${tx.id})">
+        <button 
+          class="icon-btn delete"
+          onclick="event.stopPropagation(); goToTransactionDelete(${transaction.id})">
           ${iconDelete()}
         </button>
       </div>
@@ -126,32 +134,57 @@ function renderCard(tx) {
 /* ============================
    Render helpers
 ============================ */
-function renderDesktop(data) {
-  tableBody.innerHTML = data.length
-    ? data.map(renderRow).join('')
-    : `
+function renderTable(data) {
+  if (!data.length) {
+    tableBody.innerHTML = `
       <tr>
-        <td colspan="6" class="ui-td col-center">
+        <td colspan="5" class="ui-td col-center text-gray-500">
           No se encontraron transacciones
         </td>
       </tr>
     `
+
+    //restoreScroll()
+    return
+  }
+
+  tableBody.innerHTML = data.map(renderRow).join('')
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`transaction-${selected.id}`)
+    if (row) {
+      row.classList.add('tr-selected')
+    }
+  }
+
+  //restoreScroll()
 }
 
-function renderMobile(data) {
+function renderCards(data) {
   const container = document.getElementById('transactions-mobile')
   if (!container) return
 
   container.innerHTML = data.length
     ? data.map(renderCard).join('')
     : `<div class="ui-empty">No se encontraron transacciones</div>`
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const card = container.querySelector(`[data-id="${selected.id}"]`)
+    if (card) {
+      card.classList.add('card-selected')
+    }
+  }
+
+  //restoreScroll()
 }
 
 function render(data) {
   if (window.innerWidth <= 768) {
-    renderMobile(data)
+    renderCards(data)
   } else {
-    renderDesktop(data)
+    renderTable(data)
   }
 }
 
@@ -223,6 +256,43 @@ function goToTransactionUpdate(id) {
 function goToTransactionDelete(id) {
   location.href = `/transactions/delete/${id}`
 }
+
+function selectTransactionCard(event, id) {
+  if (event.target.closest('button')) {
+    return
+  }
+
+  document.querySelectorAll('.transaction-card').forEach(card => card.classList.remove('card-selected'))
+  const card = event.currentTarget
+  card.classList.add('card-selected')
+
+  saveFilters(SELECTED_KEY, { id })
+}
+
+/* ============================
+   Selección de fila
+============================ */
+document
+  .querySelector('.ui-table')
+  .addEventListener('click', (event) => {
+
+    if (event.target.closest('button') || event.target.closest('a')) {
+      return
+    }
+
+    const row = event.target.closest('tr[id^="transaction-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#transactions-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+
+    // guardar selección
+    const transactionId = row.id.replace('transaction-', '')
+    saveFilters(SELECTED_KEY, { id: transactionId })
+  })
 
 /* ============================
    Init
