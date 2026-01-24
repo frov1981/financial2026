@@ -84,13 +84,17 @@ function renderRow(account) {
 
   const statusButton = account.is_active
     ? `
-      <button class="icon-btn deactivate" onclick="goToAccountUpdateStatus(${account.id})">
+      <button 
+        class="icon-btn deactivate" 
+        onclick="goToAccountUpdateStatus(${account.id})">
         ${iconViewOff()}
         <span class="ui-btn-text">Desactivar</span>
       </button>
     `
     : `
-      <button class="icon-btn activate" onclick="goToAccountUpdateStatus(${account.id})">
+      <button 
+        class="icon-btn activate" 
+        onclick="goToAccountUpdateStatus(${account.id})">
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
@@ -103,13 +107,18 @@ function renderRow(account) {
       <td class="ui-td col-left col-sm">${statusTag(account.is_active)}</td>
       <td class="ui-td col-right col-sm">${numberBox(account.transaction_count)}</td>
       <td class="ui-td col-right">${amountBox(account.balance)}</td>
+      
       <td class="ui-td col-center">
         <div class="icon-actions">
-          <button class="icon-btn edit" onclick="goToAccountUpdate(${account.id})">
+          <button 
+            class="icon-btn edit" 
+            onclick="goToAccountUpdate(${account.id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
-          <button class="icon-btn delete" onclick="goToAccountDelete(${account.id})">
+          <button 
+            class="icon-btn delete" 
+            onclick="goToAccountDelete(${account.id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
@@ -123,30 +132,36 @@ function renderRow(account) {
 function renderCard(account) {
   const statusButton = account.is_active
     ? `
-      <button class="icon-btn deactivate"
+      <button 
+        class="icon-btn deactivate"
         onclick="event.stopPropagation(); goToAccountUpdateStatus(${account.id})">
         ${iconViewOff()}
       </button>
     `
     : `
-      <button class="icon-btn activate"
+      <button 
+        class="icon-btn activate"
         onclick="event.stopPropagation(); goToAccountUpdateStatus(${account.id})">
         ${iconView()}
       </button>
     `
 
   return `
-    <div class="account-card ${account.is_active ? '' : 'inactive'}"
-         data-id="${account.id}"
-         onclick="selectAccountCard(event, ${account.id})">
+    <div 
+      class="account-card ${account.is_active ? '' : 'inactive'}"
+      data-id="${account.id}"
+      onclick="selectAccountCard(event, ${account.id})">
+
       <div class="card-header">
         <div class="card-title">${account.name}</div>
         <div class="card-actions">
-          <button class="icon-btn edit"
+          <button 
+            class="icon-btn edit"
             onclick="event.stopPropagation(); goToAccountUpdate(${account.id})">
             ${iconEdit()}
           </button>
-          <button class="icon-btn delete"
+          <button 
+            class="icon-btn delete"
             onclick="event.stopPropagation(); goToAccountDelete(${account.id})">
             ${iconDelete()}
           </button>
@@ -276,11 +291,6 @@ function filterAccounts() {
   applyAllFilters()
 }						   
 													 
-								   
-								   
-				   
- 
-
 /* ============================
    10. Status Filter UI
 ============================ */
@@ -353,7 +363,7 @@ clearBtn?.addEventListener('click', () => {
   clearBtn.classList.add('hidden')
   clearFilters(FILTER_KEY)
   clearFilters(SELECTED_KEY)
-  render(allAccounts)
+  applyAllFilters()
 })
 
 statusToggleBtn?.addEventListener('click', () => {
