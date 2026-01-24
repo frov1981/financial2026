@@ -17,6 +17,19 @@ let currentSearch = ''
 let totalPages = 1
 let allItems = []
 
+/* ============================
+   Layout detection (AGREGADO)
+============================ */
+function getLayoutMode() {
+  const w = window.innerWidth
+
+  if (w >= 1024) return 'desktop'
+  if (w >= 769) return 'tablet'
+  return 'mobile'
+}
+
+let currentLayout = getLayoutMode()
+
 /* ============================================================================
 3. Selectores DOM
 ============================================================================ */
@@ -285,5 +298,15 @@ if (savedFilters?.term) {
   clearBtn.classList.remove('hidden')
 }
 
-loadTransactions()
-window.addEventListener('resize', () => render(allItems))
+document.addEventListener('DOMContentLoaded', () => {
+  loadTransactions()
+
+  window.addEventListener('resize', () => {
+    const nextLayout = getLayoutMode()
+
+    if (nextLayout !== currentLayout) {
+      currentLayout = nextLayout
+      render(allItems)
+    }
+  })
+})
