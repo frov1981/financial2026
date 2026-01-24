@@ -30,6 +30,19 @@ const STATUS_FILTER_KEY = `categories.statusFilter.${window.USER_ID}`
 let allCategories = []
 
 /* ============================
+   Layout detection (AGREGADO)
+============================ */
+function getLayoutMode() {
+  const w = window.innerWidth
+
+  if (w >= 1024) return 'desktop'
+  if (w >= 769) return 'tablet'
+  return 'mobile'
+}
+
+let currentLayout = getLayoutMode()
+
+/* ============================
    3. Selectores DOM
 ============================ */
 const searchInput = document.getElementById('search-input')
@@ -92,6 +105,7 @@ function renderRow(category) {
       <td class="ui-td col-left">${categoryTypeTag(category.type)}</td>
       <td class="ui-td col-right col-sm">${numberBox(category.transactions_count)}</td>
       <td class="ui-td col-left col-sm">${statusTag(category.is_active)}</td>
+      
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button 
@@ -362,7 +376,7 @@ clearBtn?.addEventListener('click', () => {
   clearBtn.classList.add('hidden')
   clearFilters(FILTER_KEY)
   clearFilters(SELECTED_KEY)
-  render(allCategories)
+  applyAllFilters()
 })
 
 statusToggleBtn?.addEventListener('click', () => {
@@ -411,5 +425,13 @@ scrollContainer?.addEventListener('scroll', () => {
 ============================ */
 document.addEventListener('DOMContentLoaded', () => {
   loadCategories()
-  window.addEventListener('resize', () => render(allCategories))
+
+  window.addEventListener('resize', () => {
+    const nextLayout = getLayoutMode()
+
+    if (nextLayout !== currentLayout) {
+      currentLayout = nextLayout
+      applyAllFilters()
+    }
+  })
 })
