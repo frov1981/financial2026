@@ -29,6 +29,19 @@ const SCROLL_KEY = `payments.scroll.${window.USER_ID}.${window.LOAN_ID}`
 let allPayments = []
 
 /* ============================
+   Layout detection (AGREGADO)
+============================ */
+function getLayoutMode() {
+  const w = window.innerWidth
+
+  if (w >= 1024) return 'desktop'
+  if (w >= 769) return 'tablet'
+  return 'mobile'
+}
+
+let currentLayout = getLayoutMode()
+
+/* ============================
    3. Selectores DOM
 ============================ */
 const searchInput = document.getElementById('search-input')
@@ -307,5 +320,15 @@ scrollContainer?.addEventListener('scroll', () => {
 /* ============================
    14. Init
 ============================ */
-loadPayments()
-window.addEventListener('resize', () => render(allPayments))
+document.addEventListener('DOMContentLoaded', () => {
+  loadPayments()
+
+  window.addEventListener('resize', () => {
+    const nextLayout = getLayoutMode()
+
+    if (nextLayout !== currentLayout) {
+      currentLayout = nextLayout
+      filterPayments()
+    }
+  })
+})
