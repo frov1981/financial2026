@@ -427,6 +427,37 @@
   align-items: center;
 }
 
+.category-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 8px;
+  background: #f9fafb;
+}
+
+.category-group-header {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; 
+  gap: 8px;
+}
+
+.category-group-header .group-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.category-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.category-group.collapsed .category-group-body {
+  display: none;
+}
+
 /* =========================================================
    LOANS - MOBILE CARDS
    ========================================================= */

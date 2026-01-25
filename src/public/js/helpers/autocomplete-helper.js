@@ -101,6 +101,15 @@ function initAutocomplete(container) {
           )
         }
 
+        if (fieldName === 'parent') {
+          // Dispara un evento opcional si quieres reaccionar al seleccionar un padre
+          document.dispatchEvent(
+            new CustomEvent('category:parentSelected', {
+              detail: { id: item.dataset.id, label: item.dataset.label }
+            })
+          )
+        }
+
         hideAllLists()
       })
     })

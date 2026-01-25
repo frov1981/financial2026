@@ -1,15 +1,11 @@
 <div class="max-w-xl mx-auto">
   <h1 class="text-2xl font-semibold mb-6">
-    <%=
-    mode === 'insert' 
-    ? 'Insertar Categoria' 
-    : mode === 'update' 
-    ? 'Editar Categoria' 
-    : mode === 'status' 
-    ? 'Editar Estado de la Categoria' 
-    : mode === 'delete'
-    ? 'Eliminar Categoria'
-    : mode 
+    <%= 
+      mode === 'insert' ? 'Insertar Categoria' :
+      mode === 'update' ? 'Editar Categoria' :
+      mode === 'status' ? 'Editar Estado de la Categoria' :
+      mode === 'delete' ? 'Eliminar Categoria' :
+      mode
     %>
   </h1>
 
@@ -20,14 +16,28 @@
       </div>
     <% } %>
 
-    <!-- ID -->
+    <!-- ID y acción -->
     <input type="hidden" name="id" value="<%= category?.id || '' %>">
     <input type="hidden" name="action" value="save">
 
-    <!-- Tipo de categoría -->
+    <!-- Checkbox Padre -->
     <div class="mb-4">
-      <label class="block font-medium mb-1">Tipo</label>
+      <label class="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="is-parent-checkbox"
+          name="is_parent"
+          value="1"
+          <%= category?.parent ? '' : category?.is_parent ? 'checked' : '' %>
+          <%= mode === 'delete' ? 'disabled' : '' %>
+        >
+        Es categoría padre?
+      </label>
+    </div>
 
+    <!-- Tipo de categoría -->
+    <div class="mb-4" id="type-container">
+      <label class="block font-medium mb-1">Tipo</label>
       <div class="flex gap-6">
         <label class="flex items-center gap-1">
           <input
@@ -35,7 +45,6 @@
             name="type"
             value="income"
             <%= category?.type === 'income' || !category ? 'checked' : '' %>
-            <%= mode !== 'insert' ? 'disabled' : '' %>
           >
           Ingreso
         </label>
@@ -46,7 +55,6 @@
             name="type"
             value="expense"
             <%= category?.type === 'expense' ? 'checked' : '' %>
-            <%= mode !== 'insert' ? 'disabled' : '' %>
           >
           Gasto
         </label>
@@ -68,9 +76,57 @@
         <%= (mode === 'status' || mode === 'delete') ? 'readonly' : '' %>
         required
       >
-
       <% if (errors?.name) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
+      <% } %>
+    </div>
+
+    <!-- Categoría Padre (Autocomplete) -->
+    <div class="mb-4" id="parent-container" data-field="parent" data-autocomplete>
+      <label class="block font-medium mb-1">Categoría Padre</label>
+
+      <!-- Input de búsqueda -->
+      <input
+        type="text"
+        class="w-full border rounded px-3 py-2"
+        placeholder="Buscar categoría…"
+        data-autocomplete-input
+        autocomplete="off"
+        value="<%= category?.parent?.name || '' %>"
+        <%= mode === 'delete' ? 'readonly' : '' %>
+      >
+
+      <!-- Hidden para enviar el ID -->
+      <input
+        type="hidden"
+        name="parent_id"
+        data-autocomplete-hidden
+        value="<%= category?.parent?.id || '' %>"
+      >
+
+      <% if (mode !== 'delete') { %>
+      <div class="relative">
+        <ul
+          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
+          data-autocomplete-list
+          data-active="1"
+        >
+          <% parentCategories.forEach(c => { %>
+            <li
+              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
+              data-autocomplete-item
+              data-id="<%= c.id %>"
+              data-label="<%= c.name %>"
+            >
+              <%= c.name %>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+      <% } %>
+
+      <% if (errors?.category) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
       <% } %>
     </div>
 
@@ -78,16 +134,10 @@
     <% if (mode === 'status') { %>
       <div class="mb-6">
         <label class="block font-medium mb-1">Estado</label>
-
         <select name="is_active" class="w-full border rounded px-3 py-2">
-          <option value="true" <%= category?.is_active ? 'selected' : '' %>>
-            Activa
-          </option>
-          <option value="false" <%= !category?.is_active ? 'selected' : '' %>>
-            Inactiva
-          </option>
+          <option value="true" <%= category?.is_active ? 'selected' : '' %>>Activa</option>
+          <option value="false" <%= !category?.is_active ? 'selected' : '' %>>Inactiva</option>
         </select>
-
         <% if (errors?.is_active) { %>
           <p class="text-red-600 text-sm mt-1"><%= errors.is_active %></p>
         <% } %>
@@ -96,22 +146,14 @@
 
     <!-- Acciones -->
     <div class="flex justify-end gap-2">
-      <a href="/categories" class="px-4 py-2 bg-gray-200 rounded">
-        Cancelar
-      </a>
-
+      <a href="/categories" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
       <% if (mode === 'delete') { %>
-      <button class="px-4 py-2 bg-red-600 text-white rounded" onclick="this.form.action.value='delete'">
-        Eliminar  
-      </button>
-      <% } else { %> 
-      <button class="px-4 py-2 bg-blue-600 text-white rounded" >
-        Guardar
-      </button>
+        <button class="px-4 py-2 bg-red-600 text-white rounded" onclick="this.form.action.value='delete'">Eliminar</button>
+      <% } else { %>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
       <% } %>
     </div>
   </form>
 </div>
 
 <script src="/js/forms/category-form.js"></script>
-

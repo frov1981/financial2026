@@ -4,6 +4,7 @@ import { AppDataSource } from '../../config/datasource'
 import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
+import { getActiveParentCategoriesByUser } from './category.controller.auxiliar'
 
 export const listCategoriesAPI: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
@@ -49,15 +50,23 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
 }
 
 export const insertCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest
   const mode = 'insert'
+
+  const parentCategories = await getActiveParentCategoriesByUser(authReq)
 
   res.render(
     'layouts/main',
     {
       title: 'Insertar Categoría',
       view: 'pages/categories/form',
-      category: {},
+      category: {
+        parent: null,
+        type: null,
+        is_active: true,
+      },
       errors: {},
+      parentCategories,
       mode
     })
 }
@@ -68,28 +77,30 @@ export const updateCategoryFormPage: RequestHandler = async (req: Request, res: 
   const mode = 'update'
 
   const repo = AppDataSource.getRepository(Category)
+  const parentCategories = await getActiveParentCategoriesByUser(authReq)
 
   const category = await repo.findOne({
-    where: { id: categoryId, user: { id: authReq.user.id } }
+    where: { id: categoryId, user: { id: authReq.user.id } },
+    relations: ['parent'] // muy importante para traer el parent
   })
 
-  if (!category) {
-    return res.redirect('/categories')
-  }
+  if (!category) return res.redirect('/categories')
 
-  res.render(
-    'layouts/main',
-    {
-      title: 'Editar Categoría',
-      view: 'pages/categories/form',
-      category: {
-        id: category.id,
-        name: category.name,
-        type: category.type
-      },
-      errors: {},
-      mode
-    })
+  res.render('layouts/main', {
+    title: 'Editar Categoría',
+    view: 'pages/categories/form',
+    category: {
+      id: category.id,
+      name: category.name,
+      type: category.type,
+      is_active: category.is_active,
+      parent: category.parent || null,
+      is_parent: !category.parent
+    },
+    parentCategories,
+    errors: {},
+    mode
+  })
 }
 
 export const deleteCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
@@ -98,28 +109,30 @@ export const deleteCategoryFormPage: RequestHandler = async (req: Request, res: 
   const mode = 'delete'
 
   const repo = AppDataSource.getRepository(Category)
+  const parentCategories = await getActiveParentCategoriesByUser(authReq)
 
   const tx = await repo.findOne({
     where: { id: txId, user: { id: authReq.user.id } },
+    relations: ['parent'] // traer parent
   })
 
-  if (!tx) {
-    return res.redirect('/categories')
-  }
+  if (!tx) return res.redirect('/categories')
 
-  res.render(
-    'layouts/main',
-    {
-      title: 'Eliminar Categoría',
-      view: 'pages/categories/form',
-      category: {
-        id: tx.id,
-        type: tx.type,
-        name: tx.name
-      },
-      errors: {},
-      mode
-    })
+  res.render('layouts/main', {
+    title: 'Eliminar Categoría',
+    view: 'pages/categories/form',
+    category: {
+      id: tx.id,
+      name: tx.name,
+      type: tx.type,
+      is_active: tx.is_active,
+      parent: tx.parent || null,
+      is_parent: !tx.parent
+    },
+    parentCategories,
+    errors: {},
+    mode
+  })
 }
 
 export const updateCategoryStatusFormPage: RequestHandler = async (req: Request, res: Response) => {
@@ -130,12 +143,15 @@ export const updateCategoryStatusFormPage: RequestHandler = async (req: Request,
   const repo = AppDataSource.getRepository(Category)
 
   const category = await repo.findOne({
-    where: { id: categoryId, user: { id: authReq.user.id } }
+    where: { id: categoryId, user: { id: authReq.user.id } },
+    relations: ['parent']
   })
 
   if (!category) {
     return res.redirect('/categories')
   }
+
+  const parentCategories = await getActiveParentCategoriesByUser(authReq)
 
   res.render(
     'layouts/main',
@@ -146,8 +162,11 @@ export const updateCategoryStatusFormPage: RequestHandler = async (req: Request,
         id: category.id,
         name: category.name,
         type: category.type,
-        is_active: category.is_active
+        is_active: category.is_active,
+        parent: category.parent || null,
+        is_parent: !category.parent
       },
+      parentCategories,
       errors: {},
       mode
     })

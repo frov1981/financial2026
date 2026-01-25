@@ -23,6 +23,7 @@ const FILTER_KEY = `categories.filters.${window.USER_ID}`
 const SELECTED_KEY = `categories.selected.${window.USER_ID}`
 const SCROLL_KEY = `categories.scroll.${window.USER_ID}`
 const STATUS_FILTER_KEY = `categories.statusFilter.${window.USER_ID}`
+const COLLAPSE_KEY = `categories.collapse.${window.USER_ID}`
 
 /* ============================
    2. Variables de estado
@@ -63,6 +64,18 @@ function debounce(fn, delay) {
   }
 }
 
+function isCategoryCollapsed(parentId) {
+  const state = loadFilters(COLLAPSE_KEY) || {}
+  return !!state[parentId]
+}
+
+function toggleCategoryCollapse(parentId) {
+  const state = loadFilters(COLLAPSE_KEY) || {}
+  state[parentId] = !state[parentId]
+  saveFilters(COLLAPSE_KEY, state)
+  applyAllFilters()
+}
+
 /* ============================
    5. Render helpers
 ============================ */
@@ -79,7 +92,14 @@ function debounce(fn, delay) {
    6. Render Desktop / Mobile
 ============================ */
 function renderRow(category) {
-  console.log(category)
+  const isParent = !category.parent
+  const isChild = !!category.parent
+  const collapsed = isParent && isCategoryCollapsed(category.id)
+
+  if (isChild && isCategoryCollapsed(category.parent.id)) {
+    return ''
+  }
+
   const rowClass = category.is_active ? '' : 'bg-red-50'
 
   const statusButton = category.is_active
@@ -102,7 +122,14 @@ function renderRow(category) {
 
   return `
     <tr id="category-${category.id}" class="${rowClass}">
-      <td class="ui-td col-left">${category.name}</td>
+      <td class="ui-td col-left">
+        ${isParent
+      ? `<button onclick="toggleCategoryCollapse(${category.id})">
+              ${collapsed ? '▸' : '▾'}
+            </button>`
+      : ''}
+        ${category.name}
+      </td>
       <td class="ui-td col-left">${categoryTypeTag(category.type)}</td>
       <td class="ui-td col-right col-sm">${numberBox(category.transactions_count)}</td>
       <td class="ui-td col-left col-sm">${statusTag(category.is_active)}</td>
@@ -135,7 +162,14 @@ function renderRow(category) {
 }
 
 function renderCard(category) {
-  console.log(category)
+  const isParent = !category.parent
+  const isChild = !!category.parent
+  const collapsed = isParent && isCategoryCollapsed(category.id)
+
+  if (isChild && isCategoryCollapsed(category.parent.id)) {
+    return ''
+  }
+
   const statusButton = category.is_active
     ? `
       <button 
@@ -158,7 +192,14 @@ function renderCard(category) {
       data-id="${category.id}"
       onclick="selectCategoryCard(event, ${category.id})">
       <div class="card-header">
-        <div class="card-title">${category.name}</div>
+        <div class="card-title">
+          ${isParent
+      ? `<button onclick="toggleCategoryCollapse(${category.id})">
+                ${collapsed ? '▸' : '▾'}
+              </button>`
+      : ''}
+          ${category.name}
+        </div>
         <div class="card-actions">
           <button 
             class="icon-btn edit"
@@ -197,6 +238,8 @@ function renderCard(category) {
    7. Render principal
 ============================ */
 function renderTable(data) {
+  const selected = loadFilters(SELECTED_KEY)
+  
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
@@ -209,9 +252,45 @@ function renderTable(data) {
     return
   }
 
-  tableBody.innerHTML = data.map(renderRow).join('')
+  const parents = data.filter(c => !c.parent)
+  const children = data.filter(c => c.parent)
 
-  const selected = loadFilters(SELECTED_KEY)
+  const html = parents.map(parent => {
+    const collapsed = isCategoryCollapsed(parent.id)
+
+    // Fila del padre
+    const parentRow = `
+      <tr id="category-${parent.id}" class="parent-row">
+        <td class="ui-td col-left">
+          <button onclick="toggleCategoryCollapse(${parent.id})">
+            ${collapsed ? '▸' : '▾'}
+          </button>
+          ${parent.name}
+        </td>
+        <td class="ui-td col-left"></td>
+        <td class="ui-td col-right col-sm"></td>
+        <td class="ui-td col-left col-sm"></td>
+        <td class="ui-td col-center">
+          <div class="icon-actions">
+            <button class="icon-btn edit" onclick="goToCategoryUpdate(${parent.id})">${iconEdit()}<span class="ui-btn-text">Editar</span></button>
+            <button class="icon-btn delete" onclick="goToCategoryDelete(${parent.id})">${iconDelete()}<span class="ui-btn-text">Eliminar</span></button>
+          </div>
+        </td>
+      </tr>
+    `
+
+    // Filas de los hijos
+    const childRows = children
+      .filter(child => child.parent.id === parent.id)
+      .map(child => renderRow(child))
+      .join('')
+
+    return parentRow + (collapsed ? '' : childRows)
+  }).join('')
+
+  tableBody.innerHTML = html
+
+  // Selección
   if (selected?.id) {
     document
       .getElementById(`category-${selected.id}`)
@@ -225,17 +304,38 @@ function renderCards(data) {
   const container = document.getElementById('categories-mobile')
   if (!container) return
 
-  container.innerHTML = data.length
-    ? data.map(renderCard).join('')
-    : `<div class="ui-empty">No se encontraron categorías</div>`
+  const parents = data.filter(c => !c.parent)
+  const children = data.filter(c => c.parent)
 
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    container
-      .querySelector(`[data-id="${selected.id}"]`)
-      ?.classList.add('card-selected')
-  }
+  const html = parents.map(parent => {
+    const collapsed = isCategoryCollapsed(parent.id)
 
+    const childCards = children
+      .filter(child => child.parent.id === parent.id)
+      .map(child => renderCard(child)) // todos los hijos con List
+      .join('')
+
+    return `
+      <div class="category-group ${collapsed ? 'collapsed' : ''}">
+        <div class="category-group-header">
+          <button onclick="toggleCategoryCollapse(${parent.id})">
+            ${collapsed ? '▸' : '▾'}
+          </button>
+          ${parent.name}
+          <!-- botones del padre -->
+          <div class="card-actions" style="margin-left:auto;">
+            <button class="icon-btn edit" onclick="event.stopPropagation(); goToCategoryUpdate(${parent.id})">${iconEdit()}</button>
+            <button class="icon-btn delete" onclick="event.stopPropagation(); goToCategoryDelete(${parent.id})">${iconDelete()}</button>
+          </div>
+        </div>
+        <div class="category-group-body">
+          ${childCards}
+        </div>
+      </div>
+    `
+  }).join('')
+
+  container.innerHTML = html
   restoreScroll()
 }
 
@@ -276,12 +376,15 @@ function getFilteredCategories() {
   const status = statusCached?.status || 'all'
 
   return allCategories.filter(category => {
-
     const matchText =
       !term ||
       category.name.toLowerCase().includes(term) ||
       category.type.toLowerCase().includes(term)
 
+    // Padres siempre se muestran (son activos)
+    if (!category.parent) return matchText
+
+    // Hijos filtrados según estado
     const matchStatus =
       status === 'all' ||
       (status === 'active' && category.is_active) ||
@@ -292,7 +395,21 @@ function getFilteredCategories() {
 }
 
 function applyAllFilters() {
-  render(getFilteredCategories())
+  const data = getFilteredCategories()
+
+  const parents = data.filter(c => !c.parent)
+  const children = data.filter(c => c.parent)
+
+  const ordered = []
+
+  parents.forEach(parent => {
+    ordered.push(parent)
+    children
+      .filter(child => child.parent.id === parent.id)
+      .forEach(child => ordered.push(child))
+  })
+
+  render(ordered) // render ya decide desktop / mobile
 }
 
 function filterCategories() {
@@ -385,7 +502,7 @@ statusToggleBtn?.addEventListener('click', () => {
   const current = statusToggleBtn.dataset.status || 'all'
   const next =
     current === 'all' ? 'active' :
-    current === 'active' ? 'inactive' : 'all'
+      current === 'active' ? 'inactive' : 'all'
 
   applyStatusFilter(next)
 })

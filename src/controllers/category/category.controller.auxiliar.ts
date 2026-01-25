@@ -17,3 +17,4 @@ export const getActiveParentCategoriesByUser = async (
     order: { name: 'ASC' }
   })
 }
+ 
