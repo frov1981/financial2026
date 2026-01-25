@@ -1,131 +1,139 @@
 <h1 class="text-2xl font-bold mb-6">Inicio</h1>
 
+<p class="text-gray-700 mb-6">
+  Bienvenido a la aplicación de gestión financiera. Aquí puedes administrar tus cuentas,
+  transacciones y generar reportes financieros.
+</p>
+
 <!-- ============================
-     KPIs (Mobile 2x2 / Desktop 4x1)
+     KPIs
 ============================= -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="kpi-grid">
 
   <div class="bg-white rounded-xl shadow p-4">
     <p class="text-sm text-gray-500">Ingresos (6 meses)</p>
-    <p class="text-xl font-semibold text-green-700">
-      $<%= kpis.totalIncome.toFixed(2) %>
-    </p>
+    <p class="text-xl font-semibold text-green-700" id="kpi-income">–</p>
   </div>
 
   <div class="bg-white rounded-xl shadow p-4">
     <p class="text-sm text-gray-500">Egresos (6 meses)</p>
-    <p class="text-xl font-semibold text-red-700">
-      $<%= kpis.totalExpense.toFixed(2) %>
-    </p>
+    <p class="text-xl font-semibold text-red-700" id="kpi-expense">–</p>
   </div>
 
   <div class="bg-white rounded-xl shadow p-4">
     <p class="text-sm text-gray-500">Balance</p>
-    <p class="text-xl font-semibold <%= kpis.balance >= 0 ? 'text-green-700' : 'text-red-700' %>">
-      $<%= kpis.balance.toFixed(2) %>
-    </p>
+    <p class="text-xl font-semibold" id="kpi-balance">–</p>
   </div>
 
   <div class="bg-white rounded-xl shadow p-4">
     <p class="text-sm text-gray-500">Promedio gasto mensual</p>
     <p class="text-xl font-semibold">
-      $<%= kpis.avgExpense.toFixed(2) %>
-      <span class="text-sm ml-1 <%= kpis.trend >= 0 ? 'text-green-600' : 'text-red-600' %>">
-        <%= kpis.trend >= 0 ? '▲' : '▼' %>
-      </span>
+      <span id="kpi-avg-expense">–</span>
+      <span class="text-sm ml-1" id="kpi-trend"></span>
     </p>
   </div>
 
 </div>
 
 <!-- ============================
-     Gráfico (Responsive)
+     Gráfico
 ============================= -->
 <div class="flex justify-center mb-8">
-
   <div class="bg-white rounded-2xl shadow p-4 sm:p-6 w-full max-w-6xl">
-
-    <h2 class="text-base sm:text-lg font-semibold mb-4 sm:mb-5">
+    <h2 class="text-base sm:text-lg font-semibold mb-4">
       Ingresos vs Egresos (Últimos 6 meses)
     </h2>
-
-    <!-- 
-      Altura:
-      - Mobile: 280px
-      - Tablet: 360px
-      - Desktop: 480px
-    -->
     <div class="relative h-[280px] sm:h-[360px] lg:h-[480px]">
       <canvas id="lastSixMonthsChart"></canvas>
     </div>
-
   </div>
-
 </div>
 
-<!-- ============================
-     Data embebida (segura)
-============================= -->
-<script id="last-six-months-chart-data" type="application/json">
-  <%- JSON.stringify(lastSixMonthsChartData) %>
-</script>
-
-<!-- ============================
-     Chart init
-============================= -->
 <script>
-(() => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch('/api/dashboard/kpis', {
+      credentials: 'same-origin'
+    })
 
-  const dataEl = document.getElementById('last-six-months-chart-data')
-  const canvas = document.getElementById('lastSixMonthsChart')
+    if (!res.ok) throw new Error('No autorizado')
 
-  if (!dataEl || !canvas || typeof Chart === 'undefined') return
+    const { kpis, lastSixMonthsChartData } = await res.json()
 
-  const data = JSON.parse(dataEl.textContent)
-  const ctx = canvas.getContext('2d')
+    // ============================
+    // KPIs
+    // ============================
+    document.getElementById('kpi-income').textContent =
+      `$${kpis.totalIncome.toFixed(2)}`
 
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.labels,
-      datasets: [
-        {
-          label: 'Ingresos',
-          data: data.income,
-          tension: 0.35
+    document.getElementById('kpi-expense').textContent =
+      `$${kpis.totalExpense.toFixed(2)}`
+
+    const balanceEl = document.getElementById('kpi-balance')
+    balanceEl.textContent = `$${kpis.balance.toFixed(2)}`
+    balanceEl.classList.add(
+      kpis.balance >= 0 ? 'text-green-700' : 'text-red-700'
+    )
+
+    document.getElementById('kpi-avg-expense').textContent =
+      `$${kpis.avgExpense.toFixed(2)}`
+
+    const trendEl = document.getElementById('kpi-trend')
+    trendEl.textContent = kpis.trend >= 0 ? '▲' : '▼'
+    trendEl.classList.add(
+      kpis.trend >= 0 ? 'text-green-600' : 'text-red-600'
+    )
+
+    // ============================
+    // Chart
+    // ============================
+    if (typeof Chart !== 'undefined') {
+      const ctx = document
+        .getElementById('lastSixMonthsChart')
+        .getContext('2d')
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: lastSixMonthsChartData.labels,
+          datasets: [
+            {
+              label: 'Ingresos',
+              data: lastSixMonthsChartData.income,
+              tension: 0.35
+            },
+            {
+              label: 'Egresos',
+              data: lastSixMonthsChartData.expense,
+              tension: 0.35
+            },
+            {
+              label: 'Balance',
+              data: lastSixMonthsChartData.balance,
+              borderDash: [6, 4],
+              tension: 0.35
+            }
+          ]
         },
-        {
-          label: 'Egresos',
-          data: data.expense,
-          tension: 0.35
-        },
-        {
-          label: 'Balance',
-          data: data.balance,
-          borderDash: [6, 4],
-          tension: 0.35
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            boxWidth: 12,
-            padding: 16
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
           }
         }
-      },
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
+      })
     }
-  })
 
-})()
+  } catch (err) {
+    console.error('Error cargando dashboard', err)
+  }
+})
 </script>

@@ -4,7 +4,6 @@ import { AppDataSource } from '../../config/datasource'
 import { User } from '../../entities/User.entity'
 import { send2FACode } from '../../services/2fa.service'
 import { logger } from '../../utils/logger.util'
-import { getLastSixMonthsChartData, getLastSixMonthsKPIs } from './home.controller.auxiliar'
 
 // GET /
 export const root = (req: Request, res: Response) => {
@@ -72,26 +71,21 @@ export const doLogin = async (req: Request, res: Response) => {
   }
 }
 
-
 export const home = async (req: Request, res: Response) => {
-
   const isDev = process.env.NODE_ENV === 'development'
   const userId = isDev ? 1 : (req.session as any)?.userId
-
   if (!userId) return res.redirect('/login')
 
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOneBy({ id: userId })
   if (!user) return res.redirect('/login')
 
-  const lastSixMonthsChartData = await getLastSixMonthsChartData(userId)
-  const kpis = await getLastSixMonthsKPIs(userId)
-
-  res.render('layouts/main', {
-    title: 'Inicio',
-    view: 'pages/home',
-    user,
-    lastSixMonthsChartData,
-    kpis
-  })
+  // Renderiza main.ejs con navbar y el contenido de home
+  res.render(
+    'layouts/main',
+    {
+      title: 'Inicio',
+      view: 'pages/home',
+      user
+    })
 }

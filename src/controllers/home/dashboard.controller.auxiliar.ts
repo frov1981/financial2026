@@ -1,11 +1,12 @@
 import { AppDataSource } from "../../config/datasource"
 import { Transaction } from "../../entities/Transaction.entity"
+import { AuthRequest } from "../../types/AuthRequest"
 
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)
 ============================================================================ */
-export const getLastSixMonthsChartData = async (userId: number) => {
-
+export const getLastSixMonthsChartData = async (authReq: AuthRequest) => {
+  const userId = authReq.user.id
   const txRepo = AppDataSource.getRepository(Transaction)
 
   /* ============================
@@ -73,8 +74,8 @@ export const getLastSixMonthsChartData = async (userId: number) => {
 /* ============================================================================
    KPIs últimos 6 meses
 ============================================================================ */
-export const getLastSixMonthsKPIs = async (userId: number) => {
-
+export const getLastSixMonthsKPIs = async (authReq: AuthRequest) => {
+  const userId = authReq.user.id
   const txRepo = AppDataSource.getRepository(Transaction)
 
   /* ============================
