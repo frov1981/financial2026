@@ -375,16 +375,15 @@ function getFilteredCategories() {
   const term = cached?.term?.toLowerCase() || ''
   const status = statusCached?.status || 'all'
 
+  // SOLO filtrar HIJAS
   return allCategories.filter(category => {
+    if (!category.parent) return false
+
     const matchText =
       !term ||
       category.name.toLowerCase().includes(term) ||
       category.type.toLowerCase().includes(term)
 
-    // Padres siempre se muestran (son activos)
-    if (!category.parent) return matchText
-
-    // Hijos filtrados según estado
     const matchStatus =
       status === 'all' ||
       (status === 'active' && category.is_active) ||
@@ -394,22 +393,23 @@ function getFilteredCategories() {
   })
 }
 
+
 function applyAllFilters() {
-  const data = getFilteredCategories()
+  const filteredChildren = getFilteredCategories()
 
-  const parents = data.filter(c => !c.parent)
-  const children = data.filter(c => c.parent)
-
+  const parentsMap = new Map()
   const ordered = []
 
-  parents.forEach(parent => {
-    ordered.push(parent)
-    children
-      .filter(child => child.parent.id === parent.id)
-      .forEach(child => ordered.push(child))
+  filteredChildren.forEach(child => {
+    const parent = child.parent
+    if (!parentsMap.has(parent.id)) {
+      parentsMap.set(parent.id, parent)
+      ordered.push(parent)
+    }
+    ordered.push(child)
   })
 
-  render(ordered) // render ya decide desktop / mobile
+  render(ordered)
 }
 
 function filterCategories() {
