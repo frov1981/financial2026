@@ -38,7 +38,6 @@ export const listAccountsAPI: RequestHandler = async (req: Request, res: Respons
   }
 }
 
-
 export const recalculateBalancesAPI: RequestHandler = async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest

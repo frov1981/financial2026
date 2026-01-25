@@ -393,7 +393,6 @@ function getFilteredCategories() {
   })
 }
 
-
 function applyAllFilters() {
   const filteredChildren = getFilteredCategories()
 

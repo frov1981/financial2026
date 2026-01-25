@@ -10,11 +10,12 @@
 
     <link rel="stylesheet" href="/css/ui.css">
     <link rel="stylesheet" href="/css/output.css">
-    
+
     <!-- Helper globales -->
     <script src="/js/helpers/logger-helper.js"></script>
     <script src="/js/helpers/storage-helper.js"></script>
-    
+    <script src="/js/vendor/chart.js/dist/chart.umd.js"></script>
+
 </head>
 
 <body class="bg-gray-100 min-h-screen">
@@ -27,16 +28,16 @@
     </div>
 
     <!-- MessageBox global centrado -->
-    <div  id="message-container"
+    <div id="message-container"
         class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">
     </div>
 
     <%- include('../partials/navbar') %>
 
-    <main class="max-w-7xl mx-auto px-2 py-3 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
-        <%- include('../' + view) %>
-    </main>
-    <script src="/js/helpers/message-box-helper.js"></script>    
+        <main class="max-w-7xl mx-auto px-2 py-3 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
+            <%- include('../' + view) %>
+        </main>
+        <script src="/js/helpers/message-box-helper.js"></script>
 
 </body>
 

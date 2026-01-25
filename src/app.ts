@@ -8,9 +8,9 @@ import apiRoutes from './routes/api.route'
 import authRoutes from './routes/auth.route'
 import categoryRoutes from './routes/category.route'
 import indexRoutes from './routes/index.route'
-import transactionRoutes from './routes/transaction.route'
 import loanRoutes from './routes/loan.route'
 import paymentRoutes from './routes/payment.route'
+import transactionRoutes from './routes/transaction.route'
 
 export const app = express()
 
