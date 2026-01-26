@@ -16,6 +16,8 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const transactionId = getNumberFromBody(req, 'id')
   const action = getStringFromBody(req, 'action') || 'save'
 
+  logger.info('Transactions data from req', req.body)
+
   const accounts = await getActiveAccountsByUser(authReq)
   const categories = await getActiveCategoriesByUser(authReq)
   const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
