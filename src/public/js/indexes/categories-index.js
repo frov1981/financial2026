@@ -125,7 +125,7 @@ function renderRow(category) {
       <td class="ui-td col-left">
         ${isParent
       ? `<button onclick="toggleCategoryCollapse(${category.id})">
-              ${collapsed ? '▸' : '▾'}
+              ${collapsed ? iconChevronOpen() : iconChevronClose()}
             </button>`
       : ''}
         ${category.name}
@@ -185,7 +185,7 @@ function renderCard(category) {
         ${iconView()}
       </button>
     `
-
+ 
   return `
     <div 
       class="category-card ${category.is_active ? '' : 'inactive'}"
@@ -195,7 +195,7 @@ function renderCard(category) {
         <div class="card-title">
           ${isParent
       ? `<button onclick="toggleCategoryCollapse(${category.id})">
-                ${collapsed ? '▸' : '▾'}
+                ${collapsed ? iconChevronOpen() : iconChevronClose()}
               </button>`
       : ''}
           ${category.name}
@@ -263,7 +263,7 @@ function renderTable(data) {
       <tr id="category-${parent.id}" class="parent-row">
         <td class="ui-td col-left">
           <button onclick="toggleCategoryCollapse(${parent.id})">
-            ${collapsed ? '▸' : '▾'}
+            ${collapsed ? iconChevronOpen() : iconChevronClose()}
           </button>
           ${parent.name}
         </td>
@@ -319,7 +319,7 @@ function renderCards(data) {
       <div class="category-group ${collapsed ? 'collapsed' : ''}">
         <div class="category-group-header">
           <button onclick="toggleCategoryCollapse(${parent.id})">
-            ${collapsed ? '▸' : '▾'}
+            ${collapsed ? iconChevronOpen() : iconChevronClose()}
           </button>
           ${parent.name}
           <!-- botones del padre -->

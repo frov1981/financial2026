@@ -23,7 +23,8 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
           .where('t.category_id = category.id'),
         'transactions_count'
       )
-      .orderBy('category.name', 'ASC')
+      .orderBy('parent.name', 'ASC')
+      .addOrderBy('category.name', 'ASC')
       .getRawAndEntities()
 
     const categories = result.entities.map((category, index) => ({
