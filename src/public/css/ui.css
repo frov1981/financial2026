@@ -965,6 +965,12 @@ input[data-balance-final] {
   border-color: #c4b5fd;
 }
 
+.tag-saving {
+  background-color: #dcedc8; /* fondo suave tipo verde claro para ahorros */
+  color: #558b2f;            /* texto verde más oscuro */
+  border-color: #c5e1a5;     /* borde a juego */
+}
+
 /* Status */
 
 .tag-active {

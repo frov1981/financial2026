@@ -16,9 +16,6 @@ export class Loan {
   @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_loans_user' })
   user!: User
 
-  @Column({ default: '' })
-  loan_number!: string
-
   @Column()
   @IsNotEmpty({ message: 'El nombre es obligatorio' })
   name!: string
@@ -58,5 +55,12 @@ export class Loan {
   @OneToOne(() => Transaction)
   @JoinColumn({ name: 'transaction_id', foreignKeyConstraintName: 'fk_loans_transaction' })
   transaction!: Transaction
+
+  @ManyToOne(() => Loan, loan => loan.children, { nullable: true })
+  @JoinColumn({ name: 'parent_id' })
+  parent!: Loan | null
+
+  @OneToMany(() => Loan, loan => loan.parent)
+  children!: Loan[]
 
 }

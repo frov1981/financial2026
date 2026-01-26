@@ -21,8 +21,8 @@ export class Account {
   name!: string
 
   @Column({ type: 'varchar' })
-  @IsIn(['cash', 'bank', 'card'], { message: 'El tipo debe ser cash, bank o card' })
-  type!: 'cash' | 'bank' | 'card'
+  @IsIn(['cash', 'bank', 'card', 'saving'], { message: 'El tipo debe ser cash, bank, saving o card' })
+  type!: 'cash' | 'bank' | 'card' | 'saving'
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
   balance!: number

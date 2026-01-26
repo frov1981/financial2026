@@ -40,6 +40,8 @@ function accountTypeTag(type) {
       return `<div class="acc-tag tag-bank">Banco</div>`
     case 'card':
       return `<div class="acc-tag tag-card">Tarjeta</div>`
+    case 'saving':
+      return `<div class="acc-tag tag-saving">Ahorros</div>`
     default:
       return `<div class="acc-tag">-</div>`
   }

@@ -25,14 +25,14 @@ export class Category {
   @IsBoolean({ message: 'El estado debe ser true o false' })
   is_active!: boolean
 
+  @OneToMany(() => Transaction, transaction => transaction.category)
+  transactions!: Transaction[]
+
   @ManyToOne(() => Category, category => category.children, { nullable: true })
   @JoinColumn({ name: 'parent_id' })
   parent!: Category | null
 
   @OneToMany(() => Category, category => category.parent)
   children!: Category[]
-
-  @OneToMany(() => Transaction, transaction => transaction.category)
-  transactions!: Transaction[]
 
 }
