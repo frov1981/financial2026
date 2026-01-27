@@ -27,6 +27,6 @@ export class AuthCode {
   @Column({ default: 0 })
   attempts!: number
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
 }
