@@ -9,12 +9,14 @@ import { getNumberFromBody, getStringFromBody } from '../../utils/req.params.uti
 import { getSqlErrorMessage } from '../../utils/sql.err.util'
 import { calculateTransactionDeltas, getActiveAccountsByUser, getActiveCategoriesByUser, splitCategoriesByType } from './transaction.controller.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from './transaction.controller.validator'
+import { parseLocalDateToUTC } from '../../utils/date.util'
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   // Como viene desde un POST se busca en el body
   const transactionId = getNumberFromBody(req, 'id')
   const action = getStringFromBody(req, 'action') || 'save'
+  const timezone = req.body.timezone || 'UTC'
 
   logger.info('Transactions data from req', req.body)
 
@@ -59,7 +61,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
         if (req.body.account_id) { existing.account = { id: Number(req.body.account_id) } as Account }
         if (req.body.to_account_id) { existing.to_account = { id: Number(req.body.to_account_id) } as Account }
         if (req.body.category_id) { existing.category = { id: Number(req.body.category_id) } as Category }
-        if (req.body.date) { existing.date = new Date(req.body.date) }
+        if (req.body.date) { existing.date = parseLocalDateToUTC(req.body.date, timezone) }
         existing.amount = Number(req.body.amount)
         existing.description = req.body.description
 
@@ -74,7 +76,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
           to_account: req.body.to_account_id ? { id: Number(req.body.to_account_id) } : undefined,
           category: req.body.category_id ? { id: Number(req.body.category_id) } : undefined,
           amount: Number(req.body.amount),
-          date: req.body.date ? new Date(req.body.date) : undefined,
+          date: req.body.date ? parseLocalDateToUTC(req.body.date, timezone) : undefined,
           description: req.body.description
         })
       }

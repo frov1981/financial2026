@@ -1,15 +1,27 @@
-// utils/dateUtils.ts
+import { DateTime } from 'luxon';
 
-/**
- * Convierte un objeto Date (UTC) a un string
- * con formato "YYYY-MM-DDTHH:mm" ajustado a la zona horaria local.
- *
- * @param date Fecha en UTC
- * @param timeZone Zona horaria IANA (ej: "America/Guayaquil")
- * @returns string para usar en <input type="datetime-local">
- */
+export const parseLocalDateToUTC = (
+  localDate: string,
+  timezone: string
+): Date => {
+  return DateTime
+    .fromISO(localDate, { zone: timezone })
+    .toUTC()
+    .toJSDate()
+}
+
+export const formatUTCForInputLocal = (
+  utcISO: string,
+  timezone: string = 'America/Guayaquil'
+): string => {
+  return DateTime
+    .fromISO(utcISO, { zone: 'utc' })
+    .setZone(timezone)
+    .toFormat("yyyy-MM-dd'T'HH:mm")
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 export function formatDateForInputLocal(date: Date, timeZone: string = 'America/Guayaquil'): string {
-    // Convertimos la fecha a string en la zona horaria indicada
     const tzString = date.toLocaleString('en-US', { timeZone });
     const tzDate = new Date(tzString);
 
@@ -53,3 +65,4 @@ export function formatDateForSystemLocal(
 
     return `${year}-${month}-${day} ${hour}:${minute}:${second}.${milliseconds}`;
 }
+

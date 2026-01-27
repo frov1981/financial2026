@@ -56,12 +56,60 @@ function rowClassByType(type) {
   if (type === 'transfer') return 'transfer'
   return ''
 }
+/*
+function formatDateTime(utcDate) {
+  const dt = luxon.DateTime
+    .fromISO(utcDate, { zone: 'utc' })
+    .setZone('America/Guayaquil')
 
-function formatDateTime(date) {
-  const d = new Date(date)
   return {
-    date: d.toLocaleDateString('es-EC'),
-    time: d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })
+    date: dt.toFormat('dd/MM/yyyy'),
+    time: dt.toFormat('HH:mm')
+  }
+}*/
+/*
+function formatDateTime(utcDate) {
+  const dt = luxon.DateTime
+    .fromJSDate(utcDate, { zone: 'utc' })
+    .setZone('America/Guayaquil')
+
+  return {
+    date: dt.toFormat('dd/MM/yyyy'),
+    time: dt.toFormat('HH:mm')
+  }
+}*/
+/*
+function formatDateTime(utcDate) {
+  const dt = luxon.DateTime
+    .fromISO(utcDate, { zone: 'utc' })
+    .setZone('America/Guayaquil')
+
+  return {
+    date: dt.toFormat('dd/MM/yyyy'),
+    time: dt.toFormat('HH:mm')
+  }
+}
+*//*
+function formatDateTime(utcDate) {
+  console.log(utcDate, typeof utcDate, utcDate instanceof Date)
+
+  const dt = luxon.DateTime
+    .fromSQL(utcDate, { zone: 'utc' })
+    .setZone('America/Guayaquil')
+
+  return {
+    date: dt.toFormat('dd/MM/yyyy'),
+    time: dt.toFormat('HH:mm')
+  }
+}*/
+/* ============================================================================
+   Formateo ISO UTC (con Z) hacia America/Guayaquil
+============================================================================ */
+function formatDateTime(value) {
+  console.log(value)
+  return {
+    date: value.slice(0, 10),
+    time: value.slice(11, 16)
   }
 }
 

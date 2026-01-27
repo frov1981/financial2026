@@ -29,17 +29,17 @@ export class Loan {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
   balance!: number;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'datetime' })
   start_date!: Date
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   end_date!: Date | null
 
   @Column({ default: true })
   @IsBoolean({ message: 'El estado debe ser true o false' })
   is_active!: boolean
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'datetime' })
   created_at!: Date
 
   @Column({ nullable: true })

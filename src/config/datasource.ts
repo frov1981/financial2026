@@ -18,6 +18,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   entities: [User, AuthCode, Account, Category, Loan, LoanPayment, Transaction],
   synchronize: false,
+  timezone: 'Z',
   logging: process.env.DB_LOGGING === 'true' ? true : false,
   logger: new OneLineSqlLogger()
 })

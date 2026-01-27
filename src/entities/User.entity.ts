@@ -19,7 +19,7 @@ export class User {
   @Column()
   name!: string
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'datetime' })
   created_at!: Date
 
   @OneToMany(() => Account, account => account.user)
