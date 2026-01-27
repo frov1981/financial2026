@@ -34,13 +34,13 @@ export class LoanPayment {
   interest_amount!: number
 
   @IsDate({ message: 'La fecha del pago debe ser una fecha válida' })
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   payment_date!: Date
 
   @Column({ nullable: true })
   note!: string
 
-  @CreateDateColumn({ type: 'datetime' })
+  @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
 
 }

@@ -105,13 +105,22 @@ function formatDateTime(utcDate) {
 /* ============================================================================
    Formateo ISO UTC (con Z) hacia America/Guayaquil
 ============================================================================ */
+/* ============================================================================
+   Formateo ISO UTC (con Z) hacia America/Guayaquil
+============================================================================ */
 function formatDateTime(value) {
-  console.log(value)
+  if (!value || typeof value !== 'string') {
+    return { date: '', time: '' }
+  }
+
+  const [date, time] = value.split('T')
+
   return {
-    date: value.slice(0, 10),
-    time: value.slice(11, 16)
+    date,
+    time: time ? time.slice(0, 5) : ''
   }
 }
+
 
 /* ============================================================================
 5. Render helpers (iconos, tags, cajas)

@@ -18,10 +18,10 @@ export class AuthCode {
   @Column()
   code_hash!: string
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   expires_at!: Date
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   used_at!: Date | null
 
   @Column({ default: 0 })

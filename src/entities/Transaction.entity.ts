@@ -47,7 +47,7 @@ export class Transaction {
   @IsPositive({ message: 'El monto debe ser mayor a cero' })
   amount!: number
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   @Transform(({ value }) => value ? new Date(value) : new Date())
   date!: Date
 
@@ -62,7 +62,7 @@ export class Transaction {
   @OneToOne(() => LoanPayment, payment => payment.transaction, { nullable: true })
   loan_payment!: LoanPayment | null
 
-  @CreateDateColumn({ type: 'datetime' })
+  @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
 
   @Validate(NotSameAccount)

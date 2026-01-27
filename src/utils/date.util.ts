@@ -10,31 +10,25 @@ export const parseLocalDateToUTC = (
     .toJSDate()
 }
 
-export const formatUTCForInputLocal = (
-  utcISO: string,
-  timezone: string = 'America/Guayaquil'
-): string => {
-  return DateTime
-    .fromISO(utcISO, { zone: 'utc' })
-    .setZone(timezone)
-    .toFormat("yyyy-MM-dd'T'HH:mm")
+export function formatDateForInputLocal(
+  date: Date,
+  timeZone: string = 'America/Guayaquil'
+): string {
+  const parts = new Intl.DateTimeFormat('sv-SE', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).formatToParts(date)
+
+  const get = (t: string) => parts.find(p => p.type === t)?.value
+
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-export function formatDateForInputLocal(date: Date, timeZone: string = 'America/Guayaquil'): string {
-    const tzString = date.toLocaleString('en-US', { timeZone });
-    const tzDate = new Date(tzString);
-
-    const pad = (n: number) => n.toString().padStart(2, '0');
-
-    const year = tzDate.getFullYear();
-    const month = pad(tzDate.getMonth() + 1);
-    const day = pad(tzDate.getDate());
-    const hours = pad(tzDate.getHours());
-    const minutes = pad(tzDate.getMinutes());
-
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
 
 export function formatDateForSystemLocal(
     date: Date,
