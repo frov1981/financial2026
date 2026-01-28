@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ================================
      UTILIDADES
-  ================================= */ 
+  ================================= */
 
   function format(n) {
     return (Number(n) || 0).toFixed(2)
@@ -83,7 +83,22 @@ document.addEventListener('DOMContentLoaded', () => {
      VISIBILIDAD DE CAMPOS
   ================================= */
 
+  /*
   function updateVisibility(type, isInit = false) {
+    if (type === 'transfer') {
+      toAccountField?.classList.remove('hidden')
+      categoryField?.classList.add('hidden')
+    } else {
+      toAccountField?.classList.add('hidden')
+      categoryField?.classList.remove('hidden')
+      updateCategoryLists(type, !isInit)
+    }
+
+    updateFinalBalance()
+  }*/
+  function updateVisibility(type, isInit = false) {
+    updateAccountLists(type)
+
     if (type === 'transfer') {
       toAccountField?.classList.remove('hidden')
       categoryField?.classList.add('hidden')
@@ -123,6 +138,26 @@ document.addEventListener('DOMContentLoaded', () => {
     balanceFinal.value = format(final)
     applyClass(balanceFinal, final)
   }
+
+  /* ================================
+     CUENTAS O CUENTAS PARA TRANSFER
+  ================================= */
+  function updateAccountLists(type) {
+    const lists = accountField?.querySelectorAll(
+      '[data-autocomplete-list][data-account-type]'
+    )
+
+    if (!lists) return
+
+    lists.forEach(list => {
+      const isTransferList = list.dataset.accountType === 'transfer'
+      const shouldBeActive = type === 'transfer' ? isTransferList : !isTransferList
+
+      list.dataset.active = shouldBeActive ? '1' : '0'
+      list.classList.add('hidden')
+    })
+  }
+
 
   /* ================================
      EVENTOS

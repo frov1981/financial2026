@@ -4,7 +4,7 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
-import { getActiveAccountsByUser, getActiveCategoriesByUser, getNextValidTransactionDate, splitCategoriesByType } from './transaction.controller.auxiliar'
+import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveCategoriesByUser, getNextValidTransactionDate, splitCategoriesByType } from './transaction.controller.auxiliar'
 export { saveTransaction } from './transaction.controller.saving'
 
 export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request, res: Response) => {
@@ -71,6 +71,7 @@ export const insertTransactionFormPage: RequestHandler = async (req: Request, re
   const defaultDate = await getNextValidTransactionDate(authReq)
 
   const accounts = await getActiveAccountsByUser(authReq)
+  const accountsForTransfer = await getActiveAccountsForTransferByUser(authReq)
   const categories = await getActiveCategoriesByUser(authReq)
   const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
 
@@ -85,9 +86,13 @@ export const insertTransactionFormPage: RequestHandler = async (req: Request, re
       },
       errors: {},
       accounts,
+      accountsForTransfer,
       incomeCategories,
       expenseCategories,
       mode,
+      /* ============================
+        Contexto de navegación
+     ============================ */
       context: {
         category_id: categoryId,
         from
@@ -114,6 +119,7 @@ export const updateTransactionFormPage: RequestHandler = async (req: Request, re
   }
 
   const accounts = await getActiveAccountsByUser(authReq)
+  const accountsForTransfer = await getActiveAccountsForTransferByUser(authReq)
   const categories = await getActiveCategoriesByUser(authReq)
   const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
 
@@ -140,10 +146,14 @@ export const updateTransactionFormPage: RequestHandler = async (req: Request, re
         description: tx.description ?? ''
       },
       accounts,
+      accountsForTransfer,
       incomeCategories,
       expenseCategories,
       errors: {},
       mode,
+      /* ============================
+        Contexto de navegación
+     ============================ */
       context: {
         category_id: categoryId,
         from
@@ -171,6 +181,7 @@ export const cloneTransactionFormPage: RequestHandler = async (req: Request, res
   }
 
   const accounts = await getActiveAccountsByUser(authReq)
+  const accountsForTransfer = await getActiveAccountsForTransferByUser(authReq)
   const categories = await getActiveCategoriesByUser(authReq)
   const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
 
@@ -195,10 +206,14 @@ export const cloneTransactionFormPage: RequestHandler = async (req: Request, res
         description: tx.description ?? ''
       },
       accounts,
+      accountsForTransfer,
       incomeCategories,
       expenseCategories,
       errors: {},
       mode,
+      /* ============================
+        Contexto de navegación
+     ============================ */
       context: {
         category_id: categoryId,
         from
@@ -226,6 +241,7 @@ export const deleteTransactionFormPage: RequestHandler = async (req: Request, re
   }
 
   const accounts = await getActiveAccountsByUser(authReq)
+  const accountsForTransfer = await getActiveAccountsForTransferByUser(authReq)
   const categories = await getActiveCategoriesByUser(authReq)
   const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
 
@@ -252,10 +268,14 @@ export const deleteTransactionFormPage: RequestHandler = async (req: Request, re
         description: tx.description ?? ''
       },
       accounts,
+      accountsForTransfer,
       incomeCategories,
       expenseCategories,
       errors: {},
       mode,
+      /* ============================
+        Contexto de navegación
+     ============================ */
       context: {
         category_id: categoryId,
         from
