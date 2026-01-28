@@ -305,15 +305,30 @@ function applySearch() {
 11. Acciones (redirects / selects)
 ============================================================================ */
 function goToTransactionUpdate(id) {
-  location.href = `/transactions/update/${id}`
+  const params = new URLSearchParams()
+  if (CATEGORY_ID) {
+    params.set('category_id', CATEGORY_ID)
+    params.set('from', 'categories')
+  }
+  location.href = `/transactions/update/${id}?${params.toString()}`
 }
 
 function goToTransactionClone(id) {
-  location.href = `/transactions/clone/${id}`
+  const params = new URLSearchParams()
+  if (CATEGORY_ID) {
+    params.set('category_id', CATEGORY_ID)
+    params.set('from', 'categories')
+  }
+  location.href = `/transactions/clone/${id}?${params.toString()}`
 }
 
 function goToTransactionDelete(id) {
-  location.href = `/transactions/delete/${id}`
+  const params = new URLSearchParams()
+  if (CATEGORY_ID) {
+    params.set('category_id', CATEGORY_ID)
+    params.set('from', 'categories')
+  }
+  location.href = `/transactions/delete/${id}?${params.toString()}`
 }
 
 function goBackToCategories() {

@@ -23,7 +23,10 @@
       <% } %>
 
       <%- include('../../partials/btn-new', {
-        href: '/transactions/insert',
+        href:
+          context?.from === 'categories' && context?.category_id
+            ? `/transactions/insert?from=categories&category_id=${context.category_id}`
+            : '/transactions/insert',
         title: 'Nueva transacción',
         text: 'Nuevo'
       }) %>

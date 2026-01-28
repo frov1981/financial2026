@@ -28,6 +28,8 @@
     <!-- ID -->
     <input type="hidden" name="id" value="<%= transaction?.id || '' %>">
     <input type="hidden" name="action" value="save">
+    <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
+    <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
 
     <!-- BLINDAJE DEL TIPO -->
      <% if (mode !== 'insert') { %>
@@ -319,7 +321,14 @@
     </div>
 
     <div class="flex justify-end gap-2">
-      <a href="/transactions" class="px-4 py-2 bg-gray-200 rounded">
+      <a 
+        href="<%=
+          context?.from === 'categories' && context?.category_id
+          ? `/transactions?category_id=${context.category_id}&from=categories`
+          : '/transactions'
+          %>"
+       class="px-4 py-2 bg-gray-200 rounded"
+      >
         Cancelar
       </a>
 

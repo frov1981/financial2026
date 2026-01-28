@@ -17,6 +17,8 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const transactionId = getNumberFromBody(req, 'id')
   const action = getStringFromBody(req, 'action') || 'save'
   const timezone = req.body.timezone || 'UTC'
+  const returnFrom = req.body.return_from
+  const returnCategoryId = Number(req.body.return_category_id) || null
 
   logger.info('Transactions data from req', req.body)
 
@@ -187,6 +189,11 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       return res.redirect('/transactions')
     }
 
+    /*Si viene con el contexto de categories*/
+    if (returnFrom === 'categories' && returnCategoryId) {
+      return res.redirect(`/transactions?category_id=${returnCategoryId}&from=categories`)
+    }
+    /*Por defecto devuelve a list transactions */
     return res.redirect('/transactions')
   } catch (err) {
     await queryRunner.rollbackTransaction()

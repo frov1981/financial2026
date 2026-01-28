@@ -65,6 +65,8 @@ export const listTransactionsPaginatedAPI: RequestHandler = async (req: Request,
 export const insertTransactionFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
   const mode = 'insert'
+  const categoryId = Number(req.query.category_id) || null
+  const from = req.query.from || null
 
   const defaultDate = await getNextValidTransactionDate(authReq)
 
@@ -85,7 +87,11 @@ export const insertTransactionFormPage: RequestHandler = async (req: Request, re
       accounts,
       incomeCategories,
       expenseCategories,
-      mode
+      mode,
+      context: {
+        category_id: categoryId,
+        from
+      }
     })
 }
 
@@ -93,6 +99,8 @@ export const updateTransactionFormPage: RequestHandler = async (req: Request, re
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
   const mode = 'update'
+  const categoryId = Number(req.query.category_id) || null
+  const from = req.query.from || null
 
   const repo = AppDataSource.getRepository(Transaction)
 
@@ -135,7 +143,11 @@ export const updateTransactionFormPage: RequestHandler = async (req: Request, re
       incomeCategories,
       expenseCategories,
       errors: {},
-      mode
+      mode,
+      context: {
+        category_id: categoryId,
+        from
+      }
     })
 
 }
@@ -144,6 +156,8 @@ export const cloneTransactionFormPage: RequestHandler = async (req: Request, res
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
   const mode = 'insert'
+  const categoryId = Number(req.query.category_id) || null
+  const from = req.query.from || null
 
   const repo = AppDataSource.getRepository(Transaction)
 
@@ -184,7 +198,11 @@ export const cloneTransactionFormPage: RequestHandler = async (req: Request, res
       incomeCategories,
       expenseCategories,
       errors: {},
-      mode
+      mode,
+      context: {
+        category_id: categoryId,
+        from
+      }
     }
   )
 }
@@ -193,6 +211,8 @@ export const deleteTransactionFormPage: RequestHandler = async (req: Request, re
   const authReq = req as AuthRequest
   const txId = Number(req.params.id)
   const mode = 'delete'
+  const categoryId = Number(req.query.category_id) || null
+  const from = req.query.from || null
 
   const repo = AppDataSource.getRepository(Transaction)
 
@@ -235,7 +255,11 @@ export const deleteTransactionFormPage: RequestHandler = async (req: Request, re
       incomeCategories,
       expenseCategories,
       errors: {},
-      mode
+      mode,
+      context: {
+        category_id: categoryId,
+        from
+      }
     })
 }
 
