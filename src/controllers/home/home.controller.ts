@@ -86,6 +86,7 @@ export const home = async (req: Request, res: Response) => {
     {
       title: 'Inicio',
       view: 'pages/home',
-      user
+      USER_ID: user?.id || 'guest',
+      user,
     })
 }

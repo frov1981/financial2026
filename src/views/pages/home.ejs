@@ -6,34 +6,100 @@
 </p>
 
 <!-- ============================
-     KPIs
+     CARD: KPIs GLOBALES
 ============================= -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="kpi-grid">
+<div class="bg-white rounded-2xl shadow mb-6">
 
-  <div class="bg-white rounded-xl shadow p-4">
-    <p class="text-sm text-gray-500">Ingresos (6 meses)</p>
-    <p class="text-xl font-semibold text-green-700" id="kpi-income">–</p>
+  <div class="flex items-center justify-between px-5 py-4 cursor-pointer select-none"
+    onclick="toggleCard('global-kpis')">
+    <h2 class="text-lg font-semibold">KPIs Globales</h2>
+    <span id="icon-global-kpis">▾</span>
   </div>
 
-  <div class="bg-white rounded-xl shadow p-4">
-    <p class="text-sm text-gray-500">Egresos (6 meses)</p>
-    <p class="text-xl font-semibold text-red-700" id="kpi-expense">–</p>
-  </div>
+  <div id="global-kpis" class="px-5 pb-5">
 
-  <div class="bg-white rounded-xl shadow p-4">
-    <p class="text-sm text-gray-500">Balance</p>
-    <p class="text-xl font-semibold" id="kpi-balance">–</p>
-  </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Ingresos totales</p>
+        <p class="text-xl font-semibold text-green-700" id="kpi-total-income">–</p>
+      </div>
 
-  <div class="bg-white rounded-xl shadow p-4">
-    <p class="text-sm text-gray-500">Promedio gasto mensual</p>
-    <p class="text-xl font-semibold">
-      <span id="kpi-avg-expense">–</span>
-      <span class="text-sm ml-1" id="kpi-trend"></span>
-    </p>
-  </div>
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Egresos totales</p>
+        <p class="text-xl font-semibold text-red-700" id="kpi-total-expense">–</p>
+      </div>
 
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Ahorros</p>
+        <p class="text-xl font-semibold text-blue-700" id="kpi-total-savings">–</p>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Retiros</p>
+        <p class="text-xl font-semibold text-orange-700" id="kpi-total-withdrawals">–</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Valor neto</p>
+        <p class="text-xl font-semibold" id="kpi-net-worth">–</p>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Ahorro disponible</p>
+        <p class="text-xl font-semibold text-blue-700" id="kpi-available-savings">–</p>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Saldo neto</p>
+        <p class="text-xl font-semibold" id="kpi-net-balance">–</p>
+      </div>
+    </div>
+
+  </div>
 </div>
+
+<!-- ============================
+     CARD: KPIs 6 MESES
+============================= -->
+<div class="bg-white rounded-2xl shadow mb-6">
+
+  <div class="flex items-center justify-between px-5 py-4 cursor-pointer select-none" onclick="toggleCard('six-kpis')">
+    <h2 class="text-lg font-semibold">KPIs últimos 6 meses</h2>
+    <span id="icon-six-kpis">▾</span>
+  </div>
+
+  <div id="six-kpis" class="px-5 pb-5">
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Ingresos</p>
+        <p class="text-xl font-semibold text-green-700" id="kpi-income">–</p>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Egresos</p>
+        <p class="text-xl font-semibold text-red-700" id="kpi-expense">–</p>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Balance</p>
+        <p class="text-xl font-semibold" id="kpi-balance">–</p>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Promedio gasto mensual</p>
+        <p class="text-xl font-semibold">
+          <span id="kpi-avg-expense">–</span>
+          <span class="text-sm ml-1" id="kpi-trend"></span>
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
 <!-- ============================
      Gráfico
@@ -50,90 +116,126 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const res = await fetch('/api/dashboard/kpis', {
-      credentials: 'same-origin'
-    })
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch('/api/dashboard/kpis', {
+        credentials: 'same-origin'
+      })
 
-    if (!res.ok) throw new Error('No autorizado')
+      if (!res.ok) throw new Error('No autorizado')
 
-    const { kpis, lastSixMonthsChartData } = await res.json()
+      const { kpis, lastSixMonthsChartData, globalKpis } = await res.json()
+      // ============================
+      // KPIs Globales
+      // ============================
+      document.getElementById('kpi-total-income').textContent =
+        `$${globalKpis.totalIncome.toFixed(2)}`
 
-    // ============================
-    // KPIs
-    // ============================
-    document.getElementById('kpi-income').textContent =
-      `$${kpis.totalIncome.toFixed(2)}`
+      document.getElementById('kpi-total-expense').textContent =
+        `$${globalKpis.totalExpense.toFixed(2)}`
 
-    document.getElementById('kpi-expense').textContent =
-      `$${kpis.totalExpense.toFixed(2)}`
+      document.getElementById('kpi-total-savings').textContent =
+        `$${globalKpis.totalSavings.toFixed(2)}`
 
-    const balanceEl = document.getElementById('kpi-balance')
-    balanceEl.textContent = `$${kpis.balance.toFixed(2)}`
-    balanceEl.classList.add(
-      kpis.balance >= 0 ? 'text-green-700' : 'text-red-700'
-    )
+      document.getElementById('kpi-total-withdrawals').textContent =
+        `$${globalKpis.totalWithdrawals.toFixed(2)}`
 
-    document.getElementById('kpi-avg-expense').textContent =
-      `$${kpis.avgExpense.toFixed(2)}`
+      document.getElementById('kpi-net-worth').textContent =
+        `$${globalKpis.netWorth.toFixed(2)}`
 
-    const trendEl = document.getElementById('kpi-trend')
-    trendEl.textContent = kpis.trend >= 0 ? '▲' : '▼'
-    trendEl.classList.add(
-      kpis.trend >= 0 ? 'text-green-600' : 'text-red-600'
-    )
+      document.getElementById('kpi-available-savings').textContent =
+        `$${globalKpis.availableSavings.toFixed(2)}`
 
-    // ============================
-    // Chart
-    // ============================
-    if (typeof Chart !== 'undefined') {
-      const ctx = document
-        .getElementById('lastSixMonthsChart')
-        .getContext('2d')
+      const netBalanceEl = document.getElementById('kpi-net-balance')
+      netBalanceEl.textContent = `$${globalKpis.netBalance.toFixed(2)}`
+      netBalanceEl.classList.add(
+        globalKpis.netBalance >= 0 ? 'text-green-700' : 'text-red-700'
+      )
 
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: lastSixMonthsChartData.labels,
-          datasets: [
-            {
-              label: 'Ingresos',
-              data: lastSixMonthsChartData.income,
-              tension: 0.35
-            },
-            {
-              label: 'Egresos',
-              data: lastSixMonthsChartData.expense,
-              tension: 0.35
-            },
-            {
-              label: 'Balance',
-              data: lastSixMonthsChartData.balance,
-              borderDash: [6, 4],
-              tension: 0.35
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom'
-            }
+      // ============================
+      // KPIs
+      // ============================
+      document.getElementById('kpi-income').textContent =
+        `$${kpis.totalIncome.toFixed(2)}`
+
+      document.getElementById('kpi-expense').textContent =
+        `$${kpis.totalExpense.toFixed(2)}`
+
+      const balanceEl = document.getElementById('kpi-balance')
+      balanceEl.textContent = `$${kpis.balance.toFixed(2)}`
+      balanceEl.classList.add(
+        kpis.balance >= 0 ? 'text-green-700' : 'text-red-700'
+      )
+
+      document.getElementById('kpi-avg-expense').textContent =
+        `$${kpis.avgExpense.toFixed(2)}`
+
+      const trendEl = document.getElementById('kpi-trend')
+      trendEl.textContent = kpis.trend >= 0 ? '▲' : '▼'
+      trendEl.classList.add(
+        kpis.trend >= 0 ? 'text-green-600' : 'text-red-600'
+      )
+
+      // ============================
+      // Chart
+      // ============================
+      if (typeof Chart !== 'undefined') {
+        const ctx = document
+          .getElementById('lastSixMonthsChart')
+          .getContext('2d')
+
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: lastSixMonthsChartData.labels,
+            datasets: [
+              {
+                label: 'Ingresos',
+                data: lastSixMonthsChartData.income,
+                tension: 0.35
+              },
+              {
+                label: 'Egresos',
+                data: lastSixMonthsChartData.expense,
+                tension: 0.35
+              },
+              {
+                label: 'Balance',
+                data: lastSixMonthsChartData.balance,
+                borderDash: [6, 4],
+                tension: 0.35
+              }
+            ]
           },
-          scales: {
-            y: {
-              beginAtZero: true
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
             }
           }
-        }
-      })
-    }
+        })
+      }
 
-  } catch (err) {
-    console.error('Error cargando dashboard', err)
+    } catch (err) {
+      console.error('Error cargando dashboard', err)
+    }
+  })
+
+  function toggleCard(id) {
+    const body = document.getElementById(id)
+    const icon = document.getElementById(`icon-${id}`)
+
+    const isHidden = body.classList.contains('hidden')
+
+    body.classList.toggle('hidden')
+    icon.textContent = isHidden ? '▾' : '▸'
   }
-})
 </script>

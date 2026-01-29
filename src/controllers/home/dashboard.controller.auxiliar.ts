@@ -1,4 +1,6 @@
 import { AppDataSource } from "../../config/datasource"
+import { Account } from "../../entities/Account.entity"
+import { Loan } from "../../entities/Loan.entity"
 import { Transaction } from "../../entities/Transaction.entity"
 import { AuthRequest } from "../../types/AuthRequest"
 
@@ -145,4 +147,83 @@ export const getLastSixMonthsKPIs = async (authReq: AuthRequest) => {
     trend
   }
 }
+
+/* ============================================================================
+   KPIs globales (solo Transactions + Accounts)
+============================================================================ */
+/* ============================================================================
+   KPIs globales (solo Transactions + Accounts)
+============================================================================ */
+export const getGlobalKPIs = async (authReq: AuthRequest) => {
+  const userId = authReq.user.id
+
+  const txRepo = AppDataSource.getRepository(Transaction)
+  const accountRepo = AppDataSource.getRepository(Account)
+
+  /* ============================
+     Ingresos y egresos
+  ============================ */
+  const incomeExpense = await txRepo
+    .createQueryBuilder('t')
+    .select([
+      "SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) AS income",
+      "SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense"
+    ])
+    .where('t.user_id = :userId', { userId })
+    .getRawOne()
+
+  const totalIncome = Number(incomeExpense?.income || 0)
+  const totalExpense = Number(incomeExpense?.expense || 0)
+
+  /* ============================
+     Ahorros y retiros (TRANSFER)
+     ahorro  = entra a saving
+     retiro  = sale de saving
+  ============================ */
+  const savingsData = await txRepo
+    .createQueryBuilder('t')
+    .innerJoin('t.account', 'fromAcc')
+    .leftJoin('t.to_account', 'toAcc')
+    .select([
+      "SUM(CASE WHEN t.type = 'transfer' AND toAcc.type = 'saving' THEN t.amount ELSE 0 END) AS savings",
+      "SUM(CASE WHEN t.type = 'transfer' AND fromAcc.type = 'saving' THEN t.amount ELSE 0 END) AS withdrawals"
+    ])
+    .where('t.user_id = :userId', { userId })
+    .getRawOne()
+
+  const totalSavings = Number(savingsData?.savings || 0)
+  const totalWithdrawals = Number(savingsData?.withdrawals || 0)
+
+  /* ============================
+     Cuentas activas
+  ============================ */
+  const accounts = await accountRepo.find({
+    where: { user: { id: userId }, is_active: true }
+  })
+
+  const netWorth = accounts.reduce(
+    (sum, acc) => sum + Number(acc.balance),
+    0
+  )
+
+  const availableSavings = accounts
+    .filter(a => a.type === 'saving')
+    .reduce((sum, a) => sum + Number(a.balance), 0)
+
+  /* ============================
+     KPIs finales (7)
+  ============================ */
+  const netBalance = netWorth - availableSavings
+
+  return {
+    totalIncome,
+    totalExpense,
+    totalSavings,
+    totalWithdrawals,
+    netWorth,
+    availableSavings,
+    netBalance
+  }
+}
+
 
