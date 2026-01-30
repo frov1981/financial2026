@@ -76,6 +76,19 @@ function toggleCategoryCollapse(parentId) {
   applyAllFilters()
 }
 
+function getParentBackgroundColor(index, total) {
+  if (total <= 1) return 'hsl(210, 40%, 96%)'
+
+  const startLightness = 96
+  const endLightness = 88
+  const step = (startLightness - endLightness) / (total - 1)
+
+  const lightness = startLightness - (step * index)
+
+  return `hsl(140, 35%, ${lightness}%)`
+}
+
+
 /* ============================
    5. Render helpers
 ============================ */
@@ -185,7 +198,7 @@ function renderCard(category) {
         ${iconView()}
       </button>
     `
- 
+
   return `
     <div 
       class="category-card ${category.is_active ? '' : 'inactive'}"
@@ -193,11 +206,7 @@ function renderCard(category) {
       onclick="selectCategoryCard(event, ${category.id})">
       <div class="card-header">
         <div class="card-title">
-          ${isParent
-      ? `<button onclick="toggleCategoryCollapse(${category.id})">
-                ${collapsed ? iconChevronOpen() : iconChevronClose()}
-              </button>`
-      : ''}
+          ${isParent ? `<button onclick="toggleCategoryCollapse(${category.id})"> ${collapsed ? iconChevronOpen() : iconChevronClose()} </button>` : ''}
           ${category.name}
         </div>
         <div class="card-actions">
@@ -220,11 +229,11 @@ function renderCard(category) {
         </div>
       </div>
 
-      <div class="card-body">
-        ${numberBox(category.transactions_count)} trx
-      </div>
-
       <div class="card-footer">
+        <span class="card-meta">
+          ${numberBox(category.transactions_count)} trx
+        </span>
+
         <div class="card-tags">
           ${categoryTypeTag(category.type)}
           ${statusTag(category.is_active)}
@@ -239,7 +248,7 @@ function renderCard(category) {
 ============================ */
 function renderTable(data) {
   const selected = loadFilters(SELECTED_KEY)
-  
+
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
@@ -306,17 +315,19 @@ function renderCards(data) {
 
   const parents = data.filter(c => !c.parent)
   const children = data.filter(c => c.parent)
+  const totalParents = parents.length
 
-  const html = parents.map(parent => {
+  const html = parents.map((parent, index) => {
     const collapsed = isCategoryCollapsed(parent.id)
+    const bgColor = getParentBackgroundColor(index, totalParents)
 
     const childCards = children
       .filter(child => child.parent.id === parent.id)
-      .map(child => renderCard(child)) // todos los hijos con List
+      .map(child => renderCard(child)) 
       .join('')
 
     return `
-      <div class="category-group ${collapsed ? 'collapsed' : ''}">
+      <div class="category-group ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
         <div class="category-group-header">
           <button onclick="toggleCategoryCollapse(${parent.id})">
             ${collapsed ? iconChevronOpen() : iconChevronClose()}
