@@ -1,13 +1,14 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AuthRequest } from "../../types/AuthRequest"
-import { Loan } from "../../entities/Loan.entity"
 import { AppDataSource } from "../../config/datasource"
-import { logger } from "../../utils/logger.util"
-import { formatDateForInputLocal } from '../../utils/date.util'
+import { Loan } from "../../entities/Loan.entity"
 import { LoanPayment } from '../../entities/LoanPayment.entity'
+import { AuthRequest } from "../../types/AuthRequest"
+import { formatDateForInputLocal } from '../../utils/date.util'
+import { logger } from "../../utils/logger.util"
 import { getActiveAccountsByUser, getNextValidTransactionDate } from '../transaction/transaction.controller.auxiliar'
+export { savePayment as apiForSavingAccount } from './payment.controller.saving'
 
-export const listPaymentsAPI: RequestHandler = async (req: Request, res: Response) => {
+export const apiForGettingPayments: RequestHandler = async (req: Request, res: Response) => {
     const authReq = req as AuthRequest
     const loanId = Number(req.params.loanId)
 
@@ -24,149 +25,7 @@ export const listPaymentsAPI: RequestHandler = async (req: Request, res: Respons
     }
 }
 
-export const insertPaymentFormPage: RequestHandler = async (req: Request, res: Response) => {
-    const authReq = req as AuthRequest
-    const loanId = Number(req.params.loanId)
-    const mode = 'insert'
-    const accounts = await getActiveAccountsByUser(authReq)
-
-    const defaultDate = await getNextValidTransactionDate(authReq);
-
-    res.render(
-        'layouts/main',
-        {
-            title: 'Insertar Pago',
-            view: 'pages/payments/form',
-            payment: {
-                payment_date: formatDateForInputLocal(defaultDate).slice(0, 16),
-                principal_amount: '0.00',
-                interest_amount: '0.00',
-            },
-            loan_id: loanId,
-            errors: {},
-            accounts,
-            mode,
-        })
-}
-
-export const updatePaymentFormPage: RequestHandler = async (req: Request, res: Response) => {
-    const authReq = req as AuthRequest
-    const txId = Number(req.params.id)
-    const mode = 'update'
-
-    const repo = AppDataSource.getRepository(LoanPayment)
-
-    const tx = await repo.findOne({
-        where: { id: txId },
-        relations: { loan: true, account: true },
-    })
-
-    if (!tx) {
-        return res.redirect('/payments')
-    }
-    const accounts = await getActiveAccountsByUser(authReq)
-
-    res.render(
-        'layouts/main',
-        {
-            title: 'Editar Pago',
-            view: 'pages/payments/form',
-            payment: {
-                id: tx.id,
-                note: tx.note,
-                principal_amount: tx.principal_amount,
-                interest_amount: tx.interest_amount,
-                payment_date: formatDateForInputLocal(tx.payment_date).slice(0, 16),
-                account_id: tx.account ? tx.account.id : '',
-                account_name: tx.account ? tx.account.name : '',
-            },
-            loan_id: tx.loan.id,
-            errors: {},
-            accounts,
-            mode
-        })
-}
-
-export const clonePaymentFormPage: RequestHandler = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-  const paymentId = Number(req.params.id)
-  const mode = 'insert'
-
-  const repo = AppDataSource.getRepository(LoanPayment)
-
-  const payment = await repo.findOne({
-    where: { id: paymentId },
-    relations: { loan: true, account: true }
-  })
-
-  if (!payment) {
-    return res.redirect('/loans')
-  }
-
-  const accounts = await getActiveAccountsByUser(authReq)
-
-  const defaultDate = await getNextValidTransactionDate(authReq)
-
-  res.render(
-    'layouts/main',
-    {
-      title: 'Clonar Pago',
-      view: 'pages/payments/form',
-      payment: {
-        note: payment.note ?? '',
-        principal_amount: payment.principal_amount,
-        interest_amount: payment.interest_amount,
-        payment_date: formatDateForInputLocal(defaultDate).slice(0, 16),
-        account_id: payment.account ? payment.account.id : '',
-        account_name: payment.account ? payment.account.name : '',
-      },
-      loan_id: payment.loan.id,
-      errors: {},
-      accounts,
-      mode
-    }
-  )
-}
-
-export const deletePaymentFormPage: RequestHandler = async (req: Request, res: Response) => {
-    const authReq = req as AuthRequest
-    const txId = Number(req.params.id)
-    const mode = 'delete'
-
-    const repo = AppDataSource.getRepository(LoanPayment)
-
-    const tx = await repo.findOne({
-        where: { id: txId },
-        relations: { loan: true, account: true },
-    })
-
-    if (!tx) {
-        return res.redirect('/payments')
-    }
-    const accounts = await getActiveAccountsByUser(authReq)
-
-    res.render(
-        'layouts/main',
-        {
-            title: 'Eliminar Pago',
-            view: 'pages/payments/form',
-            payment: {
-                id: tx.id,
-                note: tx.note,
-                principal_amount: tx.principal_amount,
-                interest_amount: tx.interest_amount,
-                payment_date: formatDateForInputLocal(tx.payment_date).slice(0, 16),
-                account_id: tx.account ? tx.account.id : '',
-                account_name: tx.account ? tx.account.name : '',
-            },
-            loan_id: tx.loan.id, 
-            errors: {},
-            accounts,
-            mode
-        })
-}
-
-export const paymentsPage: RequestHandler = async (req, res) => {
+export const routeToPagePayment: RequestHandler = async (req, res) => {
     const authReq = req as AuthRequest
     const loanId = Number(req.params.id)
 
@@ -186,4 +45,153 @@ export const paymentsPage: RequestHandler = async (req, res) => {
         loan
     })
 }
+
+export const routeToFormInsertPayment: RequestHandler = async (req: Request, res: Response) => {
+    const mode = 'insert'
+    const authReq = req as AuthRequest
+    const loanId = Number(req.params.loanId)
+    const accounts = await getActiveAccountsByUser(authReq)
+    const defaultDate = await getNextValidTransactionDate(authReq);
+
+    res.render(
+        'layouts/main',
+        {
+            title: 'Insertar Pago',
+            view: 'pages/payments/form',
+            payment: {
+                payment_date: formatDateForInputLocal(defaultDate).slice(0, 16),
+                principal_amount: '0.00',
+                interest_amount: '0.00',
+            },
+            loan_id: loanId,
+            errors: {},
+            accounts,
+            mode,
+        })
+}
+
+export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res: Response) => {
+    const mode = 'update'
+    const authReq = req as AuthRequest
+    const paymentId = Number(req.params.id)
+
+    if (!Number.isInteger(paymentId) || paymentId <= 0) {
+        return res.redirect('/payments')
+    }
+
+    const accounts = await getActiveAccountsByUser(authReq)
+    const repoPayment = AppDataSource.getRepository(LoanPayment)
+    const payment = await repoPayment.findOne({
+        where: { id: paymentId },
+        relations: { loan: true, account: true },
+    })
+
+    if (!payment) {
+        return res.redirect('/payments')
+    }
+
+    res.render(
+        'layouts/main',
+        {
+            title: 'Editar Pago',
+            view: 'pages/payments/form',
+            payment: {
+                id: payment.id,
+                note: payment.note,
+                principal_amount: payment.principal_amount,
+                interest_amount: payment.interest_amount,
+                payment_date: formatDateForInputLocal(payment.payment_date).slice(0, 16),
+                account_id: payment.account ? payment.account.id : '',
+                account_name: payment.account ? payment.account.name : '',
+            },
+            loan_id: payment.loan.id,
+            errors: {},
+            accounts,
+            mode
+        })
+}
+
+export const routeToFormClonePayment: RequestHandler = async (req: Request, res: Response) => {
+    const mode = 'insert'
+    const authReq = req as AuthRequest
+    const paymentId = Number(req.params.id)
+
+    if (!Number.isInteger(paymentId) || paymentId <= 0) {
+        return res.redirect('/payments')
+    }
+
+    const accounts = await getActiveAccountsByUser(authReq)
+    const defaultDate = await getNextValidTransactionDate(authReq)
+    const repoPayment = AppDataSource.getRepository(LoanPayment)
+    const payment = await repoPayment.findOne({
+        where: { id: paymentId },
+        relations: { loan: true, account: true }
+    })
+
+    if (!payment) {
+        return res.redirect('/loans')
+    }
+
+    res.render(
+        'layouts/main',
+        {
+            title: 'Clonar Pago',
+            view: 'pages/payments/form',
+            payment: {
+                note: payment.note ?? '',
+                principal_amount: payment.principal_amount,
+                interest_amount: payment.interest_amount,
+                payment_date: formatDateForInputLocal(defaultDate).slice(0, 16),
+                account_id: payment.account ? payment.account.id : '',
+                account_name: payment.account ? payment.account.name : '',
+            },
+            loan_id: payment.loan.id,
+            errors: {},
+            accounts,
+            mode
+        }
+    )
+}
+
+export const routeToFormDeletePayment: RequestHandler = async (req: Request, res: Response) => {
+    const mode = 'delete'
+    const authReq = req as AuthRequest
+    const paymentId = Number(req.params.id)
+
+    if (!Number.isInteger(paymentId) || paymentId <= 0) {
+        return res.redirect('/payments')
+    }
+
+    const accounts = await getActiveAccountsByUser(authReq)
+    const repoPayment = AppDataSource.getRepository(LoanPayment)
+    const payment = await repoPayment.findOne({
+        where: { id: paymentId },
+        relations: { loan: true, account: true },
+    })
+
+    if (!payment) {
+        return res.redirect('/payments')
+    }
+
+    res.render(
+        'layouts/main',
+        {
+            title: 'Eliminar Pago',
+            view: 'pages/payments/form',
+            payment: {
+                id: payment.id,
+                note: payment.note,
+                principal_amount: payment.principal_amount,
+                interest_amount: payment.interest_amount,
+                payment_date: formatDateForInputLocal(payment.payment_date).slice(0, 16),
+                account_id: payment.account ? payment.account.id : '',
+                account_name: payment.account ? payment.account.name : '',
+            },
+            loan_id: payment.loan.id,
+            errors: {},
+            accounts,
+            mode
+        })
+}
+
 

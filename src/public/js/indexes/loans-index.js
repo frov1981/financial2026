@@ -320,7 +320,7 @@ function goToLoanDelete(id) {
 }
 
 function goToLoanView(id) {
-  location.href = `/loans/${id}`
+  location.href = `/loans/${id}/loan`
 }
 
 function selectLoanCard(event, id) {

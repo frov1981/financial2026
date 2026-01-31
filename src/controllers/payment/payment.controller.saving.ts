@@ -145,7 +145,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             payment.transaction = trx
             await paymentRepo.save(payment)
             await queryRunner.commitTransaction()
-            return res.redirect(`/payments/${loanId}`)
+            return res.redirect(`/payments/${loanId}/loan`)
         }
 
         // =========================
@@ -185,7 +185,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
                 await transactionRepo.delete(payment.transaction.id)
             }
             await queryRunner.commitTransaction()
-            return res.redirect(`/payments/${loanId}`)
+            return res.redirect(`/payments/${loanId}/loan`)
         }
     } catch (err) {
         await queryRunner.rollbackTransaction()

@@ -1,14 +1,25 @@
 import { Router } from 'express'
-import { clonePaymentFormPage, deletePaymentFormPage, insertPaymentFormPage, paymentsPage, updatePaymentFormPage } from '../controllers/payment/payment.controller'
-import { savePayment } from '../controllers/payment/payment.controller.saving'
+import {
+    apiForGettingPayments,
+    apiForSavingAccount,
+    routeToFormClonePayment,
+    routeToFormDeletePayment,
+    routeToFormInsertPayment,
+    routeToFormUpdatePayment,
+    routeToPagePayment
+} from '../controllers/payment/payment.controller'
 
 const router = Router()
 
-router.get('/:id', paymentsPage)
-router.get('/insert/:loanId', insertPaymentFormPage)
-router.get('/update/:id', updatePaymentFormPage)
-router.get('/clone/:id', clonePaymentFormPage)
-router.get('/delete/:id', deletePaymentFormPage)
-router.post('/', savePayment)
+/*Eventos de acción */
+router.get('/list/:loanId/loan', apiForGettingPayments)
+router.post('/', apiForSavingAccount)
+
+/*Eventos de enrutamiento */
+router.get('/:id/loan', routeToPagePayment)
+router.get('/insert/:loanId', routeToFormInsertPayment)
+router.get('/update/:id', routeToFormUpdatePayment)
+router.get('/clone/:id', routeToFormClonePayment)
+router.get('/delete/:id', routeToFormDeletePayment)
 
 export default router

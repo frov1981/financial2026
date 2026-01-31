@@ -11,14 +11,14 @@
 10. Status Filter UI (N/A)
 11. Acciones (redirects / selects)
 12. Eventos
-13. Scroll
+13. Scroll 
 14. Init (DOMContentLoaded + loadPayments)
 ============================================================================ */
 
 /* ============================
    1. Constantes globales
 ============================ */
-const API_BASE = `/api/payments/${window.LOAN_ID}`
+const API_BASE = `/payments/list/${window.LOAN_ID}/loan`
 const FILTER_KEY = `payments.filters.${window.USER_ID}.${window.LOAN_ID}`
 const SELECTED_KEY = `payments.selected.${window.USER_ID}.${window.LOAN_ID}`
 const SCROLL_KEY = `payments.scroll.${window.USER_ID}.${window.LOAN_ID}`

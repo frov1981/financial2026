@@ -7,7 +7,7 @@ import {
     routeToFormUpdateLoan,
     routeToPageLoan
 } from "../controllers/loan/loan.controller"
-import { paymentsPage } from "../controllers/payment/payment.controller"
+import { routeToPagePayment } from "../controllers/payment/payment.controller"
 
 const router = Router()
 
@@ -20,6 +20,6 @@ router.get('/', routeToPageLoan)
 router.get('/insert', routeToFormInsertLoan)
 router.get('/update/:id', routeToFormUpdateLoan)
 router.get('/delete/:id', routeToFormDeleteLoan)
-router.get('/:id', paymentsPage)
+router.get('/:id/loan', routeToPagePayment)
 
 export default router
