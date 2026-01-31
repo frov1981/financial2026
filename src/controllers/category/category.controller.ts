@@ -93,8 +93,6 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
   if (!Number.isInteger(categoryId) || categoryId <= 0) {
     return res.redirect('/categories')
   }
-
-  const parentCategories = await getActiveParentCategoriesByUser(authReq)
   const repoCategory = AppDataSource.getRepository(Category)
   const category = await repoCategory.findOne({
     where: { id: categoryId, user: { id: authReq.user.id } },
@@ -105,6 +103,7 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
     return res.redirect('/categories')
   }
 
+  const parentCategories = await getActiveParentCategoriesByUser(authReq)
   res.render('layouts/main', {
     title: 'Editar Categoría',
     view: 'pages/categories/form',
@@ -131,7 +130,6 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
     return res.redirect('/categories')
   }
 
-  const parentCategories = await getActiveParentCategoriesByUser(authReq)
   const repoCategory = AppDataSource.getRepository(Category)
   const category = await repoCategory.findOne({
     where: { id: categoryId, user: { id: authReq.user.id } },
@@ -142,6 +140,7 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
     return res.redirect('/categories')
   }
 
+  const parentCategories = await getActiveParentCategoriesByUser(authReq)
   res.render('layouts/main', {
     title: 'Eliminar Categoría',
     view: 'pages/categories/form',
@@ -168,7 +167,6 @@ export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Reque
     return res.redirect('/categories')
   }
 
-  const parentCategories = await getActiveParentCategoriesByUser(authReq)
   const repoCategory = AppDataSource.getRepository(Category)
   const category = await repoCategory.findOne({
     where: { id: categoryId, user: { id: authReq.user.id } },
@@ -179,6 +177,7 @@ export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Reque
     return res.redirect('/categories')
   }
 
+  const parentCategories = await getActiveParentCategoriesByUser(authReq)
   res.render(
     'layouts/main',
     {

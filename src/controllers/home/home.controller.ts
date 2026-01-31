@@ -95,7 +95,6 @@ export const apiForGettingKpis: RequestHandler = async (
     req: Request, res: Response
 ) => {
     const authReq = req as AuthRequest
-    const userId = authReq.user.id
 
     try {
         const lastSixMonthsChartData = await getLastSixMonthsChartData(authReq)

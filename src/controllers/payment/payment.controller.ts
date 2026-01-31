@@ -50,9 +50,9 @@ export const routeToFormInsertPayment: RequestHandler = async (req: Request, res
     const mode = 'insert'
     const authReq = req as AuthRequest
     const loanId = Number(req.params.loanId)
-    const accounts = await getActiveAccountsByUser(authReq)
-    const defaultDate = await getNextValidTransactionDate(authReq);
 
+    const accounts = await getActiveAccountsByUser(authReq)
+    const defaultDate = await getNextValidTransactionDate(authReq)
     res.render(
         'layouts/main',
         {
@@ -79,7 +79,6 @@ export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res
         return res.redirect('/payments')
     }
 
-    const accounts = await getActiveAccountsByUser(authReq)
     const repoPayment = AppDataSource.getRepository(LoanPayment)
     const payment = await repoPayment.findOne({
         where: { id: paymentId },
@@ -90,6 +89,7 @@ export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res
         return res.redirect('/payments')
     }
 
+    const accounts = await getActiveAccountsByUser(authReq)
     res.render(
         'layouts/main',
         {
@@ -120,8 +120,6 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
         return res.redirect('/payments')
     }
 
-    const accounts = await getActiveAccountsByUser(authReq)
-    const defaultDate = await getNextValidTransactionDate(authReq)
     const repoPayment = AppDataSource.getRepository(LoanPayment)
     const payment = await repoPayment.findOne({
         where: { id: paymentId },
@@ -132,6 +130,8 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
         return res.redirect('/loans')
     }
 
+    const accounts = await getActiveAccountsByUser(authReq)
+    const defaultDate = await getNextValidTransactionDate(authReq)
     res.render(
         'layouts/main',
         {
@@ -162,7 +162,6 @@ export const routeToFormDeletePayment: RequestHandler = async (req: Request, res
         return res.redirect('/payments')
     }
 
-    const accounts = await getActiveAccountsByUser(authReq)
     const repoPayment = AppDataSource.getRepository(LoanPayment)
     const payment = await repoPayment.findOne({
         where: { id: paymentId },
@@ -173,6 +172,7 @@ export const routeToFormDeletePayment: RequestHandler = async (req: Request, res
         return res.redirect('/payments')
     }
 
+    const accounts = await getActiveAccountsByUser(authReq)
     res.render(
         'layouts/main',
         {

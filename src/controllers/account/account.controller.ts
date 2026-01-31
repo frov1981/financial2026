@@ -37,27 +37,6 @@ export const apiForGettingAccounts: RequestHandler = async (req: Request, res: R
   }
 }
 
-export const recalculateBalancesAPI: RequestHandler = async (req: Request, res: Response) => {
-  try {
-    const authReq = req as AuthRequest
-
-    await recalculateAllAccountBalances(authReq)
-
-    res.json({
-      success: true,
-      message: 'Balances recalculados correctamente'
-    })
-
-  } catch (error) {
-    logger.error('Error al recalcular balances', error)
-
-    res.status(500).json({
-      success: false,
-      message: 'Error al recalcular balances'
-    })
-  }
-}
-
 export const routeToPageAccount = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 

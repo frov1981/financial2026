@@ -75,10 +75,10 @@ export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => 
 export const routeToFormInsertLoan: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
   const authReq = req as AuthRequest
+
   const defaultDate = new Date()
   const disbursement_accounts = await getActiveAccountsByUser(authReq)
   const parentLoans = await getActiveParentLoansByUser(authReq)
-
   res.render(
     'layouts/main',
     {
@@ -106,9 +106,6 @@ export const routeToFormUpdateLoan: RequestHandler = async (req: Request, res: R
     return res.redirect('/loans')
   }
 
-  const disbursement_accounts = await getActiveAccountsByUser(authReq)
-  const parentLoans = await getActiveParentLoansByUser(authReq)
-
   const repoLoan = AppDataSource.getRepository(Loan)
   const loan = await repoLoan.findOne({
     where: { id: loanId, user: { id: authReq.user.id } },
@@ -119,6 +116,8 @@ export const routeToFormUpdateLoan: RequestHandler = async (req: Request, res: R
     return res.redirect('/loans')
   }
 
+  const disbursement_accounts = await getActiveAccountsByUser(authReq)
+  const parentLoans = await getActiveParentLoansByUser(authReq)
   res.render(
     'layouts/main',
     {
@@ -153,9 +152,6 @@ export const routeToFormDeleteLoan: RequestHandler = async (req: Request, res: R
     return res.redirect('/loans')
   }
 
-  const disbursement_accounts = await getActiveAccountsByUser(authReq)
-  const parentLoans = await getActiveParentLoansByUser(authReq)
-
   const repoLoan = AppDataSource.getRepository(Loan)
   const loan = await repoLoan.findOne({
     where: { id: loanId, user: { id: authReq.user.id } },
@@ -166,6 +162,8 @@ export const routeToFormDeleteLoan: RequestHandler = async (req: Request, res: R
     return res.redirect('/loans')
   }
 
+  const disbursement_accounts = await getActiveAccountsByUser(authReq)
+  const parentLoans = await getActiveParentLoansByUser(authReq)
   res.render(
     'layouts/main',
     {
