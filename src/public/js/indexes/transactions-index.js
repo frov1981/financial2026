@@ -1,7 +1,7 @@
 /* ============================================================================
 1. Constantes globales
 ============================================================================ */
-const API_BASE = '/api/transactions'
+const API_BASE = '/transactions/list'
 const FILTER_KEY = `transactions.filters.${window.USER_ID}`
 const SELECTED_KEY = `transactions.selected.${window.USER_ID}`
 const PAGE_SIZE = 10

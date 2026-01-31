@@ -1,20 +1,25 @@
 import { Router } from 'express'
 import {
-  transactionsPage,
-  insertTransactionFormPage,
-  saveTransaction,
-  updateTransactionFormPage,
-  deleteTransactionFormPage,
-  cloneTransactionFormPage
+  apiForGettingTransactions,
+  apiForSavingTransaction,
+  routeToFormCloneTransaction,
+  routeToFormDeleteTransaction,
+  routeToFormInsertTransaction,
+  routeToFormUpdateTransaction,
+  routeToPageTransaction
 } from '../controllers/transaction/transaction.controller'
 
 const router = Router()
 
-router.get('/', transactionsPage)
-router.get('/insert', insertTransactionFormPage)
-router.get('/update/:id', updateTransactionFormPage)
-router.get('/clone/:id', cloneTransactionFormPage)
-router.get('/delete/:id', deleteTransactionFormPage)
-router.post('/', saveTransaction)
+/*Eventos de acción */
+router.post('/', apiForSavingTransaction)
+router.get('/list', apiForGettingTransactions)
+
+/*Eventos de enrutamiento */
+router.get('/', routeToPageTransaction)
+router.get('/insert', routeToFormInsertTransaction)
+router.get('/update/:id', routeToFormUpdateTransaction)
+router.get('/clone/:id', routeToFormCloneTransaction)
+router.get('/delete/:id', routeToFormDeleteTransaction)
 
 export default router 

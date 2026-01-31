@@ -3,7 +3,6 @@ import { AppDataSource } from '../../config/datasource'
 import { Account } from '../../entities/Account.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
-import { recalculateAllAccountBalances } from './account.controller.auxiliar'
 export { saveAccount as apiForSavingAccount } from './account.controller.saving'
 
 export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {

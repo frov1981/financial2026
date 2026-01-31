@@ -4,7 +4,6 @@ import path from 'path'
 import { httpLogger } from './middlewares/logger.middleware'
 import { sessionAuthMiddleware } from './middlewares/sessionAuth.middleware'
 import accountRoutes from './routes/account.route'
-import apiRoutes from './routes/api.route'
 import authRoutes from './routes/auth.route'
 import categoryRoutes from './routes/category.route'
 import homeRoutes from './routes/home.route'
@@ -64,7 +63,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 ======================= */
 app.use('/', authRoutes)
 app.use('/', sessionAuthMiddleware, homeRoutes)
-app.use('/api', sessionAuthMiddleware, apiRoutes)
 app.use('/accounts', sessionAuthMiddleware, accountRoutes)
 app.use('/categories', sessionAuthMiddleware, categoryRoutes)
 app.use('/transactions', sessionAuthMiddleware, transactionRoutes)
