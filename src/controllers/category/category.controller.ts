@@ -5,8 +5,9 @@ import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { getActiveParentCategoriesByUser } from './category.controller.auxiliar'
+export { saveCategory as apiForSavingCatgory } from './category.controller.saving'
 
-export const listCategoriesAPI: RequestHandler = async (req: Request, res: Response) => {
+export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 
   try {
@@ -50,10 +51,22 @@ export const listCategoriesAPI: RequestHandler = async (req: Request, res: Respo
   }
 }
 
-export const insertCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
+export const routeToPageCategory: RequestHandler = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
-  const mode = 'insert'
 
+  res.render(
+    'layouts/main',
+    {
+      title: 'Categorías',
+      view: 'pages/categories/index',
+      USER_ID: authReq.user?.id || 'guest'
+    })
+}
+
+
+export const routeToFormInsertCategory: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'insert'
+  const authReq = req as AuthRequest
   const parentCategories = await getActiveParentCategoriesByUser(authReq)
 
   res.render(
@@ -72,17 +85,20 @@ export const insertCategoryFormPage: RequestHandler = async (req: Request, res: 
     })
 }
 
-export const updateCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
+export const routeToFormUpdateCategory: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'update'
   const authReq = req as AuthRequest
   const categoryId = Number(req.params.id)
-  const mode = 'update'
 
-  const repo = AppDataSource.getRepository(Category)
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+    return res.redirect('/categories')
+  }
+
   const parentCategories = await getActiveParentCategoriesByUser(authReq)
-
-  const category = await repo.findOne({
+  const repoCategory = AppDataSource.getRepository(Category)
+  const category = await repoCategory.findOne({
     where: { id: categoryId, user: { id: authReq.user.id } },
-    relations: ['parent']
+    relations: { parent: true }
   })
 
   if (!category) {
@@ -106,17 +122,20 @@ export const updateCategoryFormPage: RequestHandler = async (req: Request, res: 
   })
 }
 
-export const deleteCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
+export const routeToFormDeleteCategory: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'delete'
   const authReq = req as AuthRequest
   const categoryId = Number(req.params.id)
-  const mode = 'delete'
 
-  const repo = AppDataSource.getRepository(Category)
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+    return res.redirect('/categories')
+  }
+
   const parentCategories = await getActiveParentCategoriesByUser(authReq)
-
-  const category = await repo.findOne({
+  const repoCategory = AppDataSource.getRepository(Category)
+  const category = await repoCategory.findOne({
     where: { id: categoryId, user: { id: authReq.user.id } },
-    relations: ['parent']
+    relations: { parent: true }
   })
 
   if (!category) {
@@ -140,23 +159,25 @@ export const deleteCategoryFormPage: RequestHandler = async (req: Request, res: 
   })
 }
 
-export const updateCategoryStatusFormPage: RequestHandler = async (req: Request, res: Response) => {
+export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'status'
   const authReq = req as AuthRequest
   const categoryId = Number(req.params.id)
-  const mode = 'status'
 
-  const repo = AppDataSource.getRepository(Category)
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+    return res.redirect('/categories')
+  }
 
-  const category = await repo.findOne({
+  const parentCategories = await getActiveParentCategoriesByUser(authReq)
+  const repoCategory = AppDataSource.getRepository(Category)
+  const category = await repoCategory.findOne({
     where: { id: categoryId, user: { id: authReq.user.id } },
-    relations: ['parent']
+    relations: { parent: true }
   })
 
   if (!category) {
     return res.redirect('/categories')
   }
-
-  const parentCategories = await getActiveParentCategoriesByUser(authReq)
 
   res.render(
     'layouts/main',
@@ -174,17 +195,5 @@ export const updateCategoryStatusFormPage: RequestHandler = async (req: Request,
       parentCategories,
       errors: {},
       mode
-    })
-}
-
-export const categoriesPage: RequestHandler = (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-
-  res.render(
-    'layouts/main',
-    {
-      title: 'Categorías',
-      view: 'pages/categories/index',
-      USER_ID: authReq.user?.id || 'guest'
     })
 }

@@ -79,7 +79,10 @@ export const routeToFormInsertAccount: RequestHandler = async (req: Request, res
     {
       title: 'Insertar Cuenta',
       view: 'pages/accounts/form',
-      account: {},
+      account: {
+        type: null,
+        is_active: true,
+      },
       errors: {},
       mode,
     })
@@ -151,7 +154,7 @@ export const routeToFormDeleteAccount: RequestHandler = async (req: Request, res
     })
 }
 
-export const routeToFormChangeStatusAccount: RequestHandler = async (req: Request, res: Response) => {
+export const routeToFormUpdateStatusAccount: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'status'
   const authReq = req as AuthRequest
   const accountId = Number(req.params.id)

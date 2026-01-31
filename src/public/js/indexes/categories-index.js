@@ -18,7 +18,7 @@
 /* ============================
    1. Constantes globales
 ============================ */
-const API_BASE = '/api/categories'
+const API_BASE = '/categories/list'
 const FILTER_KEY = `categories.filters.${window.USER_ID}`
 const SELECTED_KEY = `categories.selected.${window.USER_ID}`
 const SCROLL_KEY = `categories.scroll.${window.USER_ID}`

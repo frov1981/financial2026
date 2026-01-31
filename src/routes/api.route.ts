@@ -1,6 +1,5 @@
 import { Router } from 'express'
 import { recalculateBalancesAPI } from '../controllers/account/account.controller'
-import { listCategoriesAPI } from '../controllers/category/category.controller'
 import { listLoansAPI } from '../controllers/loan/loan.controller'
 import { listTransactionsPaginatedAPI } from '../controllers/transaction/transaction.controller'
 import { listPaymentsAPI } from '../controllers/payment/payment.controller'
@@ -8,7 +7,6 @@ import { listLastSixMonthsKPIsAPI } from '../controllers/home/dashboard.controll
 
 const router = Router()
 
-router.get('/categories', listCategoriesAPI)
 router.get('/transactions', listTransactionsPaginatedAPI)
 router.get('/loans', listLoansAPI) 
 router.get('/payments/:loanId', listPaymentsAPI)

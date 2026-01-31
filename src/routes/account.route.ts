@@ -2,10 +2,10 @@ import { Router } from 'express'
 import {
     apiForGettingAccounts,
     apiForSavingAccount,
-    routeToFormChangeStatusAccount,
     routeToFormDeleteAccount,
     routeToFormInsertAccount,
     routeToFormUpdateAccount,
+    routeToFormUpdateStatusAccount,
     routeToPageAccount
 } from '../controllers/account/account.controller'
 
@@ -20,7 +20,7 @@ router.get('/', routeToPageAccount)
 router.get('/insert', routeToFormInsertAccount)
 router.get('/update/:id', routeToFormUpdateAccount)
 router.get('/delete/:id', routeToFormDeleteAccount)
-router.get('/status/:id', routeToFormChangeStatusAccount)
+router.get('/status/:id', routeToFormUpdateStatusAccount)
 
 
 export default router

@@ -1,14 +1,26 @@
 import { Router } from 'express'
-import { categoriesPage, deleteCategoryFormPage, insertCategoryFormPage, updateCategoryFormPage, updateCategoryStatusFormPage } from '../controllers/category/category.controller'
-import { saveCategory } from '../controllers/category/category.controller.saving'
+import {
+    apiForGettingCategories,
+    apiForSavingCatgory,
+    routeToFormDeleteCategory,
+    routeToFormInsertCategory,
+    routeToFormUpdateCategory,
+    routeToFormUpdateStatusCategory,
+    routeToPageCategory
+} from '../controllers/category/category.controller'
 
 const router = Router()
 
-router.get('/', categoriesPage)
-router.get('/insert', insertCategoryFormPage)
-router.get('/update/:id', updateCategoryFormPage)
-router.get('/delete/:id', deleteCategoryFormPage)
-router.get('/status/:id', updateCategoryStatusFormPage)
-router.post('/', saveCategory)
+/*Eventos de acción */
+router.get('/list', apiForGettingCategories)
+router.post('/', apiForSavingCatgory)
+
+/*Eventos de enrutamiento */
+router.get('/', routeToPageCategory)
+router.get('/insert', routeToFormInsertCategory)
+router.get('/update/:id', routeToFormUpdateCategory)
+router.get('/delete/:id', routeToFormDeleteCategory)
+router.get('/status/:id', routeToFormUpdateStatusCategory)
+
 
 export default router
