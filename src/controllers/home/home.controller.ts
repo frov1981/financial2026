@@ -1,19 +1,20 @@
 import bcrypt from 'bcryptjs'
-import { Request, Response } from 'express'
+import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/datasource'
 import { User } from '../../entities/User.entity'
 import { send2FACode } from '../../services/2fa.service'
+import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
+import { getGlobalKPIs, getLastSixMonthsChartData, getLastSixMonthsKPIs, getLastSixYearsChartData } from './home.controller.auxiliar'
 
-// GET /
-export const root = (req: Request, res: Response) => {
-  if ((req.session as any)?.userId) return res.redirect('/home')
+export const routeToPageRoot = (req: Request, res: Response) => {
+  if ((req.session as any)?.userId) {
+    return res.redirect('/home')
+  }
   res.redirect('/login')
 }
 
-// GET /login
-export const showLogin = (req: Request, res: Response) => {
-  // Solo renderiza login limpio, sin navbar
+export const routeToPageLogin = (req: Request, res: Response) => {
   res.render(
     'pages/login',
     {
@@ -21,21 +22,41 @@ export const showLogin = (req: Request, res: Response) => {
     })
 }
 
-// POST /login
-export const doLogin = async (req: Request, res: Response) => {
+export const routeToPageHome = async (req: Request, res: Response) => {
+  const isDev = process.env.NODE_ENV === 'development'
+  const userId = isDev ? 1 : (req.session as any)?.userId
+  if (!userId) {
+    return res.redirect('/login')
+  }
+
+  const userRepo = AppDataSource.getRepository(User)
+  const user = await userRepo.findOneBy({ id: userId })
+  if (!user) {
+    return res.redirect('/login')
+  }
+
+  res.render(
+    'layouts/main',
+    {
+      title: 'Inicio',
+      view: 'pages/home',
+      USER_ID: user?.id || 'guest',
+      user,
+    })
+}
+
+export const apiForValidatingLogin = async (req: Request, res: Response) => {
   try {
-    // SALTAR login y 2FA en desarrollo
     if (process.env.NODE_ENV === 'development') {
       const userRepo = AppDataSource.getRepository(User)
-      const devUser = await userRepo.findOneBy({ id: 1 }) // Usuario fijo de desarrollo
+      const devUser = await userRepo.findOneBy({ id: 1 })
       if (devUser) {
         (req.session as any).userId = devUser.id
-        return res.redirect('/home') // o la ruta principal de tu app
+        return res.redirect('/home')
       }
     }
 
     const { username, password } = req.body
-
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOneBy({ name: username })
 
@@ -56,7 +77,6 @@ export const doLogin = async (req: Request, res: Response) => {
         })
     }
 
-    // NUEVO: 2FA pendiente
     await send2FACode(user)
       ; (req.session as any).pending2FAUserId = user.id
 
@@ -71,22 +91,22 @@ export const doLogin = async (req: Request, res: Response) => {
   }
 }
 
-export const home = async (req: Request, res: Response) => {
-  const isDev = process.env.NODE_ENV === 'development'
-  const userId = isDev ? 1 : (req.session as any)?.userId
-  if (!userId) return res.redirect('/login')
+export const apiForGettingKpis: RequestHandler = async (
+    req: Request, res: Response
+) => {
+    const authReq = req as AuthRequest
+    const userId = authReq.user.id
 
-  const userRepo = AppDataSource.getRepository(User)
-  const user = await userRepo.findOneBy({ id: userId })
-  if (!user) return res.redirect('/login')
+    try {
+        const lastSixMonthsChartData = await getLastSixMonthsChartData(authReq)
+        const lastSixYearsChartData = await getLastSixYearsChartData(authReq)
+        const kpis = await getLastSixMonthsKPIs(authReq)
+        const globalKpis = await getGlobalKPIs(authReq)
+        res.json({ lastSixMonthsChartData, lastSixYearsChartData, kpis, globalKpis })
 
-  // Renderiza main.ejs con navbar y el contenido de home
-  res.render(
-    'layouts/main',
-    {
-      title: 'Inicio',
-      view: 'pages/home',
-      USER_ID: user?.id || 'guest',
-      user,
-    })
+    } catch (error) {
+        console.log(error)
+        res.json({ message: 'Error' })
+    }
+
 }

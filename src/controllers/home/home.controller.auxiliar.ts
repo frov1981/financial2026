@@ -1,6 +1,5 @@
 import { AppDataSource } from "../../config/datasource"
 import { Account } from "../../entities/Account.entity"
-import { Loan } from "../../entities/Loan.entity"
 import { Transaction } from "../../entities/Transaction.entity"
 import { AuthRequest } from "../../types/AuthRequest"
 
@@ -218,9 +217,6 @@ export const getLastSixMonthsKPIs = async (authReq: AuthRequest) => {
   }
 }
 
-/* ============================================================================
-   KPIs globales (solo Transactions + Accounts)
-============================================================================ */
 /* ============================================================================
    KPIs globales (solo Transactions + Accounts)
 ============================================================================ */

@@ -7,7 +7,7 @@ import accountRoutes from './routes/account.route'
 import apiRoutes from './routes/api.route'
 import authRoutes from './routes/auth.route'
 import categoryRoutes from './routes/category.route'
-import indexRoutes from './routes/index.route'
+import homeRoutes from './routes/home.route'
 import loanRoutes from './routes/loan.route'
 import paymentRoutes from './routes/payment.route'
 import transactionRoutes from './routes/transaction.route'
@@ -62,7 +62,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 /* =======================
    Routes
 ======================= */
-app.use('/', indexRoutes)
+app.use('/', sessionAuthMiddleware, homeRoutes)
 app.use('/', authRoutes)
 app.use('/api', sessionAuthMiddleware, apiRoutes)
 app.use('/accounts', sessionAuthMiddleware, accountRoutes)

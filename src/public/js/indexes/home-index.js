@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     try {
-        const res = await fetch('/api/dashboard/kpis', {
+        const res = await fetch('/kpis', {
             credentials: 'same-origin'
         })
 
