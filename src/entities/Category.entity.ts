@@ -10,7 +10,7 @@ export class Category {
   id!: number
 
   @ManyToOne(() => User, user => user.categories)
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_categories_user' })
   user!: User
 
   @Column()
@@ -22,7 +22,7 @@ export class Category {
   type!: 'income' | 'expense'
 
   @Column({ default: true })
-  @IsBoolean({ message: 'El estado debe ser true o false' })
+  @IsBoolean({ message: 'El estado debe ser true o false' }) 
   is_active!: boolean
 
   @OneToMany(() => Transaction, transaction => transaction.category)

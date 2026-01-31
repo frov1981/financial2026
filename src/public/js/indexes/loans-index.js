@@ -107,7 +107,7 @@ function renderRow(loan) {
       <td class="ui-td col-right">${amountBox(loan.balance)}</td>
       <td class="ui-td col-left col-sm">${formatDate(loan.start_date)}</td>
       <td class="ui-td col-left col-sm">${statusTag(loan.is_active)}</td>
-      <td class="ui-td col-left col-sm">${loan.disbursement_account.name}</td>
+      <td class="ui-td col-left col-sm">${loan.disbursement_account ? loan.disbursement_account.name : '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button 
@@ -175,7 +175,7 @@ function renderCard(loan) {
         <span>${formatDate(loan.start_date)}</span>
         <div class="card-tags">
           ${statusTag(loan.is_active)}
-          <span>${loan.disbursement_account.name}</span>
+          <span>${loan.disbursement_account ? loan.disbursement_account.name : '-'}</span>
         </div>
       </div>
     </div>

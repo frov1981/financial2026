@@ -82,10 +82,12 @@ export const updateCategoryFormPage: RequestHandler = async (req: Request, res: 
 
   const category = await repo.findOne({
     where: { id: categoryId, user: { id: authReq.user.id } },
-    relations: ['parent'] // muy importante para traer el parent
+    relations: ['parent']
   })
 
-  if (!category) return res.redirect('/categories')
+  if (!category) {
+    return res.redirect('/categories')
+  }
 
   res.render('layouts/main', {
     title: 'Editar Categoría',
@@ -106,29 +108,31 @@ export const updateCategoryFormPage: RequestHandler = async (req: Request, res: 
 
 export const deleteCategoryFormPage: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
-  const txId = Number(req.params.id)
+  const categoryId = Number(req.params.id)
   const mode = 'delete'
 
   const repo = AppDataSource.getRepository(Category)
   const parentCategories = await getActiveParentCategoriesByUser(authReq)
 
-  const tx = await repo.findOne({
-    where: { id: txId, user: { id: authReq.user.id } },
-    relations: ['parent'] // traer parent
+  const category = await repo.findOne({
+    where: { id: categoryId, user: { id: authReq.user.id } },
+    relations: ['parent']
   })
 
-  if (!tx) return res.redirect('/categories')
+  if (!category) {
+    return res.redirect('/categories')
+  }
 
   res.render('layouts/main', {
     title: 'Eliminar Categoría',
     view: 'pages/categories/form',
     category: {
-      id: tx.id,
-      name: tx.name,
-      type: tx.type,
-      is_active: tx.is_active,
-      parent: tx.parent || null,
-      is_parent: !tx.parent
+      id: category.id,
+      name: category.name,
+      type: category.type,
+      is_active: category.is_active,
+      parent: category.parent || null,
+      is_parent: !category.parent
     },
     parentCategories,
     errors: {},
