@@ -1,9 +1,9 @@
 import { Request, Response } from 'express'
 import { IsNull, MoreThan } from 'typeorm'
-import { AppDataSource } from '../config/datasource'
-import { AuthCode } from '../entities/AuthCode.entity'
-import { compareCode } from '../utils/auth.code.util'
-import { logger } from '../utils/logger.util'
+import { AppDataSource } from '../../config/datasource'
+import { AuthCode } from '../../entities/AuthCode.entity'
+import { compareCode } from '../../utils/auth.code.util'
+import { logger } from '../../utils/logger.util'
 
 export const show2FA = (req: Request, res: Response) => {
   if (!(req.session as any)?.pending2FAUserId) {

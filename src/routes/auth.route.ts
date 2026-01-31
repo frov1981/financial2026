@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { show2FA, verify2FA } from '../controllers/2fa.controller'
+import { show2FA, verify2FA } from '../controllers/home/2fa.controller'
 
 const router = Router()
 

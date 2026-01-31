@@ -62,8 +62,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 /* =======================
    Routes
 ======================= */
-app.use('/', sessionAuthMiddleware, homeRoutes)
 app.use('/', authRoutes)
+app.use('/', sessionAuthMiddleware, homeRoutes)
 app.use('/api', sessionAuthMiddleware, apiRoutes)
 app.use('/accounts', sessionAuthMiddleware, accountRoutes)
 app.use('/categories', sessionAuthMiddleware, categoryRoutes)
