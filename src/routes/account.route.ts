@@ -1,13 +1,26 @@
 import { Router } from 'express'
-import { accountsPage, deleteAccountFormPage, insertAccountFormPage, saveAccount, updateAccountFormPage, updateAccountStatusFormPage } from '../controllers/account/account.controller'
+import {
+    apiForGettingAccounts,
+    apiForSavingAccount,
+    routeToFormChangeStatusAccount,
+    routeToFormDeleteAccount,
+    routeToFormInsertAccount,
+    routeToFormUpdateAccount,
+    routeToPageAccount
+} from '../controllers/account/account.controller'
 
 const router = Router()
 
-router.get('/', accountsPage)
-router.get('/insert', insertAccountFormPage)
-router.get('/update/:id', updateAccountFormPage)
-router.get('/delete/:id', deleteAccountFormPage)
-router.get('/status/:id', updateAccountStatusFormPage)
-router.post('/', saveAccount)
+/*Eventos de acción */
+router.get('/list', apiForGettingAccounts)
+router.post('/', apiForSavingAccount)
+
+/*Eventos de enrutamiento */
+router.get('/', routeToPageAccount)
+router.get('/insert', routeToFormInsertAccount)
+router.get('/update/:id', routeToFormUpdateAccount)
+router.get('/delete/:id', routeToFormDeleteAccount)
+router.get('/status/:id', routeToFormChangeStatusAccount)
+
 
 export default router

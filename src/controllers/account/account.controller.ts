@@ -1,13 +1,12 @@
-// controllers/account.controller.ts
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/datasource'
 import { Account } from '../../entities/Account.entity'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
 import { recalculateAllAccountBalances } from './account.controller.auxiliar'
-export { saveAccount } from './account.controller.saving'
+export { saveAccount as apiForSavingAccount } from './account.controller.saving'
 
-export const listAccountsAPI: RequestHandler = async (req: Request, res: Response) => {
+export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 
   try {
@@ -59,9 +58,21 @@ export const recalculateBalancesAPI: RequestHandler = async (req: Request, res: 
   }
 }
 
-export const insertAccountFormPage: RequestHandler = async (req: Request, res: Response) => {
+export const routeToPageAccount = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
+
+  res.render(
+    'layouts/main',
+    {
+      title: 'Cuentas',
+      view: 'pages/accounts/index',
+      USER_ID: authReq.user?.id || 'guest'
+    })
+}
+
+export const routeToFormInsertAccount: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
+  const authReq = req as AuthRequest
 
   res.render(
     'layouts/main',
@@ -74,18 +85,21 @@ export const insertAccountFormPage: RequestHandler = async (req: Request, res: R
     })
 }
 
-export const updateAccountFormPage: RequestHandler = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-  const txId = Number(req.params.id)
+export const routeToFormUpdateAccount: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'update'
+  const authReq = req as AuthRequest
+  const accountId = Number(req.params.id)
 
-  const repo = AppDataSource.getRepository(Account)
+  if (!Number.isInteger(accountId) || accountId <= 0) {
+    return res.redirect('/accounts')
+  }
 
-  const tx = await repo.findOne({
-    where: { id: txId, user: { id: authReq.user.id } },
+  const repoAccount = AppDataSource.getRepository(Account)
+  const account = await repoAccount.findOne({
+    where: { id: accountId, user: { id: authReq.user.id } },
   })
 
-  if (!tx) {
+  if (!account) {
     return res.redirect('/accounts')
   }
 
@@ -95,27 +109,30 @@ export const updateAccountFormPage: RequestHandler = async (req: Request, res: R
       title: 'Editar Cuenta',
       view: 'pages/accounts/form',
       account: {
-        id: tx.id,
-        type: tx.type,
-        name: tx.name
+        id: account.id,
+        type: account.type,
+        name: account.name
       },
       errors: {},
       mode
     })
 }
 
-export const deleteAccountFormPage: RequestHandler = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-  const txId = Number(req.params.id)
+export const routeToFormDeleteAccount: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'delete'
+  const authReq = req as AuthRequest
+  const accountId = Number(req.params.id)
 
-  const repo = AppDataSource.getRepository(Account)
+  if (!Number.isInteger(accountId) || accountId <= 0) {
+    return res.redirect('/accounts')
+  }
 
-  const tx = await repo.findOne({
-    where: { id: txId, user: { id: authReq.user.id } },
+  const repoAccount = AppDataSource.getRepository(Account)
+  const account = await repoAccount.findOne({
+    where: { id: accountId, user: { id: authReq.user.id } },
   })
 
-  if (!tx) {
+  if (!account) {
     return res.redirect('/accounts')
   }
 
@@ -125,27 +142,30 @@ export const deleteAccountFormPage: RequestHandler = async (req: Request, res: R
       title: 'Eliminar Cuenta',
       view: 'pages/accounts/form',
       account: {
-        id: tx.id,
-        type: tx.type,
-        name: tx.name
+        id: account.id,
+        type: account.type,
+        name: account.name
       },
       errors: {},
       mode
     })
 }
 
-export const updateAccountStatusFormPage: RequestHandler = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-  const txId = Number(req.params.id)
+export const routeToFormChangeStatusAccount: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'status'
+  const authReq = req as AuthRequest
+  const accountId = Number(req.params.id)
 
-  const repo = AppDataSource.getRepository(Account)
+  if (!Number.isInteger(accountId) || accountId <= 0) {
+    return res.redirect('/accounts')
+  }
 
-  const tx = await repo.findOne({
-    where: { id: txId, user: { id: authReq.user.id } },
+  const repoAccount = AppDataSource.getRepository(Account)
+  const account = await repoAccount.findOne({
+    where: { id: accountId, user: { id: authReq.user.id } },
   })
 
-  if (!tx) {
+  if (!account) {
     return res.redirect('/accounts')
   }
 
@@ -155,24 +175,12 @@ export const updateAccountStatusFormPage: RequestHandler = async (req: Request, 
       title: 'Cambiar Estado de Cuenta',
       view: 'pages/accounts/form',
       account: {
-        id: tx.id,
-        type: tx.type,
-        name: tx.name,
-        is_active: tx.is_active
+        id: account.id,
+        type: account.type,
+        name: account.name,
+        is_active: account.is_active
       },
       errors: {},
       mode
-    })
-}
-
-export const accountsPage = (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-
-  res.render(
-    'layouts/main',
-    {
-      title: 'Cuentas',
-      view: 'pages/accounts/index',
-      USER_ID: authReq.user?.id || 'guest'
     })
 }

@@ -9,19 +9,12 @@ import { getActiveParentCategoriesByUser } from './category.controller.auxiliar'
 export const saveCategory: RequestHandler = async (req: Request, res: Response) => {
     const authReq = req as AuthRequest
     const repo = AppDataSource.getRepository(Category)
-
     const parentCategories = await getActiveParentCategoriesByUser(authReq)
 
     const isParent = req.body.is_parent === 'true'
-    const selectedParent = !isParent
-        ? parentCategories.find(c => c.id === Number(req.body.parent_id)) || null
-        : null
+    const selectedParent = !isParent? parentCategories.find(c => c.id === Number(req.body.parent_id)) || null : null
 
-    const txId = req.body.id
-        ? Number(req.body.id)
-        : req.params.id
-            ? Number(req.params.id)
-            : undefined
+    const txId = req.body.id ? Number(req.body.id) : req.params.id ? Number(req.params.id) : undefined
 
     const action = req.body.action || 'save'
 
