@@ -88,7 +88,6 @@ function getParentBackgroundColor(index, total) {
   return `hsl(140, 35%, ${lightness}%)`
 }
 
-
 /* ============================
    5. Render helpers
 ============================ */

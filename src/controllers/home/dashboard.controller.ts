@@ -1,6 +1,6 @@
 import { Request, RequestHandler, Response } from 'express'
 import { AuthRequest } from '../../types/AuthRequest'
-import { getGlobalKPIs, getLastSixMonthsChartData, getLastSixMonthsKPIs } from './dashboard.controller.auxiliar'
+import { getGlobalKPIs, getLastSixMonthsChartData, getLastSixMonthsKPIs, getLastSixYearsChartData } from './dashboard.controller.auxiliar'
 
 export const listLastSixMonthsKPIsAPI: RequestHandler = async (
     req: Request, res: Response
@@ -10,9 +10,10 @@ export const listLastSixMonthsKPIsAPI: RequestHandler = async (
 
     try {
         const lastSixMonthsChartData = await getLastSixMonthsChartData(authReq)
+        const lastSixYearsChartData = await getLastSixYearsChartData(authReq)
         const kpis = await getLastSixMonthsKPIs(authReq)
         const globalKpis = await getGlobalKPIs(authReq)
-        res.json({ lastSixMonthsChartData, kpis, globalKpis })
+        res.json({ lastSixMonthsChartData, lastSixYearsChartData, kpis, globalKpis })
 
     } catch (error) {
         console.log(error)

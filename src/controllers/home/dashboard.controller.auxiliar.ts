@@ -74,6 +74,76 @@ export const getLastSixMonthsChartData = async (authReq: AuthRequest) => {
 }
 
 /* ============================================================================
+   Servicio: Resumen últimos 6 años (ingresos / egresos / balance)
+============================================================================ */
+export const getLastSixYearsChartData = async (authReq: AuthRequest) => {
+  const userId = authReq.user.id
+  const txRepo = AppDataSource.getRepository(Transaction)
+
+  /* ============================
+     Rango de fechas
+  ============================ */
+  const endDate = new Date()
+  const startDate = new Date()
+  startDate.setFullYear(startDate.getFullYear() - 5)
+  startDate.setMonth(0)
+  startDate.setDate(1)
+
+  /* ============================
+     Query agregada por año (MySQL)
+  ============================ */
+  const rows = await txRepo
+    .createQueryBuilder('t')
+    .select([
+      "YEAR(t.date) AS year",
+      "SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) AS income",
+      "SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense"
+    ])
+    .where('t.user_id = :userId', { userId })
+    .andWhere('t.type IN (:...types)', { types: ['income', 'expense'] })
+    .andWhere('t.date BETWEEN :start AND :end', {
+      start: startDate,
+      end: endDate
+    })
+    .groupBy('YEAR(t.date)')
+    .orderBy('YEAR(t.date)', 'ASC')
+    .getRawMany()
+
+  /* ============================
+     Normalización de años
+  ============================ */
+  const labels: string[] = []
+  const income: number[] = []
+  const expense: number[] = []
+  const balance: number[] = []
+
+  const cursor = new Date(startDate)
+
+  while (cursor <= endDate) {
+
+    const key = cursor.getFullYear()
+    const row = rows.find(r => Number(r.year) === key)
+
+    const inc = row ? Number(row.income) : 0
+    const exp = row ? Number(row.expense) : 0
+
+    labels.push(String(key))
+    income.push(inc)
+    expense.push(exp)
+    balance.push(inc - exp)
+
+    cursor.setFullYear(cursor.getFullYear() + 1)
+  }
+
+  return {
+    labels,
+    income,
+    expense,
+    balance
+  }
+}
+
+/* ============================================================================
    KPIs últimos 6 meses
 ============================================================================ */
 export const getLastSixMonthsKPIs = async (authReq: AuthRequest) => {

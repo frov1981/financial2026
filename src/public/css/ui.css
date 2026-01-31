@@ -1,3 +1,49 @@
+:root {
+  --ui-white: #ffffff;
+  --ui-gray-900: #111827;
+  --ui-gray-700: #374151;
+  --ui-gray-500: #6b7280;
+  --ui-gray-300: #d1d5db;
+  --ui-gray-200: #e5e7eb;
+  --ui-gray-100: #f3f4f6;
+  --ui-gray-50: #f9fafb;
+
+  --ui-blue-50: #eff6ff;
+  --ui-blue-100: #dbeafe;
+  --ui-blue-200: #bfdbfe;
+  --ui-blue-600: #2563eb;
+  --ui-blue-700: #1d4ed8;
+
+  --ui-green-50: #f0fdf4;
+  --ui-green-100: #dcfce7;
+  --ui-green-300: #86efac;
+  --ui-green-600: #047857;
+  --ui-green-700: #065f46;
+  --ui-green-800: #166534;
+
+  --ui-red-50: #fef2f2;
+  --ui-red-200: #fee2e2;
+  --ui-red-300: #fca5a5;
+  --ui-red-700: #b91c1c;
+  --ui-red-800: #991b1b;
+
+  --ui-indigo-100: #e0e7ff;
+  --ui-indigo-300: #a5b4fc;
+  --ui-indigo-800: #3730a3;
+
+  --ui-purple-50: #faf5ff;
+  --ui-purple-100: #ede9fe;
+  --ui-purple-300: #c4b5fd;
+  --ui-purple-800: #4c1d95;
+
+  --ui-lime-100: #dcedc8;
+  --ui-lime-200: #c5e1a5;
+  --ui-lime-700: #558b2f;
+
+  --ui-orange-700: #c2410c;
+}
+
+
 /* =========================================================
    UI GLOBAL – MOBILE FIRST
    Usar en todas las vistas
@@ -66,21 +112,21 @@
 /* Variantes */
 
 .ui-btn-default {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--ui-gray-200);
+  color: var(--ui-gray-900);
 }
 
 .ui-btn-default:hover {
-  background: #d1d5db;
+  background: var(--ui-gray-300);
 }
 
 .ui-btn-primary {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--ui-blue-600);
+  color: var(--ui-white);
 }
 
 .ui-btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--ui-blue-700);
 }
 
 /* Texto responsive */
@@ -109,7 +155,7 @@
   width: 100%;
   padding-left: 2.5rem;
   padding-right: 2.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--ui-gray-300);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   box-sizing: border-box;
@@ -117,7 +163,7 @@
 
 .ui-search input:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--ui-blue-600);
 }
 
 /* Botones del search */
@@ -146,7 +192,7 @@
 
 .ui-table-wrapper {
   overflow-x: auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ui-gray-200);
   border-radius: 0.5rem;
 }
 
@@ -156,17 +202,17 @@
 }
 
 .ui-table th {
-  background: #f9fafb;
+  background: var(--ui-gray-50);
   font-size: 0.875rem;
   font-weight: 500;
   text-align: left;
-  color: #374151;
+  color: var(--ui-gray-700);
 }
 
 .ui-table th,
 .ui-table td {
   padding: 0.5rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--ui-gray-200);
   white-space: nowrap;
 }
 
@@ -175,15 +221,15 @@
 }
 
 .ui-table tr:hover {
-  background-color: #f3f4f6;
+  background-color: var(--ui-gray-100);
 }
 
 .ui-table tr.tr-selected {
-  background-color: #dbeafe;
+  background-color: var(--ui-blue-100);
 }
 
 .ui-table tr.tr-selected:hover {
-  background-color: #bfdbfe;
+  background-color: var(--ui-blue-200);
 }
 
 /* =========================================================
@@ -194,13 +240,13 @@
 .ui-td {
   padding: 0.4rem 0.7rem;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--ui-gray-700);
   white-space: nowrap;
 }
 
 .ui-th {
   font-weight: 500;
-  background: #f9fafb;
+  background: var(--ui-gray-50);
 }
 
 /* =========================================================
@@ -296,15 +342,15 @@
    ========================================================= */
 
 .account-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ui-gray-200);
   border-radius: 12px;
   padding: 12px;
-  background: #ffffff;
+  background: var(--ui-white);
 }
 
 .account-card.card-selected {
-  outline: 2px solid #2563eb;
-  background: #eff6ff;
+  outline: 2px solid var(--ui-blue-600);
+  background: var(--ui-blue-50);
 }
 
 .account-card.inactive {
@@ -343,7 +389,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--ui-gray-500);
 }
 
 .card-tags {
@@ -373,15 +419,15 @@
 }
 
 .category-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ui-gray-200);
   border-radius: 12px;
   padding: 12px;
-  background: #ffffff;
+  background: var(--ui-white);
 }
 
 .category-card.card-selected {
-  outline: 2px solid #2563eb;
-  background: #eff6ff;
+  outline: 2px solid var(--ui-blue-600);
+  background: var(--ui-blue-50);
 }
 
 .category-card.inactive {
@@ -415,9 +461,9 @@
   align-items: center;
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--ui-gray-200);
   font-size: 12px;
-  color: #6b7280;
+  color: var(--ui-gray-500);
 }
 
 .category-card .card-meta {
@@ -435,10 +481,10 @@
 }
 
 .category-group {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ui-gray-200);
   border-radius: 12px;
   padding: 8px;
-  background: #f9fafb;
+  background: var(--ui-gray-50);
   transition: background-color 0.3s ease;
 }
 
@@ -487,10 +533,10 @@
 }
 
 .loan-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ui-gray-200);
   border-radius: 12px;
   padding: 12px;
-  background: #ffffff;
+  background: var(--ui-white);
 }
 
 .loan-card + .loan-card {
@@ -505,7 +551,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border: 2px solid #2563eb;
+  border: 2px solid var(--ui-blue-600);
   border-radius: 12px;
   pointer-events: none;
 }
@@ -542,7 +588,7 @@
 
 .loan-card .card-sub {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--ui-gray-500);
 }
 
 .loan-card .card-actions {
@@ -555,7 +601,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--ui-gray-500);
   margin-top: 6px;
 }
 
@@ -584,10 +630,10 @@
 }
 
 .payment-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ui-gray-200);
   border-radius: 12px;
   padding: 12px;
-  background: #ffffff;
+  background: var(--ui-white);
 }
 
 .payment-card + .payment-card {
@@ -607,7 +653,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border: 2px solid #2563eb;
+  border: 2px solid var(--ui-blue-600);
   border-radius: 12px;
   pointer-events: none;
 }
@@ -643,7 +689,7 @@
 
 .payment-card .amount-sub {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--ui-gray-500);
 }
 
 .payment-card .card-footer {
@@ -651,7 +697,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--ui-gray-500);
   margin-top: 6px;
 }
 
@@ -661,10 +707,10 @@
 
 .transaction-card {
   position: relative;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ui-gray-200);
   border-radius: 10px;
   padding: 8px 10px;
-  background: #ffffff;
+  background: var(--ui-white);
 }
 
 .transaction-card + .transaction-card {
@@ -676,7 +722,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border: 2px solid #2563eb;
+  border: 2px solid var(--ui-blue-600);
   border-radius: 10px;
   pointer-events: none;
 }
@@ -687,15 +733,15 @@
 
 /* tipos */
 .transaction-card.income {
-  background: #f0fdf4;
+  background: var(--ui-green-50);
 }
 
 .transaction-card.expense {
-  background: #fef2f2;
+  background: var(--ui-red-50);
 }
 
 .transaction-card.transfer {
-  background: #faf5ff;
+  background: var(--ui-purple-50);
 }
 
 /* =========================
@@ -722,7 +768,7 @@
 
 .transaction-card .card-time {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--ui-gray-500);
 }
 
 .transaction-card .card-actions {
@@ -758,7 +804,7 @@
 
 .transaction-card .card-category {
   font-size: 10px; /* ~20% menos */
-  color: #6b7280;
+  color: var(--ui-gray-500);
   line-height: 1.2;
 }
 
@@ -766,7 +812,7 @@
   margin-top: 2px;
   font-size: 11px;
   font-style: italic;
-  color: #6b7280;
+  color: var(--ui-gray-500);
   line-height: 1.2;
 }
 
@@ -802,17 +848,17 @@
 }
 
 .amount-currency {
-  color: #6b7280;
+  color: var(--ui-gray-500);
   font-size: 0.75rem;
 }
 
 .amount-positive {
-  color: #065f46;
+  color: var(--ui-green-700);
   font-weight: 600;
 }
 
 .amount-negative {
-  color: #991b1b;
+  color: var(--ui-red-800);
   font-weight: 600;
 }
 
@@ -938,61 +984,61 @@ input[data-balance-final] {
 /* Transaction */
 
 .tx-income {
-  background-color: #dcfce7;
-  color: #166534;
-  border-color: #86efac;
+  background-color: var(--ui-green-100);
+  color: var(--ui-green-800);
+  border-color: var(--ui-green-300);
 }
 
 .tx-expense {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border-color: #fca5a5;
+  background-color: var(--ui-red-200);
+  color: var(--ui-red-800);
+  border-color: var(--ui-red-300);
 }
 
 .tx-transfer {
-  background-color: #e0e7ff;
-  color: #3730a3;
-  border-color: #a5b4fc;
+  background-color: var(--ui-indigo-100);
+  color: var(--ui-indigo-800);
+  border-color: var(--ui-indigo-300);
 }
 
 /* Account */
 
 .tag-cash {
-  background-color: #dcfce7;
-  color: #166534;
-  border-color: #86efac;
+  background-color: var(--ui-green-100);
+  color: var(--ui-green-800);
+  border-color: var(--ui-green-300);
 }
 
 .tag-bank {
-  background-color: #dbeafe;
+  background-color: var(--ui-blue-100);
   color: #1e3a8a;
   border-color: #93c5fd;
 }
 
 .tag-card {
-  background-color: #ede9fe;
-  color: #4c1d95;
-  border-color: #c4b5fd;
+  background-color: var(--ui-purple-100);
+  color: var(--ui-purple-800);
+  border-color: var(--ui-purple-300);
 }
 
 .tag-saving {
-  background-color: #dcedc8; /* fondo suave tipo verde claro para ahorros */
-  color: #558b2f;            /* texto verde más oscuro */
-  border-color: #c5e1a5;     /* borde a juego */
+  background-color: var(--ui-lime-100); /* fondo suave tipo verde claro para ahorros */
+  color: var(--ui-lime-700);            /* texto verde más oscuro */
+  border-color: var(--ui-lime-200);     /* borde a juego */
 }
 
 /* Status */
 
 .tag-active {
-  background-color: #dcfce7;
-  color: #166534;
-  border-color: #86efac;
+  background-color: var(--ui-green-100);
+  color: var(--ui-green-800);
+  border-color: var(--ui-green-300);
 }
 
 .tag-inactive {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border-color: #fca5a5;
+  background-color: var(--ui-red-200);
+  color: var(--ui-red-800);
+  border-color: var(--ui-red-300);
 }
 
 @media (max-width: 639px) {
@@ -1002,4 +1048,111 @@ input[data-balance-final] {
     font-size: 0.6875rem;
     padding: 2px 10px;
   }
+}
+
+/* =========================================================
+   DASHBOARD / KPI CARDS
+   ========================================================= */
+
+/* Card base */
+.ui-card {
+  background: var(--ui-white);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+/* Header clickeable */
+.ui-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ui-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ui-gray-900);
+}
+
+/* Icono de colapso */
+.ui-card-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: var(--ui-gray-700);
+}
+
+/* Body */
+.ui-card-body {
+  padding: 0 1.25rem 1.25rem 1.25rem;
+}
+
+/* Compatibilidad con tu JS actual */
+.ui-card-body.hidden {
+  display: none;
+}
+
+/* =========================================================
+   KPI GRID
+   ========================================================= */
+
+.ui-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .ui-kpi-grid.cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ui-kpi-grid.cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* =========================================================
+   KPI ITEM
+   ========================================================= */
+
+.ui-kpi-item {
+  background: var(--ui-gray-50);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.ui-kpi-label {
+  font-size: 0.75rem;
+  color: var(--ui-gray-500);
+  margin-bottom: 0.25rem;
+}
+
+.ui-kpi-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ui-gray-900);
+}
+
+/* Variantes de color para valores */
+.ui-kpi-green {
+  color: var(--ui-green-600);
+}
+
+.ui-kpi-red {
+  color: var(--ui-red-700);
+}
+
+.ui-kpi-blue {
+  color: var(--ui-blue-700);
+}
+
+.ui-kpi-orange {
+  color: var(--ui-orange-700);
 }
