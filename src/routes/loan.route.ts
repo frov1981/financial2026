@@ -1,16 +1,25 @@
 import { Router } from "express"
-import { deleteLoanFormPage, insertLoanFormPage, loansPage, updateLoanFormPage } from "../controllers/loan/loan.controller"
-import { saveLoan } from "../controllers/loan/loan.controller.saving"
+import {
+    apiForGettingLoans,
+    apiForSavingLoan,
+    routeToFormDeleteLoan,
+    routeToFormInsertLoan,
+    routeToFormUpdateLoan,
+    routeToPageLoan
+} from "../controllers/loan/loan.controller"
 import { paymentsPage } from "../controllers/payment/payment.controller"
 
 const router = Router()
 
-router.get('/', loansPage)
-router.get('/insert', insertLoanFormPage)
-router.get('/update/:id', updateLoanFormPage)
-router.get('/delete/:id', deleteLoanFormPage)
-router.post('/', saveLoan)
+/*Eventos de acción */
+router.get('/list', apiForGettingLoans) 
+router.post('/', apiForSavingLoan)
 
+/*Eventos de enrutamiento */
+router.get('/', routeToPageLoan)
+router.get('/insert', routeToFormInsertLoan)
+router.get('/update/:id', routeToFormUpdateLoan)
+router.get('/delete/:id', routeToFormDeleteLoan)
 router.get('/:id', paymentsPage)
 
 export default router

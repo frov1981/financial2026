@@ -18,7 +18,7 @@
 /* =========================================================
 1. Constantes globales
 ========================================================= */
-const API_BASE = '/api/loans'
+const API_BASE = '/loans/list'
 const FILTER_KEY = `loans.filters.${window.USER_ID}`
 const SELECTED_KEY = `loans.selected.${window.USER_ID}`
 const SCROLL_KEY = `loans.scroll.${window.USER_ID}`

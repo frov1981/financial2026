@@ -6,11 +6,12 @@ import { logger } from "../../utils/logger.util"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
 import { getActiveParentLoansByUser } from './loan.controller.auxiliar'
+export { saveLoan as apiForSavingLoan } from './loan.controller.saving'
 
 /* ============================================================================
-   API: Listar préstamos con parent y ordenados por parent.name y loan.name
+   API: Listar préstamos con parent y ordenados por parent.name y loan.name 
 ============================================================================ */
-export const listLoansAPI: RequestHandler = async (req: Request, res: Response) => {
+export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 
   try {
@@ -57,10 +58,23 @@ export const listLoansAPI: RequestHandler = async (req: Request, res: Response) 
     res.status(500).json({ error: 'Error al listar préstamos' })
   }
 }
-
-export const insertLoanFormPage: RequestHandler = async (req: Request, res: Response) => {
+export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => {
   const authReq = req as AuthRequest
+
+  res.render(
+    'layouts/main',
+    {
+      title: 'Préstamos',
+      view: 'pages/loans/index',
+      disbursement_accounts: [],
+      USER_ID: authReq.user?.id || 'guest'
+    })
+}
+
+
+export const routeToFormInsertLoan: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
+  const authReq = req as AuthRequest
   const defaultDate = new Date()
   const disbursement_accounts = await getActiveAccountsByUser(authReq)
   const parentLoans = await getActiveParentLoansByUser(authReq)
@@ -83,18 +97,22 @@ export const insertLoanFormPage: RequestHandler = async (req: Request, res: Resp
     })
 }
 
-export const updateLoanFormPage: RequestHandler = async (req: Request, res: Response) => {
+export const routeToFormUpdateLoan: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'update'
   const authReq = req as AuthRequest
   const loanId = Number(req.params.id)
-  const mode = 'update'
 
-  const repo = AppDataSource.getRepository(Loan)
+  if (!Number.isInteger(loanId) || loanId <= 0) {
+    return res.redirect('/loans')
+  }
+
   const disbursement_accounts = await getActiveAccountsByUser(authReq)
   const parentLoans = await getActiveParentLoansByUser(authReq)
 
-  const loan = await repo.findOne({
+  const repoLoan = AppDataSource.getRepository(Loan)
+  const loan = await repoLoan.findOne({
     where: { id: loanId, user: { id: authReq.user.id } },
-    relations: ['disbursement_account', 'parent']
+    relations: { disbursement_account: true, parent: true }
   })
 
   if (!loan) {
@@ -126,18 +144,22 @@ export const updateLoanFormPage: RequestHandler = async (req: Request, res: Resp
     })
 }
 
-export const deleteLoanFormPage: RequestHandler = async (req: Request, res: Response) => {
+export const routeToFormDeleteLoan: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'delete'
   const authReq = req as AuthRequest
   const loanId = Number(req.params.id)
-  const mode = 'delete'
 
-  const repo = AppDataSource.getRepository(Loan)
+  if (!Number.isInteger(loanId) || loanId <= 0) {
+    return res.redirect('/loans')
+  }
+
   const disbursement_accounts = await getActiveAccountsByUser(authReq)
   const parentLoans = await getActiveParentLoansByUser(authReq)
 
-  const loan = await repo.findOne({
+  const repoLoan = AppDataSource.getRepository(Loan)
+  const loan = await repoLoan.findOne({
     where: { id: loanId, user: { id: authReq.user.id } },
-    relations: ['disbursement_account', 'parent']
+    relations: { disbursement_account: true, parent: true }
   })
 
   if (!loan) {
@@ -168,15 +190,3 @@ export const deleteLoanFormPage: RequestHandler = async (req: Request, res: Resp
     })
 }
 
-export const loansPage: RequestHandler = (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-
-  res.render(
-    'layouts/main',
-    {
-      title: 'Préstamos',
-      view: 'pages/loans/index',
-      disbursement_accounts: [],
-      USER_ID: authReq.user?.id || 'guest'
-    })
-}
