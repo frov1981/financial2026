@@ -1,4 +1,3 @@
-// controllers/category.controller.ts 
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/datasource'
 import { Category } from '../../entities/Category.entity'
@@ -93,6 +92,7 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
   if (!Number.isInteger(categoryId) || categoryId <= 0) {
     return res.redirect('/categories')
   }
+  
   const repoCategory = AppDataSource.getRepository(Category)
   const category = await repoCategory.findOne({
     where: { id: categoryId, user: { id: authReq.user.id } },

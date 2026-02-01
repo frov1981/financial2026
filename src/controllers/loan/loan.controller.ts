@@ -8,9 +8,6 @@ import { getActiveAccountsByUser } from '../transaction/transaction.controller.a
 import { getActiveParentLoansByUser } from './loan.controller.auxiliar'
 export { saveLoan as apiForSavingLoan } from './loan.controller.saving'
 
-/* ============================================================================
-   API: Listar préstamos con parent y ordenados por parent.name y loan.name 
-============================================================================ */
 export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
 

@@ -397,6 +397,7 @@
   gap: 6px;
   align-items: center;
 }
+
 /* ============================
    CATEGORIES – MOBILE CARDS
 ============================ */
@@ -511,11 +512,8 @@
 .category-group.collapsed .category-group-body {
   display: none;
 }
-
-
-
 /* =========================================================
-   LOANS - MOBILE CARDS
+   LOANS - MOBILE CARDS (CON GROUP / PARENTS)
    ========================================================= */
 
 .loans-mobile {
@@ -524,7 +522,10 @@
 
 @media (max-width: 768px) {
   .loans-mobile {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px;
   }
 
   .ui-table-wrapper {
@@ -537,13 +538,6 @@
   border-radius: 12px;
   padding: 12px;
   background: var(--ui-white);
-}
-
-.loan-card + .loan-card {
-  margin-top: 10px;
-}
-
-.loan-card {
   position: relative;
 }
 
@@ -600,16 +594,56 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ui-gray-200);
   font-size: 12px;
   color: var(--ui-gray-500);
-  margin-top: 6px;
 }
 
 .loan-card .card-tags {
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
 }
+
+/* =========================================================
+   LOAN GROUP (PARENT)
+   ========================================================= */
+
+.loan-group {
+  border: 1px solid var(--ui-gray-200);
+  border-radius: 12px;
+  padding: 8px;
+  background: var(--ui-gray-50);
+  transition: background-color 0.3s ease;
+}
+
+.loan-group-header {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.loan-group-header .group-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.loan-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.loan-group.collapsed .loan-group-body {
+  display: none;
+}
+
 
 /* =========================================================
    PAYMENTS - MOBILE CARDS

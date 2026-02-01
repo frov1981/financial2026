@@ -1,4 +1,3 @@
-// controllers/category.controller.validator.ts
 import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/datasource'
 import { Category } from '../../entities/Category.entity'

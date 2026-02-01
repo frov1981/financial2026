@@ -196,7 +196,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
       account.balance -= existing.total_amount
       await queryRunner.manager.save(account)
-      
+
       await queryRunner.manager.delete(Loan, existing.id)
 
       if (existing.transaction?.id) {
