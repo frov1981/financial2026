@@ -3,7 +3,8 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  CreateDateColumn
+  CreateDateColumn,
+  JoinColumn
 } from 'typeorm'
 import { User } from './User.entity'
 
@@ -13,6 +14,7 @@ export class AuthCode {
   id!: number
 
   @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_authcodes_user' })
   user!: User
 
   @Column()

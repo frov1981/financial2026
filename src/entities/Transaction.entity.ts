@@ -1,13 +1,12 @@
 import { Transform } from 'class-transformer'
-import { IsIn, IsNotEmpty, IsNumber, IsPositive, MaxLength, Validate, ValidateIf } from 'class-validator'
+import { IsIn, IsNotEmpty, IsNumber, IsPositive, MaxLength, ValidateIf } from 'class-validator'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/decimal.transformer'
-import { NotSameAccount } from '../validators/notSameAccount.validator'
 import { Account } from './Account.entity'
 import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
-import { User } from './User.entity'
 import { LoanPayment } from './LoanPayment.entity'
+import { User } from './User.entity'
 
 @Entity('transactions')
 export class Transaction {
@@ -31,13 +30,13 @@ export class Transaction {
   account!: Account
 
   @ManyToOne(() => Account, { nullable: true })
-  @JoinColumn({ name: 'to_account_id' })
+  @JoinColumn({ name: 'to_account_id', foreignKeyConstraintName: 'fk_transactions_to_account' })
   @ValidateIf(t => t.type === 'transfer')
   @IsNotEmpty({ message: 'La cuenta destino es obligatoria' })
   to_account!: Account | null
 
   @ManyToOne(() => Category, { nullable: true })
-  @JoinColumn({ name: 'category_id' })
+  @JoinColumn({ name: 'category_id', foreignKeyConstraintName: 'fk_transactions_categories' })
   @ValidateIf(t => t.type !== 'transfer')
   @IsNotEmpty({ message: 'La categoría es obligatoria' })
   category!: Category | null
@@ -65,6 +64,4 @@ export class Transaction {
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
 
-  @Validate(NotSameAccount)
-  private _notSameAccountValidation!: boolean
 }

@@ -1,5 +1,5 @@
-import { IsBoolean, IsIn, IsNotEmpty } from 'class-validator'
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { IsBoolean, IsNotEmpty } from 'class-validator'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, Unique } from 'typeorm'
 import { DecimalTransformer } from '../config/decimal.transformer'
 import { Account } from './Account.entity'
 import { LoanPayment } from './LoanPayment.entity'
@@ -7,6 +7,7 @@ import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
 
 @Entity('loans')
+//@Unique('UQ_loans_transaction', ['transaction'])
 export class Loan {
 
   @PrimaryGeneratedColumn()
@@ -57,7 +58,7 @@ export class Loan {
   transaction!: Transaction
 
   @ManyToOne(() => Loan, loan => loan.children, { nullable: true })
-  @JoinColumn({ name: 'parent_id' })
+  @JoinColumn({ name: 'parent_id', foreignKeyConstraintName: 'fk_loans_parent' })
   parent!: Loan | null
 
   @OneToMany(() => Loan, loan => loan.parent)

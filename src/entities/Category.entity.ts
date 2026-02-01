@@ -22,14 +22,14 @@ export class Category {
   type!: 'income' | 'expense'
 
   @Column({ default: true })
-  @IsBoolean({ message: 'El estado debe ser true o false' }) 
+  @IsBoolean({ message: 'El estado debe ser true o false' })
   is_active!: boolean
 
   @OneToMany(() => Transaction, transaction => transaction.category)
   transactions!: Transaction[]
 
   @ManyToOne(() => Category, category => category.children, { nullable: true })
-  @JoinColumn({ name: 'parent_id' })
+  @JoinColumn({ name: 'parent_id', foreignKeyConstraintName: 'fk_categories_parent' })
   parent!: Category | null
 
   @OneToMany(() => Category, category => category.parent)

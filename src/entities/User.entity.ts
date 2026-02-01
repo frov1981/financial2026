@@ -1,16 +1,17 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique } from 'typeorm'
 import { Account } from './Account.entity'
 import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
 import { Transaction } from './Transaction.entity'
 
 @Entity('users')
+//@Unique('UQ_users_email', ['email'])
 export class User {
 
   @PrimaryGeneratedColumn()
   id!: number
 
-  @Column({ unique: true })
+  @Column({ unique: true,  })
   email!: string
 
   @Column()
