@@ -15,7 +15,7 @@
 <div class="ui-card">
 
   <div class="ui-card-header" onclick="toggleCard('global-kpis')">
-    <h2 class="ui-card-title">KPIs Globales</h2>
+    <h2 class="ui-card-title">KPIs Balances</h2>
     <span id="icon-global-kpis" class="ui-card-toggle">▾</span>
   </div>
 
@@ -23,34 +23,34 @@
 
     <div class="ui-kpi-grid cols-4">
       <div class="ui-kpi-item">
-        <p class="ui-kpi-label">Ingresos totales</p>
+        <p class="ui-kpi-label">Ingresos Totales</p>
         <p class="ui-kpi-value ui-kpi-green" id="kpi-total-income">–</p>
       </div>
 
       <div class="ui-kpi-item">
-        <p class="ui-kpi-label">Egresos totales</p>
+        <p class="ui-kpi-label">Egresos Totales</p>
         <p class="ui-kpi-value ui-kpi-red" id="kpi-total-expense">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Ahorros</p>
-        <p class="ui-kpi-value ui-kpi-blue" id="kpi-total-savings">–</p>
+        <p class="ui-kpi-value ui-kpi-green" id="kpi-total-savings">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Retiros</p>
-        <p class="ui-kpi-value ui-kpi-orange" id="kpi-total-withdrawals">–</p>
+        <p class="ui-kpi-value ui-kpi-red" id="kpi-total-withdrawals">–</p>
       </div>
     </div>
 
-    <div class="ui-kpi-grid cols-3" style="margin-top: 1rem;">
-      <div class="ui-kpi-item">
+    <div class="ui-kpi-grid cols-2" style="margin-top: 1rem;">
+      <div class="ui-kpi-item" style="display: none;">
         <p class="ui-kpi-label">Valor neto</p>
         <p class="ui-kpi-value" id="kpi-net-worth">–</p>
       </div>
 
       <div class="ui-kpi-item">
-        <p class="ui-kpi-label">Ahorro disponible</p>
+        <p class="ui-kpi-label">Ahorro Disponible</p>
         <p class="ui-kpi-value ui-kpi-blue" id="kpi-available-savings">–</p>
       </div>
 
@@ -69,7 +69,7 @@
 <div class="ui-card">
 
   <div class="ui-card-header" onclick="toggleCard('six-kpis')">
-    <h2 class="ui-card-title">KPIs últimos 6 meses</h2>
+    <h2 class="ui-card-title">KPIs Balances (últimos 6 meses)</h2>
     <span id="icon-six-kpis" class="ui-card-toggle">▾</span>
   </div>
 
@@ -109,7 +109,7 @@
 <div class="ui-card">
 
   <div class="ui-card-header" onclick="toggleCard('chart-six')">
-    <h2 class="ui-card-title">Gráfico últimos 6 Meses</h2>
+    <h2 class="ui-card-title">Ingresos y Egresos (últimos 6 meses)</h2>
     <span id="icon-chart-six" class="ui-card-toggle">▾</span>
   </div>
 
@@ -127,7 +127,7 @@
 <div class="ui-card">
 
   <div class="ui-card-header" onclick="toggleCard('chart-years')">
-    <h2 class="ui-card-title">Gráfico últimos 6 Años</h2>
+    <h2 class="ui-card-title">Ingresos y Egresos (últimos 6 años)</h2>
     <span id="icon-chart-years" class="ui-card-toggle">▾</span>
   </div>
 
@@ -137,6 +137,21 @@
     </div>
   </div>
 
+</div>
+
+<!-- ============================
+     CARD: GRÁFICO 6 AÑOS DE PRÉSTAMOS
+============================= -->
+<div class="ui-card">
+  <div class="ui-card-header" onclick="toggleCard('chart-loans')">
+    <h2 class="ui-card-title">Préstamos (últimos 6 años)</h2>
+    <span id="icon-chart-loans" class="ui-card-toggle">▾</span>
+  </div>
+  <div id="chart-loans" class="ui-card-body">
+    <div class="relative" style="height: 280px;">
+      <canvas id="loansAnnualChart"></canvas>
+    </div>
+  </div>
 </div>
 
 <script src="/js/indexes/home-index.js"></script>

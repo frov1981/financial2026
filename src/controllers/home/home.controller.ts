@@ -5,7 +5,7 @@ import { User } from '../../entities/User.entity'
 import { send2FACode } from '../../services/2fa.service'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
-import { getGlobalKPIs, getLastSixMonthsChartData, getLastSixMonthsKPIs, getLastSixYearsChartData } from './home.controller.auxiliar'
+import { getAnnualLoanSummary, getGlobalKPIs, getLastSixMonthsChartData, getLastSixMonthsKPIs, getLastSixYearsChartData } from './home.controller.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.userId) {
@@ -107,9 +107,10 @@ export const apiForGettingKpis: RequestHandler = async (
   try {
     const lastSixMonthsChartData = await getLastSixMonthsChartData(authReq)
     const lastSixYearsChartData = await getLastSixYearsChartData(authReq)
+    const lastSixYearLoanChartData = await getAnnualLoanSummary(authReq)
     const kpis = await getLastSixMonthsKPIs(authReq)
     const globalKpis = await getGlobalKPIs(authReq)
-    res.json({ lastSixMonthsChartData, lastSixYearsChartData, kpis, globalKpis })
+    res.json({ lastSixMonthsChartData, lastSixYearsChartData, lastSixYearLoanChartData, kpis, globalKpis })
 
   } catch (error) {
     logger.error('Error en apiForGettingKpis:', error)
