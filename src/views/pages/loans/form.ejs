@@ -1,14 +1,10 @@
 <div class="max-w-xl mx-auto">
-
   <h1 class="text-2xl font-semibold mb-6">
     <%= 
-      mode === 'insert'
-        ? 'Insertar Préstamo'
-        : mode === 'update'
-        ? 'Editar Préstamo'
-        : mode === 'delete'
-        ? 'Eliminar Préstamo'
-        : mode
+      mode === 'insert' ? 'Insertar Préstamo' : 
+      mode === 'update' ? 'Editar Préstamo' :
+      mode === 'delete' ? 'Eliminar Préstamo' : 
+      mode
     %>
   </h1>
 
@@ -20,10 +16,25 @@
       </div>
     <% } %>
 
-    <!-- ID -->
+    <!-- ID y acción -->
     <input type="hidden" name="id" value="<%= loan?.id || '' %>">
-    <input type="hidden" name="status" value="<%= loan?.status || 'active' %>">
     <input type="hidden" name="action" value="save">
+    <input type="hidden" name="status" value="<%= loan?.status || 'active' %>">
+
+    <!-- Checkbox Padre -->
+    <div class="mb-4">
+      <label class="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="is-parent-checkbox"
+          name="is_parent"
+          value="1"
+          <%= loan?.parent ? '' : loan?.is_parent ? 'checked' : '' %>
+          <%= mode === 'delete' ? 'disabled' : '' %>
+        >
+        Es préstamo padre?
+      </label>
+    </div>
 
     <!-- Nombre -->
     <div class="mb-4">
@@ -78,7 +89,11 @@
     </div>
 
     <!-- Cuenta de desembolso -->
-    <div class="mb-4" data-field="disbursement_account" data-autocomplete>
+    <div 
+      class="mb-4" 
+      data-field="disbursement_account" 
+      data-autocomplete>
+      
       <label class="block font-medium mb-1">Cuenta de desembolso</label>
 
       <div class="relative">
@@ -144,17 +159,71 @@
       <% } %>
     </div>
 
+    <!-- Préstamo Padre (Autocomplete) -->
+    <div
+      class="mb-4" 
+      id="parent-container" 
+      data-field="parent" 
+      data-autocomplete>
+
+      <label class="block font-medium mb-1">Préstamo Padre</label>
+
+      <input
+        type="text"
+        class="w-full border rounded px-3 py-2"
+        placeholder="Buscar préstamo…"
+        data-autocomplete-input
+        autocomplete="off"
+        value="<%= loan?.parent?.name || '' %>"
+        <%= mode === 'delete' ? 'readonly' : '' %>
+      >
+
+      <input
+        type="hidden"
+        name="parent_id"
+        data-autocomplete-hidden
+        value="<%= loan?.parent?.id || '' %>"
+      >
+ 
+      <% if (mode !== 'delete') { %>
+      <div class="relative">
+        <ul
+          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
+          data-autocomplete-list
+          data-active="1"
+        >
+          <% parentLoans.forEach(p => { %>
+            <li
+              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
+              data-autocomplete-item
+              data-id="<%= p.id %>"
+              data-label="<%= p.name %>"
+              data-balance="0"
+            >
+              <%= p.name %>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+      <% } %>
+
+      <% if (errors?.parent) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.parent %></p>
+      <% } %>
+    </div>
+
     <!-- Acciones -->
     <div class="flex justify-end gap-2">
-      <a href="/loans" class="px-4 py-2 bg-gray-200 rounded">
+      <a 
+        href="/loans" 
+        class="px-4 py-2 bg-gray-200 rounded">
         Cancelar
       </a>
 
       <% if (mode === 'delete') { %>
         <button
           class="px-4 py-2 bg-red-600 text-white rounded"
-          onclick="this.form.action.value='delete'"
-          >
+          onclick="this.form.action.value='delete'">
           Eliminar
         </button>
       <% } else { %>
@@ -168,4 +237,3 @@
 </div>
 
 <script src="/js/forms/loan-form.js"></script>
-<script src="/js/helpers/autocomplete-helper.js"></script>

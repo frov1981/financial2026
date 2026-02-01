@@ -20,15 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!typeContainer || !parentContainer || !checkbox) return
 
     if (checkbox.checked) {
-      // Ocultar visualmente
       typeContainer.style.display = 'none'
       parentContainer.style.display = 'none'
-
-      // Limpiar padre (regla válida)
       if (parentInputHidden) parentInputHidden.value = ''
       if (parentInputText) parentInputText.value = ''
-
-      // Asegurar que type SIEMPRE tenga valor
       ensureTypeSelected()
     } else {
       typeContainer.style.display = 'block'

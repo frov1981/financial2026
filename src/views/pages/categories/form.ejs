@@ -10,6 +10,7 @@
   </h1>
 
   <form method="post" action="/categories/">
+
     <% if (errors?.general) { %>
       <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
         <%= errors.general %>
@@ -82,7 +83,12 @@
     </div>
 
     <!-- Categoría Padre (Autocomplete) -->
-    <div class="mb-4" id="parent-container" data-field="parent" data-autocomplete>
+    <div 
+      class="mb-4" 
+      id="parent-container" 
+      data-field="parent" 
+      data-autocomplete>
+      
       <label class="block font-medium mb-1">Categoría Padre</label>
 
       <!-- Input de búsqueda -->
@@ -146,11 +152,22 @@
 
     <!-- Acciones -->
     <div class="flex justify-end gap-2">
-      <a href="/categories" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+      <a 
+        href="/categories" 
+        class="px-4 py-2 bg-gray-200 rounded">
+        Cancelar
+      </a>
+
       <% if (mode === 'delete') { %>
-        <button class="px-4 py-2 bg-red-600 text-white rounded" onclick="this.form.action.value='delete'">Eliminar</button>
+        <button 
+          class="px-4 py-2 bg-red-600 text-white rounded" 
+          onclick="this.form.action.value='delete'">
+          Eliminar
+        </button>
       <% } else { %>
-        <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">
+          Guardar
+        </button>
       <% } %>
     </div>
   </form>
