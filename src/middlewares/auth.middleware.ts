@@ -3,6 +3,7 @@ import { AppDataSource } from '../config/datasource'
 import { User } from '../entities/User.entity'
 import { AuthRequest } from '../types/AuthRequest'
 import express, { Request, Response, NextFunction } from 'express'
+import { logger } from '../utils/logger.util'
 
 export const authMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -54,7 +55,7 @@ export const authMiddleware: RequestHandler = async (req: Request, res: Response
 
     next()
   } catch (error) {
-    console.error('authMiddleware error:', error)
+    logger.error('Error en authMiddleware:', error)
     res.status(500).json({ error: 'Error interno de autenticación' })
   }
 }

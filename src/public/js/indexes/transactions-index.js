@@ -56,55 +56,7 @@ function rowClassByType(type) {
   if (type === 'transfer') return 'transfer'
   return ''
 }
-/*
-function formatDateTime(utcDate) {
-  const dt = luxon.DateTime
-    .fromISO(utcDate, { zone: 'utc' })
-    .setZone('America/Guayaquil')
 
-  return {
-    date: dt.toFormat('dd/MM/yyyy'),
-    time: dt.toFormat('HH:mm')
-  }
-}*/
-/*
-function formatDateTime(utcDate) {
-  const dt = luxon.DateTime
-    .fromJSDate(utcDate, { zone: 'utc' })
-    .setZone('America/Guayaquil')
-
-  return {
-    date: dt.toFormat('dd/MM/yyyy'),
-    time: dt.toFormat('HH:mm')
-  }
-}*/
-/*
-function formatDateTime(utcDate) {
-  const dt = luxon.DateTime
-    .fromISO(utcDate, { zone: 'utc' })
-    .setZone('America/Guayaquil')
-
-  return {
-    date: dt.toFormat('dd/MM/yyyy'),
-    time: dt.toFormat('HH:mm')
-  }
-}
-*//*
-function formatDateTime(utcDate) {
-  console.log(utcDate, typeof utcDate, utcDate instanceof Date)
-
-  const dt = luxon.DateTime
-    .fromSQL(utcDate, { zone: 'utc' })
-    .setZone('America/Guayaquil')
-
-  return {
-    date: dt.toFormat('dd/MM/yyyy'),
-    time: dt.toFormat('HH:mm')
-  }
-}*/
-/* ============================================================================
-   Formateo ISO UTC (con Z) hacia America/Guayaquil
-============================================================================ */
 /* ============================================================================
    Formateo ISO UTC (con Z) hacia America/Guayaquil
 ============================================================================ */

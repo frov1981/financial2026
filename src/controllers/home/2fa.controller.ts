@@ -66,8 +66,17 @@ export const verify2FA = async (req: Request, res: Response) => {
       }
 
       ; (req.session as any).userId = pendingUserId
-      res.redirect('/home')
+
+      req.session.save(err2 => {
+        if (err2) {
+          logger.error(err2)
+          return res.redirect('/login')
+        }
+
+        res.redirect('/home')
+      })
     })
+
   } catch (error) {
     logger.error('verify2FA error', error)
     res.render(

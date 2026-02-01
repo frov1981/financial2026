@@ -80,7 +80,15 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     await send2FACode(user)
       ; (req.session as any).pending2FAUserId = user.id
 
-    res.redirect('/2fa')
+    await new Promise<void>((resolve, reject) => {
+      req.session.save(err => {
+        if (err) reject(err)
+        else resolve()
+      })
+    })
+
+    return res.redirect('/2fa')
+
   } catch (error) {
     logger.error('Error en doLogin:', error)
     res.render(
@@ -92,20 +100,20 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
 }
 
 export const apiForGettingKpis: RequestHandler = async (
-    req: Request, res: Response
+  req: Request, res: Response
 ) => {
-    const authReq = req as AuthRequest
+  const authReq = req as AuthRequest
 
-    try {
-        const lastSixMonthsChartData = await getLastSixMonthsChartData(authReq)
-        const lastSixYearsChartData = await getLastSixYearsChartData(authReq)
-        const kpis = await getLastSixMonthsKPIs(authReq)
-        const globalKpis = await getGlobalKPIs(authReq)
-        res.json({ lastSixMonthsChartData, lastSixYearsChartData, kpis, globalKpis })
+  try {
+    const lastSixMonthsChartData = await getLastSixMonthsChartData(authReq)
+    const lastSixYearsChartData = await getLastSixYearsChartData(authReq)
+    const kpis = await getLastSixMonthsKPIs(authReq)
+    const globalKpis = await getGlobalKPIs(authReq)
+    res.json({ lastSixMonthsChartData, lastSixYearsChartData, kpis, globalKpis })
 
-    } catch (error) {
-        console.log(error)
-        res.json({ message: 'Error' })
-    }
+  } catch (error) {
+    logger.error('Error en apiForGettingKpis:', error)
+    res.json({ message: 'Error' })
+  }
 
 }

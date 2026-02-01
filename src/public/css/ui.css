@@ -608,10 +608,6 @@
   flex-wrap: wrap;
 }
 
-/* =========================================================
-   LOAN GROUP (PARENT)
-   ========================================================= */
-
 .loan-group {
   border: 1px solid var(--ui-gray-200);
   border-radius: 12px;
@@ -643,7 +639,6 @@
 .loan-group.collapsed .loan-group-body {
   display: none;
 }
-
 
 /* =========================================================
    PAYMENTS - MOBILE CARDS

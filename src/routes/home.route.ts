@@ -5,13 +5,14 @@ import {
     routeToPageHome,
     routeToPageLogin,
     routeToPageRoot
-} from '../controllers/home/home.controller'
+} from '../controllers/home/home.controller' 
+import { sessionAuthMiddleware } from '../middlewares/sessionAuth.middleware'
 
 const router = Router()
 
 /*Eventos de acción */
 router.post('/login', apiForValidatingLogin)
-router.get('/kpis', apiForGettingKpis)
+router.get('/kpis', sessionAuthMiddleware, apiForGettingKpis)
 
 /*Eventos de enrutamiento */
 router.get('/', routeToPageRoot)
