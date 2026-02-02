@@ -14,52 +14,52 @@
 ============================= -->
 <div class="ui-card">
 
-  <div class="ui-card-header" onclick="toggleCard('global-kpis')">
+  <div class="ui-card-header" onclick="toggleCard('kpis-global-balance')">
     <h2 class="ui-card-title">
       KPIs Balances
       <span class="subtitle">Global</span>
     </h2>
-    <span id="icon-global-kpis" class="ui-card-toggle">▾</span>
+    <span id="icon-kpis-global-balance" class="ui-card-toggle">▾</span>
   </div>
 
-  <div id="global-kpis" class="ui-card-body">
+  <div id="kpis-global-balance" class="ui-card-body">
 
     <div class="ui-kpi-grid cols-4">
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Ingresos Totales</p>
-        <p class="ui-kpi-value ui-kpi-green" id="kpi-total-income">–</p>
+        <p class="ui-kpi-value ui-kpi-green" id="kpis-global-balance-total-income">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Egresos Totales</p>
-        <p class="ui-kpi-value ui-kpi-red" id="kpi-total-expense">–</p>
+        <p class="ui-kpi-value ui-kpi-red" id="kpis-global-balance-total-expense">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Ahorros</p>
-        <p class="ui-kpi-value ui-kpi-green" id="kpi-total-savings">–</p>
+        <p class="ui-kpi-value ui-kpi-green" id="kpis-global-balance-total-savings">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Retiros</p>
-        <p class="ui-kpi-value ui-kpi-red" id="kpi-total-withdrawals">–</p>
+        <p class="ui-kpi-value ui-kpi-red" id="kpis-global-balance-total-withdrawals">–</p>
       </div>
     </div>
 
     <div class="ui-kpi-grid cols-2" style="margin-top: 1rem;">
       <div class="ui-kpi-item" style="display: none;">
         <p class="ui-kpi-label">Valor neto</p>
-        <p class="ui-kpi-value" id="kpi-net-worth">–</p>
+        <p class="ui-kpi-value" id="kpis-global-balance-net-worth">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Ahorro Disponible</p>
-        <p class="ui-kpi-value ui-kpi-blue" id="kpi-available-savings">–</p>
+        <p class="ui-kpi-value ui-kpi-blue" id="kpis-global-balance-available-savings">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Saldo neto</p>
-        <p class="ui-kpi-value" id="kpi-net-balance">–</p>
+        <p class="ui-kpi-value" id="kpis-global-balance-net-balance">–</p>
       </div>
     </div>
 
@@ -71,37 +71,38 @@
 ============================= -->
 <div class="ui-card">
 
-  <div class="ui-card-header" onclick="toggleCard('six-kpis')">
+  <div class="ui-card-header" onclick="toggleCard('kpis-last-6months-balance')">
     <h2 class="ui-card-title">
       KPIs Balances
       <span class="subtitle">Últimos 6 meses</span>
     </h2>
-    <span id="icon-six-kpis" class="ui-card-toggle">▾</span>
+    <span id="icon-kpis-last-6months-balance" class="ui-card-toggle">▾</span>
   </div>
 
-  <div id="six-kpis" class="ui-card-body">
+  <div id="kpis-last-6months-balance" class="ui-card-body">
 
     <div class="ui-kpi-grid cols-4">
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Ingresos</p>
-        <p class="ui-kpi-value ui-kpi-green" id="kpi-income">–</p>
+        <p class="ui-kpi-value ui-kpi-green" 
+        id="kpi-last-6months-total-income">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Egresos</p>
-        <p class="ui-kpi-value ui-kpi-red" id="kpi-expense">–</p>
+        <p class="ui-kpi-value ui-kpi-red" id="kpi-last-6months-total-expense">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Balance</p>
-        <p class="ui-kpi-value" id="kpi-balance">–</p>
+        <p class="ui-kpi-value" id="kpi-last-6months-balance">–</p>
       </div>
 
       <div class="ui-kpi-item">
         <p class="ui-kpi-label">Promedio Gasto Mensual</p>
         <p class="ui-kpi-value">
-          <span id="kpi-avg-expense">–</span>
-          <span class="text-sm ml-1" id="kpi-trend"></span>
+          <span id="kpi-last-6months-avg-expense">–</span>
+          <span class="text-sm ml-1" id="kpi-last-6months-trend"></span>
         </p>
       </div>
     </div>
@@ -114,17 +115,17 @@
 ============================= -->
 <div class="ui-card">
 
-  <div class="ui-card-header" onclick="toggleCard('chart-six')">
+  <div class="ui-card-header" onclick="toggleCard('chart-data-last-6months-balance')">
     <h2 class="ui-card-title">
       Tendencia de Ingresos y Egresos
       <span class="subtitle">Últimos 6 meses</span>
     </h2>
-    <span id="icon-chart-six" class="ui-card-toggle">▾</span>
+    <span id="icon-chart-data-last-6months-balance" class="ui-card-toggle">▾</span>
   </div>
 
-  <div id="chart-six" class="ui-card-body">
+  <div id="chart-data-last-6months-balance" class="ui-card-body">
     <div class="relative" style="height: 280px;">
-      <canvas id="lastSixMonthsChart"></canvas>
+      <canvas id="varChartDataLast6MonthsBalance"></canvas>
     </div>
   </div>
 
@@ -135,17 +136,17 @@
 ============================= -->
 <div class="ui-card">
 
-  <div class="ui-card-header" onclick="toggleCard('chart-years')">
+  <div class="ui-card-header" onclick="toggleCard('chart-data-last-6years-balance')">
     <h2 class="ui-card-title">
-      Tendencia de Ingresos y Egresos     
+      Tendencia de Ingresos y Egresos
       <span class="subtitle">Últimos 6 años</span>
     </h2>
-    <span id="icon-chart-years" class="ui-card-toggle">▾</span>
+    <span id="icon-chart-data-last-6years-balance" class="ui-card-toggle">▾</span>
   </div>
 
-  <div id="chart-years" class="ui-card-body">
+  <div id="chart-data-last-6years-balance" class="ui-card-body">
     <div class="relative" style="height: 280px;">
-      <canvas id="lastSixYearsChart"></canvas>
+      <canvas id="varChartDataLast6YearsBalance"></canvas>
     </div>
   </div>
 
@@ -155,14 +156,14 @@
      CARD: GRÁFICO 6 AÑOS DE PRÉSTAMOS
 ============================= -->
 <div class="ui-card">
-  <div class="ui-card-header" onclick="toggleCard('chart-loans')">
+  <div class="ui-card-header" onclick="toggleCard('chart-data-last-6years-loan')">
     <h2 class="ui-card-title">
       Tendencia de Préstamos
       <span class="subtitle">Últimos 6 años</span>
     </h2>
-    <span id="icon-chart-loans" class="ui-card-toggle">▾</span>
+    <span id="icon-chart-data-last-6years-loan" class="ui-card-toggle">▾</span>
   </div>
-  <div id="chart-loans" class="ui-card-body">
+  <div id="chart-data-last-6years-loan" class="ui-card-body">
     <div class="relative" style="height: 280px;">
       <canvas id="loansAnnualChart"></canvas>
     </div>

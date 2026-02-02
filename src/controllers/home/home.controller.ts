@@ -5,7 +5,7 @@ import { User } from '../../entities/User.entity'
 import { send2FACode } from '../../services/2fa.service'
 import { AuthRequest } from '../../types/AuthRequest'
 import { logger } from '../../utils/logger.util'
-import { getAnnualLoanSummary, getGlobalKPIs, getLastSixMonthsChartData, getLastSixMonthsKPIs, getLastSixYearsChartData } from './home.controller.auxiliar'
+import { getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisGlobalBalance, getKpisLast6MonthsBalance } from './home.controller.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.userId) {
@@ -105,12 +105,19 @@ export const apiForGettingKpis: RequestHandler = async (
   const authReq = req as AuthRequest
 
   try {
-    const lastSixMonthsChartData = await getLastSixMonthsChartData(authReq)
-    const lastSixYearsChartData = await getLastSixYearsChartData(authReq)
-    const lastSixYearLoanChartData = await getAnnualLoanSummary(authReq)
-    const kpis = await getLastSixMonthsKPIs(authReq)
-    const globalKpis = await getGlobalKPIs(authReq)
-    res.json({ lastSixMonthsChartData, lastSixYearsChartData, lastSixYearLoanChartData, kpis, globalKpis })
+    const kpisGlobalBalance = await getKpisGlobalBalance(authReq)
+    const kpisLast6MonthsBalance = await getKpisLast6MonthsBalance(authReq)
+    const chartDataLast6MonthsBalance = await getChartDataLast6MonthsBalance(authReq)
+    const chartDataLast6YearsBalance = await getChartDataLast6YearsBalance(authReq)    
+    const chartDataLast6YearsLoan = await getChartDataLast6YearsLoan(authReq)
+
+    res.json({
+      kpisGlobalBalance,
+      kpisLast6MonthsBalance,
+      chartDataLast6MonthsBalance,
+      chartDataLast6YearsBalance,
+      chartDataLast6YearsLoan,
+    })
 
   } catch (error) {
     logger.error('Error en apiForGettingKpis:', error)

@@ -8,7 +8,7 @@ import { AuthRequest } from "../../types/AuthRequest"
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)
 ============================================================================ */
-export const getLastSixMonthsChartData = async (authReq: AuthRequest) => {
+export const getChartDataLast6MonthsBalance = async (authReq: AuthRequest) => {
   const userId = authReq.user.id
   const txRepo = AppDataSource.getRepository(Transaction)
 
@@ -77,7 +77,7 @@ export const getLastSixMonthsChartData = async (authReq: AuthRequest) => {
 /* ============================================================================
    Servicio: Resumen últimos 6 años (ingresos / egresos / balance)
 ============================================================================ */
-export const getLastSixYearsChartData = async (authReq: AuthRequest) => {
+export const getChartDataLast6YearsBalance = async (authReq: AuthRequest) => {
   const userId = authReq.user.id
   const txRepo = AppDataSource.getRepository(Transaction)
 
@@ -147,7 +147,7 @@ export const getLastSixYearsChartData = async (authReq: AuthRequest) => {
 /* ============================================================================
    KPIs últimos 6 meses
 ============================================================================ */
-export const getLastSixMonthsKPIs = async (authReq: AuthRequest) => {
+export const getKpisLast6MonthsBalance = async (authReq: AuthRequest) => {
   const userId = authReq.user.id
   const txRepo = AppDataSource.getRepository(Transaction)
 
@@ -222,7 +222,7 @@ export const getLastSixMonthsKPIs = async (authReq: AuthRequest) => {
 /* ============================================================================
    Servicio: Resumen anual de préstamos (total prestado, pagado, intereses, saldo)
 ============================================================================ */
-export const getAnnualLoanSummary = async (authReq: AuthRequest) => {
+export const getChartDataLast6YearsLoan = async (authReq: AuthRequest) => {
   const userId = authReq.user.id
   const loanRepo = AppDataSource.getRepository(Loan)
   const paymentRepo = AppDataSource.getRepository(LoanPayment)
@@ -299,7 +299,7 @@ export const getAnnualLoanSummary = async (authReq: AuthRequest) => {
 /* ============================================================================
    KPIs globales (solo Transactions + Accounts)
 ============================================================================ */
-export const getGlobalKPIs = async (authReq: AuthRequest) => {
+export const getKpisGlobalBalance = async (authReq: AuthRequest) => {
   const userId = authReq.user.id
 
   const txRepo = AppDataSource.getRepository(Transaction)

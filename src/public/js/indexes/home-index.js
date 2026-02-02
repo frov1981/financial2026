@@ -2,17 +2,17 @@
    Constantes globales
 ============================ */
 const CARD_IDS = [
-    'global-kpis',
-    'six-kpis',
-    'chart-six',
-    'chart-years',
-    'chart-loans'
+    'kpis-global-balance',
+    'kpis-last-6months-balance',
+    'chart-data-last-6months-balance',
+    'chart-data-last-6years-balance',
+    'chart-data-last-6years-loan'
 ]
 
 const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
-let lastSixMonthsChart = null
-let lastSixYearsChart = null
-let lastLoansChart = null
+let varChartDataLast6MonthsBalance = null
+let varChartDataLast6YearsBalance = null
+let varChartDataLast6YearsLoan = null
 
 document.addEventListener('DOMContentLoaded', async () => {
     const savedState = loadFilters(CARD_STATE_KEY) || {}
@@ -32,49 +32,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         const res = await fetch('/kpis', { credentials: 'same-origin' })
         if (!res.ok) throw new Error('No autorizado')
 
-        const { kpis, lastSixMonthsChartData, lastSixYearsChartData, lastSixYearLoanChartData, globalKpis } = await res.json()
+        const {
+            kpisGlobalBalance,
+            kpisLast6MonthsBalance,
+            chartDataLast6MonthsBalance,
+            chartDataLast6YearsBalance,
+            chartDataLast6YearsLoan,
+        } = await res.json()
 
         // ============================
         // KPIs Globales
         // ============================
-        document.getElementById('kpi-total-income').textContent = `$${globalKpis.totalIncome.toFixed(2)}`
-        document.getElementById('kpi-total-expense').textContent = `$${globalKpis.totalExpense.toFixed(2)}`
-        document.getElementById('kpi-total-savings').textContent = `$${globalKpis.totalSavings.toFixed(2)}`
-        document.getElementById('kpi-total-withdrawals').textContent = `$${globalKpis.totalWithdrawals.toFixed(2)}`
-        document.getElementById('kpi-net-worth').textContent = `$${globalKpis.netWorth.toFixed(2)}`
-        document.getElementById('kpi-available-savings').textContent = `$${globalKpis.availableSavings.toFixed(2)}`
-
-        const netBalanceEl = document.getElementById('kpi-net-balance')
-        netBalanceEl.textContent = `$${globalKpis.netBalance.toFixed(2)}`
-        netBalanceEl.classList.add(globalKpis.netBalance >= 0 ? 'text-green-700' : 'text-red-700')
-
+        document.getElementById('kpis-global-balance-total-income').textContent = `$${kpisGlobalBalance.totalIncome.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-expense').textContent = `$${kpisGlobalBalance.totalExpense.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-savings').textContent = `$${kpisGlobalBalance.totalSavings.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-withdrawals').textContent = `$${kpisGlobalBalance.totalWithdrawals.toFixed(2)}`
+        document.getElementById('kpis-global-balance-net-worth').textContent = `$${kpisGlobalBalance.netWorth.toFixed(2)}`
+        document.getElementById('kpis-global-balance-available-savings').textContent = `$${kpisGlobalBalance.availableSavings.toFixed(2)}`
+        const netBalanceEl = document.getElementById('kpis-global-balance-net-balance')
+        netBalanceEl.textContent = `$${kpisGlobalBalance.netBalance.toFixed(2)}`
+        netBalanceEl.classList.add(kpisGlobalBalance.netBalance >= 0 ? 'text-green-700' : 'text-red-700')
         // ============================
         // KPIs 6 Meses
         // ============================
-        document.getElementById('kpi-income').textContent = `$${kpis.totalIncome.toFixed(2)}`
-        document.getElementById('kpi-expense').textContent = `$${kpis.totalExpense.toFixed(2)}`
-        const balanceEl = document.getElementById('kpi-balance')
-        balanceEl.textContent = `$${kpis.balance.toFixed(2)}`
-        balanceEl.classList.add(kpis.balance >= 0 ? 'text-green-700' : 'text-red-700')
-        document.getElementById('kpi-avg-expense').textContent = `$${kpis.avgExpense.toFixed(2)}`
-
-        const trendEl = document.getElementById('kpi-trend')
-        trendEl.textContent = kpis.trend >= 0 ? '▲' : '▼'
-        trendEl.classList.add(kpis.trend >= 0 ? 'text-green-600' : 'text-red-600')
-
+        document.getElementById('kpi-last-6months-total-income').textContent = `$${kpisLast6MonthsBalance.totalIncome.toFixed(2)}`
+        document.getElementById('kpi-last-6months-total-expense').textContent = `$${kpisLast6MonthsBalance.totalExpense.toFixed(2)}`
+        const balanceEl = document.getElementById('kpi-last-6months-balance')
+        balanceEl.textContent = `$${kpisLast6MonthsBalance.balance.toFixed(2)}`
+        balanceEl.classList.add(kpisLast6MonthsBalance.balance >= 0 ? 'text-green-700' : 'text-red-700')
+        document.getElementById('kpi-last-6months-avg-expense').textContent = `$${kpisLast6MonthsBalance.avgExpense.toFixed(2)}`
+        const trendEl = document.getElementById('kpi-last-6months-trend')
+        trendEl.textContent = kpisLast6MonthsBalance.trend >= 0 ? '▲' : '▼'
+        trendEl.classList.add(kpisLast6MonthsBalance.trend >= 0 ? 'text-green-600' : 'text-red-600')
         // ============================
         // Chart 6 Meses
         // ============================
         if (typeof Chart !== 'undefined') {
-            const ctxMonths = document.getElementById('lastSixMonthsChart').getContext('2d')
-            lastSixMonthsChart = new Chart(ctxMonths, {
+            const ctxMonths = document.getElementById('varChartDataLast6MonthsBalance').getContext('2d')
+            varChartDataLast6MonthsBalance = new Chart(ctxMonths, {
                 type: 'line',
                 data: {
-                    labels: lastSixMonthsChartData.labels,
+                    labels: chartDataLast6MonthsBalance.labels,
                     datasets: [
-                        { label: 'Ingresos', data: lastSixMonthsChartData.income, tension: 0.35 },
-                        { label: 'Egresos', data: lastSixMonthsChartData.expense, tension: 0.35 },
-                        { label: 'Balance', data: lastSixMonthsChartData.balance, borderDash: [6, 4], tension: 0.35 }
+                        { label: 'Ingresos', data: chartDataLast6MonthsBalance.income, tension: 0.35 },
+                        { label: 'Egresos', data: chartDataLast6MonthsBalance.expense, tension: 0.35 },
+                        { label: 'Balance', data: chartDataLast6MonthsBalance.balance, borderDash: [6, 4], tension: 0.35 }
                     ]
                 },
                 options: {
@@ -90,15 +92,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Chart 6 Años
         // ============================
         if (typeof Chart !== 'undefined') {
-            const ctxYears = document.getElementById('lastSixYearsChart').getContext('2d')
-            lastSixYearsChart = new Chart(ctxYears, {
+            const ctxYears = document.getElementById('varChartDataLast6YearsBalance').getContext('2d')
+            varChartDataLast6YearsBalance = new Chart(ctxYears, {
                 type: 'line',
                 data: {
-                    labels: lastSixYearsChartData.labels,
+                    labels: chartDataLast6YearsBalance.labels,
                     datasets: [
-                        { label: 'Ingresos', data: lastSixYearsChartData.income, tension: 0.35 },
-                        { label: 'Egresos', data: lastSixYearsChartData.expense, tension: 0.35 },
-                        { label: 'Balance', data: lastSixYearsChartData.balance, borderDash: [6, 4], tension: 0.35 }
+                        { label: 'Ingresos', data: chartDataLast6YearsBalance.income, tension: 0.35 },
+                        { label: 'Egresos', data: chartDataLast6YearsBalance.expense, tension: 0.35 },
+                        { label: 'Balance', data: chartDataLast6YearsBalance.balance, borderDash: [6, 4], tension: 0.35 }
                     ]
                 },
                 options: {
@@ -115,15 +117,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ============================
         if (typeof Chart !== 'undefined') {
             const ctxLoans = document.getElementById('loansAnnualChart').getContext('2d')
-            lastLoansChart = new Chart(ctxLoans, {
+            varChartDataLast6YearsLoan = new Chart(ctxLoans, {
                 type: 'line',
                 data: {
-                    labels: lastSixYearLoanChartData.labels,
+                    labels: chartDataLast6YearsLoan.labels,
                     datasets: [
-                        { label: 'Total Prestado', data: lastSixYearLoanChartData.totalLoan, tension: 0.35 },
-                        { label: 'Total Pagado', data: lastSixYearLoanChartData.totalPaid, tension: 0.35 },
-                        { label: 'Intereses', data: lastSixYearLoanChartData.totalInterest, tension: 0.35 },
-                        { label: 'Saldo', data: lastSixYearLoanChartData.balance, borderDash: [6, 4], tension: 0.35 }
+                        { label: 'Total Prestado', data: chartDataLast6YearsLoan.totalLoan, tension: 0.35 },
+                        { label: 'Total Pagado', data: chartDataLast6YearsLoan.totalPaid, tension: 0.35 },
+                        { label: 'Intereses', data: chartDataLast6YearsLoan.totalInterest, tension: 0.35 },
+                        { label: 'Saldo', data: chartDataLast6YearsLoan.balance, borderDash: [6, 4], tension: 0.35 }
                     ]
                 },
                 options: {
@@ -154,9 +156,9 @@ function toggleCard(id) {
     saveFilters(CARD_STATE_KEY, state)
 
     if (!isOpen) {
-        if (id === 'chart-six' && lastSixMonthsChart) lastSixMonthsChart.resize()
-        if (id === 'chart-years' && lastSixYearsChart) lastSixYearsChart.resize()
-        if (id === 'chart-loans' && lastLoansChart) lastLoansChart.resize()
+        if (id === 'chart-data-last-6months-balance' && varChartDataLast6MonthsBalance) varChartDataLast6MonthsBalance.resize()
+        if (id === 'chart-data-last-6years-balance' && varChartDataLast6YearsBalance) varChartDataLast6YearsBalance.resize()
+        if (id === 'chart-data-last-6years-loan' && varChartDataLast6YearsLoan) varChartDataLast6YearsLoan.resize()
     }
 }
 
