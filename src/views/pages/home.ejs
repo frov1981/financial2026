@@ -15,7 +15,10 @@
 <div class="ui-card">
 
   <div class="ui-card-header" onclick="toggleCard('global-kpis')">
-    <h2 class="ui-card-title">KPIs Balances</h2>
+    <h2 class="ui-card-title">
+      KPIs Balances
+      <span class="subtitle">Global</span>
+    </h2>
     <span id="icon-global-kpis" class="ui-card-toggle">▾</span>
   </div>
 
@@ -69,7 +72,10 @@
 <div class="ui-card">
 
   <div class="ui-card-header" onclick="toggleCard('six-kpis')">
-    <h2 class="ui-card-title">KPIs Balances (últimos 6 meses)</h2>
+    <h2 class="ui-card-title">
+      KPIs Balances
+      <span class="subtitle">Últimos 6 meses</span>
+    </h2>
     <span id="icon-six-kpis" class="ui-card-toggle">▾</span>
   </div>
 
@@ -92,7 +98,7 @@
       </div>
 
       <div class="ui-kpi-item">
-        <p class="ui-kpi-label">Promedio gasto mensual</p>
+        <p class="ui-kpi-label">Promedio Gasto Mensual</p>
         <p class="ui-kpi-value">
           <span id="kpi-avg-expense">–</span>
           <span class="text-sm ml-1" id="kpi-trend"></span>
@@ -109,7 +115,10 @@
 <div class="ui-card">
 
   <div class="ui-card-header" onclick="toggleCard('chart-six')">
-    <h2 class="ui-card-title">Ingresos y Egresos (últimos 6 meses)</h2>
+    <h2 class="ui-card-title">
+      Tendencia de Ingresos y Egresos
+      <span class="subtitle">Últimos 6 meses</span>
+    </h2>
     <span id="icon-chart-six" class="ui-card-toggle">▾</span>
   </div>
 
@@ -127,7 +136,10 @@
 <div class="ui-card">
 
   <div class="ui-card-header" onclick="toggleCard('chart-years')">
-    <h2 class="ui-card-title">Ingresos y Egresos (últimos 6 años)</h2>
+    <h2 class="ui-card-title">
+      Tendencia de Ingresos y Egresos     
+      <span class="subtitle">Últimos 6 años</span>
+    </h2>
     <span id="icon-chart-years" class="ui-card-toggle">▾</span>
   </div>
 
@@ -144,7 +156,10 @@
 ============================= -->
 <div class="ui-card">
   <div class="ui-card-header" onclick="toggleCard('chart-loans')">
-    <h2 class="ui-card-title">Préstamos (últimos 6 años)</h2>
+    <h2 class="ui-card-title">
+      Tendencia de Préstamos
+      <span class="subtitle">Últimos 6 años</span>
+    </h2>
     <span id="icon-chart-loans" class="ui-card-toggle">▾</span>
   </div>
   <div id="chart-loans" class="ui-card-body">
@@ -154,5 +169,5 @@
   </div>
 </div>
 
-<script src="/js/indexes/home-index.js"></script>
 <script src="/js/helpers/icon-helper.js"></script>
+<script src="/js/indexes/home-index.js"></script>

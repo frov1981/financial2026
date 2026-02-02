@@ -1108,6 +1108,13 @@ input[data-balance-final] {
   color: var(--ui-gray-900);
 }
 
+.ui-card-title .subtitle {
+  display: block;
+  font-size: 0.9em;
+  font-weight: normal;
+  opacity: 0.8;
+}
+
 /* Icono de colapso */
 .ui-card-toggle {
   display: inline-flex;
@@ -1115,6 +1122,10 @@ input[data-balance-final] {
   justify-content: center;
   font-size: 1rem;
   color: var(--ui-gray-700);
+}
+
+.ui-card-body.collapsed {
+  display: none;
 }
 
 /* Body */
