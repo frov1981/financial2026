@@ -47,15 +47,23 @@ export const routeToPageHome = async (req: Request, res: Response) => {
 
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
   try {
+    /* ============================
+       Modo desarrollo: login directo
+    ============================ */
     if (process.env.NODE_ENV === 'development') {
       const userRepo = AppDataSource.getRepository(User)
       const devUser = await userRepo.findOneBy({ id: 1 })
+
       if (devUser) {
         (req.session as any).userId = devUser.id
+          ; (req.session as any).timezone = 'America/Guayaquil'
         return res.redirect('/home')
       }
     }
 
+    /* ============================
+       Login normal
+    ============================ */
     const { username, password } = req.body
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOneBy({ name: username })
@@ -65,21 +73,36 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
         'pages/login',
         {
           error: 'Usuario no encontrado'
-        })
+        }
+      )
     }
 
     const validPassword = await bcrypt.compare(password, user.password_hash)
+
     if (!validPassword) {
       return res.render(
         'pages/login',
         {
           error: 'Contraseña incorrecta'
-        })
+        }
+      )
     }
 
+    /* ============================
+       Guardar timezone en sesión
+    ============================ */
+    const timezone = String(req.body.timezone || 'UTC')
+      ; (req.session as any).timezone = timezone
+
+    /* ============================
+       Enviar código 2FA y guardar usuario pendiente
+    ============================ */
     await send2FACode(user)
       ; (req.session as any).pending2FAUserId = user.id
 
+    /* ============================
+       Persistir sesión
+    ============================ */
     await new Promise<void>((resolve, reject) => {
       req.session.save(err => {
         if (err) reject(err)
@@ -88,14 +111,14 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     })
 
     return res.redirect('/2fa')
-
   } catch (error) {
     logger.error('Error en doLogin:', error)
-    res.render(
+    return res.render(
       'pages/login',
       {
         error: 'Error interno, intenta de nuevo'
-      })
+      }
+    )
   }
 }
 
@@ -108,7 +131,7 @@ export const apiForGettingKpis: RequestHandler = async (
     const kpisGlobalBalance = await getKpisGlobalBalance(authReq)
     const kpisLast6MonthsBalance = await getKpisLast6MonthsBalance(authReq)
     const chartDataLast6MonthsBalance = await getChartDataLast6MonthsBalance(authReq)
-    const chartDataLast6YearsBalance = await getChartDataLast6YearsBalance(authReq)    
+    const chartDataLast6YearsBalance = await getChartDataLast6YearsBalance(authReq)
     const chartDataLast6YearsLoan = await getChartDataLast6YearsLoan(authReq)
 
     res.json({

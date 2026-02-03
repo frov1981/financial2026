@@ -74,6 +74,7 @@ export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res
     const mode = 'update'
     const authReq = req as AuthRequest
     const paymentId = Number(req.params.id)
+    const timezone = authReq.timezone || 'UTC'
 
     if (!Number.isInteger(paymentId) || paymentId <= 0) {
         return res.redirect('/payments')
@@ -100,7 +101,7 @@ export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res
                 note: payment.note,
                 principal_amount: payment.principal_amount,
                 interest_amount: payment.interest_amount,
-                payment_date: formatDateForInputLocal(payment.payment_date).slice(0, 16),
+                payment_date: formatDateForInputLocal(payment.payment_date, timezone),
                 account_id: payment.account ? payment.account.id : '',
                 account_name: payment.account ? payment.account.name : '',
             },
@@ -115,6 +116,7 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
     const mode = 'insert'
     const authReq = req as AuthRequest
     const paymentId = Number(req.params.id)
+    const timezone = authReq.timezone || 'UTC'
 
     if (!Number.isInteger(paymentId) || paymentId <= 0) {
         return res.redirect('/payments')
@@ -141,7 +143,7 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
                 note: payment.note ?? '',
                 principal_amount: payment.principal_amount,
                 interest_amount: payment.interest_amount,
-                payment_date: formatDateForInputLocal(defaultDate).slice(0, 16),
+                payment_date: formatDateForInputLocal(payment.payment_date, timezone),
                 account_id: payment.account ? payment.account.id : '',
                 account_name: payment.account ? payment.account.name : '',
             },
@@ -157,6 +159,7 @@ export const routeToFormDeletePayment: RequestHandler = async (req: Request, res
     const mode = 'delete'
     const authReq = req as AuthRequest
     const paymentId = Number(req.params.id)
+    const timezone = authReq.timezone || 'UTC'
 
     if (!Number.isInteger(paymentId) || paymentId <= 0) {
         return res.redirect('/payments')
@@ -183,7 +186,7 @@ export const routeToFormDeletePayment: RequestHandler = async (req: Request, res
                 note: payment.note,
                 principal_amount: payment.principal_amount,
                 interest_amount: payment.interest_amount,
-                payment_date: formatDateForInputLocal(payment.payment_date).slice(0, 16),
+                payment_date: formatDateForInputLocal(payment.payment_date, timezone),
                 account_id: payment.account ? payment.account.id : '',
                 account_name: payment.account ? payment.account.name : '',
             },

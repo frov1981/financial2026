@@ -37,7 +37,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     const paymentId = req.params.id ? Number(req.params.id) : req.body.id ? Number(req.body.id) : undefined
     const loanId = req.body.loan_id ? Number(req.body.loan_id) : undefined
     const action = req.body.action || 'save'
-    const timezone = String(req.body.timezone || 'UTC')
+    const timezone = authReq.timezone || 'UTC'
 
     const accounts = await getActiveAccountsByUser(authReq)
     const formState = {

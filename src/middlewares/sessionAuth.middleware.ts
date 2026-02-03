@@ -12,8 +12,9 @@ export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: R
     if (process.env.NODE_ENV === 'development') {
       const devUser = await AppDataSource.getRepository(User).findOneBy({ id: 1 })
       if (devUser) {
-        (req as AuthRequest).user = devUser
-        return next()
+        const authReq = req as AuthRequest
+        authReq.user = devUser
+        authReq.timezone = (req.session as any)?.timezone || 'America/Guayaquil'
       }
     }
 
@@ -38,7 +39,9 @@ export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: R
     /* ============================
        Adjuntar usuario al request
     ============================ */
-    ;(req as AuthRequest).user = user
+    const authReq = req as AuthRequest
+    authReq.user = user
+    authReq.timezone = (req.session as any)?.timezone || 'UTC'
     next()
   } catch (err) {
     logger.error('Error en sessionAuthMiddleware:', err)
