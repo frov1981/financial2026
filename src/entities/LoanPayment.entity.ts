@@ -25,7 +25,6 @@ export class LoanPayment {
   transaction!: Transaction
 
   @IsNumber({}, { message: 'El monto debe ser numérico' })
-  @IsPositive({ message: 'El monto debe ser mayor a cero' })
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
   principal_amount!: number
 
