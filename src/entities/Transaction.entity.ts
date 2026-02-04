@@ -3,7 +3,7 @@ import { IsIn, IsNotEmpty, IsNumber, IsPositive, MaxLength, ValidateIf } from 'c
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Account } from './Account.entity'
-import { Category } from './category.entity'
+import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { User } from './User.entity'

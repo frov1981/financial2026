@@ -1,6 +1,6 @@
 import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import { Category } from '../../entities/category.entity'
+import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
 import { Transaction } from '../../entities/Transaction.entity'

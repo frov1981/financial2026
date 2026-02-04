@@ -1,7 +1,7 @@
 import { In, IsNull, MoreThanOrEqual, Not } from 'typeorm'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
-import { Category } from '../../entities/category.entity'
+import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 

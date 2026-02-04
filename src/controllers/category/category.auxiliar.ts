@@ -1,6 +1,6 @@
 import { IsNull } from 'typeorm'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import { Category } from '../../entities/category.entity'
+import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/auth-request'
 
 export const getActiveParentCategoriesByUser = async (

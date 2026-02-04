@@ -1,6 +1,6 @@
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import { Category } from '../../entities/category.entity'
+import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { getActiveParentCategoriesByUser } from './category.auxiliar'
