@@ -1,3 +1,10 @@
+<%
+  const rules = formPolicy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'read'
+  const isEditable = field => rules[field] === 'edit'
+%>
+
 <div class="max-w-xl mx-auto">
   <h1 class="text-2xl font-semibold mb-6">
     <%= 
@@ -11,6 +18,7 @@
 
   <form method="post" action="/categories/">
 
+    <!-- Error general -->
     <% if (errors?.general) { %>
       <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
         <%= errors.general %>
@@ -20,8 +28,10 @@
     <!-- ID y acción -->
     <input type="hidden" name="id" value="<%= category?.id || '' %>">
     <input type="hidden" name="action" value="save">
+    <input type="hidden" name="mode" value="<%= mode %>">
 
     <!-- Checkbox Padre -->
+    <% if (!isHidden('is_parent')) { %>
     <div class="mb-4">
       <label class="flex items-center gap-2">
         <input
@@ -30,13 +40,15 @@
           name="is_parent"
           value="1"
           <%= category?.parent ? '' : category?.is_parent ? 'checked' : '' %>
-          <%= mode === 'delete' ? 'disabled' : '' %>
+          <%= isReadOnly('is_parent') ? 'disabled' : '' %>
         >
         Es categoría padre?
       </label>
     </div>
+    <% } %>
 
     <!-- Tipo de categoría -->
+    <% if (!isHidden('type')) { %>
     <div class="mb-4" id="type-container">
       <label class="block font-medium mb-1">Tipo</label>
       <div class="flex gap-6">
@@ -46,6 +58,7 @@
             name="type"
             value="income"
             <%= category?.type === 'income' || !category ? 'checked' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Ingreso
         </label>
@@ -56,6 +69,7 @@
             name="type"
             value="expense"
             <%= category?.type === 'expense' ? 'checked' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Gasto
         </label>
@@ -65,8 +79,10 @@
         <p class="text-red-600 text-sm mt-1"><%= errors.type %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Nombre -->
+    <% if (!isHidden('name')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Nombre</label>
       <input
@@ -74,15 +90,17 @@
         name="name"
         class="w-full border rounded px-3 py-2"
         value="<%= category?.name || '' %>"
-        <%= (mode === 'status' || mode === 'delete') ? 'readonly' : '' %>
+        <%= isReadOnly('name') ? 'readonly' : '' %>
         required
       >
       <% if (errors?.name) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Categoría Padre (Autocomplete) -->
+    <% if (!isHidden('parent_name')) { %>    
     <div 
       class="mb-4" 
       id="parent-container" 
@@ -99,7 +117,7 @@
         data-autocomplete-input
         autocomplete="off"
         value="<%= category?.parent?.name || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('parent_name') ? 'readonly' : '' %>
       >
 
       <!-- Hidden para enviar el ID -->
@@ -110,7 +128,6 @@
         value="<%= category?.parent?.id || '' %>"
       >
 
-      <% if (mode !== 'delete') { %>
       <div class="relative">
         <ul
           class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
@@ -129,18 +146,22 @@
           <% }) %>
         </ul>
       </div>
-      <% } %>
 
       <% if (errors?.category) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Estado (solo activar / inactivar) -->
-    <% if (mode === 'status') { %>
+    <% if (!isHidden('is_active')) { %>
       <div class="mb-6">
         <label class="block font-medium mb-1">Estado</label>
-        <select name="is_active" class="w-full border rounded px-3 py-2">
+        <select 
+          name="is_active" 
+          class="w-full border rounded px-3 py-2"
+          <%= isReadOnly('is_active') ? 'disabled' : '' %>
+        >
           <option value="true" <%= category?.is_active ? 'selected' : '' %>>Activa</option>
           <option value="false" <%= !category?.is_active ? 'selected' : '' %>>Inactiva</option>
         </select>
