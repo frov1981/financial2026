@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique } from 'typeorm'
 import { Account } from './Account.entity'
-import { Category } from './Category.entity'
+import { Category } from './category.entity'
 import { Loan } from './Loan.entity'
 import { Transaction } from './Transaction.entity'
 

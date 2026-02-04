@@ -1,12 +1,12 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Loan } from '../../entities/Loan.entity'
 import { Transaction } from '../../entities/Transaction.entity'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
-import { validateDeleteLoan, validateLoan } from './loan.controller.validator'
+import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
+import { validateDeleteLoan, validateLoan } from './loan.validator'
 
 export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest

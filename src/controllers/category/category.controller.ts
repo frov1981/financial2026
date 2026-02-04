@@ -1,10 +1,10 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../../config/datasource'
-import { Category } from '../../entities/Category.entity'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AppDataSource } from '../../config/typeorm.datasource'
+import { Category } from '../../entities/category.entity'
+import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { getActiveParentCategoriesByUser } from './category.controller.auxiliar'
-export { saveCategory as apiForSavingCatgory } from './category.controller.saving'
+import { getActiveParentCategoriesByUser } from './category.auxiliar'
+export { saveCategory as apiForSavingCatgory } from './category.saving'
 
 export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest

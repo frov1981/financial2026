@@ -1,9 +1,9 @@
-import { AppDataSource } from "../../config/datasource"
+import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
 import { Loan } from "../../entities/Loan.entity"
 import { LoanPayment } from "../../entities/LoanPayment.entity"
 import { Transaction } from "../../entities/Transaction.entity"
-import { AuthRequest } from "../../types/AuthRequest"
+import { AuthRequest } from "../../types/auth-request"
 
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)

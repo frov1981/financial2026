@@ -1,11 +1,11 @@
 import { validate } from 'class-validator'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Loan } from '../../entities/Loan.entity'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { mapValidationErrors } from '../../validators/mapValidationErrors.validator'
+import { mapValidationErrors } from '../../validators/map-errors.validator'
 
 export const validateLoan = async (
   loan: Loan,

@@ -1,11 +1,11 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { Transaction } from '../../entities/Transaction.entity'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AuthRequest } from '../../types/auth-request'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
-import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveCategoriesByUser, getNextValidTransactionDate, splitCategoriesByType } from './transaction.controller.auxiliar'
-export { saveTransaction as apiForSavingTransaction } from './transaction.controller.saving'
+import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveCategoriesByUser, getNextValidTransactionDate, splitCategoriesByType } from './transaction.auxiliar'
+export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
 export const apiForGettingTransactions: RequestHandler = async (req: Request, res: Response) => {
   try {

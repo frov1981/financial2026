@@ -1,7 +1,7 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../config/datasource'
+import { AppDataSource } from '../config/typeorm.datasource'
 import { User } from '../entities/User.entity'
-import { AuthRequest } from '../types/AuthRequest'
+import { AuthRequest } from '../types/auth-request'
 import { logger } from '../utils/logger.util'
 
 export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {

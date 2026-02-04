@@ -1,11 +1,11 @@
 import bcrypt from 'bcryptjs'
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { User } from '../../entities/User.entity'
 import { send2FACode } from '../../services/2fa.service'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisGlobalBalance, getKpisLast6MonthsBalance } from './home.controller.auxiliar'
+import { getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisGlobalBalance, getKpisLast6MonthsBalance } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.userId) {

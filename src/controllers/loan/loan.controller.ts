@@ -1,12 +1,12 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AuthRequest } from "../../types/AuthRequest"
+import { AuthRequest } from "../../types/auth-request"
 import { Loan } from "../../entities/Loan.entity"
-import { AppDataSource } from "../../config/datasource"
+import { AppDataSource } from "../../config/typeorm.datasource"
 import { logger } from "../../utils/logger.util"
 import { formatDateForInputLocal } from '../../utils/date.util'
-import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
-import { getActiveParentLoansByUser } from './loan.controller.auxiliar'
-export { saveLoan as apiForSavingLoan } from './loan.controller.saving'
+import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
+import { getActiveParentLoansByUser } from './loan.auxiliar'
+export { saveLoan as apiForSavingLoan } from './loan.saving'
 
 export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest

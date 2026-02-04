@@ -1,9 +1,9 @@
 import { validate } from 'class-validator'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { mapValidationErrors } from '../../validators/mapValidationErrors.validator'
+import { mapValidationErrors } from '../../validators/map-errors.validator'
 import { Transaction } from '../../entities/Transaction.entity'
 
 export const validateSaveAccount = async (authReq: AuthRequest, account: Account): Promise<Record<string, string> | null> => {

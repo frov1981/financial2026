@@ -1,10 +1,10 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { validateDeleteAccount, validateSaveAccount } from './account.controller.validator'
-import { getNumberFromBody } from '../../utils/req.params.util'
+import { validateDeleteAccount, validateSaveAccount } from './account.validator'
+import { getNumberFromBody } from '../../utils/req-params.util'
 
 export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest

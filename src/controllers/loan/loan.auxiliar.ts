@@ -1,6 +1,6 @@
 import { IsNull } from 'typeorm'
-import { AppDataSource } from '../../config/datasource'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AppDataSource } from '../../config/typeorm.datasource'
+import { AuthRequest } from '../../types/auth-request'
 import { Loan } from '../../entities/Loan.entity'
 
 export const getActiveParentLoansByUser = async (

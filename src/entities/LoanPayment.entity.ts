@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { DecimalTransformer } from '../config/decimal.transformer'
+import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Account } from './Account.entity'
 import { Loan } from './Loan.entity'
 import { Transaction } from './Transaction.entity'

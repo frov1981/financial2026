@@ -1,9 +1,9 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-export { saveAccount as apiForSavingAccount } from './account.controller.saving'
+export { saveAccount as apiForSavingAccount } from './account.saving'
 
 export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest

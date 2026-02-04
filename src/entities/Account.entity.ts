@@ -1,6 +1,6 @@
 import { IsBoolean, IsIn, IsNotEmpty } from 'class-validator'
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
-import { DecimalTransformer } from '../config/decimal.transformer'
+import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'

@@ -1,8 +1,8 @@
 import { Request, Response } from 'express'
 import { IsNull, MoreThan } from 'typeorm'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { AuthCode } from '../../entities/AuthCode.entity'
-import { compareCode } from '../../utils/auth.code.util'
+import { compareCode } from '../../utils/auth-code.util'
 import { logger } from '../../utils/logger.util'
 
 export const show2FA = (req: Request, res: Response) => {

@@ -2,7 +2,7 @@ import 'reflect-metadata'
 import 'dotenv/config'
 
 import { app } from './app'
-import { AppDataSource } from './config/datasource'
+import { AppDataSource } from './config/typeorm.datasource'
 import { logger } from './utils/logger.util'
 
 const PORT = process.env.NODE_PORT ? parseInt(process.env.NODE_PORT, 10) : 3000

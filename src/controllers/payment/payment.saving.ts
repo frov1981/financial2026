@@ -1,14 +1,14 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Loan } from '../../entities/Loan.entity'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { Transaction } from '../../entities/Transaction.entity'
-import { AuthRequest } from '../../types/AuthRequest'
-import { logger } from '../../utils/logger.util'
-import { getActiveAccountsByUser } from '../transaction/transaction.controller.auxiliar'
-import { validateDeletePayment, validateSavePayment } from './payment.controller.validator'
+import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
+import { logger } from '../../utils/logger.util'
+import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
+import { validateDeletePayment, validateSavePayment } from './payment.validator'
 
 /* ============================
    Helpers de cálculo

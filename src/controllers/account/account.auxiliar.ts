@@ -1,7 +1,7 @@
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Transaction } from '../../entities/Transaction.entity'
-import { AuthRequest } from '../../types/AuthRequest'
+import { AuthRequest } from '../../types/auth-request'
 
 /*
   Recalcula los balances de todas las cuentas del usuario

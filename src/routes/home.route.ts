@@ -6,7 +6,7 @@ import {
     routeToPageLogin,
     routeToPageRoot
 } from '../controllers/home/home.controller' 
-import { sessionAuthMiddleware } from '../middlewares/sessionAuth.middleware'
+import { sessionAuthMiddleware } from '../middlewares/session-auth.middleware'
 
 const router = Router()
 

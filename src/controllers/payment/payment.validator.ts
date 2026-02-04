@@ -1,8 +1,8 @@
 import { validate } from 'class-validator'
-import { AppDataSource } from '../../config/datasource'
+import { AppDataSource } from '../../config/typeorm.datasource'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
-import { AuthRequest } from '../../types/AuthRequest'
-import { mapValidationErrors } from '../../validators/mapValidationErrors.validator'
+import { AuthRequest } from '../../types/auth-request'
+import { mapValidationErrors } from '../../validators/map-errors.validator'
 import { logger } from '../../utils/logger.util'
 
 export const validateSavePayment = async (
