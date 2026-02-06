@@ -1,5 +1,5 @@
 <%
-  const rules = formPolicy
+  const rules = categoryFormPolicy
   const isHidden = field => rules[field] === 'hidden'
   const isReadOnly = field => rules[field] === 'read'
   const isEditable = field => rules[field] === 'edit'
@@ -162,8 +162,8 @@
           class="w-full border rounded px-3 py-2"
           <%= isReadOnly('is_active') ? 'disabled' : '' %>
         >
-          <option value="true" <%= category?.is_active ? 'selected' : '' %>>Activa</option>
-          <option value="false" <%= !category?.is_active ? 'selected' : '' %>>Inactiva</option>
+          <option value="true" <%= category?.is_active ? 'selected' : '' %>>Activar</option>
+          <option value="false" <%= !category?.is_active ? 'selected' : '' %>>Inactivar</option>
         </select>
         <% if (errors?.is_active) { %>
           <p class="text-red-600 text-sm mt-1"><%= errors.is_active %></p>

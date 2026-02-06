@@ -5,7 +5,7 @@ import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { getActiveParentCategoriesByUser } from './category.auxiliar'
 import { validateCategory, validateDeleteCategory } from './category.validator'
-import { categoryFormMatrix, FormMode } from '../../policies/category-form.policy'
+import { categoryFormMatrix, CategoryFormMode } from '../../policies/category-form.policy'
 
 const getTitle = (mode: string) => {
     switch (mode) {
@@ -20,7 +20,7 @@ const getTitle = (mode: string) => {
 /* ============================
    Sanitizar payload según policy
 ============================ */
-const sanitizeByPolicy = (mode: FormMode, role: 'parent' | 'child', body: any) => {
+const sanitizeByPolicy = (mode: CategoryFormMode, role: 'parent' | 'child', body: any) => {
     const policy = categoryFormMatrix[mode][role]
     const clean: any = {}
 
@@ -38,7 +38,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
 
     const authReq = req as AuthRequest
     const categoryId = req.params.id ? Number(req.params.id) : req.body.id ? Number(req.body.id) : undefined
-    const mode: FormMode = req.body.mode || 'insert'
+    const mode: CategoryFormMode = req.body.mode || 'insert'
 
     const repoCategory = AppDataSource.getRepository(Category)
 
@@ -141,14 +141,14 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
 
         const isParent = !req.body.parent_id
         const role: 'parent' | 'child' = isParent ? 'parent' : 'child'
-        const formPolicy = categoryFormMatrix[mode][role]
+        const categoryFormPolicy = categoryFormMatrix[mode][role]
 
         return res.render('layouts/main', {
             title: getTitle(mode),
             view: 'pages/categories/form',
             category: { ...req.body },
             errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' },
-            formPolicy,
+            categoryFormPolicy,
             parentCategories,
             mode
         })

@@ -1,14 +1,17 @@
+<%
+  const rules = accountFormPolicy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'read'
+  const isEditable = field => rules[field] === 'edit'
+%>
+
 <div class="max-w-xl mx-auto">
   <h1 class="text-2xl font-semibold mb-6">
     <%=
-    mode === 'insert' 
-    ? 'Insertar Cuenta' 
-    : mode === 'update' 
-    ? 'Editar Cuenta' 
-    : mode === 'status' 
-    ? 'Editar Estado de la Cuenta' 
-    : mode === 'delete'
-    ? 'Eliminar Cuenta'
+      mode === 'insert' ? 'Insertar Cuenta' 
+    : mode === 'update' ? 'Editar Cuenta' 
+    : mode === 'status' ? 'Editar Estado de la Cuenta' 
+    : mode === 'delete' ? 'Eliminar Cuenta'
     : mode 
     %>
   </h1>
@@ -23,8 +26,10 @@
     <!-- ID -->
     <input type="hidden" name="id" value="<%= account?.id || '' %>">
     <input type="hidden" name="action" value="save">
+    <input type="hidden" name="mode" value="<%= mode %>">
 
     <!-- Tipo de cuenta -->
+     <% if (!isHidden('type')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Tipo</label>
 
@@ -35,7 +40,7 @@
             name="type"
             value="cash"
             <%= account?.type === 'cash' || !account ? 'checked' : '' %>
-            <%= mode !== 'insert' ? 'disabled' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Efectivo
         </label>
@@ -46,7 +51,7 @@
             name="type"
             value="bank"
             <%= account?.type === 'bank' ? 'checked' : '' %>
-            <%= mode !== 'insert' ? 'disabled' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Banco
         </label>
@@ -57,9 +62,20 @@
             name="type"
             value="card"
             <%= account?.type === 'card' ? 'checked' : '' %>
-            <%= mode !== 'insert' ? 'disabled' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Tarjeta
+        </label>
+
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type"
+            value="saving"
+            <%= account?.type === 'saving' ? 'checked' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
+          >
+          Ahorro
         </label>
       </div>
 
@@ -67,8 +83,10 @@
         <p class="text-red-600 text-sm mt-1"><%= errors.type %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Nombre -->
+    <% if (!isHidden('name')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Nombre</label>
       <input
@@ -76,7 +94,7 @@
         name="name"
         class="w-full border rounded px-3 py-2"
         value="<%= account?.name || '' %>"
-        <%= (mode === 'status' || mode === 'delete') ? 'readonly' : '' %>
+        <%= isReadOnly('name') ? 'readonly' : '' %>
         required
       >
 
@@ -84,19 +102,19 @@
         <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Estado (solo activar / inactivar) -->
-    <% if (mode === 'status') { %>
+    <% if (!isHidden('is_active')) { %>
       <div class="mb-6">
         <label class="block font-medium mb-1">Estado</label>
-
-        <select name="is_active" class="w-full border rounded px-3 py-2">
-          <option value="true"  <%= account?.is_active ? 'selected' : '' %>>
-            Activa
-          </option>
-          <option value="false" <%= !account?.is_active ? 'selected' : '' %>>
-            Inactiva
-          </option>
+        <select 
+          name="is_active" 
+          class="w-full border rounded px-3 py-2"
+          <%= isReadOnly('is_active') ? 'disabled' : '' %>
+        >
+          <option value="true" <%= account?.is_active ? 'selected' : '' %>>Activar</option>
+          <option value="false" <%= !account?.is_active ? 'selected' : '' %>>Inactivar</option>
         </select>
 
         <% if (errors?.is_active) { %>
@@ -104,6 +122,7 @@
         <% } %>
       </div>
     <% } %>
+
 
     <!-- Acciones -->
     <div class="flex justify-end gap-2">

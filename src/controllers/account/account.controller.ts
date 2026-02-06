@@ -3,6 +3,7 @@ import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
+import { accountFormMatrix } from '../../policies/account-form.policy'
 export { saveAccount as apiForSavingAccount } from './account.saving'
 
 export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
@@ -51,6 +52,7 @@ export const routeToPageAccount = (req: Request, res: Response) => {
 export const routeToFormInsertAccount: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
   const authReq = req as AuthRequest
+  const accountFormPolicy = accountFormMatrix[mode]
 
   res.render(
     'layouts/main',
@@ -62,6 +64,7 @@ export const routeToFormInsertAccount: RequestHandler = async (req: Request, res
         is_active: true,
       },
       errors: {},
+      accountFormPolicy,
       mode,
     })
 }
@@ -70,6 +73,7 @@ export const routeToFormUpdateAccount: RequestHandler = async (req: Request, res
   const mode = 'update'
   const authReq = req as AuthRequest
   const accountId = Number(req.params.id)
+  const accountFormPolicy = accountFormMatrix[mode]
 
   if (!Number.isInteger(accountId) || accountId <= 0) {
     return res.redirect('/accounts')
@@ -95,7 +99,8 @@ export const routeToFormUpdateAccount: RequestHandler = async (req: Request, res
         name: account.name
       },
       errors: {},
-      mode
+      accountFormPolicy,
+      mode,
     })
 }
 
@@ -103,6 +108,7 @@ export const routeToFormDeleteAccount: RequestHandler = async (req: Request, res
   const mode = 'delete'
   const authReq = req as AuthRequest
   const accountId = Number(req.params.id)
+  const accountFormPolicy = accountFormMatrix[mode]
 
   if (!Number.isInteger(accountId) || accountId <= 0) {
     return res.redirect('/accounts')
@@ -128,7 +134,8 @@ export const routeToFormDeleteAccount: RequestHandler = async (req: Request, res
         name: account.name
       },
       errors: {},
-      mode
+      accountFormPolicy,
+      mode,
     })
 }
 
@@ -136,6 +143,7 @@ export const routeToFormUpdateStatusAccount: RequestHandler = async (req: Reques
   const mode = 'status'
   const authReq = req as AuthRequest
   const accountId = Number(req.params.id)
+  const accountFormPolicy = accountFormMatrix[mode]
 
   if (!Number.isInteger(accountId) || accountId <= 0) {
     return res.redirect('/accounts')
@@ -162,6 +170,7 @@ export const routeToFormUpdateStatusAccount: RequestHandler = async (req: Reques
         is_active: account.is_active
       },
       errors: {},
-      mode
+      accountFormPolicy,
+      mode,
     })
 }

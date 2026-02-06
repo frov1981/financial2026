@@ -1,8 +1,8 @@
-export type FieldMode = 'hidden' | 'read' | 'edit'
-export type FormMode = 'insert' | 'update' | 'delete' | 'status'
+export type CaterogyFieldMode = 'hidden' | 'read' | 'edit'
+export type CategoryFormMode = 'insert' | 'update' | 'delete' | 'status'
 export type CategoryRole = 'parent' | 'child'
 
-export const categoryFormMatrix: Record<FormMode, Record<CategoryRole, Record<string, FieldMode>>> = {
+export const categoryFormMatrix: Record<CategoryFormMode, Record<CategoryRole, Record<string, CaterogyFieldMode>>> = {
     insert: {
         parent: {
             is_parent: 'hidden',

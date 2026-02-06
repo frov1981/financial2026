@@ -68,7 +68,7 @@ export const routeToFormInsertCategory: RequestHandler = async (req: Request, re
   const mode = 'insert'
   const authReq = req as AuthRequest
   const parentCategories = await getActiveParentCategoriesByUser(authReq)
-  const formPolicy = categoryFormMatrix[mode]['child']
+  const categoryFormPolicy = categoryFormMatrix[mode]['child']
 
   res.render(
     'layouts/main',
@@ -81,7 +81,7 @@ export const routeToFormInsertCategory: RequestHandler = async (req: Request, re
         is_active: true,
       },
       errors: {},
-      formPolicy,
+      categoryFormPolicy,
       parentCategories,
       mode,
     })
@@ -108,7 +108,7 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
 
   const parentCategories = await getActiveParentCategoriesByUser(authReq)
   const is_parent = !category.parent
-  const formPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
+  const categoryFormPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
   res.render('layouts/main', {
     title: 'Editar Categoría',
     view: 'pages/categories/form',
@@ -121,7 +121,7 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
       is_parent: is_parent
     },
     errors: {},
-    formPolicy,
+    categoryFormPolicy,
     parentCategories,
     mode,
   })
@@ -148,7 +148,7 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
 
   const parentCategories = await getActiveParentCategoriesByUser(authReq)
   const is_parent = !category.parent
-  const formPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
+  const categoryFormPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
   res.render('layouts/main', {
     title: 'Eliminar Categoría',
     view: 'pages/categories/form',
@@ -161,7 +161,7 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
       is_parent: is_parent
     },
     errors: {},
-    formPolicy,
+    categoryFormPolicy,
     parentCategories,
     mode,
   })
@@ -188,7 +188,7 @@ export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Reque
 
   const parentCategories = await getActiveParentCategoriesByUser(authReq)
   const is_parent = !category.parent
-  const formPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
+  const categoryFormPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
   res.render(
     'layouts/main',
     {
@@ -203,7 +203,7 @@ export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Reque
         is_parent: is_parent
       },
       errors: {},
-      formPolicy,
+      categoryFormPolicy,
       parentCategories,
       mode
     })
