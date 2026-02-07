@@ -16,6 +16,12 @@ export const validateLoan = async (
   const fieldErrors: Record<string, string> = {}
 
   // ===============================
+  // Determinar si es parent o child
+  // ===============================
+  const isChild = !!loan.parent
+  const isParent = !loan.parent
+
+  // ===============================
   // Validaciones class-validator
   // ===============================
   const errors = await validate(loan)
@@ -40,34 +46,38 @@ export const validateLoan = async (
   }
 
   // ===============================
-  // Monto total válido
+  // Monto total: SOLO obligatorio para child
   // ===============================
-  if (loan.total_amount !== undefined && Number(loan.total_amount) <= 0) {
-    fieldErrors.total_amount = 'El monto total del préstamo no puede ser negativo o cero'
+  if (isChild) {
+    if (loan.total_amount === undefined || loan.total_amount === null || Number(loan.total_amount) <= 0) {
+      fieldErrors.total_amount = 'El monto total del subpréstamo debe ser mayor a cero'
+    }
   }
 
   // ===============================
-  // Cuenta de desembolso obligatoria
+  // Cuenta de desembolso obligatoria SOLO si es child
   // ===============================
-  if (!loan.disbursement_account || !loan.disbursement_account.id) {
-    fieldErrors.disbursement_account = 'Debe seleccionar una cuenta de desembolso'
-  } else {
-    const account = await accountRepo.findOne({
-      where: {
-        id: loan.disbursement_account.id,
-        user: { id: userId },
-        is_active: true
+  if (isChild) {
+    if (!loan.disbursement_account || !loan.disbursement_account.id) {
+      fieldErrors.disbursement_account = 'Debe seleccionar una cuenta de desembolso'
+    } else {
+      const account = await accountRepo.findOne({
+        where: {
+          id: loan.disbursement_account.id,
+          user: { id: userId },
+          is_active: true
+        }
+      })
+      if (!account) {
+        fieldErrors.disbursement_account = 'La cuenta de desembolso no es válida o no pertenece al usuario'
       }
-    })
-    if (!account) {
-      fieldErrors.disbursement_account = 'La cuenta de desembolso no es válida o no pertenece al usuario'
     }
   }
 
   // ===============================
   // Validación parent / child
   // ===============================
-  if (loan.parent) {
+  if (isChild && loan.parent) {
 
     // Evitar self-reference
     if (loan.id && loan.parent.id === loan.id) {
@@ -103,20 +113,37 @@ export const validateLoan = async (
       const payments = await paymentRepo.find({
         where: { loan: { id: loan.id } }
       })
-      const totalPrincipalPaid = payments.reduce((sum, p) => sum + Number(p.principal_amount), 0)
 
-      // No permitir modificar total_amount si hay pagos
-      if (payments.length > 0 && loan.total_amount !== undefined && Number(existingLoan.total_amount) !== Number(loan.total_amount)) {
+      const totalPrincipalPaid = payments.reduce(
+        (sum, p) => sum + Number(p.principal_amount),
+        0
+      )
+
+      // No permitir modificar total_amount si hay pagos (solo aplica a child)
+      if (
+        payments.length > 0 &&
+        isChild &&
+        loan.total_amount !== undefined &&
+        Number(existingLoan.total_amount) !== Number(loan.total_amount)
+      ) {
         fieldErrors.total_amount = 'No se puede modificar el monto total de un préstamo con pagos registrados'
       }
 
       // No permitir modificar start_date si hay pagos
-      if (payments.length > 0 && loan.start_date && new Date(existingLoan.start_date).getTime() !== new Date(loan.start_date).getTime()) {
+      if (
+        payments.length > 0 &&
+        loan.start_date &&
+        new Date(existingLoan.start_date).getTime() !== new Date(loan.start_date).getTime()
+      ) {
         fieldErrors.start_date = 'No se puede modificar la fecha de inicio de un préstamo con pagos registrados'
       }
 
-      // No permitir total_amount menor al capital ya pagado
-      if (loan.total_amount !== undefined && Number(loan.total_amount) < totalPrincipalPaid) {
+      // No permitir total_amount menor al capital ya pagado (solo child)
+      if (
+        isChild &&
+        loan.total_amount !== undefined &&
+        Number(loan.total_amount) < totalPrincipalPaid
+      ) {
         fieldErrors.total_amount = 'El monto total no puede ser menor al capital ya pagado'
       }
 
@@ -126,13 +153,18 @@ export const validateLoan = async (
       }
 
       // No permitir cambiar la cuenta de desembolso si hay pagos
-      if (payments.length > 0 && loan.disbursement_account && loan.disbursement_account.id !== existingLoan.disbursement_account.id) {
-        fieldErrors.disbursement_account = 'No se puede cambiar la cuenta de desembolso de un préstamo con pagos registrados'
+      if (payments.length > 0) {
+        const newAccId = loan.disbursement_account?.id || null
+        const oldAccId = existingLoan.disbursement_account?.id || null
+
+        if (newAccId !== oldAccId) {
+          fieldErrors.disbursement_account = 'No se puede cambiar la cuenta de desembolso de un préstamo con pagos registrados'
+        }
       }
     }
   }
 
-  logger.warn('Loan validation', { userId, fieldErrors })
+  logger.warn('Loan validation', { userId, fieldErrors, isParent, isChild })
 
   return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }

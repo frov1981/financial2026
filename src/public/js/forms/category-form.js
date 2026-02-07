@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasChecked && typeRadios.length) {
       typeRadios[0].checked = true
     }
-  }
+  } 
 
   function toggleParentMode() {
     if (!typeContainer || !parentContainer || !checkbox) return

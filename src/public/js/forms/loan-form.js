@@ -1,40 +1,41 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // ============================
-  // Toggle "Es préstamo padre"
-  // ============================
   const checkbox = document.getElementById('is-parent-checkbox')
-  const typeContainer = document.getElementById('type-container')
-  const parentContainer = document.getElementById('parent-container')
-  const typeRadios = document.querySelectorAll('input[name="type"]')
-  const parentInputHidden = parentContainer?.querySelector('input[name="parent_id"]')
-  const parentInputText = parentContainer?.querySelector('input[data-autocomplete-input]')
+  if (!checkbox) return
 
-  function ensureTypeSelected() {
-    const hasChecked = [...typeRadios].some(r => r.checked)
-    if (!hasChecked && typeRadios.length) {
-      typeRadios[0].checked = true
-    }
-  }
+  const form = checkbox.closest('form')
 
   function toggleParentMode() {
-    if (!checkbox || !typeContainer || !parentContainer) return
+    const isParent = checkbox.checked
 
-    if (checkbox.checked) {
-      typeContainer.style.display = 'none'
-      parentContainer.style.display = 'none'
-      if (parentInputHidden) parentInputHidden.value = ''
-      if (parentInputText) parentInputText.value = ''
-      ensureTypeSelected()
-    } else {
-      typeContainer.style.display = 'block'
-      parentContainer.style.display = 'block'
+    const fields = Array.from(form.querySelectorAll('.mb-4'))
+
+    fields.forEach(field => {
+      if (field.contains(checkbox)) return
+
+      const nameInput = field.querySelector('input[name="name"]')
+
+      if (isParent) {
+        if (nameInput) {
+          field.style.display = 'block'
+        } else {
+          field.style.display = 'none'
+        }
+      } else {
+        field.style.display = 'block'
+      }
+    })
+
+    const parentContainer = document.getElementById('parent-container')
+    if (isParent && parentContainer) {
+      const parentHidden = parentContainer.querySelector('input[name="parent_id"]')
+      const parentText = parentContainer.querySelector('input[data-autocomplete-input]')
+      if (parentHidden) parentHidden.value = ''
+      if (parentText) parentText.value = ''
     }
   }
 
-  if (checkbox) {
-    checkbox.addEventListener('change', toggleParentMode)
-    toggleParentMode()
-  }
+  checkbox.addEventListener('change', toggleParentMode)
+  toggleParentMode()
 
   // ============================
   // Autocomplete (igual que Categories)

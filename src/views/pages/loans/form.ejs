@@ -1,3 +1,10 @@
+<%
+  const rules = loan_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'read'
+  const isEditable = field => rules[field] === 'edit'
+%>
+
 <div class="max-w-xl mx-auto">
   <h1 class="text-2xl font-semibold mb-6">
     <%= 
@@ -19,9 +26,11 @@
     <!-- ID y acción -->
     <input type="hidden" name="id" value="<%= loan?.id || '' %>">
     <input type="hidden" name="action" value="save">
+    <input type="hidden" name="mode" value="<%= mode %>">
     <input type="hidden" name="status" value="<%= loan?.status || 'active' %>">
 
-    <!-- Checkbox Padre -->
+    <!-- Checkbox Padre -->     
+    <% if (!isHidden('is_parent')) { %>
     <div class="mb-4">
       <label class="flex items-center gap-2">
         <input
@@ -30,13 +39,15 @@
           name="is_parent"
           value="1"
           <%= loan?.parent ? '' : loan?.is_parent ? 'checked' : '' %>
-          <%= mode === 'delete' ? 'disabled' : '' %>
+          <%= isReadOnly('is_parent') ? 'disabled' : '' %>
         >
         Es préstamo padre?
       </label>
     </div>
+    <% } %>
 
     <!-- Nombre -->
+    <% if (!isHidden('name')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Nombre</label>
       <input
@@ -44,7 +55,7 @@
         name="name"
         class="w-full border rounded px-3 py-2"
         value="<%= loan?.name || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('name') ? 'readonly' : '' %>
         required
       >
 
@@ -52,8 +63,10 @@
         <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Monto total -->
+    <% if (!isHidden('total_amount')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Monto total</label>
       <input
@@ -62,7 +75,7 @@
         name="total_amount"
         class="w-full border rounded px-3 py-2"
         value="<%= loan?.total_amount || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('total_amount') ? 'readonly' : '' %>
         required
       >
 
@@ -70,8 +83,10 @@
         <p class="text-red-600 text-sm mt-1"><%= errors.total_amount %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Fecha inicio -->
+    <% if (!isHidden('start_date')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Fecha inicio</label>
       <input
@@ -79,7 +94,7 @@
         name="start_date"
         class="w-full border rounded px-3 py-2"
         value="<%= loan?.start_date || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('start_date') ? 'readonly' : '' %>
         required
       >
 
@@ -87,8 +102,10 @@
         <p class="text-red-600 text-sm mt-1"><%= errors.start_date %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Cuenta de desembolso -->
+    <% if (!isHidden('disbursement_account_id')) { %>    
     <div 
       class="mb-4" 
       data-field="disbursement_account" 
@@ -103,8 +120,8 @@
           placeholder="Buscar cuenta…"
           data-autocomplete-input
           autocomplete="off"
-          value="<%= loan?.disbursement_account_name || '' %>"
-          <%= mode === 'delete' ? 'readonly' : '' %>
+          value="<%= loan?.disbursement_account?.name || '' %>"
+          <%= isReadOnly('disbursement_account_id') ? 'readonly' : '' %>
         >
 
         <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
@@ -119,10 +136,9 @@
         type="hidden"
         name="disbursement_account_id"
         data-autocomplete-hidden
-        value="<%= loan?.disbursement_account_id || '' %>"
+        value="<%= loan?.disbursement_account?.id || '' %>"
       >
 
-      <% if (mode !== 'delete') { %>
       <div class="relative">
         <ul
           class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
@@ -152,14 +168,15 @@
           <% }) %>
         </ul>
       </div>
-      <% } %>
 
       <% if (errors?.disbursement_account) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.disbursement_account %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Préstamo Padre (Autocomplete) -->
+    <% if (!isHidden('parent_id')) { %>   
     <div
       class="mb-4" 
       id="parent-container" 
@@ -175,7 +192,7 @@
         data-autocomplete-input
         autocomplete="off"
         value="<%= loan?.parent?.name || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('parent_id') ? 'readonly' : '' %>
       >
 
       <input
@@ -185,32 +202,30 @@
         value="<%= loan?.parent?.id || '' %>"
       >
  
-      <% if (mode !== 'delete') { %>
       <div class="relative">
         <ul
           class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
           data-autocomplete-list
           data-active="1"
         >
-          <% parentLoans.forEach(p => { %>
+          <% parent_loans.forEach(p => { %>
             <li
               class="px-3 py-2 cursor-pointer hover:bg-gray-100"
               data-autocomplete-item
               data-id="<%= p.id %>"
               data-label="<%= p.name %>"
-              data-balance="0"
             >
               <%= p.name %>
             </li>
           <% }) %>
         </ul>
       </div>
-      <% } %>
 
       <% if (errors?.parent) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.parent %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Acciones -->
     <div class="flex justify-end gap-2">

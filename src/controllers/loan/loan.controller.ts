@@ -1,15 +1,47 @@
 import { Request, RequestHandler, Response } from 'express'
-import { AuthRequest } from "../../types/auth-request"
-import { Loan } from "../../entities/Loan.entity"
 import { AppDataSource } from "../../config/typeorm.datasource"
-import { logger } from "../../utils/logger.util"
+import { Loan } from "../../entities/Loan.entity"
+import { loanFormMatrix } from '../../policies/loan-form.policy'
+import { AuthRequest } from "../../types/auth-request"
 import { formatDateForInputLocal } from '../../utils/date.util'
+import { logger } from "../../utils/logger.util"
 import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
 import { getActiveParentLoansByUser } from './loan.auxiliar'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
+type LoanFormViewParams = {
+  title: string
+  view: string
+  loan: any
+  errors: any
+  mode: 'insert' | 'update' | 'delete'
+  auth_req: AuthRequest
+}
+
+const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
+  const { title, view, loan, errors, mode, auth_req } = params
+
+  const disbursement_accounts = await getActiveAccountsByUser(auth_req)
+  const parent_loans = await getActiveParentLoansByUser(auth_req)
+
+  const is_parent = loan?.is_parent
+  const loan_form_policy = loanFormMatrix[mode][is_parent ? 'parent' : 'child']
+
+  return res.render('layouts/main', {
+    title,
+    view,
+    loan,
+    errors,
+    loan_form_policy,
+    disbursement_accounts,
+    parent_loans,
+    mode
+  })
+}
+
 export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
 
   try {
     const repository = AppDataSource.getRepository(Loan)
@@ -20,7 +52,7 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       .leftJoinAndSelect('loan.disbursement_account', 'disbursement_account')
       .leftJoinAndSelect('loan.transaction', 'transaction')
       .leftJoinAndSelect('loan.payments', 'payments')
-      .where('loan.user_id = :userId', { userId: authReq.user.id })
+      .where('loan.user_id = :userId', { userId: auth_req.user.id })
       .orderBy('parent.name', 'ASC')
       .addOrderBy('loan.name', 'ASC')
       .getMany()
@@ -36,17 +68,10 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       is_active: loan.is_active,
       created_at: loan.created_at,
       note: loan.note,
-
       disbursement_account: loan.disbursement_account,
       transaction: loan.transaction,
       payments: loan.payments,
-
-      parent: loan.parent
-        ? {
-          id: loan.parent.id,
-          name: loan.parent.name
-        }
-        : null
+      parent: loan.parent ? { id: loan.parent.id, name: loan.parent.name } : null
     }))
 
     res.json(loans)
@@ -55,133 +80,99 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
     res.status(500).json({ error: 'Error al listar préstamos' })
   }
 }
-export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
 
+export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
   res.render(
     'layouts/main',
     {
       title: 'Préstamos',
       view: 'pages/loans/index',
       disbursement_accounts: [],
-      USER_ID: authReq.user?.id || 'guest'
+      USER_ID: auth_req.user?.id || 'guest'
     })
 }
 
-
-export const routeToFormInsertLoan: RequestHandler = async (req: Request, res: Response) => {
-  const mode = 'insert'
-  const authReq = req as AuthRequest
-
-  const defaultDate = new Date()
-  const disbursement_accounts = await getActiveAccountsByUser(authReq)
-  const parentLoans = await getActiveParentLoansByUser(authReq)
-  res.render(
-    'layouts/main',
-    {
-      title: 'Insertar Préstamo',
-      view: 'pages/loans/form',
-      loan: {
-        start_date: formatDateForInputLocal(defaultDate).slice(0, 16),
-        total_amount: '0.00',
-        disbursement_account_id: '',
-        disbursement_account_name: '',
-      },
-      errors: {},
-      disbursement_accounts,
-      parentLoans,
-      mode,
-    })
+export const routeToFormInsertLoan: RequestHandler = async (req, res) => {
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
+  const default_date = new Date()
+  return renderLoanForm(res, {
+    title: 'Insertar Préstamo',
+    view: 'pages/loans/form',
+    loan: {
+      start_date: formatDateForInputLocal(default_date, timezone),
+      total_amount: '0.00',
+      parent: null,
+      disbursement_account: null,
+      is_parent: false
+    },
+    errors: {},
+    mode: 'insert',
+    auth_req,
+  })
 }
 
-export const routeToFormUpdateLoan: RequestHandler = async (req: Request, res: Response) => {
-  const mode = 'update'
-  const authReq = req as AuthRequest
-  const loanId = Number(req.params.id)
+export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
+  const loan_id = Number(req.params.id)
+  if (!Number.isInteger(loan_id) || loan_id <= 0) return res.redirect('/loans')
+  const repo_loan = AppDataSource.getRepository(Loan)
+  const loan = await repo_loan.findOne({
+    where: { id: loan_id, user: { id: auth_req.user.id } },
+    relations: { disbursement_account: true, transaction: true, parent: true }
+  })
+  if (!loan) return res.redirect('/loans')
+  return renderLoanForm(res, {
+    title: 'Editar Préstamo',
+    view: 'pages/loans/form',
+    loan: {
+      id: loan.id,
+      name: loan.name,
+      total_amount: loan.total_amount,
+      balance: loan.balance,
+      start_date: formatDateForInputLocal(loan.start_date, timezone),
+      transaction: loan.transaction || null,
+      parent: loan.parent || null,
+      disbursement_account: loan.disbursement_account || null,
+      is_parent: !loan.parent
+    },
+    errors: {},
+    mode: 'update',
+    auth_req,
+  })
+}
 
-  if (!Number.isInteger(loanId) || loanId <= 0) {
-    return res.redirect('/loans')
-  }
-
-  const repoLoan = AppDataSource.getRepository(Loan)
-  const loan = await repoLoan.findOne({
-    where: { id: loanId, user: { id: authReq.user.id } },
+export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
+  const loan_id = Number(req.params.id)
+  if (!Number.isInteger(loan_id) || loan_id <= 0) return res.redirect('/loans')
+  const repo_loan = AppDataSource.getRepository(Loan)
+  const loan = await repo_loan.findOne({
+    where: { id: loan_id, user: { id: auth_req.user.id } },
     relations: { disbursement_account: true, parent: true }
   })
-
-  if (!loan) {
-    return res.redirect('/loans')
-  }
-
-  const disbursement_accounts = await getActiveAccountsByUser(authReq)
-  const parentLoans = await getActiveParentLoansByUser(authReq)
-  res.render(
-    'layouts/main',
-    {
-      title: 'Editar Préstamo',
-      view: 'pages/loans/form',
-      loan: {
-        id: loan.id,
-        name: loan.name,
-        total_amount: loan.total_amount,
-        balance: loan.balance,
-        start_date: formatDateForInputLocal(loan.start_date).slice(0, 16),
-        disbursement_account_id: loan.disbursement_account?.id || '',
-        disbursement_account_name: loan.disbursement_account?.name || '',
-        transaction_id: loan.transaction?.id || '',
-        parent: loan.parent || null,
-        is_parent: !loan.parent
-
-      },
-      errors: {},
-      disbursement_accounts,
-      parentLoans,
-      mode
-    })
-}
-
-export const routeToFormDeleteLoan: RequestHandler = async (req: Request, res: Response) => {
-  const mode = 'delete'
-  const authReq = req as AuthRequest
-  const loanId = Number(req.params.id)
-
-  if (!Number.isInteger(loanId) || loanId <= 0) {
-    return res.redirect('/loans')
-  }
-
-  const repoLoan = AppDataSource.getRepository(Loan)
-  const loan = await repoLoan.findOne({
-    where: { id: loanId, user: { id: authReq.user.id } },
-    relations: { disbursement_account: true, parent: true }
+  if (!loan) return res.redirect('/loans')
+  return renderLoanForm(res, {
+    title: 'Eliminar Préstamo',
+    view: 'pages/loans/form',
+    loan: {
+      id: loan.id,
+      name: loan.name,
+      total_amount: loan.total_amount,
+      balance: loan.balance,
+      start_date: formatDateForInputLocal(loan.start_date, timezone),
+      is_active: loan.is_active,
+      parent: loan.parent || null,
+      disbursement_account: loan.disbursement_account || null,
+      is_parent: !loan.parent
+    },
+    errors: {},
+    mode: 'delete',
+    auth_req,
   })
-
-  if (!loan) {
-    return res.redirect('/loans')
-  }
-
-  const disbursement_accounts = await getActiveAccountsByUser(authReq)
-  const parentLoans = await getActiveParentLoansByUser(authReq)
-  res.render(
-    'layouts/main',
-    {
-      title: 'Eliminar Préstamo',
-      view: 'pages/loans/form',
-      loan: {
-        id: loan.id,
-        name: loan.name,
-        total_amount: loan.total_amount,
-        balance: loan.balance,
-        start_date: formatDateForInputLocal(loan.start_date).slice(0, 16),
-        disbursement_account_id: loan.disbursement_account?.id || '',
-        disbursement_account_name: loan.disbursement_account?.name || '',
-        is_active: loan.is_active,
-        parent: loan.parent || null,
-        is_parent: !loan.parent
-      },
-      errors: {},
-      disbursement_accounts,
-      parentLoans,
-      mode
-    })
 }
 

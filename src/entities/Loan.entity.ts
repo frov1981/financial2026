@@ -51,7 +51,7 @@ export class Loan {
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'disbursement_account_id', foreignKeyConstraintName: 'fk_loans_disbursement_account' })
-  disbursement_account!: Account
+  disbursement_account!: Account | null
 
   @OneToOne(() => Transaction)
   @JoinColumn({ name: 'transaction_id', foreignKeyConstraintName: 'fk_loans_transaction' })

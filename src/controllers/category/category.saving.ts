@@ -40,11 +40,9 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     const categoryId = req.params.id ? Number(req.params.id) : req.body.id ? Number(req.body.id) : undefined
     const mode: CategoryFormMode = req.body.mode || 'insert'
 
+    const parentCategories = await getActiveParentCategoriesByUser(authReq)
     const repoCategory = AppDataSource.getRepository(Category)
-
     try {
-        const parentCategories = await getActiveParentCategoriesByUser(authReq)
-
         let existing: Category | null = null
         if (categoryId) {
             existing = await repoCategory.findOne({
@@ -56,7 +54,6 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
 
         const isParent = existing ? !existing.parent : req.body.is_parent === 'true'
         const role: 'parent' | 'child' = isParent ? 'parent' : 'child'
-
         /* ============================
            DELETE
         ============================ */
@@ -70,7 +67,6 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
 
             await repoCategory.delete(existing.id)
             logger.info('Category deleted from database.')
-
             return res.redirect('/categories')
         }
 
