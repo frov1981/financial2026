@@ -39,12 +39,11 @@ const sanitizeByPolicy = (mode: LoanFormMode, role: 'parent' | 'child', body: an
 /* ============================
    Construir objeto para la vista
 ============================ */
-const buildLoanView = (body: any, parentLoans: Loan[], disbursementAccounts: Account[]) => {
-  const parentId = body.parent_id ? Number(body.parent_id) : null
-  const disbursementId = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
-
-  const parent = parentId ? parentLoans.find(p => p.id === parentId) || null : null
-  const disbursement = disbursementId ? disbursementAccounts.find(a => a.id === disbursementId) || null : null
+const buildLoanView = (body: any, parent_loans: Loan[], disbursement_accounts: Account[]) => {
+  const parent_id = body.parent_id ? Number(body.parent_id) : null
+  const disbursement_id = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
+  const parent = parent_id ? parent_loans.find(p => p.id === parent_id) || null : null
+  const disbursement = disbursement_id ? disbursement_accounts.find(a => a.id === disbursement_id) || null : null
 
   return {
     ...body,

@@ -20,13 +20,10 @@ type LoanFormViewParams = {
 
 const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
   const { title, view, loan, errors, mode, auth_req } = params
-
   const disbursement_accounts = await getActiveAccountsByUser(auth_req)
   const parent_loans = await getActiveParentLoansByUser(auth_req)
-
   const is_parent = loan?.is_parent
   const loan_form_policy = loanFormMatrix[mode][is_parent ? 'parent' : 'child']
-
   return res.render('layouts/main', {
     title,
     view,
@@ -104,9 +101,10 @@ export const routeToFormInsertLoan: RequestHandler = async (req, res) => {
     loan: {
       start_date: formatDateForInputLocal(default_date, timezone),
       total_amount: '0.00',
-      parent: null,
+      is_active: true,
       disbursement_account: null,
-      is_parent: false
+      parent: null,
+      is_parent: false,
     },
     errors: {},
     mode: 'insert',
@@ -118,13 +116,17 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
   const auth_req = req as AuthRequest
   const timezone = auth_req.timezone || 'UTC'
   const loan_id = Number(req.params.id)
-  if (!Number.isInteger(loan_id) || loan_id <= 0) return res.redirect('/loans')
+  if (!Number.isInteger(loan_id) || loan_id <= 0) {
+    return res.redirect('/loans')
+  }
   const repo_loan = AppDataSource.getRepository(Loan)
   const loan = await repo_loan.findOne({
     where: { id: loan_id, user: { id: auth_req.user.id } },
     relations: { disbursement_account: true, transaction: true, parent: true }
   })
-  if (!loan) return res.redirect('/loans')
+  if (!loan) {
+    return res.redirect('/loans')
+  }
   return renderLoanForm(res, {
     title: 'Editar Préstamo',
     view: 'pages/loans/form',
@@ -155,7 +157,9 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
     where: { id: loan_id, user: { id: auth_req.user.id } },
     relations: { disbursement_account: true, parent: true }
   })
-  if (!loan) return res.redirect('/loans')
+  if (!loan) {
+    return res.redirect('/loans')
+  }
   return renderLoanForm(res, {
     title: 'Eliminar Préstamo',
     view: 'pages/loans/form',

@@ -1,20 +1,16 @@
-import { IsNull } from 'typeorm'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import { Category } from '../../entities/Category.entity'
+import { CategoryGroup } from '../../entities/CategoryGroups.entity'
 import { AuthRequest } from '../../types/auth-request'
 
 export const getActiveParentCategoriesByUser = async (
   authReq: AuthRequest
-): Promise<Category[]> => {
-  const repo = AppDataSource.getRepository(Category)
+): Promise<CategoryGroup[]> => {
+  const repo = AppDataSource.getRepository(CategoryGroup)
 
   return await repo.find({
     where: {
-      user: { id: authReq.user.id },
-      is_active: true,
-      parent: IsNull()
+      user: { id: authReq.user.id }
     },
     order: { name: 'ASC' }
   })
 }
- 

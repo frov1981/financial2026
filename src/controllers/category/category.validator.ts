@@ -4,6 +4,7 @@ import { Category } from '../../entities/Category.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
 import { Transaction } from '../../entities/Transaction.entity'
+import { CategoryGroup } from '../../entities/CategoryGroups.entity'
 
 export const validateCategory = async (
   category: Category,
@@ -23,6 +24,7 @@ export const validateCategory = async (
   }
 
   const repo = AppDataSource.getRepository(Category)
+  const groupRepo = AppDataSource.getRepository(CategoryGroup)
 
   /* ===============================
      Nombre único por usuario
@@ -50,27 +52,21 @@ export const validateCategory = async (
   }
 
   /* ===============================
-     Validación parent / child
+     Validación de grupo (OBLIGATORIO)
   =============================== */
 
-  if (category.parent) {
-
-    // Evitar self-reference
-    if (category.id && category.parent.id === category.id) {
-      fieldErrors.parent = 'Una categoría no puede ser padre de sí misma'
-    }
-
-    // Validar parent real
-    const parent = await repo.findOne({
+  if (!category.group || !category.group.id) {
+    fieldErrors.group = 'El grupo es obligatorio'
+  } else {
+    const group = await groupRepo.findOne({
       where: {
-        id: category.parent.id,
-        user: { id: userId },
-        is_active: true
+        id: category.group.id,
+        user: { id: userId }
       }
     })
 
-    if (!parent) {
-      fieldErrors.parent = 'La categoría padre seleccionada no es válida'
+    if (!group) {
+      fieldErrors.group = 'El grupo seleccionado no es válido'
     }
   }
 
@@ -104,7 +100,8 @@ export const validateDeleteCategory = async (
   }
 
   /* ===============================
-     Validación: categorías hijas
+     Validación: categorías hijas (estructura)
+     Esto es SOLO para integridad de datos, no negocio
   =============================== */
 
   const childrenCount = await categoryRepo.count({

@@ -3,6 +3,7 @@ import { Account } from './Account.entity'
 import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
 import { Transaction } from './Transaction.entity'
+import { CategoryGroup } from './CategoryGroups.entity'
 
 @Entity('users')
 //@Unique('UQ_users_email', ['email'])
@@ -11,7 +12,7 @@ export class User {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @Column({ unique: true,  })
+  @Column({ unique: true, })
   email!: string
 
   @Column()
@@ -34,5 +35,9 @@ export class User {
 
   @OneToMany(() => Loan, loan => loan.user)
   loans!: Loan[]
+
+  @OneToMany(() => CategoryGroup, group => group.user)
+  categoryGroups!: CategoryGroup[]
+
 
 }

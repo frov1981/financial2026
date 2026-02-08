@@ -7,16 +7,43 @@ import { getActiveParentCategoriesByUser } from './category.auxiliar'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
 export { saveCategory as apiForSavingCatgory } from './category.saving'
 
+type CategoryFormViewParams = {
+  title: string
+  view: string
+  category: any
+  errors: any
+  mode: 'insert' | 'update' | 'delete' | 'status'
+  auth_req: AuthRequest
+}
+
+const renderCategoryForm = async (res: Response, params: CategoryFormViewParams) => {
+  const { title, view, category, errors, mode, auth_req } = params
+
+  const category_groups = await getActiveParentCategoriesByUser(auth_req)
+  const category_form_policy = categoryFormMatrix[mode]
+
+  return res.render('layouts/main', {
+    title,
+    view,
+    category,
+    errors,
+    category_form_policy,
+    category_groups,
+    mode
+  })
+}
+
 export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
+  const auth_req = req as AuthRequest
 
   try {
     const repository = AppDataSource.getRepository(Category)
 
     const result = await repository
       .createQueryBuilder('category')
-      .leftJoinAndSelect('category.parent', 'parent')
-      .where('category.user_id = :userId', { userId: authReq.user.id })
+      .innerJoin('category.user', 'user')
+      .innerJoinAndSelect('category.group', 'group')
+      .where('user.id = :userId', { userId: auth_req.user.id })
       .addSelect(subQuery =>
         subQuery
           .select('COUNT(t.id)')
@@ -24,7 +51,7 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
           .where('t.category_id = category.id'),
         'transactions_count'
       )
-      .orderBy('parent.name', 'ASC')
+      .orderBy('group.name', 'ASC')
       .addOrderBy('category.name', 'ASC')
       .getRawAndEntities()
 
@@ -33,17 +60,14 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
       name: category.name,
       type: category.type,
       is_active: category.is_active,
-
-      parent: category.parent
-        ? {
-          id: category.parent.id,
-          name: category.parent.name,
-        }
-        : null,
-
+      group: {
+        id: category.group.id,
+        name: category.group.name
+      },
       transactions_count: Number(result.raw[index].transactions_count)
     }))
 
+    console.log('Categorías obtenidas:', categories)
     res.json(categories)
   } catch (error) {
     logger.error('Error al listar categorías', error)
@@ -52,64 +76,48 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
 }
 
 export const routeToPageCategory: RequestHandler = (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-
-  res.render(
-    'layouts/main',
-    {
-      title: 'Categorías',
-      view: 'pages/categories/index',
-      USER_ID: authReq.user?.id || 'guest'
-    })
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
+  res.render('layouts/main', {
+    title: 'Categorías',
+    view: 'pages/categories/index',
+    USER_ID: auth_req.user?.id || 'guest'
+  })
 }
 
-
 export const routeToFormInsertCategory: RequestHandler = async (req: Request, res: Response) => {
-  const mode = 'insert'
-  const authReq = req as AuthRequest
-  const parentCategories = await getActiveParentCategoriesByUser(authReq)
-  const categoryFormPolicy = categoryFormMatrix[mode]['child']
-
-  res.render(
-    'layouts/main',
-    {
-      title: 'Insertar Categoría',
-      view: 'pages/categories/form',
-      category: {
-        parent: null,
-        type: null,
-        is_active: true,
-      },
-      errors: {},
-      categoryFormPolicy,
-      parentCategories,
-      mode,
-    })
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
+  return renderCategoryForm(res, {
+    title: 'Insertar Categoría',
+    view: 'pages/categories/form',
+    category: {
+      type: null,
+      group: null,
+      is_active: true
+    },
+    errors: {},
+    mode: 'insert',
+    auth_req
+  })
 }
 
 export const routeToFormUpdateCategory: RequestHandler = async (req: Request, res: Response) => {
-  const mode = 'update'
-  const authReq = req as AuthRequest
-  const categoryId = Number(req.params.id)
-
-  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
+  const category_id = Number(req.params.id)
+  if (!Number.isInteger(category_id) || category_id <= 0) {
     return res.redirect('/categories')
   }
-
-  const repoCategory = AppDataSource.getRepository(Category)
-  const category = await repoCategory.findOne({
-    where: { id: categoryId, user: { id: authReq.user.id } },
-    relations: { parent: true }
+  const repo_category = AppDataSource.getRepository(Category)
+  const category = await repo_category.findOne({
+    where: { id: category_id, user: { id: auth_req.user.id } },
+    relations: { group: true }
   })
-
   if (!category) {
     return res.redirect('/categories')
   }
-
-  const parentCategories = await getActiveParentCategoriesByUser(authReq)
-  const is_parent = !category.parent
-  const categoryFormPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
-  res.render('layouts/main', {
+  return renderCategoryForm(res, {
     title: 'Editar Categoría',
     view: 'pages/categories/form',
     category: {
@@ -117,39 +125,29 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
       name: category.name,
       type: category.type,
       is_active: category.is_active,
-      parent: category.parent || null,
-      is_parent: is_parent
+      group: category.group || null,
     },
     errors: {},
-    categoryFormPolicy,
-    parentCategories,
-    mode,
+    mode: 'update',
+    auth_req
   })
 }
 
 export const routeToFormDeleteCategory: RequestHandler = async (req: Request, res: Response) => {
-  const mode = 'delete'
-  const authReq = req as AuthRequest
-  const categoryId = Number(req.params.id)
-
-  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+  const auth_req = req as AuthRequest
+  const category_id = Number(req.params.id)
+  if (!Number.isInteger(category_id) || category_id <= 0) {
     return res.redirect('/categories')
   }
-
-  const repoCategory = AppDataSource.getRepository(Category)
-  const category = await repoCategory.findOne({
-    where: { id: categoryId, user: { id: authReq.user.id } },
-    relations: { parent: true }
+  const repo_category = AppDataSource.getRepository(Category)
+  const category = await repo_category.findOne({
+    where: { id: category_id, user: { id: auth_req.user.id } },
+    relations: { group: true }
   })
-
   if (!category) {
     return res.redirect('/categories')
   }
-
-  const parentCategories = await getActiveParentCategoriesByUser(authReq)
-  const is_parent = !category.parent
-  const categoryFormPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
-  res.render('layouts/main', {
+  return renderCategoryForm(res, {
     title: 'Eliminar Categoría',
     view: 'pages/categories/form',
     category: {
@@ -157,54 +155,41 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
       name: category.name,
       type: category.type,
       is_active: category.is_active,
-      parent: category.parent || null,
-      is_parent: is_parent
+      group: category.group || null,
     },
     errors: {},
-    categoryFormPolicy,
-    parentCategories,
-    mode,
+    mode: 'delete',
+    auth_req
   })
 }
 
 export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Request, res: Response) => {
-  const mode = 'status'
-  const authReq = req as AuthRequest
-  const categoryId = Number(req.params.id)
-
-  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
+  const category_id = Number(req.params.id)
+  if (!Number.isInteger(category_id) || category_id <= 0) {
     return res.redirect('/categories')
   }
-
-  const repoCategory = AppDataSource.getRepository(Category)
-  const category = await repoCategory.findOne({
-    where: { id: categoryId, user: { id: authReq.user.id } },
-    relations: { parent: true }
+  const repo_category = AppDataSource.getRepository(Category)
+  const category = await repo_category.findOne({
+    where: { id: category_id, user: { id: auth_req.user.id } },
+    relations: { group: true }
   })
-
   if (!category) {
     return res.redirect('/categories')
   }
-
-  const parentCategories = await getActiveParentCategoriesByUser(authReq)
-  const is_parent = !category.parent
-  const categoryFormPolicy = categoryFormMatrix[mode][is_parent ? 'parent' : 'child']
-  res.render(
-    'layouts/main',
-    {
-      title: 'Cambiar Estado de Categoría',
-      view: 'pages/categories/form',
-      category: {
-        id: category.id,
-        name: category.name,
-        type: category.type,
-        is_active: category.is_active,
-        parent: category.parent || null,
-        is_parent: is_parent
-      },
-      errors: {},
-      categoryFormPolicy,
-      parentCategories,
-      mode
-    })
+  return renderCategoryForm(res, {
+    title: 'Cambiar Estado de Categoría',
+    view: 'pages/categories/form',
+    category: {
+      id: category.id,
+      name: category.name,
+      type: category.type,
+      is_active: category.is_active,
+      group: category.group || null,
+    },
+    errors: {},
+    mode: 'status',
+    auth_req
+  })
 }

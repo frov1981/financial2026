@@ -1,5 +1,5 @@
 <%
-  const rules = categoryFormPolicy
+  const rules = category_form_policy
   const isHidden = field => rules[field] === 'hidden'
   const isReadOnly = field => rules[field] === 'read'
   const isEditable = field => rules[field] === 'edit'
@@ -29,23 +29,6 @@
     <input type="hidden" name="id" value="<%= category?.id || '' %>">
     <input type="hidden" name="action" value="save">
     <input type="hidden" name="mode" value="<%= mode %>">
-
-    <!-- Checkbox Padre -->
-    <% if (!isHidden('is_parent')) { %>
-    <div class="mb-4">
-      <label class="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="is-parent-checkbox"
-          name="is_parent"
-          value="1"
-          <%= category?.parent ? '' : category?.is_parent ? 'checked' : '' %>
-          <%= isReadOnly('is_parent') ? 'disabled' : '' %>
-        >
-        Es categoría padre?
-      </label>
-    </div>
-    <% } %>
 
     <!-- Tipo de categoría -->
     <% if (!isHidden('type')) { %>
@@ -99,56 +82,30 @@
     </div>
     <% } %>
 
-    <!-- Categoría Padre (Autocomplete) -->
-    <% if (!isHidden('parent_name')) { %>    
-    <div 
-      class="mb-4" 
-      id="parent-container" 
-      data-field="parent" 
-      data-autocomplete>
-      
-      <label class="block font-medium mb-1">Categoría Padre</label>
+    <!-- Grupo de Categoría -->
+    <% if (!isHidden('group_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Grupo</label>
 
-      <!-- Input de búsqueda -->
-      <input
-        type="text"
+      <select
+        name="group_id"
         class="w-full border rounded px-3 py-2"
-        placeholder="Buscar categoría…"
-        data-autocomplete-input
-        autocomplete="off"
-        value="<%= category?.parent?.name || '' %>"
-        <%= isReadOnly('parent_name') ? 'readonly' : '' %>
+        <%= isReadOnly('group_id') ? 'disabled' : '' %>
+        required
       >
+        <option value="">-- Selecciona un grupo --</option>
+        <% category_groups.forEach(g => { %>
+          <option
+            value="<%= g.id %>"
+            <%= category?.group?.id === g.id ? 'selected' : '' %>
+          >
+            <%= g.name %>
+          </option>
+        <% }) %>
+      </select>
 
-      <!-- Hidden para enviar el ID -->
-      <input
-        type="hidden"
-        name="parent_id"
-        data-autocomplete-hidden
-        value="<%= category?.parent?.id || '' %>"
-      >
-
-      <div class="relative">
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-active="1"
-        >
-          <% parentCategories.forEach(c => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= c.id %>"
-              data-label="<%= c.name %>"
-            >
-              <%= c.name %>
-            </li>
-          <% }) %>
-        </ul>
-      </div>
-
-      <% if (errors?.category) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
+      <% if (errors?.group) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.group %></p>
       <% } %>
     </div>
     <% } %>
