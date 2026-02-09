@@ -25,7 +25,6 @@
 
     <!-- ID y acción -->
     <input type="hidden" name="id" value="<%= loan?.id || '' %>">
-    <input type="hidden" name="action" value="save">
     <input type="hidden" name="mode" value="<%= mode %>">
     <input type="hidden" name="status" value="<%= loan?.status || 'active' %>">
 
@@ -88,127 +87,49 @@
     <% } %>
 
     <!-- Cuenta de desembolso -->
-    <% if (!isHidden('disbursement_account_id')) { %>    
-    <div 
-      class="mb-4" 
-      data-field="disbursement_account" 
-      data-autocomplete>
-      
+    <% if (!isHidden('disbursement_account_id')) { %>
+    <div class="mb-4">
       <label class="block font-medium mb-1">Cuenta de desembolso</label>
-
-      <div class="relative">
-        <input
-          type="text"
-          class="w-full border rounded px-3 py-2 pr-24 bg-white cursor-text"
-          placeholder="Buscar cuenta…"
-          data-autocomplete-input
-          autocomplete="off"
-          value="<%= loan?.disbursement_account?.name || '' %>"
-          <%= isReadOnly('disbursement_account_id') ? 'readonly' : '' %>
-        >
-
-        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-          <span
-            class="autocomplete-balance"
-            data-autocomplete-display-balance
-          ></span>
-        </div>
-      </div>
-
-      <input
-        type="hidden"
-        name="disbursement_account_id"
-        data-autocomplete-hidden
-        value="<%= loan?.disbursement_account?.id || '' %>"
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(disbursement_account) %>'
+        data-default-id="<%= disbursement_account || '' %>"
+        data-placeholder="-- Escoja una opción --"
       >
-
-      <div class="relative">
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-        >
-          <% (disbursement_accounts || []).forEach(a => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= a.id %>"
-              data-label="<%= a.name %>"
-              data-balance="<%= Number(a.balance).toFixed(2) %>"
-            >
-              <div class="flex items-center gap-2 min-w-0 w-full">
-                <span class="flex-1 truncate autocomplete-label">
-                  <%= a.name %>
-                </span>
-
-                <span
-                  class="autocomplete-balance text-right whitespace-nowrap
-                  <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>"
-                >
-                  <%= Number(a.balance).toFixed(2) %>
-                </span>
-              </div>
-            </li>
-          <% }) %>
-        </ul>
+        <input type="text" class="autocomplete-input" autocomplete="off" 
+          value="<%= loan?.disbursement_account?.name || '' %>" <%= isReadOnly('disbursement_account_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="disbursement_account_id"
+          value="<%= loan?.disbursement_account?.id || '' %>">
+        <div class="autocomplete-panel"></div>
       </div>
-
+      
       <% if (errors?.disbursement_account) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.disbursement_account %></p>
       <% } %>
     </div>
     <% } %>
 
-    <!-- Grupo de Préstamo (Autocomplete) -->
-    <% if (!isHidden('loan_group_id')) { %>   
-    <div
-      class="mb-4" 
-      id="loan-group-container" 
-      data-field="loan_group" 
-      data-autocomplete>
-
-      <label class="block font-medium mb-1">Grupo de Préstamo</label>
-
-      <input
-        type="text"
-        class="w-full border rounded px-3 py-2"
-        placeholder="Buscar grupo de préstamo…"
-        data-autocomplete-input
-        autocomplete="off"
-        value="<%= loan?.loan_group?.name || '' %>"
-        <%= isReadOnly('loan_group_id') ? 'readonly' : '' %>
+    <!-- Grupo de Prestamos -->
+     <% if (!isHidden('loan_group_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Grupo de Préstamos</label>
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(loan_group) %>'
+        data-default-id="<%= loan?.loan_group || '' %>"
+        data-placeholder="-- Escoja una opción --"
       >
-
-      <input
-        type="hidden"
-        name="loan_group_id"
-        data-autocomplete-hidden
-        value="<%= loan?.loan_group?.id || '' %>"
-      >
-
-      <div class="relative">
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-active="1"
-        >
-          <% loan_groups.forEach(g => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= g.id %>"
-              data-label="<%= g.name %>"
-            >
-              <%= g.name %>
-            </li>
-          <% }) %>
-        </ul>
+        <input type="text" class="autocomplete-input" autocomplete="off" 
+          value="<%= loan?.loan_group?.name || '' %>" <%= isReadOnly('loan_group_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="loan_group_id"
+          value="<%= loan?.loan_group?.id || '' %>">
+        <div class="autocomplete-panel"></div>
       </div>
-
-      <% if (errors?.loan_group_id) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.loan_group_id %></p>
+      <% if (errors?.loan_group) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.loan_group %></p>
       <% } %>
     </div>
-    <% } %>
+    <% } %>    
 
     <!-- Acciones -->
     <div class="flex justify-end gap-2">
@@ -235,3 +156,5 @@
 </div>
 
 <script src="/js/forms/loan-form.js"></script>
+<script src="/js/forms/autocomplete-form.js"></script>
+

@@ -143,7 +143,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
 
     if (clean.name !== undefined) category.name = clean.name
     if (clean.type !== undefined) category.type = clean.type
-    if (clean.group_id !== undefined) { category.category_group = findCategoryGroupByBody(req.body, category_group) }
+    if (clean.category_group !== undefined) { category.category_group = findCategoryGroupByBody(req.body, category_group) }
     if (clean.is_active !== undefined) { category.is_active = clean.is_active === 'true' || clean.is_active === '1' }
 
     const errors = await validateCategory(category, auth_req)

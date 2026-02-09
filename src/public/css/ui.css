@@ -1197,4 +1197,86 @@ input[data-balance-final] {
   color: var(--ui-orange-700);
 }
 
+/* Contenedor principal del autocomplete */
+.autocomplete {
+  position: relative;
+  width: 100%;
+  font-family: sans-serif;
+}
 
+/* Panel que aparece debajo del input */
+.autocomplete-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+  z-index: 1000;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Panel abierto */
+.autocomplete-panel.open {
+  display: block;
+}
+
+/* Item dentro del panel */
+.autocomplete-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Hover o seleccionado con teclado */
+.autocomplete-item:hover,
+.autocomplete-item.active {
+  background-color: #f0f0f0;
+}
+
+/* Dos columnas: nombre y balance */
+.autocomplete-item.two-columns {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Columna del nombre */
+.autocomplete-item .item-label {
+  flex: 1;
+}
+
+/* Columna del balance */
+.autocomplete-item .item-balance {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+/* Opcional: input dentro del autocomplete */
+.autocomplete-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.autocomplete-item .item-balance {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+}
+
+/* Verde si balance > 0 */
+.autocomplete-item .item-balance.positive {
+  color: var(--ui-green-800);
+}
+
+/* Rojo si balance <= 0 */
+.autocomplete-item .item-balance.negative {
+  color: var(--ui-red-800);
+}

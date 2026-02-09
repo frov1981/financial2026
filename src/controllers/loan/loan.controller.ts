@@ -6,7 +6,7 @@ import { AuthRequest } from "../../types/auth-request"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
 import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
-import { getActiveParentLoansByUser } from './loan.auxiliar'
+import { getActiveParentLoansByUser } from './loan.saving'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
 type LoanFormViewParams = {
@@ -20,8 +20,8 @@ type LoanFormViewParams = {
 
 const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
   const { title, view, loan, errors, mode, auth_req } = params
-  const disbursement_accounts = await getActiveAccountsByUser(auth_req)
-  const loan_groups = await getActiveParentLoansByUser(auth_req)
+  const disbursement_account = await getActiveAccountsByUser(auth_req)
+  const loan_group = await getActiveParentLoansByUser(auth_req)
   const loan_form_policy = loanFormMatrix[mode]
   return res.render('layouts/main', {
     title,
@@ -29,8 +29,8 @@ const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
     loan,
     errors,
     loan_form_policy,
-    disbursement_accounts,
-    loan_groups,
+    disbursement_account,
+    loan_group,
     mode
   })
 }
@@ -85,7 +85,7 @@ export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => 
     {
       title: 'Préstamos',
       view: 'pages/loans/index',
-      disbursement_accounts: [],
+      disbursement_account: [],
       USER_ID: auth_req.user?.id || 'guest'
     })
 }

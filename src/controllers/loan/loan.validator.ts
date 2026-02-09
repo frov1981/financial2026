@@ -2,6 +2,7 @@ import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Loan } from '../../entities/Loan.entity'
+import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
@@ -26,6 +27,8 @@ export const validateLoan = async (
   const loanRepo = AppDataSource.getRepository(Loan)
   const paymentRepo = AppDataSource.getRepository(LoanPayment)
   const accountRepo = AppDataSource.getRepository(Account)
+  const loanGroupRepo = AppDataSource.getRepository(LoanGroup)
+
 
   // ===============================
   // Nombre único por usuario
@@ -61,6 +64,24 @@ export const validateLoan = async (
     })
     if (!account) {
       fieldErrors.disbursement_account = 'La cuenta de desembolso no es válida o no pertenece al usuario'
+    }
+  }
+
+  // ===============================
+  // Grupo de préstamo obligatorio
+  // ===============================
+  if (!loan.loan_group || !loan.loan_group.id) {
+    fieldErrors.loan_group = 'Debe seleccionar un grupo de préstamo'
+  } else {
+    const loanGroup = await loanGroupRepo.findOne({
+      where: {
+        id: loan.loan_group.id,
+        user: { id: userId },
+        is_active: true
+      }
+    })
+    if (!loanGroup) {
+      fieldErrors.loan_group = 'El grupo de préstamo no es válido o no pertenece al usuario'
     }
   }
 

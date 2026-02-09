@@ -62,7 +62,9 @@ function initAutocomplete(container) {
       if (visible) visibleCount++
     })
 
-    list.style.display = visibleCount ? '' : 'none'
+    if (list) {
+      list.classList.toggle('hidden', visibleCount === 0)
+    }
   })
 
   /* ================================
@@ -102,7 +104,6 @@ function initAutocomplete(container) {
         }
 
         if (fieldName === 'parent') {
-          // Dispara un evento opcional si quieres reaccionar al seleccionar un padre
           document.dispatchEvent(
             new CustomEvent('category:parentSelected', {
               detail: { id: item.dataset.id, label: item.dataset.label }

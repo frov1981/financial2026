@@ -2,15 +2,26 @@ import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Loan } from '../../entities/Loan.entity'
+import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { loanFormMatrix, LoanFormMode } from '../../policies/loan-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
-import { getActiveParentLoansByUser } from './loan.auxiliar'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
-import { LoanGroup } from '../../entities/LoanGroup.entity'
+
+export const getActiveParentLoansByUser = async (auth_req: AuthRequest): Promise<LoanGroup[]> => {
+  const repo = AppDataSource.getRepository(LoanGroup)
+
+  return await repo.find({
+    where: {
+      user: { id: auth_req.user.id },
+      is_active: true
+    },
+    order: { name: 'ASC' }
+  })
+}
 
 const getTitle = (mode: string) => {
   switch (mode) {
@@ -40,11 +51,11 @@ const sanitizeByPolicy = (mode: LoanFormMode, body: any) => {
 /* ============================
    Construir objeto para la vista
 ============================ */
-const buildLoanView = (body: any, loan_group: LoanGroup[], disbursement_accounts: Account[]) => {
-  const group_id = body.loan_group_id ? Number(body.loan_group_id) : null
-  const group = group_id ? loan_group.find(p => p.id === group_id) || null : null
+const buildLoanView = (body: any, loan_group: LoanGroup[], disbursement_account: Account[]) => {
+  const loan_group_id = body.loan_group_id ? Number(body.loan_group_id) : null
+  const group = loan_group_id ? loan_group.find(p => p.id === loan_group_id) || null : null
   const disbursement_id = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
-  const disbursement = disbursement_id ? disbursement_accounts.find(a => a.id === disbursement_id) || null : null
+  const disbursement = disbursement_id ? disbursement_account.find(a => a.id === disbursement_id) || null : null
 
   return {
     ...body,
@@ -53,6 +64,31 @@ const buildLoanView = (body: any, loan_group: LoanGroup[], disbursement_accounts
   }
 }
 
+/* ============================
+    Obtener grupo de préstamo desde el body y la lista de grupos del usuario  
+============================ */
+const findLoanGroupByBody = (body: any, loan_group: LoanGroup[]): LoanGroup | null => {
+  const loan_group_id = body.loan_group_id ? Number(body.loan_group_id) : null
+
+  if (!loan_group_id) return null
+
+  return loan_group.find(p => p.id === loan_group_id) || null
+}
+
+/* ============================
+   Obtener cuenta de desembolso desde el body y la lista de cuentas del usuario  
+============================ */
+const findDisbursementAccountByBody = (body: any, disbursement_account: Account[]): Account | null => {
+  const disbursement_account_id = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
+
+  if (!disbursement_account_id) return null
+
+  return disbursement_account.find(a => a.id === disbursement_account_id) || null
+}
+
+/* ============================
+    Obtener cuentas activas del usuario para mostrar en el formulario 
+============================ */
 export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   logger.info('saveLoan called', { body: req.body, param: req.params })
 
@@ -62,14 +98,13 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const timezone = auth_req.timezone || 'UTC'
 
   const loan_group = await getActiveParentLoansByUser(auth_req)
-  const disbursement_accounts = await getActiveAccountsByUser(auth_req)
-
-  const loan_view = buildLoanView(req.body, loan_group, disbursement_accounts)
+  const disbursement_account = await getActiveAccountsByUser(auth_req)
+  const loan_view = buildLoanView(req.body, loan_group, disbursement_account)
 
   const form_state = {
     loan: loan_view,
     loan_group,
-    disbursement_accounts: disbursement_accounts,
+    disbursement_account: disbursement_account,
     loan_form_policy: loanFormMatrix[mode],
     mode
   }
@@ -127,24 +162,16 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     let loan: Loan
 
     if (mode === 'insert') {
-      const selectedGroup = loan_group.find(
-        g => g.id === Number(req.body.loan_group_id)
-      ) || null
-      if (!selectedGroup) throw new Error('Grupo de préstamo requerido')
-
-      const selectedDisbursementAccount = disbursement_accounts.find(
-        c => c.id === Number(req.body.disbursement_account_id)
-      ) || null
-      if (!selectedDisbursementAccount) throw new Error('Cuenta de desembolso requerida')
-
+      const selectedGroup = findLoanGroupByBody(req.body, loan_group)
+      const selectedDisbursementAccount = findDisbursementAccountByBody(req.body, disbursement_account)
       loan = queryRunner.manager.create(Loan, {
         user: { id: auth_req.user.id } as any,
-        loan_group: selectedGroup,
         name: req.body.name,
         total_amount: 0,
         interest_amount: 0,
         balance: 0,
         start_date: parseLocalDateToUTC(req.body.start_date, timezone),
+        loan_group: selectedGroup,
         disbursement_account: selectedDisbursementAccount,
         is_active: true
       })
@@ -158,43 +185,28 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (clean.name !== undefined) loan.name = clean.name
     if (clean.start_date !== undefined) loan.start_date = parseLocalDateToUTC(clean.start_date, timezone)
     if (clean.is_active !== undefined) loan.is_active = clean.is_active === 'true' || clean.is_active === '1'
+    if (clean.note !== undefined) loan.note = clean.note
+    if (clean.loan_group_id !== undefined) { loan.loan_group = findLoanGroupByBody(req.body, loan_group) }
+    if (clean.disbursement_account_id !== undefined) { loan.disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account) }
 
     let newAccount: Account | null = loan.disbursement_account || null
-
-    if (clean.disbursement_account_id !== undefined) {
-      newAccount = clean.disbursement_account_id
-        ? disbursement_accounts.find(c => c.id === Number(clean.disbursement_account_id)) || null
-        : null
-    }
-
-    if (clean.loan_group_id !== undefined) {
-      const selectedGroup = loan_group.find(g => g.id === Number(clean.loan_group_id)) || null
-      if (!selectedGroup) throw new Error('Grupo de préstamo requerido')
-      loan.loan_group = selectedGroup
-    }
-
     let previousAmount = loan.total_amount
     let previousBalance = loan.balance
 
     if (clean.total_amount !== undefined) {
       const newAmount = Number(clean.total_amount)
-
       if (mode === 'insert') {
         loan.total_amount = newAmount
         loan.balance = newAmount
       } else {
-												
-											
         const paidAmount = previousAmount - previousBalance
-
         loan.total_amount = newAmount
         loan.balance = newAmount - paidAmount
       }
     }
 
     if (mode === 'insert') {
-      if (!newAccount) throw new Error('Cuenta de desembolso requerida')
-
+      if (!newAccount) throw { code: 'DISBURSEMENT_REQUIRED' }
       newAccount.balance += loan.total_amount
       await queryRunner.manager.save(newAccount)
 
@@ -213,8 +225,8 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       loan.transaction = trx
 
     } else {
-      if (!loan.disbursement_account) { throw new Error('Cuenta de desembolso actual no encontrada') }
-      if (!newAccount) throw new Error('Cuenta de desembolso requerida')
+      if (!loan.disbursement_account) { throw { code: 'DISBURSEMENT_NOT_FOUND' } }
+      if (!newAccount) throw { code: 'DISBURSEMENT_REQUIRED' }
 
       const oldAccount = await queryRunner.manager.findOneByOrFail(Account, {
         id: loan.disbursement_account.id,
@@ -260,8 +272,19 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       stack: err?.stack
     })
 
-    const validationErrors = err?.validationErrors || null
+    let validationErrors: Record<string, string> | null = null
 
+    switch (err?.code) {
+      case 'DISBURSEMENT_REQUIRED':
+        validationErrors = { disbursement_account: 'Cuenta de desembolso requerida' }
+        break
+      case 'DISBURSEMENT_NOT_FOUND':
+        validationErrors = { disbursement_account: 'Cuenta de desembolso actual no encontrada' }
+        break
+      default:
+        // errores que vengan de validateLoan
+        validationErrors = err?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
+    }
     return res.render('layouts/main', {
       title: getTitle(mode),
       view: 'pages/loans/form',

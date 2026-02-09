@@ -2,10 +2,10 @@ import { IsBoolean, IsNotEmpty } from 'class-validator'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, Unique } from 'typeorm'
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Account } from './Account.entity'
+import { LoanGroup } from './LoanGroup.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
-import { LoanGroup } from './LoanGroup.entity'
 
 @Entity('loans')
 //@Unique('UQ_loans_transaction', ['transaction'])
@@ -49,7 +49,7 @@ export class Loan {
 
   @ManyToOne(() => LoanGroup, group => group.loans)
   @JoinColumn({ name: 'loan_group_id', foreignKeyConstraintName: 'fk_loans_group' })
-  loan_group!: LoanGroup
+  loan_group!: LoanGroup | null
 
   @OneToMany(() => LoanPayment, payment => payment.loan)
   payments!: LoanPayment[]
