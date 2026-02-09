@@ -16,12 +16,6 @@ export const validateLoan = async (
   const fieldErrors: Record<string, string> = {}
 
   // ===============================
-  // Determinar si es parent o child
-  // ===============================
-  const isChild = !!loan.parent
-  const isParent = !loan.parent
-
-  // ===============================
   // Validaciones class-validator
   // ===============================
   const errors = await validate(loan)
@@ -46,55 +40,27 @@ export const validateLoan = async (
   }
 
   // ===============================
-  // Monto total: SOLO obligatorio para child
+  // Monto total obligatorio y > 0
   // ===============================
-  if (isChild) {
-    if (loan.total_amount === undefined || loan.total_amount === null || Number(loan.total_amount) <= 0) {
-      fieldErrors.total_amount = 'El monto total del subpréstamo debe ser mayor a cero'
-    }
+  if (loan.total_amount === undefined || loan.total_amount === null || Number(loan.total_amount) <= 0) {
+    fieldErrors.total_amount = 'El monto total del préstamo debe ser mayor a cero'
   }
 
   // ===============================
-  // Cuenta de desembolso obligatoria SOLO si es child
+  // Cuenta de desembolso obligatoria
   // ===============================
-  if (isChild) {
-    if (!loan.disbursement_account || !loan.disbursement_account.id) {
-      fieldErrors.disbursement_account = 'Debe seleccionar una cuenta de desembolso'
-    } else {
-      const account = await accountRepo.findOne({
-        where: {
-          id: loan.disbursement_account.id,
-          user: { id: userId },
-          is_active: true
-        }
-      })
-      if (!account) {
-        fieldErrors.disbursement_account = 'La cuenta de desembolso no es válida o no pertenece al usuario'
-      }
-    }
-  }
-
-  // ===============================
-  // Validación parent / child
-  // ===============================
-  if (isChild && loan.parent) {
-
-    // Evitar self-reference
-    if (loan.id && loan.parent.id === loan.id) {
-      fieldErrors.parent = 'Un préstamo no puede ser padre de sí mismo'
-    }
-
-    // Validar parent real
-    const parent = await loanRepo.findOne({
+  if (!loan.disbursement_account || !loan.disbursement_account.id) {
+    fieldErrors.disbursement_account = 'Debe seleccionar una cuenta de desembolso'
+  } else {
+    const account = await accountRepo.findOne({
       where: {
-        id: loan.parent.id,
+        id: loan.disbursement_account.id,
         user: { id: userId },
         is_active: true
       }
     })
-
-    if (!parent) {
-      fieldErrors.parent = 'El préstamo padre seleccionado no es válido'
+    if (!account) {
+      fieldErrors.disbursement_account = 'La cuenta de desembolso no es válida o no pertenece al usuario'
     }
   }
 
@@ -119,10 +85,9 @@ export const validateLoan = async (
         0
       )
 
-      // No permitir modificar total_amount si hay pagos (solo aplica a child)
+      // No permitir modificar total_amount si hay pagos
       if (
         payments.length > 0 &&
-        isChild &&
         loan.total_amount !== undefined &&
         Number(existingLoan.total_amount) !== Number(loan.total_amount)
       ) {
@@ -138,9 +103,8 @@ export const validateLoan = async (
         fieldErrors.start_date = 'No se puede modificar la fecha de inicio de un préstamo con pagos registrados'
       }
 
-      // No permitir total_amount menor al capital ya pagado (solo child)
+      // No permitir total_amount menor al capital ya pagado
       if (
-        isChild &&
         loan.total_amount !== undefined &&
         Number(loan.total_amount) < totalPrincipalPaid
       ) {
@@ -164,7 +128,7 @@ export const validateLoan = async (
     }
   }
 
-  logger.warn('Loan validation', { userId, fieldErrors, isParent, isChild })
+  logger.warn('Loan validation', { userId, fieldErrors })
 
   return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
@@ -178,7 +142,6 @@ export const validateDeleteLoan = async (
   const fieldErrors: Record<string, string> = {}
 
   const loanPaymentRepo = AppDataSource.getRepository(LoanPayment)
-  const loanRepo = AppDataSource.getRepository(Loan)
 
   // ===============================
   // Validación: pagos asociados
@@ -191,25 +154,10 @@ export const validateDeleteLoan = async (
     fieldErrors.general = 'No se puede eliminar un préstamo con pagos registrados'
   }
 
-  // ===============================
-  // Validación: préstamos hijos
-  // ===============================
-  const childrenCount = await loanRepo.count({
-    where: {
-      parent: { id: loan.id },
-      user: { id: userId }
-    }
-  })
-
-  if (childrenCount > 0) {
-    fieldErrors.general = `No se puede eliminar el préstamo porque tiene ${childrenCount} subpréstamo(s) asociado(s)`
-  }
-
   logger.warn('Loan delete validation', {
     userId,
     loanId: loan.id,
     paymentsCount,
-    childrenCount,
     fieldErrors
   })
 

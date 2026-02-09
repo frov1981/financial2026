@@ -1,10 +1,10 @@
 import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
+import { CategoryGroup } from '../../entities/CategoryGroups.entity'
+import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
-import { Transaction } from '../../entities/Transaction.entity'
-import { CategoryGroup } from '../../entities/CategoryGroups.entity'
 
 export const validateCategory = async (
   category: Category,
@@ -55,18 +55,18 @@ export const validateCategory = async (
      Validación de grupo (OBLIGATORIO)
   =============================== */
 
-  if (!category.group || !category.group.id) {
-    fieldErrors.group = 'El grupo es obligatorio'
+  if (!category.category_group || !category.category_group.id) {
+    fieldErrors.category_group = 'El grupo de categoría es obligatorio'
   } else {
-    const group = await groupRepo.findOne({
+    const category_group = await groupRepo.findOne({
       where: {
-        id: category.group.id,
+        id: category.category_group.id,
         user: { id: userId }
       }
     })
 
-    if (!group) {
-      fieldErrors.group = 'El grupo seleccionado no es válido'
+    if (!category_group) {
+      fieldErrors.category_group = 'El grupo de categoría seleccionado no es válido'
     }
   }
 

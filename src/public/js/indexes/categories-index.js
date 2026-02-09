@@ -107,7 +107,7 @@ function renderRow(category) {
   const isParent = false
   const isChild = true
 
-  const collapsed = isCategoryCollapsed(category.group.id)
+  const collapsed = isCategoryCollapsed(category.category_group.id)
 
   if (collapsed) {
     return ''
@@ -170,7 +170,7 @@ function renderRow(category) {
 }
 
 function renderCard(category) {
-  const collapsed = isCategoryCollapsed(category.group.id)
+  const collapsed = isCategoryCollapsed(category.category_group.id)
 
   if (collapsed) {
     return ''
@@ -256,7 +256,7 @@ function renderTable(data) {
   const groupsMap = new Map()
 
   data.forEach(cat => {
-    const g = cat.group
+    const g = cat.category_group
     if (!groupsMap.has(g.id)) {
       groupsMap.set(g.id, { group: g, items: [] })
     }
@@ -306,7 +306,7 @@ function renderCards(data) {
   const groupsMap = new Map()
 
   data.forEach(cat => {
-    const g = cat.group
+    const g = cat.category_group
     if (!groupsMap.has(g.id)) {
       groupsMap.set(g.id, { group: g, items: [] })
     }

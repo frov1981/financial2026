@@ -31,7 +31,7 @@ export class Category {
 
    @ManyToOne(() => CategoryGroup, group => group.categories)
   @JoinColumn({ name: 'category_group_id', foreignKeyConstraintName: 'fk_categories_group' })
-  group!: CategoryGroup
+  category_group!: CategoryGroup | null
 
   @ManyToOne(() => Category, category => category.children, { nullable: true })
   @JoinColumn({ name: 'parent_id', foreignKeyConstraintName: 'fk_categories_parent' })

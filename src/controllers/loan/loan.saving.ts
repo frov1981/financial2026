@@ -10,6 +10,7 @@ import { logger } from '../../utils/logger.util'
 import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
 import { getActiveParentLoansByUser } from './loan.auxiliar'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
+import { LoanGroup } from '../../entities/LoanGroup.entity'
 
 const getTitle = (mode: string) => {
   switch (mode) {
@@ -23,8 +24,8 @@ const getTitle = (mode: string) => {
 /* ============================
    Sanitizar payload según policy
 ============================ */
-const sanitizeByPolicy = (mode: LoanFormMode, role: 'parent' | 'child', body: any) => {
-  const policy = loanFormMatrix[mode][role]
+const sanitizeByPolicy = (mode: LoanFormMode, body: any) => {
+  const policy = loanFormMatrix[mode]
   const clean: any = {}
 
   for (const field in policy) {
@@ -39,19 +40,18 @@ const sanitizeByPolicy = (mode: LoanFormMode, role: 'parent' | 'child', body: an
 /* ============================
    Construir objeto para la vista
 ============================ */
-const buildLoanView = (body: any, parent_loans: Loan[], disbursement_accounts: Account[]) => {
-  const parent_id = body.parent_id ? Number(body.parent_id) : null
+const buildLoanView = (body: any, loan_group: LoanGroup[], disbursement_accounts: Account[]) => {
+  const group_id = body.loan_group_id ? Number(body.loan_group_id) : null
+  const group = group_id ? loan_group.find(p => p.id === group_id) || null : null
   const disbursement_id = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
-  const parent = parent_id ? parent_loans.find(p => p.id === parent_id) || null : null
   const disbursement = disbursement_id ? disbursement_accounts.find(a => a.id === disbursement_id) || null : null
 
   return {
     ...body,
-    parent: parent ? { id: parent.id, name: parent.name } : null,
+    loan_group: group ? { id: group.id, name: group.name } : null,
     disbursement_account: disbursement ? { id: disbursement.id, name: disbursement.name } : null
   }
 }
-
 
 export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   logger.info('saveLoan called', { body: req.body, param: req.params })
@@ -61,20 +61,16 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const mode: LoanFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
 
-  const parent_loans = await getActiveParentLoansByUser(auth_req)
+  const loan_group = await getActiveParentLoansByUser(auth_req)
   const disbursement_accounts = await getActiveAccountsByUser(auth_req)
 
-  const is_parent_fallback = !req.body.parent_id || Number(req.body.parent_id) === 0
-  const role_fallback: 'parent' | 'child' = is_parent_fallback ? 'parent' : 'child'
-  const loan_form_policy = loanFormMatrix[mode][role_fallback]
-
-  const loan_view = buildLoanView(req.body, parent_loans, disbursement_accounts)
+  const loan_view = buildLoanView(req.body, loan_group, disbursement_accounts)
 
   const form_state = {
     loan: loan_view,
-    parent_loans: parent_loans,
+    loan_group,
     disbursement_accounts: disbursement_accounts,
-    loan_form_policy: loan_form_policy,
+    loan_form_policy: loanFormMatrix[mode],
     mode
   }
 
@@ -90,16 +86,10 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (loan_id) {
       existing = await loanRepo.findOne({
         where: { id: loan_id, user: { id: auth_req.user.id } },
-        relations: { disbursement_account: true, transaction: true, parent: true }
+        relations: { disbursement_account: true, transaction: true, loan_group: true }
       })
       if (!existing) throw new Error('Préstamo no encontrado')
     }
-
-    const isParent = existing
-      ? !existing.parent
-      : !req.body.parent_id || Number(req.body.parent_id) === 0
-
-    const role: 'parent' | 'child' = isParent ? 'parent' : 'child'
 
     /* =========================
        DELETE
@@ -122,10 +112,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
       const transactionId = existing.transaction?.id || null
 
-      // 1) Primero borrar el loan (rompe la FK)
       await queryRunner.manager.delete(Loan, existing.id)
-
-      // 2) Luego borrar la transaction si existe
       if (transactionId) {
         await queryRunner.manager.delete(Transaction, transactionId)
       }
@@ -140,23 +127,25 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     let loan: Loan
 
     if (mode === 'insert') {
-      const selectedParent = req.body.parent_id
-        ? parent_loans.find(c => c.id === Number(req.body.parent_id)) || null
-        : null
+      const selectedGroup = loan_group.find(
+        g => g.id === Number(req.body.loan_group_id)
+      ) || null
+      if (!selectedGroup) throw new Error('Grupo de préstamo requerido')
 
       const selectedDisbursementAccount = disbursement_accounts.find(
         c => c.id === Number(req.body.disbursement_account_id)
       ) || null
+      if (!selectedDisbursementAccount) throw new Error('Cuenta de desembolso requerida')
 
       loan = queryRunner.manager.create(Loan, {
         user: { id: auth_req.user.id } as any,
+        loan_group: selectedGroup,
         name: req.body.name,
         total_amount: 0,
         interest_amount: 0,
         balance: 0,
         start_date: parseLocalDateToUTC(req.body.start_date, timezone),
         disbursement_account: selectedDisbursementAccount,
-        parent: selectedParent,
         is_active: true
       })
     } else {
@@ -164,27 +153,28 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       loan = existing
     }
 
-    const clean = sanitizeByPolicy(mode, role, req.body)
+    const clean = sanitizeByPolicy(mode, req.body)
 
     if (clean.name !== undefined) loan.name = clean.name
     if (clean.start_date !== undefined) loan.start_date = parseLocalDateToUTC(clean.start_date, timezone)
     if (clean.is_active !== undefined) loan.is_active = clean.is_active === 'true' || clean.is_active === '1'
 
-    if (clean.parent_id !== undefined) {
-      const selectedParent = clean.parent_id
-        ? parent_loans.find(c => c.id === Number(clean.parent_id)) || null
-        : null
-
-      loan.parent = selectedParent
-    }
-
-    let newAccount: Account | null = null
+    let newAccount: Account | null = loan.disbursement_account || null
 
     if (clean.disbursement_account_id !== undefined) {
       newAccount = clean.disbursement_account_id
         ? disbursement_accounts.find(c => c.id === Number(clean.disbursement_account_id)) || null
         : null
     }
+
+    if (clean.loan_group_id !== undefined) {
+      const selectedGroup = loan_group.find(g => g.id === Number(clean.loan_group_id)) || null
+      if (!selectedGroup) throw new Error('Grupo de préstamo requerido')
+      loan.loan_group = selectedGroup
+    }
+
+    let previousAmount = loan.total_amount
+    let previousBalance = loan.balance
 
     if (clean.total_amount !== undefined) {
       const newAmount = Number(clean.total_amount)
@@ -193,8 +183,8 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         loan.total_amount = newAmount
         loan.balance = newAmount
       } else {
-        const previousAmount = loan.total_amount
-        const previousBalance = loan.balance
+												
+											
         const paidAmount = previousAmount - previousBalance
 
         loan.total_amount = newAmount
@@ -203,66 +193,52 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     }
 
     if (mode === 'insert') {
-      if (role === 'child') {
-        if (!newAccount) throw new Error('Cuenta de desembolso requerida')
+      if (!newAccount) throw new Error('Cuenta de desembolso requerida')
 
-        newAccount.balance += loan.total_amount
-        await queryRunner.manager.save(newAccount)
+      newAccount.balance += loan.total_amount
+      await queryRunner.manager.save(newAccount)
 
-        loan.disbursement_account = newAccount
+      loan.disbursement_account = newAccount
 
-        const trx = queryRunner.manager.create(Transaction, {
-          user: { id: auth_req.user.id } as any,
-          type: 'income',
-          amount: loan.total_amount,
-          account: newAccount,
-          date: loan.start_date,
-          description: loan.name
-        })
+      const trx = queryRunner.manager.create(Transaction, {
+        user: { id: auth_req.user.id } as any,
+        type: 'income',
+        amount: loan.total_amount,
+        account: newAccount,
+        date: loan.start_date,
+        description: loan.name
+      })
 
-        await queryRunner.manager.save(trx)
-        loan.transaction = trx
-      } else {
-        loan.total_amount = 0
-        loan.balance = 0
-        loan.disbursement_account = null as any
-        loan.transaction = null as any
-      }
+      await queryRunner.manager.save(trx)
+      loan.transaction = trx
+
     } else {
-      if (role === 'child' && newAccount) {
-        if (!loan.disbursement_account) { throw new Error('Cuenta de desembolso actual no encontrada') }
+      if (!loan.disbursement_account) { throw new Error('Cuenta de desembolso actual no encontrada') }
+      if (!newAccount) throw new Error('Cuenta de desembolso requerida')
 
-        const oldAccount = await queryRunner.manager.findOneByOrFail(Account, {
-          id: loan.disbursement_account.id,
-          user: { id: auth_req.user.id }
-        })
+      const oldAccount = await queryRunner.manager.findOneByOrFail(Account, {
+        id: loan.disbursement_account.id,
+        user: { id: auth_req.user.id }
+      })
 
-        if (oldAccount.id === newAccount.id) {
-          const delta = loan.total_amount - existing!.total_amount
-          oldAccount.balance += delta
-          await queryRunner.manager.save(oldAccount)
-        } else {
-          oldAccount.balance -= existing!.total_amount
-          newAccount.balance += loan.total_amount
-          await queryRunner.manager.save([oldAccount, newAccount])
-        }
-
-        loan.disbursement_account = newAccount
-
-        if (loan.transaction?.id) {
-          loan.transaction.amount = loan.total_amount
-          loan.transaction.date = loan.start_date
-          loan.transaction.description = loan.name
-          loan.transaction.account = newAccount
-          await queryRunner.manager.save(loan.transaction)
-        }
+      if (oldAccount.id === newAccount.id) {
+        const delta = loan.total_amount - previousAmount
+        oldAccount.balance += delta
+        await queryRunner.manager.save(oldAccount)
+      } else {
+        oldAccount.balance -= previousAmount
+        newAccount.balance += loan.total_amount
+        await queryRunner.manager.save([oldAccount, newAccount])
       }
 
-      if (role === 'parent') {
-        loan.total_amount = 0
-        loan.balance = 0
-        loan.disbursement_account = null as any
-        loan.transaction = null as any
+      loan.disbursement_account = newAccount
+
+      if (loan.transaction?.id) {
+        loan.transaction.amount = loan.total_amount
+        loan.transaction.date = loan.start_date
+        loan.transaction.description = loan.name
+        loan.transaction.account = newAccount
+        await queryRunner.manager.save(loan.transaction)
       }
     }
 

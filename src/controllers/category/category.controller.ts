@@ -1,10 +1,10 @@
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
+import { categoryFormMatrix } from '../../policies/category-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { getActiveParentCategoriesByUser } from './category.auxiliar'
-import { categoryFormMatrix } from '../../policies/category-form.policy'
+import { getActiveParentCategoriesByUser } from './category.saving'
 export { saveCategory as apiForSavingCatgory } from './category.saving'
 
 type CategoryFormViewParams = {
@@ -18,17 +18,15 @@ type CategoryFormViewParams = {
 
 const renderCategoryForm = async (res: Response, params: CategoryFormViewParams) => {
   const { title, view, category, errors, mode, auth_req } = params
-
-  const category_groups = await getActiveParentCategoriesByUser(auth_req)
+  const category_group = await getActiveParentCategoriesByUser(auth_req)
   const category_form_policy = categoryFormMatrix[mode]
-
   return res.render('layouts/main', {
     title,
     view,
     category,
     errors,
     category_form_policy,
-    category_groups,
+    category_group,
     mode
   })
 }
@@ -42,7 +40,7 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
     const result = await repository
       .createQueryBuilder('category')
       .innerJoin('category.user', 'user')
-      .innerJoinAndSelect('category.group', 'group')
+      .innerJoinAndSelect('category.category_group', 'group')
       .where('user.id = :userId', { userId: auth_req.user.id })
       .addSelect(subQuery =>
         subQuery
@@ -60,14 +58,10 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
       name: category.name,
       type: category.type,
       is_active: category.is_active,
-      group: {
-        id: category.group.id,
-        name: category.group.name
-      },
+      category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
       transactions_count: Number(result.raw[index].transactions_count)
     }))
 
-    console.log('Categorías obtenidas:', categories)
     res.json(categories)
   } catch (error) {
     logger.error('Error al listar categorías', error)
@@ -93,7 +87,7 @@ export const routeToFormInsertCategory: RequestHandler = async (req: Request, re
     view: 'pages/categories/form',
     category: {
       type: null,
-      group: null,
+      category_group: null,
       is_active: true
     },
     errors: {},
@@ -112,7 +106,7 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
   const repo_category = AppDataSource.getRepository(Category)
   const category = await repo_category.findOne({
     where: { id: category_id, user: { id: auth_req.user.id } },
-    relations: { group: true }
+    relations: { category_group: true }
   })
   if (!category) {
     return res.redirect('/categories')
@@ -125,7 +119,7 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
       name: category.name,
       type: category.type,
       is_active: category.is_active,
-      group: category.group || null,
+      category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
     },
     errors: {},
     mode: 'update',
@@ -142,7 +136,7 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
   const repo_category = AppDataSource.getRepository(Category)
   const category = await repo_category.findOne({
     where: { id: category_id, user: { id: auth_req.user.id } },
-    relations: { group: true }
+    relations: { category_group: true }
   })
   if (!category) {
     return res.redirect('/categories')
@@ -155,7 +149,7 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
       name: category.name,
       type: category.type,
       is_active: category.is_active,
-      group: category.group || null,
+      category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
     },
     errors: {},
     mode: 'delete',
@@ -173,7 +167,7 @@ export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Reque
   const repo_category = AppDataSource.getRepository(Category)
   const category = await repo_category.findOne({
     where: { id: category_id, user: { id: auth_req.user.id } },
-    relations: { group: true }
+    relations: { category_group: true }
   })
   if (!category) {
     return res.redirect('/categories')
@@ -186,7 +180,7 @@ export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Reque
       name: category.name,
       type: category.type,
       is_active: category.is_active,
-      group: category.group || null,
+      category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
     },
     errors: {},
     mode: 'status',

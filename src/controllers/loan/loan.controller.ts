@@ -21,9 +21,8 @@ type LoanFormViewParams = {
 const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
   const { title, view, loan, errors, mode, auth_req } = params
   const disbursement_accounts = await getActiveAccountsByUser(auth_req)
-  const parent_loans = await getActiveParentLoansByUser(auth_req)
-  const is_parent = loan?.is_parent
-  const loan_form_policy = loanFormMatrix[mode][is_parent ? 'parent' : 'child']
+  const loan_groups = await getActiveParentLoansByUser(auth_req)
+  const loan_form_policy = loanFormMatrix[mode]
   return res.render('layouts/main', {
     title,
     view,
@@ -31,7 +30,7 @@ const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
     errors,
     loan_form_policy,
     disbursement_accounts,
-    parent_loans,
+    loan_groups,
     mode
   })
 }
@@ -45,12 +44,12 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
 
     const result = await repository
       .createQueryBuilder('loan')
-      .leftJoinAndSelect('loan.parent', 'parent')
+      .leftJoinAndSelect('loan.loan_group', 'loan_group')
       .leftJoinAndSelect('loan.disbursement_account', 'disbursement_account')
       .leftJoinAndSelect('loan.transaction', 'transaction')
       .leftJoinAndSelect('loan.payments', 'payments')
       .where('loan.user_id = :userId', { userId: auth_req.user.id })
-      .orderBy('parent.name', 'ASC')
+      .orderBy('loan_group.name', 'ASC')
       .addOrderBy('loan.name', 'ASC')
       .getMany()
 
@@ -68,7 +67,7 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       disbursement_account: loan.disbursement_account,
       transaction: loan.transaction,
       payments: loan.payments,
-      parent: loan.parent ? { id: loan.parent.id, name: loan.parent.name } : null
+      loan_group: loan.loan_group ? { id: loan.loan_group.id, name: loan.loan_group.name } : null
     }))
 
     res.json(loans)
@@ -103,8 +102,7 @@ export const routeToFormInsertLoan: RequestHandler = async (req, res) => {
       total_amount: '0.00',
       is_active: true,
       disbursement_account: null,
-      parent: null,
-      is_parent: false,
+      loan_group: null,
     },
     errors: {},
     mode: 'insert',
@@ -122,7 +120,7 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
   const repo_loan = AppDataSource.getRepository(Loan)
   const loan = await repo_loan.findOne({
     where: { id: loan_id, user: { id: auth_req.user.id } },
-    relations: { disbursement_account: true, transaction: true, parent: true }
+    relations: { disbursement_account: true, transaction: true, loan_group: true }
   })
   if (!loan) {
     return res.redirect('/loans')
@@ -137,9 +135,8 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
       balance: loan.balance,
       start_date: formatDateForInputLocal(loan.start_date, timezone),
       transaction: loan.transaction || null,
-      parent: loan.parent || null,
       disbursement_account: loan.disbursement_account || null,
-      is_parent: !loan.parent
+      loan_group: loan.loan_group || null,
     },
     errors: {},
     mode: 'update',
@@ -155,7 +152,7 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
   const repo_loan = AppDataSource.getRepository(Loan)
   const loan = await repo_loan.findOne({
     where: { id: loan_id, user: { id: auth_req.user.id } },
-    relations: { disbursement_account: true, parent: true }
+    relations: { disbursement_account: true, loan_group: true }
   })
   if (!loan) {
     return res.redirect('/loans')
@@ -170,9 +167,8 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
       balance: loan.balance,
       start_date: formatDateForInputLocal(loan.start_date, timezone),
       is_active: loan.is_active,
-      parent: loan.parent || null,
       disbursement_account: loan.disbursement_account || null,
-      is_parent: !loan.parent
+      loan_group: loan.loan_group || null,
     },
     errors: {},
     mode: 'delete',

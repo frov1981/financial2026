@@ -5,6 +5,7 @@ import { Account } from './Account.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
+import { LoanGroup } from './LoanGroup.entity'
 
 @Entity('loans')
 //@Unique('UQ_loans_transaction', ['transaction'])
@@ -45,6 +46,10 @@ export class Loan {
 
   @Column({ nullable: true })
   note!: string
+
+  @ManyToOne(() => LoanGroup, group => group.loans)
+  @JoinColumn({ name: 'loan_group_id', foreignKeyConstraintName: 'fk_loans_group' })
+  loan_group!: LoanGroup
 
   @OneToMany(() => LoanPayment, payment => payment.loan)
   payments!: LoanPayment[]

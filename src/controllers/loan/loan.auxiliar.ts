@@ -1,18 +1,16 @@
-import { IsNull } from 'typeorm'
 import { AppDataSource } from '../../config/typeorm.datasource'
+import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { AuthRequest } from '../../types/auth-request'
-import { Loan } from '../../entities/Loan.entity'
 
 export const getActiveParentLoansByUser = async (
-    authReq: AuthRequest
-): Promise<Loan[]> => {
-    const repo = AppDataSource.getRepository(Loan)
+    auth_req: AuthRequest
+): Promise<LoanGroup[]> => {
+    const repo = AppDataSource.getRepository(LoanGroup)
 
     return await repo.find({
         where: {
-            user: { id: authReq.user.id },
-            is_active: true,
-            parent: IsNull()
+            user: { id: auth_req.user.id },
+            is_active: true
         },
         order: { name: 'ASC' }
     })

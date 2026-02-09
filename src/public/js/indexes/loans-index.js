@@ -80,14 +80,14 @@ function clearFilters(key) {
 const formatDate = value =>
   value ? new Date(value).toLocaleDateString('es-EC') : '-'
 
-function isLoanCollapsed(parentId) {
+function isGroupCollapsed(groupId) {
   const state = loadFilters(COLLAPSE_KEY) || {}
-  return !!state[parentId]
+  return !!state[groupId]
 }
 
-function toggleLoanCollapse(parentId) {
+function toggleGroupCollapse(groupId) {
   const state = loadFilters(COLLAPSE_KEY) || {}
-  state[parentId] = !state[parentId]
+  state[groupId] = !state[groupId]
   saveFilters(COLLAPSE_KEY, state)
   applyAllFilters()
 }
@@ -112,10 +112,10 @@ function toggleLoanCollapse(parentId) {
 6. Render Desktop
 ========================================================= */
 function renderRow(loan) {
-  const isParent = !loan.parent
-  const isChild = !!loan.parent
+  const group_id = loan.loan_group ? loan.loan_group.id : null
+							   
 
-  if (isChild && isLoanCollapsed(loan.parent.id)) {
+  if (group_id && isGroupCollapsed(group_id)) {
     return ''
   }
 
@@ -124,11 +124,11 @@ function renderRow(loan) {
   return `
     <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">
-        ${isParent ? `
-          <button onclick="toggleLoanCollapse(${loan.id})">
-            ${isLoanCollapsed(loan.id) ? iconChevronOpen() : iconChevronClose()}
-          </button>
-        ` : ''}
+					  
+														   
+																				
+				   
+			   
         ${loan.name}
       </td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
@@ -167,10 +167,10 @@ function renderRow(loan) {
 7. Render Mobile
 ========================================================= */
 function renderCard(loan) {
-  const isParent = !loan.parent
-  const isChild = !!loan.parent
+  const group_id = loan.loan_group ? loan.loan_group.id : null
+							   
 
-  if (isChild && isLoanCollapsed(loan.parent.id)) {
+  if (group_id && isGroupCollapsed(group_id)) {
     return ''
   }
 
@@ -182,11 +182,11 @@ function renderCard(loan) {
 
       <div class="card-header">
         <div class="card-title">
-          ${isParent ? `
-            <button onclick="toggleLoanCollapse(${loan.id})">
-              ${isLoanCollapsed(loan.id) ? iconChevronOpen() : iconChevronClose()}
-            </button>
-          ` : ''}
+						
+															 
+																				  
+					 
+				 
           ${loan.name}
         </div>
         <div class="card-actions">
@@ -241,19 +241,28 @@ function renderTable(data) {
     return
   }
 
-  const parents = data.filter(l => !l.parent)
-  const children = data.filter(l => l.parent)
+  const groupsMap = new Map()
 
-  const html = parents.map(parent => {
-    const collapsed = isLoanCollapsed(parent.id)
+  data.forEach(loan => {
+    const group = loan.loan_group || { id: 0, name: 'Sin grupo' }
+    if (!groupsMap.has(group.id)) {
+      groupsMap.set(group.id, { group, loans: [] })
+    }
+    groupsMap.get(group.id).loans.push(loan)
+  })
 
-    const parentRow = `
-      <tr id="loan-${parent.id}" class="parent-row">
+  const html = Array.from(groupsMap.values()).map(entry => {
+    const group = entry.group
+    const loans = entry.loans
+    const collapsed = isGroupCollapsed(group.id)
+
+    const groupRow = `
+      <tr class="parent-row">
         <td class="ui-td col-left">
-          <button onclick="toggleLoanCollapse(${parent.id})">
+          <button onclick="toggleGroupCollapse(${group.id})">
             ${collapsed ? iconChevronOpen() : iconChevronClose()}
           </button>
-          ${parent.name}
+          ${group.name}
         </td>
         <td class="ui-td col-right"></td>
         <td class="ui-td col-right col-sm"></td>
@@ -261,21 +270,21 @@ function renderTable(data) {
         <td class="ui-td col-left col-sm"></td>
         <td class="ui-td col-left col-sm"></td>
         <td class="ui-td col-left col-sm"></td>
-        <td class="ui-td col-center">
-          <div class="icon-actions">
-            <button class="icon-btn edit" onclick="goToLoanUpdate(${parent.id})">${iconEdit()}<span class="ui-btn-text">Editar</span></button>
-            <button class="icon-btn delete" onclick="goToLoanDelete(${parent.id})">${iconDelete()}<span class="ui-btn-text">Eliminar</span></button>
-          </div>
-        </td>
+        <td class="ui-td col-center"></td>
+									
+																																			  
+																																					
+				
+			 
       </tr>
     `
 
-    const childRows = children
-      .filter(child => child.parent.id === parent.id)
-      .map(child => renderRow(child))
-      .join('')
+    const loanRows = collapsed ? '' : loans.map(l => renderRow(l)).join('')
+													 
+									 
+			   
 
-    return parentRow + (collapsed ? '' : childRows)
+    return groupRow + loanRows
   }).join('')
 
   tableBody.innerHTML = html
@@ -293,31 +302,40 @@ function renderCards(data) {
   const container = document.getElementById('loans-mobile')
   if (!container) return
 
-  const parents = data.filter(l => !l.parent)
-  const children = data.filter(l => l.parent)
+  const groupsMap = new Map()
 
-  const html = parents.map(parent => {
-    const collapsed = isLoanCollapsed(parent.id)
+  data.forEach(loan => {
+    const group = loan.loan_group || { id: 0, name: 'Sin grupo' }
+    if (!groupsMap.has(group.id)) {
+      groupsMap.set(group.id, { group, loans: [] })
+    }
+    groupsMap.get(group.id).loans.push(loan)
+  })
 
-    const childCards = children
-      .filter(child => child.parent.id === parent.id)
-      .map(child => renderCard(child))
-      .join('')
+  const html = Array.from(groupsMap.values()).map(entry => {
+    const group = entry.group
+    const loans = entry.loans
+    const collapsed = isGroupCollapsed(group.id)
+
+    const cards = collapsed ? '' : loans.map(l => renderCard(l)).join('')
+													 
+									  
+			   
 
     return `
       <div class="loan-group ${collapsed ? 'collapsed' : ''}">
         <div class="loan-group-header">
-          <button onclick="toggleLoanCollapse(${parent.id})">
+          <button onclick="toggleGroupCollapse(${group.id})">
             ${collapsed ? iconChevronOpen() : iconChevronClose()}
           </button>
-          ${parent.name}
-          <div class="card-actions" style="margin-left:auto;">
-            <button class="icon-btn edit" onclick="event.stopPropagation(); goToLoanUpdate(${parent.id})">${iconEdit()}</button>
-            <button class="icon-btn delete" onclick="event.stopPropagation(); goToLoanDelete(${parent.id})">${iconDelete()}</button>
-          </div>
+          ${group.name}
+															  
+																																
+																																	
+				
         </div>
         <div class="loan-group-body">
-          ${childCards}
+          ${cards}
         </div>
       </div>
     `
@@ -358,14 +376,14 @@ async function loadLoans() {
 }
 
 /* =========================================================
-9. Filtros (texto + estado) – SOLO HIJOS
+9. Filtros (texto + estado)
 ========================================================= */
 function getFilteredLoans() {
   const term = searchInput.value.trim().toLowerCase()
   const status = loadFilters(STATUS_FILTER_KEY)?.status || 'all'
 
   return allLoans.filter(loan => {
-    if (!loan.parent) return false
+								  
 
     const matchText =
       !term || loan.name.toLowerCase().includes(term)
@@ -373,7 +391,7 @@ function getFilteredLoans() {
 
     const matchStatus =
       status === 'all' ||
-						   
+		 
       (status === 'active' && loan.is_active) ||
       (status === 'inactive' && !loan.is_active)
    
@@ -383,24 +401,24 @@ function getFilteredLoans() {
 }
 
 function applyAllFilters() {
-  const filteredChildren = getFilteredLoans()
+  const filtered = getFilteredLoans()
 
-  const parentsMap = new Map()
-  const ordered = []
+							  
+					
 
-  filteredChildren.forEach(child => {
-    const parent = child.parent
-    if (!parentsMap.has(parent.id)) {
-      parentsMap.set(parent.id, parent)
-      ordered.push(parent)
-    }
-    ordered.push(child)
-  })
+									 
+							   
+									 
+									   
+						  
+	 
+					   
+	
 
   saveFilters(FILTER_KEY, { term: searchInput.value.trim().toLowerCase() })
   saveFilters(SCROLL_KEY, { y: 0 })
 
-  render(ordered)
+  render(filtered)
 }
 
 /* =========================================================

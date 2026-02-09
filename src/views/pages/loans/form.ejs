@@ -29,23 +29,6 @@
     <input type="hidden" name="mode" value="<%= mode %>">
     <input type="hidden" name="status" value="<%= loan?.status || 'active' %>">
 
-    <!-- Checkbox Padre -->     
-    <% if (!isHidden('is_parent')) { %>
-    <div class="mb-4">
-      <label class="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="is-parent-checkbox"
-          name="is_parent"
-          value="1"
-          <%= loan?.parent ? '' : loan?.is_parent ? 'checked' : '' %>
-          <%= isReadOnly('is_parent') ? 'disabled' : '' %>
-        >
-        Es préstamo padre?
-      </label>
-    </div>
-    <% } %>
-
     <!-- Nombre -->
     <% if (!isHidden('name')) { %>
     <div class="mb-4">
@@ -175,54 +158,54 @@
     </div>
     <% } %>
 
-    <!-- Préstamo Padre (Autocomplete) -->
-    <% if (!isHidden('parent_id')) { %>   
+    <!-- Grupo de Préstamo (Autocomplete) -->
+    <% if (!isHidden('loan_group_id')) { %>   
     <div
       class="mb-4" 
-      id="parent-container" 
-      data-field="parent" 
+      id="loan-group-container" 
+      data-field="loan_group" 
       data-autocomplete>
 
-      <label class="block font-medium mb-1">Préstamo Padre</label>
+      <label class="block font-medium mb-1">Grupo de Préstamo</label>
 
       <input
         type="text"
         class="w-full border rounded px-3 py-2"
-        placeholder="Buscar préstamo…"
+        placeholder="Buscar grupo de préstamo…"
         data-autocomplete-input
         autocomplete="off"
-        value="<%= loan?.parent?.name || '' %>"
-        <%= isReadOnly('parent_id') ? 'readonly' : '' %>
+        value="<%= loan?.loan_group?.name || '' %>"
+        <%= isReadOnly('loan_group_id') ? 'readonly' : '' %>
       >
 
       <input
         type="hidden"
-        name="parent_id"
+        name="loan_group_id"
         data-autocomplete-hidden
-        value="<%= loan?.parent?.id || '' %>"
+        value="<%= loan?.loan_group?.id || '' %>"
       >
- 
+
       <div class="relative">
         <ul
           class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
           data-autocomplete-list
           data-active="1"
         >
-          <% parent_loans.forEach(p => { %>
+          <% loan_groups.forEach(g => { %>
             <li
               class="px-3 py-2 cursor-pointer hover:bg-gray-100"
               data-autocomplete-item
-              data-id="<%= p.id %>"
-              data-label="<%= p.name %>"
+              data-id="<%= g.id %>"
+              data-label="<%= g.name %>"
             >
-              <%= p.name %>
+              <%= g.name %>
             </li>
           <% }) %>
         </ul>
       </div>
 
-      <% if (errors?.parent) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.parent %></p>
+      <% if (errors?.loan_group_id) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.loan_group_id %></p>
       <% } %>
     </div>
     <% } %>

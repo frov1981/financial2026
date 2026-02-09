@@ -4,6 +4,7 @@ import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
 import { Transaction } from './Transaction.entity'
 import { CategoryGroup } from './CategoryGroups.entity'
+import { LoanGroup } from './LoanGroup.entity'
 
 @Entity('users')
 //@Unique('UQ_users_email', ['email'])
@@ -37,7 +38,9 @@ export class User {
   loans!: Loan[]
 
   @OneToMany(() => CategoryGroup, group => group.user)
-  categoryGroups!: CategoryGroup[]
+  category_groups!: CategoryGroup[]
 
+  @OneToMany(() => LoanGroup, group => group.user)
+  loan_groups!: LoanGroup[]
 
 }

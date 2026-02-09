@@ -9,6 +9,7 @@ import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
 import { CategoryGroup } from '../entities/CategoryGroups.entity'
+import { LoanGroup } from '../entities/LoanGroup.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -24,6 +25,7 @@ export const AppDataSource = new DataSource({
     Category,
     CategoryGroup,
     Loan,
+    LoanGroup,
     LoanPayment,
     Transaction
   ],
