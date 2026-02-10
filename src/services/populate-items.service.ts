@@ -64,7 +64,6 @@ export const getActiveCategoriesByUser = async (authReq: AuthRequest): Promise<C
     where: {
       user: { id: authReq.user.id },
       is_active: true,
-      parent: Not(IsNull())
     },
     order: { name: 'ASC' }
   })
