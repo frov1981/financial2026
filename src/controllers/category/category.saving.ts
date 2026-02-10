@@ -3,10 +3,10 @@ import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { CategoryGroup } from '../../entities/CategoryGroups.entity'
 import { categoryFormMatrix, CategoryFormMode } from '../../policies/category-form.policy'
+import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { validateCategory, validateDeleteCategory } from './category.validator'
-import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 
 /* ============================
    Obtener título según el modo del formulario

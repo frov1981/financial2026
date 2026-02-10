@@ -1,5 +1,5 @@
 <%
-  const rules = accountFormPolicy
+  const rules = account_form_policy
   const isHidden = field => rules[field] === 'hidden'
   const isReadOnly = field => rules[field] === 'read'
   const isEditable = field => rules[field] === 'edit'
@@ -25,7 +25,6 @@
 
     <!-- ID -->
     <input type="hidden" name="id" value="<%= account?.id || '' %>">
-    <input type="hidden" name="action" value="save">
     <input type="hidden" name="mode" value="<%= mode %>">
 
     <!-- Tipo de cuenta -->

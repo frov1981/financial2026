@@ -6,13 +6,10 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
 
-export const validateCategory = async (
-  category: Category,
-  authReq: AuthRequest
-): Promise<Record<string, string> | null> => {
+export const validateCategory = async (category: Category, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
 
-  const userId = authReq.user.id
-  const fieldErrors: Record<string, string> = {}
+  const user_id = auth_req.user.id
+  const field_errors: Record<string, string> = {}
 
   /* ===============================
      Validaciones class-validator
@@ -20,11 +17,11 @@ export const validateCategory = async (
 
   const errors = await validate(category)
   if (errors.length > 0) {
-    Object.assign(fieldErrors, mapValidationErrors(errors))
+    Object.assign(field_errors, mapValidationErrors(errors))
   }
 
   const repo = AppDataSource.getRepository(Category)
-  const groupRepo = AppDataSource.getRepository(CategoryGroup)
+  const group_repo = AppDataSource.getRepository(CategoryGroup)
 
   /* ===============================
      Nombre único por usuario
@@ -34,12 +31,12 @@ export const validateCategory = async (
     const existing = await repo.findOne({
       where: {
         name: category.name,
-        user: { id: userId }
+        user: { id: user_id }
       }
     })
 
     if (existing && existing.id !== category.id) {
-      fieldErrors.name = 'Ya existe una categoría con este nombre'
+      field_errors.name = 'Ya existe una categoría con este nombre'
     }
   }
 
@@ -48,7 +45,7 @@ export const validateCategory = async (
   =============================== */
 
   if (!category.type) {
-    fieldErrors.type = 'El tipo es obligatorio'
+    field_errors.type = 'El tipo es obligatorio'
   }
 
   /* ===============================
@@ -56,47 +53,44 @@ export const validateCategory = async (
   =============================== */
 
   if (!category.category_group || !category.category_group.id) {
-    fieldErrors.category_group = 'El grupo de categoría es obligatorio'
+    field_errors.category_group = 'El grupo de categoría es obligatorio'
   } else {
-    const category_group = await groupRepo.findOne({
+    const category_group = await group_repo.findOne({
       where: {
         id: category.category_group.id,
-        user: { id: userId }
+        user: { id: user_id }
       }
     })
 
     if (!category_group) {
-      fieldErrors.category_group = 'El grupo de categoría seleccionado no es válido'
+      field_errors.category_group = 'El grupo de categoría seleccionado no es válido'
     }
   }
 
-  return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+  return Object.keys(field_errors).length > 0 ? field_errors : null
 }
 
-export const validateDeleteCategory = async (
-  category: Category,
-  authReq: AuthRequest
-): Promise<Record<string, string> | null> => {
+export const validateDeleteCategory = async (category: Category, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
 
-  const userId = authReq.user.id
-  const fieldErrors: Record<string, string> = {}
+  const user_id = auth_req.user.id
+  const field_errors: Record<string, string> = {}
 
-  const txRepo = AppDataSource.getRepository(Transaction)
-  const categoryRepo = AppDataSource.getRepository(Category)
+  const tx_repo = AppDataSource.getRepository(Transaction)
+  const category_repo = AppDataSource.getRepository(Category)
 
   /* ===============================
      Validación: transacciones asociadas
   =============================== */
 
-  const txCount = await txRepo.count({
+  const tx_count = await tx_repo.count({
     where: {
       category: { id: category.id },
-      user: { id: userId }
+      user: { id: user_id }
     }
   })
 
-  if (txCount > 0) {
-    fieldErrors.general = `No se puede eliminar la categoría porque tiene ${txCount} transacción(es) asociada(s)`
+  if (tx_count > 0) {
+    field_errors.general = `No se puede eliminar la categoría porque tiene ${tx_count} transacción(es) asociada(s)`
   }
 
   /* ===============================
@@ -104,16 +98,16 @@ export const validateDeleteCategory = async (
      Esto es SOLO para integridad de datos, no negocio
   =============================== */
 
-  const childrenCount = await categoryRepo.count({
+  const children_count = await category_repo.count({
     where: {
       parent: { id: category.id },
-      user: { id: userId }
+      user: { id: user_id }
     }
   })
 
-  if (childrenCount > 0) {
-    fieldErrors.general = `No se puede eliminar la categoría porque tiene ${childrenCount} subcategoría(s) asociada(s)`
+  if (children_count > 0) {
+    field_errors.general = `No se puede eliminar la categoría porque tiene ${children_count} subcategoría(s) asociada(s)`
   }
 
-  return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+  return Object.keys(field_errors).length > 0 ? field_errors : null
 }

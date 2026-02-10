@@ -2,9 +2,9 @@ import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
+import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 export { saveCategory as apiForSavingCatgory } from './category.saving'
 
 type CategoryFormViewParams = {

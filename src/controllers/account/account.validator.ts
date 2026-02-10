@@ -1,72 +1,68 @@
 import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
-import { AuthRequest } from '../../types/auth-request'
-import { logger } from '../../utils/logger.util'
-import { mapValidationErrors } from '../../validators/map-errors.validator'
 import { Transaction } from '../../entities/Transaction.entity'
+import { AuthRequest } from '../../types/auth-request'
+import { mapValidationErrors } from '../../validators/map-errors.validator'
 
-export const validateSaveAccount = async (authReq: AuthRequest, account: Account): Promise<Record<string, string> | null> => {
-    const userId = authReq.user.id
+export const validateSaveAccount = async (auth_req: AuthRequest, account: Account): Promise<Record<string, string> | null> => {
+    const user_id = auth_req.user.id
     const errors = await validate(account)
-    const fieldErrors = errors.length > 0 ? mapValidationErrors(errors) : {}
+    const field_errors = errors.length > 0 ? mapValidationErrors(errors) : {}
 
-    if (account.id && account.is_active === false && Number(account.balance) !== 0) {
-        fieldErrors.is_active = 'No se puede desactivar la cuenta si tiene un balance mayor a cero'
+    if (account.id && account.is_active === false && account.balance !== 0) {
+        field_errors.is_active = 'No se puede desactivar la cuenta si tiene un balance mayor a cero'
     }
 
-    if (account.name && userId) {
-        const repo = AppDataSource.getRepository(Account)
+    if (account.name && user_id) {
+        const repo_account = AppDataSource.getRepository(Account)
 
-        const existing = await repo.findOne({
+        const existing = await repo_account.findOne({
             where: {
                 name: account.name,
-                user: { id: userId }
+                user: { id: user_id }
             }
         })
 
         if (existing && existing.id !== account.id) {
-            fieldErrors.name = 'Ya existe una cuenta con este nombre'
+            field_errors.name = 'Ya existe una cuenta con este nombre'
         }
     }
 
-    logger.warn(`Account save validation`, { userId, fieldErrors })
-    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    return Object.keys(field_errors).length > 0 ? field_errors : null
 }
 
-export const validateDeleteAccount = async (
-    authReq: AuthRequest,
-    account: Account
-): Promise<Record<string, string> | null> => {
+export const validateDeleteAccount = async (auth_req: AuthRequest, account: Account): Promise<Record<string, string> | null> => {
 
-    const userId = authReq.user.id
-    const fieldErrors: Record<string, string> = {}
+    const user_id = auth_req.user.id
+    const field_errors: Record<string, string> = {}
 
     // =========================
     // BALANCE VALIDATION
     // =========================
-    if (Number(account.balance) !== 0) {
-        fieldErrors.general =
+    if (account.balance !== 0) {
+        field_errors.general =
             'No se puede eliminar la cuenta porque tiene balance distinto de cero'
     }
 
     // =========================
     // TRANSACTION REFERENCE VALIDATION
     // =========================
-    const transactionRepo = AppDataSource.getRepository(Transaction)
+    const transaction_repo = AppDataSource.getRepository(Transaction)
 
-    const usedInTransactions = await transactionRepo.existsBy([
+    const used_in_transactions = await transaction_repo.existsBy([
         { account: { id: account.id } },
         { to_account: { id: account.id } }
     ])
 
-    if (usedInTransactions) {
-        fieldErrors.general =
-            'No se puede eliminar la cuenta porque tiene transacciones asociadas'
+    if (used_in_transactions) {
+        if (field_errors.general) {
+            field_errors.general += ' y tiene transacciones asociadas'
+        } else {
+            field_errors.general =
+                'No se puede eliminar la cuenta porque tiene transacciones asociadas'
+        }
     }
 
-    logger.warn('Account delete validation', { userId, accountId: account.id, fieldErrors })
-
-    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    return Object.keys(field_errors).length > 0 ? field_errors : null
 }
-
