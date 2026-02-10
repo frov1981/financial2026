@@ -81,57 +81,27 @@
     </div>
     <% } %>
 
-    <!-- Grupo de Categoría -->
-    <% if (!isHidden('category_group_id')) { %>   
-    <div
-      class="mb-4" 
-      id="category-group-container" 
-      data-field="category_group" 
-      data-autocomplete>
-
-      <label class="block font-medium mb-1">Grupo de Categoría</label>
-
-      <input
-        type="text"
-        class="w-full border rounded px-3 py-2"
-        placeholder="Buscar grupo de categoría…"
-        data-autocomplete-input
-        autocomplete="off"
-        value="<%= category?.category_group?.name || '' %>"
-        <%= isReadOnly('category_group_id') ? 'readonly' : '' %>
+    <!-- Grupo de Prestamos -->
+     <% if (!isHidden('category_group_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Grupo de Categorias</label>
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(category_group) %>'
+        data-default-id="<%= category?.category_group?.id || '' %>"
+        data-placeholder="-- Escoja una opción --"
       >
-
-      <input
-        type="hidden"
-        name="category_group_id"
-        data-autocomplete-hidden
-        value="<%= category?.category_group?.id || '' %>"
-      >
-
-      <div class="relative">
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-active="1"
-        >
-          <% category_group.forEach(g => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= g.id %>"
-              data-label="<%= g.name %>"
-            >
-              <%= g.name %>
-            </li>
-          <% }) %>
-        </ul>
+        <input type="text" class="autocomplete-input" autocomplete="off" 
+          value="<%= category?.category_group?.name || '' %>" <%= isReadOnly('category_group_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="category_group_id"
+          value="<%= category?.category_group?.id || '' %>">
+        <div class="autocomplete-panel"></div>
       </div>
-
       <% if (errors?.category_group) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.category_group %></p>
       <% } %>
     </div>
-    <% } %>
+    <% } %>  
 
     <!-- Estado (solo activar / inactivar) -->
     <% if (!isHidden('is_active')) { %>
@@ -175,3 +145,4 @@
 </div>
 
 <script src="/js/forms/category-form.js"></script>
+<script src="/js/forms/autocomplete-form.js"></script>
