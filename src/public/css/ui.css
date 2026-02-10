@@ -1,5 +1,5 @@
 :root {
-  --ui-white: #ffffff;
+  --ui-white: var(--ui-white)fff;
   --ui-gray-900: #111827;
   --ui-gray-700: #374151;
   --ui-gray-500: #6b7280;
@@ -354,7 +354,7 @@
 }
 
 .account-card.inactive {
-  background: #fff5f5;
+  background: var(--ui-red-50);
 }
 
 .account-card .icon-btn {
@@ -432,7 +432,7 @@
 }
 
 .category-card.inactive {
-  background: #fff5f5;
+  background: var(--ui-red-50);
 }
 
 .category-card .icon-btn {
@@ -555,7 +555,7 @@
 }
 
 .loan-card.inactive {
-  background: #fff5f5;
+  background: var(--ui-red-50);
 }
 
 .loan-card .icon-btn {
@@ -893,7 +893,7 @@
 
 input[data-balance-target],
 input[data-balance-final] {
-  background-color: #fff;
+  background-color: var(--ui-white);
 }
 
 /* Autocomplete */
@@ -1210,8 +1210,8 @@ input[data-balance-final] {
   top: 100%;
   left: 0;
   right: 0;
-  border: 1px solid #ccc;
-  background-color: #fff;
+  border: 1px solid var(--ui-gray-300);
+  background-color: var(--ui-white);
   max-height: 200px;
   overflow-y: auto;
   display: none;
@@ -1234,7 +1234,7 @@ input[data-balance-final] {
 /* Hover o seleccionado con teclado */
 .autocomplete-item:hover,
 .autocomplete-item.active {
-  background-color: #f0f0f0;
+  background-color: var(--ui-gray-100);
 }
 
 /* Dos columnas: nombre y balance */
@@ -1260,7 +1260,7 @@ input[data-balance-final] {
 .autocomplete-input {
   width: 100%;
   padding: 6px 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--ui-gray-300);
   border-radius: 4px;
   box-sizing: border-box;
 }
@@ -1280,3 +1280,25 @@ input[data-balance-final] {
 .autocomplete-item .item-balance.negative {
   color: var(--ui-red-800);
 }
+
+
+/* =========================================================
+   FIX: Alineación consistente de grupos (categorías y loans)
+   ========================================================= */
+
+.category-group,
+.loan-group {
+  text-align: left;
+}
+
+.category-group-header,
+.loan-group-header {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.category-group-header .group-actions,
+.loan-group-header .group-actions {
+  margin-left: auto;
+}
+

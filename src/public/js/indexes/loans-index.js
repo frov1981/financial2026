@@ -92,6 +92,21 @@ function toggleGroupCollapse(groupId) {
   applyAllFilters()
 }
 
+/* ============================
+   Degradado por grupo (AGREGADO)
+============================ */
+function getParentBackgroundColor(index, total) {
+  if (total <= 1) return 'hsl(210, 40%, 96%)'
+
+  const startLightness = 96
+  const endLightness = 88
+  const step = (startLightness - endLightness) / (total - 1)
+
+  const lightness = startLightness - (step * index)
+
+  return `hsl(140, 35%, ${lightness}%)`
+}
+
 /* =========================================================
 5. Render helpers
 ========================================================= */
@@ -113,7 +128,7 @@ function toggleGroupCollapse(groupId) {
 ========================================================= */
 function renderRow(loan) {
   const group_id = loan.loan_group ? loan.loan_group.id : null
-							   
+		  
 
   if (group_id && isGroupCollapsed(group_id)) {
     return ''
@@ -124,11 +139,11 @@ function renderRow(loan) {
   return `
     <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">
-					  
-														   
-																				
-				   
-			   
+	   
+				 
+					
+	   
+	  
         ${loan.name}
       </td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
@@ -168,7 +183,7 @@ function renderRow(loan) {
 ========================================================= */
 function renderCard(loan) {
   const group_id = loan.loan_group ? loan.loan_group.id : null
-							   
+		  
 
   if (group_id && isGroupCollapsed(group_id)) {
     return ''
@@ -182,11 +197,11 @@ function renderCard(loan) {
 
       <div class="card-header">
         <div class="card-title">
-						
-															 
-																				  
-					 
-				 
+	  
+				
+					  
+	  
+	 
           ${loan.name}
         </div>
         <div class="card-actions">
@@ -271,18 +286,18 @@ function renderTable(data) {
         <td class="ui-td col-left col-sm"></td>
         <td class="ui-td col-left col-sm"></td>
         <td class="ui-td col-center"></td>
-									
-																																			  
-																																					
-				
-			 
+		 
+									 
+									 
+	
+	
       </tr>
     `
 
     const loanRows = collapsed ? '' : loans.map(l => renderRow(l)).join('')
-													 
-									 
-			   
+			  
+		  
+	  
 
     return groupRow + loanRows
   }).join('')
@@ -312,27 +327,31 @@ function renderCards(data) {
     groupsMap.get(group.id).loans.push(loan)
   })
 
-  const html = Array.from(groupsMap.values()).map(entry => {
+  const groups = Array.from(groupsMap.values())
+  const totalParents = groups.length
+
+  const html = groups.map((entry, index) => {
     const group = entry.group
     const loans = entry.loans
     const collapsed = isGroupCollapsed(group.id)
+    const bgColor = getParentBackgroundColor(index, totalParents)
 
     const cards = collapsed ? '' : loans.map(l => renderCard(l)).join('')
-													 
-									  
-			   
+			  
+		   
+	  
 
     return `
-      <div class="loan-group ${collapsed ? 'collapsed' : ''}">
+      <div class="loan-group ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
         <div class="loan-group-header">
           <button onclick="toggleGroupCollapse(${group.id})">
             ${collapsed ? iconChevronOpen() : iconChevronClose()}
           </button>
           ${group.name}
-															  
-																																
-																																	
-				
+				 
+								
+								 
+	
         </div>
         <div class="loan-group-body">
           ${cards}
@@ -383,7 +402,7 @@ function getFilteredLoans() {
   const status = loadFilters(STATUS_FILTER_KEY)?.status || 'all'
 
   return allLoans.filter(loan => {
-								  
+		  
 
     const matchText =
       !term || loan.name.toLowerCase().includes(term)
@@ -391,7 +410,7 @@ function getFilteredLoans() {
 
     const matchStatus =
       status === 'all' ||
-		 
+   
       (status === 'active' && loan.is_active) ||
       (status === 'inactive' && !loan.is_active)
    
@@ -403,17 +422,17 @@ function getFilteredLoans() {
 function applyAllFilters() {
   const filtered = getFilteredLoans()
 
-							  
-					
-
-									 
-							   
-									 
-									   
-						  
+		 
 	 
-					   
-	
+
+		  
+		  
+		  
+			
+		
+  
+		
+ 
 
   saveFilters(FILTER_KEY, { term: searchInput.value.trim().toLowerCase() })
   saveFilters(SCROLL_KEY, { y: 0 })
