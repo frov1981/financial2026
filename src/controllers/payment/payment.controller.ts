@@ -5,7 +5,8 @@ import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { AuthRequest } from "../../types/auth-request"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
-import { getActiveAccountsByUser, getNextValidTransactionDate } from '../transaction/transaction.auxiliar'
+import { getNextValidTransactionDate } from '../transaction/transaction.auxiliar'
+import { getActiveAccountsByUser } from '../../services/populate-items.service'
 export { savePayment as apiForSavingAccount } from './payment.saving'
 
 export const apiForGettingPayments: RequestHandler = async (req: Request, res: Response) => {

@@ -2,11 +2,10 @@ import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Loan } from "../../entities/Loan.entity"
 import { loanFormMatrix } from '../../policies/loan-form.policy'
+import { getActiveAccountsByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
-import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
-import { getActiveParentLoansByUser } from './loan.saving'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
 type LoanFormViewParams = {

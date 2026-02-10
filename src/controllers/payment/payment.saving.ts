@@ -7,8 +7,8 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
-import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
+import { getActiveAccountsByUser } from '../../services/populate-items.service'
 
 /* ============================
    Helpers de cálculo

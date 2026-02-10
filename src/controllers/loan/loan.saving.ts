@@ -5,23 +5,11 @@ import { Loan } from '../../entities/Loan.entity'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { loanFormMatrix, LoanFormMode } from '../../policies/loan-form.policy'
+import { getActiveAccountsByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
-import { getActiveAccountsByUser } from '../transaction/transaction.auxiliar'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
-
-export const getActiveParentLoansByUser = async (auth_req: AuthRequest): Promise<LoanGroup[]> => {
-  const repo = AppDataSource.getRepository(LoanGroup)
-
-  return await repo.find({
-    where: {
-      user: { id: auth_req.user.id },
-      is_active: true
-    },
-    order: { name: 'ASC' }
-  })
-}
 
 const getTitle = (mode: string) => {
   switch (mode) {

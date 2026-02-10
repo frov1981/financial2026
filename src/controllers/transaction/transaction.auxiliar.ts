@@ -5,46 +5,6 @@ import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 
-export const getActiveAccountsByUser = async (authReq: AuthRequest): Promise<Account[]> => {
-  const repo = AppDataSource.getRepository(Account)
-  /* type!: 'cash' | 'bank' | 'card' | 'saving' */
-  const accounts = await repo.find({
-    where: {
-      user: { id: authReq.user.id },
-      is_active: true,
-      balance: MoreThanOrEqual(0),
-      type: In(['cash', 'bank', 'card'])
-    },
-    order: { name: 'ASC' }
-  })
-  return accounts
-}
-
-export const getActiveAccountsForTransferByUser = async (authReq: AuthRequest): Promise<Account[]> => {
-  const repo = AppDataSource.getRepository(Account)
-  const accounts = await repo.find({
-    where: {
-      user: { id: authReq.user.id },
-      is_active: true,
-      balance: MoreThanOrEqual(0),
-    },
-    order: { name: 'ASC' }
-  })
-  return accounts
-}
-
-export const getActiveCategoriesByUser = async (authReq: AuthRequest): Promise<Category[]> => {
-  const repo = AppDataSource.getRepository(Category)
-  const categories = await repo.find({
-    where: {
-      user: { id: authReq.user.id },
-      is_active: true,
-      parent: Not(IsNull())
-    },
-    order: { name: 'ASC' }
-  })
-  return categories
-}
 
 export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise<Date> => {
   const userId = authReq.user.id

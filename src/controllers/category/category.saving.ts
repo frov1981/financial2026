@@ -6,6 +6,7 @@ import { categoryFormMatrix, CategoryFormMode } from '../../policies/category-fo
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { validateCategory, validateDeleteCategory } from './category.validator'
+import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 
 /* ============================
    Obtener título según el modo del formulario
@@ -63,17 +64,6 @@ const findCategoryGroupByBody = (body: any, category_group: CategoryGroup[]): Ca
 /* ============================
    Obtener categorías activas del usuario para mostrar en el formulario
 ============================ */
-export const getActiveParentCategoriesByUser = async (auth_req: AuthRequest): Promise<CategoryGroup[]> => {
-  const repo = AppDataSource.getRepository(CategoryGroup)
-
-  return await repo.find({
-    where: {
-      user: { id: auth_req.user.id },
-      is_active: true
-    },
-    order: { name: 'ASC' }
-  })
-}
 
 /* ============================
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado

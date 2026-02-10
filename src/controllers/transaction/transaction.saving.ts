@@ -7,9 +7,10 @@ import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { getNumberFromBody, getStringFromBody } from '../../utils/req-params.util'
 import { getSqlErrorMessage } from '../../utils/sql-err.util'
-import { calculateTransactionDeltas, getActiveAccountsByUser, getActiveCategoriesByUser, splitCategoriesByType } from './transaction.auxiliar'
+import { calculateTransactionDeltas, splitCategoriesByType } from './transaction.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from './transaction.validator'
 import { parseLocalDateToUTC } from '../../utils/date.util'
+import { getActiveAccountsByUser, getActiveCategoriesByUser } from '../../services/populate-items.service'
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest
