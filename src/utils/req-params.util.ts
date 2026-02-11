@@ -15,30 +15,14 @@ const hasValue = (value: any): boolean => {
  * String
  * =========================
  */
-export const getStringFromBody = (
-    req: Request,
-    field: string
-): string | undefined => {
-    const value = req.body?.[field]
-    if (!hasValue(value)) return undefined
-    return String(value)
-}
+
 
 /**
  * =========================
  * Number
  * =========================
  */
-export const getNumberFromBody = (
-    req: Request,
-    field: string
-): number | undefined => {
-    const value = req.body?.[field]
-    if (!hasValue(value)) return undefined
 
-    const parsed = Number(value)
-    return Number.isNaN(parsed) ? undefined : parsed
-}
 
 /**
  * =========================

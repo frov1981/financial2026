@@ -1,3 +1,11 @@
+<%
+  const rules = transaction_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'read'
+  const isEditable = field => rules[field] === 'edit'
+
+%>
+
 <div class="max-w-3xl mx-auto">
   <input
     type="hidden"
@@ -7,13 +15,11 @@
 
   <h1 class="text-2xl font-semibold mb-6">
     <%= 
-      mode === 'insert'
-        ? 'Insertar Transacción'
-        : mode === 'update'
-        ? 'Editar Transacción'
-        : mode === 'delete'
-        ? 'Eliminar Transacción'
-        : mode
+      mode === 'insert' 
+        ? 'Insertar Transacción' : mode === 'update'
+        ? 'Editar Transacción' : mode === 'delete'
+        ? 'Eliminar Transacción' : mode === 'clone'
+        ? 'Clonar Transacción' : mode
     %>
   </h1>
 
@@ -27,20 +33,21 @@
 
     <!-- ID -->
     <input type="hidden" name="id" value="<%= transaction?.id || '' %>">
-    <input type="hidden" name="action" value="save">
+    <input type="hidden" name="mode" value="<%= mode %>">
     <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
     <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
 
     <!-- BLINDAJE DEL TIPO -->
-     <% if (mode !== 'insert') { %>
-    <input
-      type="hidden"
-      name="type"
-      value="<%= transaction?.type || '' %>"
-    >
+    <% if (isReadOnly('type')) { %>
+      <input
+        type="hidden"
+        name="type"
+        value="<%= transaction?.type || '' %>"
+      >
     <% } %>
 
     <!-- Tipo -->
+    <% if (!isHidden('type')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Tipo</label>
       <div class="flex gap-6">
@@ -50,7 +57,7 @@
             name="type"
             value="income"
             <%= transaction?.type !== 'expense' && transaction?.type !== 'transfer' ? 'checked' : '' %>
-            <%= mode !== 'insert' ? 'disabled' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Ingreso
         </label>
@@ -61,7 +68,7 @@
             name="type"
             value="expense"
             <%= transaction?.type === 'expense' ? 'checked' : '' %>
-            <%= mode !== 'insert' ? 'disabled' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Egreso
         </label>
@@ -72,275 +79,108 @@
             name="type"
             value="transfer"
             <%= transaction?.type === 'transfer' ? 'checked' : '' %>
-            <%= mode !== 'insert' ? 'disabled' : '' %>
+            <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Transferencia
         </label>
       </div>
     </div>
+    <% } %>
 
     <!-- Cuenta origen -->
-    <div class="mb-4" 
-      data-field="account" 
-      data-autocomplete>
-      
+    <% if (!isHidden('account')) { %>
+    <div class="mb-4">
       <label class="block font-medium mb-1">Cuenta</label>
 
-      <div class="relative">
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(active_accounts) %>'
+        data-default-id="<%= transaction?.account?.id || '' %>"
+        data-placeholder="-- Escoja una cuenta --"
+      >
         <input
           type="text"
-          class="w-full border rounded px-3 py-2 pr-24 bg-white cursor-text"
-          placeholder="Buscar cuenta…"
-          data-autocomplete-input
+          class="autocomplete-input"
           autocomplete="off"
-          value="<%= transaction?.account_name || '' %>"
-          <%= mode === 'delete' ? 'readonly' : '' %>
+          value="<%= transaction?.account?.name || '' %>"
+          <%= isReadOnly('account') ? 'readonly' : '' %>
         >
-
-        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-          <span
-            class="autocomplete-balance"
-            data-autocomplete-display-balance
-          ></span>
-        </div>
+        <input
+          type="hidden"
+          class="autocomplete-hidden"
+          name="account"
+          value="<%= transaction?.account?.id || '' %>"
+        >
+        <div class="autocomplete-panel"></div>
       </div>
-
-      <input
-        type="hidden"
-        name="account_id"
-        data-autocomplete-hidden
-        value="<%= transaction?.account_id || '' %>"
-      >
-
-      <% if (mode !== 'delete') { %>
-      <div class="relative">
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-account-type="normal"
-        >
-          <% accounts.forEach(a => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= a.id %>"
-              data-label="<%= a.name %>"
-              data-balance="<%= Number(a.balance).toFixed(2) %>"
-            >
-              <div class="flex items-center gap-2 min-w-0 w-full">
-                <span class="flex-1 truncate autocomplete-label">
-                  <%= a.name %>
-                </span>
-
-                <span
-                  class="autocomplete-balance text-right whitespace-nowrap
-                  <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>"
-                >
-                  <%= Number(a.balance).toFixed(2) %>
-                </span>
-              </div>
-            </li>
-          <% }) %>
-        </ul>
-
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-account-type="transfer"
-        >
-          <% accountsForTransfer.forEach(a => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= a.id %>"
-              data-label="<%= a.name %>"
-              data-balance="<%= Number(a.balance).toFixed(2) %>"
-            >
-              <div class="flex items-center gap-2 min-w-0 w-full">
-                <span class="flex-1 truncate autocomplete-label">
-                  <%= a.name %>
-                </span>
-
-                <span
-                  class="autocomplete-balance text-right whitespace-nowrap
-                  <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>"
-                >
-                  <%= Number(a.balance).toFixed(2) %>
-                </span>
-              </div>
-            </li>
-          <% }) %>
-        </ul>
-      </div>
-      <% } %>
 
       <% if (errors?.account) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.account %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Cuenta destino -->
-    <div class="mb-4 hidden" data-field="to_account" data-autocomplete>
+    <% if (!isHidden('to_account')) { %>
+    <div class="mb-4">
       <label class="block font-medium mb-1">Cuenta destino</label>
 
-      <div class="relative">
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(active_accounts_for_transfer) %>'
+        data-default-id="<%= transaction?.to_account?.id || '' %>"
+        data-placeholder="-- Escoja una cuenta destino --"
+      >
         <input
           type="text"
-          class="w-full border rounded px-3 py-2 pr-24 bg-white cursor-text"
-          placeholder="Buscar cuenta destino…"
-          data-autocomplete-input
+          class="autocomplete-input"
           autocomplete="off"
-          value="<%= transaction?.to_account_name || '' %>"          
-          <%= mode === 'delete' ? 'readonly' : '' %>
+          value="<%= transaction?.to_account?.name || '' %>"
+          <%= isReadOnly('to_account') ? 'readonly' : '' %>
         >
-
-        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-          <span
-            class="autocomplete-balance"
-            data-autocomplete-display-balance
-          ></span>
-        </div>
+        <input
+          type="hidden"
+          class="autocomplete-hidden"
+          name="to_account"
+          value="<%= transaction?.to_account?.id || '' %>"
+        >
+        <div class="autocomplete-panel"></div>
       </div>
-
-      <input
-        type="hidden"
-        name="to_account_id"
-        data-autocomplete-hidden
-        value="<%= transaction?.to_account_id || '' %>"
-      >
-
-      <% if (mode !== 'delete') { %>
-      <div class="relative">
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-account-type="normal"
-        >
-          <% accounts.forEach(a => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= a.id %>"
-              data-label="<%= a.name %>"
-              data-balance="<%= Number(a.balance).toFixed(2) %>"
-            >
-              <div class="flex items-center gap-2 min-w-0 w-full">
-                <span class="flex-1 truncate autocomplete-label">
-                  <%= a.name %>
-                </span>
-
-                <span
-                  class="autocomplete-balance text-right whitespace-nowrap
-                  <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>"
-                >
-                  <%= Number(a.balance).toFixed(2) %>
-                </span>
-              </div>
-            </li>
-          <% }) %>
-        </ul>
-
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-account-type="transfer"
-        >
-          <% accountsForTransfer.forEach(a => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= a.id %>"
-              data-label="<%= a.name %>"
-              data-balance="<%= Number(a.balance).toFixed(2) %>"
-            >
-              <div class="flex items-center gap-2 min-w-0 w-full">
-                <span class="flex-1 truncate autocomplete-label">
-                  <%= a.name %>
-                </span>
-
-                <span
-                  class="autocomplete-balance text-right whitespace-nowrap
-                  <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>"
-                >
-                  <%= Number(a.balance).toFixed(2) %>
-                </span>
-              </div>
-            </li>
-          <% }) %>
-        </ul>
-      </div>
-      <% } %>
-
-      <% if (errors?.to_account) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.to_account %></p>
-      <% } %>
     </div>
+    <% } %>
 
     <!-- Categoría -->
-    <div class="mb-4" data-field="category" data-autocomplete>
+    <% if (!isHidden('category')) { %>
+    <div class="mb-4">
       <label class="block font-medium mb-1">Categoría</label>
 
-      <input
-        type="text"
-        class="w-full border rounded px-3 py-2"
-        placeholder="Buscar categoría…"
-        data-autocomplete-input
-        autocomplete="off"
-        value="<%= transaction?.category_name || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+      <div
+        class="autocomplete"
+        data-items-income='<%- JSON.stringify(active_income_categories) %>'
+        data-items-expense='<%- JSON.stringify(active_expense_categories) %>'
+        data-default-id="<%= transaction?.category?.id || '' %>"
+        data-placeholder="-- Escoja una categoría --"
       >
-
-      <input
-        type="hidden"
-        name="category_id"
-        data-autocomplete-hidden
-        value="<%= transaction?.category_id || '' %>"
-      >
-
-      <% if (mode !== 'delete') { %>
-      <div class="relative">
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-category-type="income"
+        <input
+          type="text"
+          class="autocomplete-input"
+          autocomplete="off"
+          value="<%= transaction?.category?.name || '' %>"
+          <%= isReadOnly('category') ? 'readonly' : '' %>
         >
-          <% (incomeCategories || []).forEach(c => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= c.id %>"
-              data-label="<%= c.name %>"
-            >
-              <%= c.name %>
-            </li>
-          <% }) %>
-        </ul>
-
-        <ul
-          class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-          data-autocomplete-list
-          data-category-type="expense"
+        <input
+          type="hidden"
+          class="autocomplete-hidden"
+          name="category"
+          value="<%= transaction?.category?.id || '' %>"
         >
-          <% (expenseCategories || []).forEach(c => { %>
-            <li
-              class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-              data-autocomplete-item
-              data-id="<%= c.id %>"
-              data-label="<%= c.name %>"
-            >
-              <%= c.name %>
-            </li>
-          <% }) %>
-        </ul>
+        <div class="autocomplete-panel"></div>
       </div>
-      <% } %>
-
-      <% if (errors?.category) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
-      <% } %>
     </div>
+    <% } %>
 
     <!-- Monto -->
+    <% if (!isHidden('amount')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Monto</label>
       <input
@@ -350,15 +190,14 @@
         name="amount"
         class="w-full border rounded px-3 py-2"
         value="<%= transaction?.amount || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('amount') ? 'readonly' : '' %>
         required
       >
-      <% if (errors?.amount) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.amount %></p>
-      <% } %>
     </div>
+    <% } %>
 
     <!-- Fecha -->
+    <% if (!isHidden('date')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Fecha</label>
       <input
@@ -366,32 +205,28 @@
         name="date"
         class="w-full border rounded px-3 py-2"
         value="<%= transaction?.date || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('date') ? 'readonly' : '' %>
         required
       >
       <input type="hidden" name="timezone" id="timezone">
     </div>
+    <% } %>
 
     <!-- Descripción -->
+    <% if (!isHidden('description')) { %>
     <div class="mb-6">
       <label class="block font-medium mb-1">Descripción</label>
       <textarea
         name="description"
         rows="3"
         class="w-full border rounded px-3 py-2"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('description') ? 'readonly' : '' %>
       ><%= transaction?.description || '' %></textarea>
     </div>
+    <% } %>
 
     <div class="flex justify-end gap-2">
-      <a 
-        href="<%=
-          context?.from === 'categories' && context?.category_id
-          ? `/transactions?category_id=${context.category_id}&from=categories`
-          : '/transactions'
-          %>"
-       class="px-4 py-2 bg-gray-200 rounded"
-      >
+      <a href="/transactions" class="px-4 py-2 bg-gray-200 rounded">
         Cancelar
       </a>
 
@@ -414,4 +249,4 @@
 </div>
 
 <script src="/js/forms/transactions-form.js"></script>
-<script src="/js/helpers/autocomplete-helper.js"></script>
+<script src="/js/forms/autocomplete-form.js"></script>

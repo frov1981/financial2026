@@ -1,7 +1,6 @@
 import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
-import { logger } from '../../utils/logger.util'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 
@@ -52,6 +51,18 @@ export const validateSaveTransaction = async (tx: Transaction, authReq: AuthRequ
         fieldErrors.amount = 'El monto debe ser mayor a cero'
     }
 
+    if (tx.type === 'income' || tx.type === 'expense') {
+        if (!tx.account) fieldErrors.account = 'Debe seleccionar una cuenta'
+        if (!tx.category) fieldErrors.category = 'Debe seleccionar una categoría'
+        if (tx.to_account) fieldErrors.to_account = 'Una transferencia no es válida para este tipo'
+    }
+
+    if (tx.type === 'transfer') {
+        if (!tx.account) fieldErrors.account = 'Debe seleccionar una cuenta origen'
+        if (!tx.to_account) fieldErrors.to_account = 'Debe seleccionar una cuenta destino'
+        if (tx.category) fieldErrors.category = 'Una transferencia no lleva categoría'
+    }
+
     // Validación: para egresos, la cuenta debe tener saldo disponible
     if (tx.type === 'expense') {
         if (!tx.account || !tx.account.id) {
@@ -94,26 +105,24 @@ export const validateSaveTransaction = async (tx: Transaction, authReq: AuthRequ
         }
     }
 
-    logger.warn(`Transaction validation errors for user ${authReq.user.id}: ${JSON.stringify(fieldErrors)}`)
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
 
 export const validateDeleteTransaction = async (transaction: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
-  const userId = authReq.user.id
-  const fieldErrors: Record<string, string> = {}
+    const userId = authReq.user.id
+    const fieldErrors: Record<string, string> = {}
 
-  if (!transaction.date) {
-    fieldErrors.general = 'La transacción no tiene fecha registrada'
-  } else {
-    const txDate = new Date(transaction.date)
-    const now = new Date()
+    if (!transaction.date) {
+        fieldErrors.general = 'La transacción no tiene fecha registrada'
+    } else {
+        const txDate = new Date(transaction.date)
+        const now = new Date()
 
-    if (txDate.getFullYear() < now.getFullYear() || 
-        (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() < now.getMonth())) {
-      fieldErrors.general = 'No se puede eliminar transacciones de meses anteriores'
+        if (txDate.getFullYear() < now.getFullYear() ||
+            (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() < now.getMonth())) {
+            fieldErrors.general = 'No se puede eliminar transacciones de meses anteriores'
+        }
     }
-  }
 
-  logger.warn(`Transaction delete validation`, { userId, transactionId: transaction.id, fieldErrors })
-  return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }

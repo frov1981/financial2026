@@ -3,44 +3,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const radios = document.querySelectorAll('input[name="type"]')
 
-  const accountField = document.querySelector('[data-field="account"]')
-  const toAccountField = document.querySelector('[data-field="to_account"]')
-  const categoryField = document.querySelector('[data-field="category"]')
+  /* Bloque Cuenta destino */
+  const toAccountHiddenInput = document.querySelector('input[name="to_account"]')
+  const toAccountBlock = toAccountHiddenInput?.closest('.mb-4')
 
-  const categoryInput = categoryField?.querySelector('[data-autocomplete-input]')
-  const categoryHidden = categoryField?.querySelector('[data-autocomplete-hidden]')
-  const categoryLists = categoryField?.querySelectorAll(
-    '[data-autocomplete-list][data-category-type]'
-  )
+  /* Bloque Categoría */
+  const categoryHiddenInput = document.querySelector('input[name="category"]')
+  const categoryBlock = categoryHiddenInput?.closest('.mb-4')
 
-  const amountInput = document.querySelector('#amount-input')
-  const accountBalanceInput = document.querySelector('input[data-balance-target]')
-  const toAccountBalanceInput = document.querySelector('input[data-balance-target-to]')
-  const balanceFinal = document.querySelector('[data-balance-final]')
-
-  /* ================================
-     UTILIDADES
-  ================================= */
-
-  function format(n) {
-    return (Number(n) || 0).toFixed(2)
-  }
-
-  function applyClass(el, value) {
-    if (!el) return
-
-    if (Number(value) > 0) {
-      el.classList.add('amount-positive')
-      el.classList.remove('amount-negative')
-    } else {
-      el.classList.add('amount-negative')
-      el.classList.remove('amount-positive')
-    }
-  }
-
-  /* ================================
-     BLOQUEO DE RADIOS (UPDATE)
-  ================================= */
+  const categoryAutocomplete = categoryBlock?.querySelector('.autocomplete')
+  const categoryTextInput = categoryBlock?.querySelector('.autocomplete-input')
+  const categoryHiddenInputReal = categoryBlock?.querySelector('.autocomplete-hidden')
 
   function lockRadiosByOriginalType() {
     if (!originalType) return
@@ -59,109 +32,63 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   }
 
-  /* ================================
-     CATEGORÍAS POR TIPO
-  ================================= */
+  function updateCategorySource(type) {
+    if (!categoryAutocomplete) return
 
-  function updateCategoryLists(type, reset = true) {
-    if (!categoryLists) return
+    if (type === 'income') {
+      categoryAutocomplete.dataset.items = categoryAutocomplete.dataset.itemsIncome
+    } else if (type === 'expense') {
+      categoryAutocomplete.dataset.items = categoryAutocomplete.dataset.itemsExpense
+    }
 
-    categoryLists.forEach(list => {
-      list.dataset.active = list.dataset.categoryType === type ? '1' : '0'
-      list.classList.add('hidden')
-    })
+    reloadCategoryAutocomplete()
+  }
 
-    if (reset && categoryInput && categoryHidden) {
-      categoryInput.value = ''
-      categoryHidden.value = ''
+  function clearCategory() {
+    if (categoryTextInput) categoryTextInput.value = ''
+    if (categoryHiddenInputReal) categoryHiddenInputReal.value = ''
+  }
+
+  function clearToAccount() {
+    if (toAccountHiddenInput) toAccountHiddenInput.value = ''
+  }
+
+  function updateVisibility(type) {
+    if (toAccountBlock) {
+      if (type === 'transfer') {
+        toAccountBlock.style.display = ''
+      } else {
+        toAccountBlock.style.display = 'none'
+        clearToAccount()
+      }
+    }
+
+    if (categoryBlock) {
+      if (type === 'transfer') {
+        categoryBlock.style.display = 'none'
+        clearCategory()
+      } else {
+        categoryBlock.style.display = ''
+        updateCategorySource(type)
+      }
     }
   }
 
+  function reloadCategoryAutocomplete() {
+    if (!categoryAutocomplete) return
 
+    const input_el = categoryAutocomplete.querySelector('.autocomplete-input')
+    const hidden_el = categoryAutocomplete.querySelector('.autocomplete-hidden')
+    const panel_el = categoryAutocomplete.querySelector('.autocomplete-panel')
 
-  /* ================================
-     VISIBILIDAD DE CAMPOS
-  ================================= */
+    input_el.value = ''
+    hidden_el.value = ''
+    panel_el.innerHTML = ''
 
-  /*
-  function updateVisibility(type, isInit = false) {
-    if (type === 'transfer') {
-      toAccountField?.classList.remove('hidden')
-      categoryField?.classList.add('hidden')
-    } else {
-      toAccountField?.classList.add('hidden')
-      categoryField?.classList.remove('hidden')
-      updateCategoryLists(type, !isInit)
-    }
-
-    updateFinalBalance()
-  }*/
-  function updateVisibility(type, isInit = false) {
-    updateAccountLists(type)
-
-    if (type === 'transfer') {
-      toAccountField?.classList.remove('hidden')
-      categoryField?.classList.add('hidden')
-    } else {
-      toAccountField?.classList.add('hidden')
-      categoryField?.classList.remove('hidden')
-      updateCategoryLists(type, !isInit)
-    }
-
-    updateFinalBalance()
+    // volver a inicializar SOLO este autocomplete
+    setupAutocomplete(categoryAutocomplete)
   }
 
-
-  /* ================================
-     BALANCE FINAL
-  ================================= */
-
-  function updateFinalBalance() {
-    if (!balanceFinal) return
-
-    const bal = parseFloat(accountBalanceInput?.value) || 0
-    const amt = parseFloat(amountInput?.value) || 0
-
-    const checked =
-      document.querySelector('input[name="type"]:checked')?.value ||
-      originalType ||
-      'income'
-
-    let final
-
-    if (checked === 'income') {
-      final = bal + amt
-    } else {
-      final = bal - amt
-    }
-
-    balanceFinal.value = format(final)
-    applyClass(balanceFinal, final)
-  }
-
-  /* ================================
-     CUENTAS O CUENTAS PARA TRANSFER
-  ================================= */
-  function updateAccountLists(type) {
-    const lists = accountField?.querySelectorAll(
-      '[data-autocomplete-list][data-account-type]'
-    )
-
-    if (!lists) return
-
-    lists.forEach(list => {
-      const isTransferList = list.dataset.accountType === 'transfer'
-      const shouldBeActive = type === 'transfer' ? isTransferList : !isTransferList
-
-      list.dataset.active = shouldBeActive ? '1' : '0'
-      list.classList.add('hidden')
-    })
-  }
-
-
-  /* ================================
-     EVENTOS
-  ================================= */
 
   radios.forEach(radio => {
     radio.addEventListener('change', () => {
@@ -169,38 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   })
 
-  if (amountInput) {
-    amountInput.addEventListener('input', updateFinalBalance)
-  }
-
-  document.addEventListener('account:balance', e => {
-    const bal = e?.detail?.balance ?? null
-    const field = e?.detail?.field || 'account'
-
-    if (field === 'account' && accountBalanceInput) {
-      accountBalanceInput.value = bal !== null ? format(bal) : ''
-      applyClass(accountBalanceInput, bal)
-    }
-
-    if (field === 'to_account' && toAccountBalanceInput) {
-      toAccountBalanceInput.value = bal !== null ? format(bal) : ''
-      applyClass(toAccountBalanceInput, bal)
-    }
-
-    updateFinalBalance()
-  })
-
-  /* ================================
-     INIT
-  ================================= */
-
   lockRadiosByOriginalType()
 
   const checked = document.querySelector('input[name="type"]:checked')
   if (checked) {
-    updateVisibility(checked.value, true)
+    updateVisibility(checked.value)
   }
-
-
-  setTimeout(updateFinalBalance, 50)
 })

@@ -4,7 +4,6 @@ import { Account } from '../../entities/Account.entity'
 import { accountFormMatrix, AccountFormMode } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-import { getNumberFromBody } from '../../utils/req-params.util'
 import { validateDeleteAccount, validateSaveAccount } from './account.validator'
 
 /* ============================
@@ -52,7 +51,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
   const auth_req = req as AuthRequest
   const repo_account = AppDataSource.getRepository(Account)
 
-  const account_id = getNumberFromBody(req, 'id')
+  const account_id = req.body.id ? Number(req.body.id) : undefined
   const mode: AccountFormMode = req.body.mode || 'insert'
 
   const account_view = buildAccountView(req.body)

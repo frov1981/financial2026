@@ -3,215 +3,254 @@ import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
+import { transactionFormMatrix, TransactionFormMode } from '../../policies/transaction-form.policy'
+import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
-import { logger } from '../../utils/logger.util'
-import { getNumberFromBody, getStringFromBody } from '../../utils/req-params.util'
-import { getSqlErrorMessage } from '../../utils/sql-err.util'
-import { calculateTransactionDeltas, splitCategoriesByType } from './transaction.auxiliar'
-import { validateDeleteTransaction, validateSaveTransaction } from './transaction.validator'
 import { parseLocalDateToUTC } from '../../utils/date.util'
-import { getActiveAccountsByUser, getActiveCategoriesByUser } from '../../services/populate-items.service'
+import { logger } from '../../utils/logger.util'
+import { getSqlErrorMessage } from '../../utils/sql-err.util'
+import { calculateTransactionDeltas, splitCategoriesByType } from '../transaction/transaction.auxiliar'
+import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator'
+
+/* ============================
+   Título según modo
+============================ */
+const getTitle = (mode: TransactionFormMode) => {
+  switch (mode) {
+    case 'insert': return 'Insertar Transacción'
+    case 'update': return 'Editar Transacción'
+    case 'delete': return 'Eliminar Transacción'
+    case 'clone': return 'Clonar Transacción'
+    default: return 'Indefinido'
+  }
+}
+
+/* ============================
+   Sanitizar payload según policy
+============================ */
+const sanitizeByPolicy = (mode: TransactionFormMode, body: any) => {
+  const policy = transactionFormMatrix[mode]
+  const clean: any = {}
+
+  for (const field in policy) {
+    if (policy[field] === 'edit' && body[field] !== undefined) {
+      clean[field] = body[field]
+    }
+  }
+
+  return clean
+}
+
+/* ============================
+   Construir objeto para la vista
+============================ */
+const buildTransactionView = (body: any) => {
+  return {
+    ...body
+  }
+}
+
+/* Obtiene una cuenta activa por id desde el arreglo ya cargado */
+function getAccountFromActiveList(active_accounts: Account[], account_id: number | null): Account | null {
+  if (!account_id) return null
+  const account = active_accounts.find(a => a.id === account_id) || null
+  return account
+}
+
+/* Obtiene una categoría activa por id desde el arreglo ya cargado */
+function getCategoryFromActiveList(active_categories: Category[], category_id: number | null): Category | null {
+  if (!category_id) return null
+  const category = active_categories.find(c => c.id === category_id) || null
+  return category
+}
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-  // Como viene desde un POST se busca en el body
-  const transactionId = getNumberFromBody(req, 'id')
-  const action = getStringFromBody(req, 'action') || 'save'
+  logger.info('saveTransaction called', { body: req.body, param: req.params })
+
+  const auth_req = req as AuthRequest
+  const repo_transaction = AppDataSource.getRepository(Transaction)
+
+  const transaction_id = req.body.id ? Number(req.body.id) : undefined
+  const mode: TransactionFormMode = req.body.mode || 'insert'
   const timezone = req.body.timezone || 'UTC'
-  const returnFrom = req.body.return_from
-  const returnCategoryId = Number(req.body.return_category_id) || null
+  const return_from = req.body.return_from
+  const return_category_id = Number(req.body.return_category_id) || null
 
-  logger.info('Transactions data from req', req.body)
+  const active_accounts_for_transfer = await getActiveAccountsForTransferByUser(auth_req)
+  const active_accounts = await getActiveAccountsByUser(auth_req)
+  const active_categories = await getActiveCategoriesByUser(auth_req)
+  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
 
-  const accounts = await getActiveAccountsByUser(authReq)
-  const categories = await getActiveCategoriesByUser(authReq)
-  const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
+  const transaction_view = buildTransactionView(req.body)
 
-  const repo = AppDataSource.getRepository(Transaction)
-  let tx: Transaction
-  let mode
-  let prevTx: Transaction | undefined
-
-  const formState = {
-    transaction: {
-      ...req.body
-    },
-    mode: action === 'delete' ? 'delete' : transactionId ? 'update' : 'insert'
+  const form_state = {
+    transaction: transaction_view,
+    transaction_form_policy: transactionFormMatrix[mode],
+    mode
   }
 
-  const queryRunner = AppDataSource.createQueryRunner()
-  await queryRunner.connect()
-  await queryRunner.startTransaction()
+  const query_runner = AppDataSource.createQueryRunner()
+  await query_runner.connect()
+  await query_runner.startTransaction()
 
   try {
-    if (action === 'save') {
-      if (transactionId) {
-        const existing = await repo.findOne({
-          where: { id: transactionId, user: { id: authReq.user.id } },
-          relations: { account: true, to_account: true, category: true }
-        })
-        if (!existing) throw new Error('Transacción no encontrada')
+    let existing: Transaction | null = null
 
-        mode = 'update'
-        prevTx = Object.assign(new Transaction(), {
-          type: existing.type,
-          amount: existing.amount,
-          account: existing.account,
-          to_account: existing.to_account
-        })
-
-        existing.type = req.body.type
-        if (req.body.account_id) { existing.account = { id: Number(req.body.account_id) } as Account }
-        if (req.body.to_account_id) { existing.to_account = { id: Number(req.body.to_account_id) } as Account }
-        if (req.body.category_id) { existing.category = { id: Number(req.body.category_id) } as Category }
-        if (req.body.date) { existing.date = parseLocalDateToUTC(req.body.date, timezone) }
-        existing.amount = Number(req.body.amount)
-        existing.description = req.body.description
-
-        tx = existing
-      } else {
-        mode = 'insert'
-
-        tx = repo.create({
-          user: authReq.user,
-          type: req.body.type,
-          account: req.body.account_id ? { id: Number(req.body.account_id) } : undefined,
-          to_account: req.body.to_account_id ? { id: Number(req.body.to_account_id) } : undefined,
-          category: req.body.category_id ? { id: Number(req.body.category_id) } : undefined,
-          amount: Number(req.body.amount),
-          date: req.body.date ? parseLocalDateToUTC(req.body.date, timezone) : undefined,
-          description: req.body.description
-        })
-      }
-
-      if (tx.type === 'transfer') {
-        tx.category = null
-      }
-
-      const errors = await validateSaveTransaction(tx, authReq)
-      if (errors) {
-        const account = accounts.find(a => a.id === Number(req.body.account_id))
-        const toAccount = accounts.find(a => a.id === Number(req.body.to_account_id))
-        const category = categories.find(c => c.id === Number(req.body.category_id))
-
-        return res.render(
-          'layouts/main',
-          {
-            title: mode === 'insert' ? 'Insertar Transacción' : 'Editar Transacción',
-            view: 'pages/transactions/form',
-            transaction: {
-              ...req.body,
-              account_name: account?.name || '',
-              to_account_name: toAccount?.name || '',
-              category_name: category?.name || ''
-            },
-            errors,
-            accounts,
-            incomeCategories,
-            expenseCategories,
-            mode
-          })
-      }
-      const deltas = new Map<number, number>()
-      const mergeDeltas = (map: Map<number, number>) => {
-        for (const [accId, value] of map) {
-          const prev = deltas.get(accId) || 0
-          deltas.set(accId, prev + value)
-        }
-      }
-
-      if (prevTx) {
-        mergeDeltas(calculateTransactionDeltas(prevTx, -1))
-      }
-
-      const savedTx = await queryRunner.manager.save(Transaction, tx)
-      mergeDeltas(calculateTransactionDeltas(savedTx, 1))
-
-      for (const [accId, delta] of deltas) {
-        const acc = await queryRunner.manager.findOne(Account, { where: { id: accId } })
-        if (!acc) continue
-        await queryRunner.manager.update(Account, { id: accId }, {
-          balance: Number(acc.balance) + delta
-        })
-      }
-
-      await queryRunner.commitTransaction()
-      await queryRunner.release()
-      return res.redirect('/transactions')
-    }
-
-    if (action === 'delete') {
-      mode = 'delete'
-      if (!transactionId) throw new Error('ID de transacción no proporcionado')
-      const existing = await repo.findOne({
-        where: { id: transactionId, user: { id: authReq.user.id } },
+    if (transaction_id) {
+      existing = await repo_transaction.findOne({
+        where: { id: transaction_id, user: { id: auth_req.user.id } },
         relations: { account: true, to_account: true, category: true }
       })
+      if (!existing) throw new Error('Transacción no encontrada')
+    }
 
+    /* ============================
+       DELETE
+    ============================ */
+    if (mode === 'delete') {
       if (!existing) throw new Error('Transacción no encontrada')
 
-      const errors = await validateDeleteTransaction(existing, authReq)
-      if (errors) {
-        const account = accounts.find(a => a.id === Number(req.body.account_id))
-        const toAccount = accounts.find(a => a.id === Number(req.body.to_account_id))
-        const category = categories.find(c => c.id === Number(req.body.category_id))
-
-        return res.render(
-          'layouts/main',
-          {
-            title: mode === 'delete' ? 'Eliminar Transacción' : '',
-            view: 'pages/transactions/form',
-            transaction: {
-              ...req.body,
-              account_name: account?.name || '',
-              to_account_name: toAccount?.name || '',
-              category_name: category?.name || ''
-            },
-            errors,
-            accounts,
-            incomeCategories,
-            expenseCategories,
-            mode
-          })
-      }
+      const errors = await validateDeleteTransaction(existing, auth_req)
+      if (errors) throw { validationErrors: errors }
 
       const deltas = calculateTransactionDeltas(existing, -1)
-      for (const [accId, delta] of deltas) {
-        const acc = await queryRunner.manager.findOne(Account, { where: { id: accId } })
+
+      for (const [acc_id, delta] of deltas) {
+        const acc = await query_runner.manager.findOne(Account, { where: { id: acc_id } })
         if (!acc) continue
-        await queryRunner.manager.update(Account, { id: accId }, {
+        await query_runner.manager.update(Account, { id: acc_id }, {
           balance: Number(acc.balance) + delta
         })
       }
 
-      await queryRunner.manager.remove(Transaction, existing)
-      await queryRunner.commitTransaction()
-      await queryRunner.release()
+      await query_runner.manager.remove(Transaction, existing)
+      await query_runner.commitTransaction()
+      await query_runner.release()
+
       return res.redirect('/transactions')
     }
 
-    /*Si viene con el contexto de categories*/
-    if (returnFrom === 'categories' && returnCategoryId) {
-      return res.redirect(`/transactions?category_id=${returnCategoryId}&from=categories`)
+    /* ============================
+       INSERT / UPDATE
+    ============================ */
+    let tx: Transaction
+    let prev_tx: Transaction | undefined
+
+    if (mode === 'insert') {
+      tx = repo_transaction.create({
+        user: auth_req.user as any
+      })
+    } else {
+      if (!existing) throw new Error('Transacción no encontrada')
+
+      prev_tx = Object.assign(new Transaction(), {
+        type: existing.type,
+        amount: existing.amount,
+        account: existing.account,
+        to_account: existing.to_account
+      })
+
+      tx = existing
     }
-    /*Por defecto devuelve a list transactions */
+
+    const clean = sanitizeByPolicy(mode, req.body)
+
+    if (clean.type !== undefined) {
+      tx.type = clean.type
+    }
+
+    if (clean.account !== undefined) {
+      tx.account = getAccountFromActiveList(active_accounts, clean.account ? Number(clean.account) : null)
+    }
+
+    if (clean.to_account !== undefined) {
+      tx.to_account = getAccountFromActiveList(active_accounts_for_transfer, clean.to_account ? Number(clean.to_account) : null)
+    }
+
+    if (clean.category !== undefined) {
+      tx.category = getCategoryFromActiveList(active_categories, clean.category ? Number(clean.category) : null)
+    }
+
+    if (clean.date) {
+      tx.date = parseLocalDateToUTC(clean.date, timezone)
+    }
+
+    if (clean.amount !== undefined) {
+      tx.amount = Number(clean.amount)
+    }
+
+    if (clean.description !== undefined) {
+      tx.description = clean.description
+    }
+
+    if (tx.type === 'transfer') {
+      tx.category = null
+    }
+
+    const errors = await validateSaveTransaction(tx, auth_req)
+    if (errors) throw { validationErrors: errors }
+
+    const deltas = new Map<number, number>()
+
+    const mergeDeltas = (map: Map<number, number>) => {
+      for (const [acc_id, value] of map) {
+        const prev = deltas.get(acc_id) || 0
+        deltas.set(acc_id, prev + value)
+      }
+    }
+
+    if (prev_tx) {
+      mergeDeltas(calculateTransactionDeltas(prev_tx, -1))
+    }
+
+    const saved_tx = await query_runner.manager.save(Transaction, tx)
+    mergeDeltas(calculateTransactionDeltas(saved_tx, 1))
+
+    for (const [acc_id, delta] of deltas) {
+      const acc = await query_runner.manager.findOne(Account, { where: { id: acc_id } })
+      if (!acc) continue
+      await query_runner.manager.update(Account, { id: acc_id }, {
+        balance: Number(acc.balance) + delta
+      })
+    }
+
+    await query_runner.commitTransaction()
+    await query_runner.release()
+
+    if (return_from === 'categories' && return_category_id) {
+      return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
+    }
+
     return res.redirect('/transactions')
-  } catch (err) {
-    await queryRunner.rollbackTransaction()
-    logger.error('Error saving transaction', err)
+
+  } catch (err: any) {
+    await query_runner.rollbackTransaction()
+
+    logger.error('Error saving transaction', {
+      userId: auth_req.user.id,
+      transaction_id,
+      mode,
+      error: err,
+      stack: err?.stack
+    })
+
+    const validation_errors = err?.validationErrors || null
 
     return res.status(500).render('layouts/main', {
-      title: 'Error',
+      title: getTitle(mode),
       view: 'pages/transactions/form',
-      ...formState,
-      accounts,
-      incomeCategories,
-      expenseCategories,
-      errors: { general: 'Ocurrió un error inesperado. Intenta nuevamente.\n' + getSqlErrorMessage(err) }
+      ...form_state,
+      active_accounts_for_transfer,
+      active_accounts,
+      active_income_categories,
+      active_expense_categories,
+      context: {
+        from: return_from || null,
+        category_id: return_category_id || null
+      },
+      errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.\n' + getSqlErrorMessage(err) }
     })
+  } finally {
+    await query_runner.release()
   }
-  finally {
-    await queryRunner.release()
-  }
-
 }

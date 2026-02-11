@@ -1,24 +1,67 @@
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Transaction } from '../../entities/Transaction.entity'
+import { transactionFormMatrix } from '../../policies/transaction-form.policy'
+import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
-import {  getNextValidTransactionDate, splitCategoriesByType } from './transaction.auxiliar'
-import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveCategoriesByUser } from '../../services/populate-items.service'
+import { getNextValidTransactionDate, splitCategoriesByType } from './transaction.auxiliar'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
+
+
+/* =========================================================
+   Helper de render para formulario (igual patrón que loans)
+========================================================= */
+type TransactionFormViewParams = {
+  title: string
+  view: string
+  transaction: any
+  errors: any
+  mode: 'insert' | 'update' | 'delete'
+  auth_req: AuthRequest
+  context: {
+    category_id: any
+    from: any
+  }
+}
+
+const renderTransactionForm = async (res: Response, params: TransactionFormViewParams) => {
+  const { title, view, transaction, errors, mode, auth_req, context } = params
+
+  const active_accounts = await getActiveAccountsByUser(auth_req)
+  const active_accounts_for_transfer = await getActiveAccountsForTransferByUser(auth_req)
+  const active_categories = await getActiveCategoriesByUser(auth_req)
+  const transaction_form_policy = transactionFormMatrix[mode]
+  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+
+  return res.render(
+    'layouts/main',
+    {
+      title,
+      view,
+      transaction,
+      active_accounts,
+      active_accounts_for_transfer,
+      active_income_categories,
+      active_expense_categories,
+      transaction_form_policy,
+      errors,
+      mode,
+      context
+    }
+  )
+}
 
 export const apiForGettingTransactions: RequestHandler = async (req: Request, res: Response) => {
   try {
-    const authReq = req as AuthRequest
-
-    const page = Number(authReq.query.page) || 1
-    const limit = Number(authReq.query.limit) || 10
-    const search = (authReq.query.search as string) || ''
+    const auth_req = req as AuthRequest
+    const page = Number(auth_req.query.page) || 1
+    const limit = Number(auth_req.query.limit) || 10
+    const search = (auth_req.query.search as string) || ''
     const skip = (page - 1) * limit
-    const userId = authReq.user.id
-
-    const categoryId = Number(authReq.query.category_id) || null
+    const user_id = auth_req.user.id
+    const category_id = Number(auth_req.query.category_id) || null
 
     const qb = AppDataSource
       .getRepository(Transaction)
@@ -28,10 +71,10 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .leftJoinAndSelect('t.category', 'category')
       .leftJoinAndSelect('t.loan', 'loan')
       .leftJoinAndSelect('t.loan_payment', 'loan_payment')
-      .where('t.user_id = :userId', { userId })
+      .where('t.user_id = :user_id', { user_id })
 
-    if (categoryId) {
-      qb.andWhere('category.id = :categoryId', { categoryId })
+    if (category_id) {
+      qb.andWhere('category.id = :category_id', { category_id })
     }
 
     if (search) {
@@ -56,7 +99,7 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .take(limit)
       .getManyAndCount()
 
-    res.json({ items, total, page, limit, category_id: categoryId })
+    res.json({ items, total, page, limit, category_id: category_id })
   } catch (error) {
     logger.error('Error al listar transacciones:', error)
     res.status(500).json({ error: 'Error al listar transacciones' })
@@ -64,8 +107,8 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
 }
 
 export const routeToPageTransaction: RequestHandler = (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
-  const categoryId = req.query.category_id || null
+  const auth_req = req as AuthRequest
+  const category_id = req.query.category_id || null
   const from = req.query.from || null
 
   res.render(
@@ -73,218 +116,161 @@ export const routeToPageTransaction: RequestHandler = (req: Request, res: Respon
     {
       title: 'Transacciones',
       view: 'pages/transactions/index',
-      incomeCategories: [],
-      expenseCategories: [],
-      USER_ID: authReq.user?.id || 'guest',
+      active_income_categories: [],
+      active_expense_categories: [],
+      USER_ID: auth_req.user?.id || 'guest',
       context: {
         from,
-        category_id: categoryId
+        category_id: category_id
       },
     })
 }
 
 export const routeToFormInsertTransaction: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
-  const authReq = req as AuthRequest
-  const categoryId = req.query.category_id || null
+  const auth_req = req as AuthRequest
+  const category_id = req.query.category_id || null
   const from = req.query.from || null
+  const timezone = auth_req.timezone || 'UTC'
 
-  const defaultDate = await getNextValidTransactionDate(authReq)
-  const accounts = await getActiveAccountsByUser(authReq)
-  const accountsForTransfer = await getActiveAccountsForTransferByUser(authReq)
-  const categories = await getActiveCategoriesByUser(authReq)
-  const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
-  res.render(
-    'layouts/main',
-    {
-      title: 'Insertar Transacción',
-      view: 'pages/transactions/form',
-      transaction: {
-        date: formatDateForInputLocal(defaultDate).slice(0, 16),
-        amount: '0.00',
-      },
-      errors: {},
-      accounts,
-      accountsForTransfer,
-      incomeCategories,
-      expenseCategories,
-      mode,
-      context: {
-        category_id: categoryId,
-        from
-      }
-    })
+  const defaultDate = await getNextValidTransactionDate(auth_req)
+
+  return renderTransactionForm(res, {
+    title: 'Insertar Transacción',
+    view: 'pages/transactions/form',
+    transaction: {
+      date: formatDateForInputLocal(defaultDate, timezone),
+      amount: '0.00',
+    },
+    errors: {},
+    mode,
+    auth_req: auth_req,
+    context: {
+      category_id: category_id,
+      from
+    }
+  })
 }
 
 export const routeToFormUpdateTransaction: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'update'
-  const authReq = req as AuthRequest
-  const transactionId = Number(req.params.id)
-  const categoryId = req.query.category_id || null
+  const auth_req = req as AuthRequest
+  const transaction_id = Number(req.params.id)
+  const category_id = req.query.category_id || null
   const from = req.query.from || null
-
-  if (!Number.isInteger(transactionId) || transactionId <= 0) {
+  const timezone = auth_req.timezone || 'UTC'
+  if (!Number.isInteger(transaction_id) || transaction_id <= 0) {
     return res.redirect('/transactions')
   }
-
-  const repoTransaction = AppDataSource.getRepository(Transaction)
-  const transaction = await repoTransaction.findOne({
-    where: { id: transactionId, user: { id: authReq.user.id } },
+  const repo_transaction = AppDataSource.getRepository(Transaction)
+  const transaction = await repo_transaction.findOne({
+    where: { id: transaction_id, user: { id: auth_req.user.id } },
     relations: { account: true, to_account: true, category: true }
   })
-
   if (!transaction) {
     return res.redirect('/transactions')
   }
-
-  const accounts = await getActiveAccountsByUser(authReq)
-  const accountsForTransfer = await getActiveAccountsForTransferByUser(authReq)
-  const categories = await getActiveCategoriesByUser(authReq)
-  const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
-  res.render(
-    'layouts/main',
-    {
-      title: 'Editar Transacción',
-      view: 'pages/transactions/form',
-      transaction: {
-        id: transaction.id,
-        type: transaction.type,
-        account_id: transaction.account ? transaction.account.id : '',
-        account_name: transaction.account ? transaction.account.name : '',
-        to_account_id: transaction.to_account ? transaction.to_account.id : '',
-        to_account_name: transaction.to_account ? transaction.to_account.name : '',
-        category_id: transaction.category ? transaction.category.id : '',
-        category_name: transaction.category ? transaction.category.name : '',
-        amount: Number(transaction.amount),
-        date: formatDateForInputLocal(transaction.date).slice(0, 16),
-        description: transaction.description ?? ''
-      },
-      accounts,
-      accountsForTransfer,
-      incomeCategories,
-      expenseCategories,
-      errors: {},
-      mode,
-      context: {
-        category_id: categoryId,
-        from
-      }
-    })
-
+  return renderTransactionForm(res, {
+    title: 'Editar Transacción',
+    view: 'pages/transactions/form',
+    transaction: {
+      id: transaction.id,
+      type: transaction.type,
+      account: transaction.account,
+      to_account: transaction.to_account,
+      category: transaction.category,
+      amount: Number(transaction.amount),
+      date: formatDateForInputLocal(transaction.date, timezone),
+      description: transaction.description ?? ''
+    },
+    errors: {},
+    mode,
+    auth_req: auth_req,
+    context: {
+      category_id: category_id,
+      from
+    }
+  })
 }
 
 export const routeToFormCloneTransaction: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
-  const authReq = req as AuthRequest
-  const transactionId = Number(req.params.id)
-  const categoryId = req.query.category_id || null
+  const auth_req = req as AuthRequest
+  const transaction_id = Number(req.params.id)
+  const category_id = req.query.category_id || null
   const from = req.query.from || null
-
-  if (!Number.isInteger(transactionId) || transactionId <= 0) {
+  const timezone = auth_req.timezone || 'UTC'
+  if (!Number.isInteger(transaction_id) || transaction_id <= 0) {
     return res.redirect('/transactions')
   }
-
-  const repoTransaction = AppDataSource.getRepository(Transaction)
-  const transaction = await repoTransaction.findOne({
-    where: { id: transactionId, user: { id: authReq.user.id } },
+  const repo_transaction = AppDataSource.getRepository(Transaction)
+  const transaction = await repo_transaction.findOne({
+    where: { id: transaction_id, user: { id: auth_req.user.id } },
     relations: { account: true, to_account: true, category: true }
   })
-
   if (!transaction) {
     return res.redirect('/transactions')
   }
-
-  const defaultDate = await getNextValidTransactionDate(authReq)
-  const accounts = await getActiveAccountsByUser(authReq)
-  const accountsForTransfer = await getActiveAccountsForTransferByUser(authReq)
-  const categories = await getActiveCategoriesByUser(authReq)
-  const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
-
-  res.render(
-    'layouts/main',
-    {
-      title: 'Clonar Transacción',
-      view: 'pages/transactions/form',
-      transaction: {
-        type: transaction.type,
-        account_id: transaction.account ? transaction.account.id : '',
-        account_name: transaction.account ? transaction.account.name : '',
-        to_account_id: transaction.to_account ? transaction.to_account.id : '',
-        to_account_name: transaction.to_account ? transaction.to_account.name : '',
-        category_id: transaction.category ? transaction.category.id : '',
-        category_name: transaction.category ? transaction.category.name : '',
-        amount: Number(transaction.amount),
-        date: formatDateForInputLocal(defaultDate).slice(0, 16),
-        description: transaction.description ?? ''
-      },
-      accounts,
-      accountsForTransfer,
-      incomeCategories,
-      expenseCategories,
-      errors: {},
-      mode,
-      context: {
-        category_id: categoryId,
-        from
-      }
+  const defaultDate = await getNextValidTransactionDate(auth_req)
+  return renderTransactionForm(res, {
+    title: 'Clonar Transacción',
+    view: 'pages/transactions/form',
+    transaction: {
+      type: transaction.type,
+      account: transaction.account,
+      to_account: transaction.account,
+      category: transaction.category,
+      amount: Number(transaction.amount),
+      date: formatDateForInputLocal(transaction.date, timezone),
+      description: transaction.description ?? ''
+    },
+    errors: {},
+    mode,
+    auth_req: auth_req,
+    context: {
+      category_id: category_id,
+      from
     }
-  )
+  })
 }
 
 export const routeToFormDeleteTransaction: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'delete'
-  const authReq = req as AuthRequest
-  const transactionId = Number(req.params.id)
-  const categoryId = req.query.category_id || null
+  const auth_req = req as AuthRequest
+  const transaction_id = Number(req.params.id)
+  const category_id = req.query.category_id || null
   const from = req.query.from || null
-
-  if (!Number.isInteger(transactionId) || transactionId <= 0) {
+  const timezone = auth_req.timezone || 'UTC'
+  if (!Number.isInteger(transaction_id) || transaction_id <= 0) {
     return res.redirect('/transactions')
   }
-
-  const repoTransaction = AppDataSource.getRepository(Transaction)
-  const transaction = await repoTransaction.findOne({
-    where: { id: transactionId, user: { id: authReq.user.id } },
+  const repo_transaction = AppDataSource.getRepository(Transaction)
+  const transaction = await repo_transaction.findOne({
+    where: { id: transaction_id, user: { id: auth_req.user.id } },
     relations: { account: true, to_account: true, category: true }
   })
-
   if (!transaction) {
     return res.redirect('/transactions')
   }
-
-  const accounts = await getActiveAccountsByUser(authReq)
-  const accountsForTransfer = await getActiveAccountsForTransferByUser(authReq)
-  const categories = await getActiveCategoriesByUser(authReq)
-  const { incomeCategories, expenseCategories } = splitCategoriesByType(categories)
-  res.render(
-    'layouts/main',
-    {
-      title: 'Eliminar Transacción',
-      view: 'pages/transactions/form',
-      transaction: {
-        id: transaction.id,
-        type: transaction.type,
-        account_id: transaction.account ? transaction.account.id : '',
-        account_name: transaction.account ? transaction.account.name : '',
-        to_account_id: transaction.to_account ? transaction.to_account.id : '',
-        to_account_name: transaction.to_account ? transaction.to_account.name : '',
-        category_id: transaction.category ? transaction.category.id : '',
-        category_name: transaction.category ? transaction.category.name : '',
-        amount: Number(transaction.amount),
-        date: formatDateForInputLocal(transaction.date).slice(0, 16),
-        description: transaction.description ?? ''
-      },
-      accounts,
-      accountsForTransfer,
-      incomeCategories,
-      expenseCategories,
-      errors: {},
-      mode,
-      context: {
-        category_id: categoryId,
-        from
-      }
-    })
+  return renderTransactionForm(res, {
+    title: 'Eliminar Transacción',
+    view: 'pages/transactions/form',
+    transaction: {
+      id: transaction.id,
+      type: transaction.type,
+      account: transaction.account,
+      to_account: transaction.to_account,
+      category: transaction.category,
+      amount: Number(transaction.amount),
+      date: formatDateForInputLocal(transaction.date, timezone),
+      description: transaction.description ?? ''
+    },
+    errors: {},
+    mode,
+    auth_req: auth_req,
+    context: {
+      category_id: category_id,
+      from
+    }
+  })
 }
-
-

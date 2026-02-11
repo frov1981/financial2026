@@ -1,10 +1,7 @@
-import { In, IsNull, MoreThanOrEqual, Not } from 'typeorm'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import { Account } from '../../entities/Account.entity'
 import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
-
 
 export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise<Date> => {
   const userId = authReq.user.id
@@ -28,7 +25,7 @@ export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise
     .orderBy('t.date', 'DESC')
     .getOne()
 
-  if (!lastTxToday) return now
+  if (!lastTxToday || !lastTxToday.date) return now
   if (lastTxToday.date > now) return now
 
   const next = new Date(lastTxToday.date)
@@ -43,25 +40,25 @@ export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise
 }
 
 export const splitCategoriesByType = (categories: Category[]): {
-  incomeCategories: Category[]
-  expenseCategories: Category[]
+  active_income_categories: Category[]
+  active_expense_categories: Category[]
 } => {
-  const incomeCategories: Category[] = []
-  const expenseCategories: Category[] = []
+  const active_income_categories: Category[] = []
+  const active_expense_categories: Category[] = []
 
   categories.forEach(category => {
     if (category.type === 'income') {
-      incomeCategories.push(category)
+      active_income_categories.push(category)
     }
 
     if (category.type === 'expense') {
-      expenseCategories.push(category)
+      active_expense_categories.push(category)
     }
   })
 
   return {
-    incomeCategories,
-    expenseCategories
+    active_income_categories,
+    active_expense_categories
   }
 }
 

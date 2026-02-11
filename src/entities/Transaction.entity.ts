@@ -27,7 +27,7 @@ export class Transaction {
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_transactions_account' })
   @IsNotEmpty({ message: 'La cuenta es obligatoria' })
-  account!: Account
+  account!: Account | null
 
   @ManyToOne(() => Account, { nullable: true })
   @JoinColumn({ name: 'to_account_id', foreignKeyConstraintName: 'fk_transactions_to_account' })

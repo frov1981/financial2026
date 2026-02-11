@@ -1,5 +1,5 @@
 :root {
-  --ui-white: var(--ui-white)fff;
+  --ui-white   : #ffffff;
   --ui-gray-900: #111827;
   --ui-gray-700: #374151;
   --ui-gray-500: #6b7280;
@@ -896,27 +896,6 @@ input[data-balance-final] {
   background-color: var(--ui-white);
 }
 
-/* Autocomplete */
-
-[data-autocomplete-list] li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.autocomplete-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.autocomplete-balance {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 /* Amount mobile */
 
 @media (max-width: 639px) {
@@ -1197,6 +1176,13 @@ input[data-balance-final] {
   color: var(--ui-orange-700);
 }
 
+
+/* =========================================================
+   CSS Autocomplete para inputs de cuentas y categorías
+     (usado en forms de transacciones)
+     Se puede usar también para otros autocompletes con ajustes mínimos
+   ========================================================= */
+
 /* Contenedor principal del autocomplete */
 .autocomplete {
   position: relative;
@@ -1229,6 +1215,7 @@ input[data-balance-final] {
   padding: 6px 10px;
   cursor: pointer;
   user-select: none;
+  line-height: 1.4;
 }
 
 /* Hover o seleccionado con teclado */
@@ -1253,22 +1240,8 @@ input[data-balance-final] {
 .autocomplete-item .item-balance {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  opacity: 0.8;
-}
-
-/* Opcional: input dentro del autocomplete */
-.autocomplete-input {
-  width: 100%;
-  padding: 6px 10px;
-  border: 1px solid var(--ui-gray-300);
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.autocomplete-item .item-balance {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
   font-weight: bold;
+  opacity: 0.8;
 }
 
 /* Verde si balance > 0 */
@@ -1280,6 +1253,16 @@ input[data-balance-final] {
 .autocomplete-item .item-balance.negative {
   color: var(--ui-red-800);
 }
+
+/* Input dentro del autocomplete */
+.autocomplete-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-gray-300);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
 
 
 /* =========================================================
