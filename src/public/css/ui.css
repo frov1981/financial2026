@@ -800,6 +800,17 @@
   color: var(--ui-gray-500);
 }
 
+.transaction-card .card-tag {
+  font-size: 11px;
+  color: var(--ui-gray-900);
+  border: 1px solid var(--ui-primary-500);
+  background-color: var(--ui-primary-50);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .transaction-card .card-actions {
   display: flex;
   gap: 4px;
@@ -843,6 +854,7 @@
   font-style: italic;
   color: var(--ui-gray-500);
   line-height: 1.2;
+  white-space: pre-line;
 }
 
 /* =========================

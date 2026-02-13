@@ -187,6 +187,10 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       tx.category = null
     }
 
+    if (tx.type !== 'transfer') {
+      tx.to_account = null
+    }
+
     const errors = await validateSaveTransaction(tx, auth_req)
     if (errors) throw { validationErrors: errors }
 

@@ -68,17 +68,22 @@ function isBatchActive() {
 ============================================================================ */
 function formatDateTime(value) {
   if (!value || typeof value !== 'string') {
-    return { date: '', time: '' }
+    return { date: '', time: '', weekday: '' }
   }
 
-  const [date, time] = value.split('T')
+  const [datePart, timePart] = value.split('T')
+
+  const dateObj = new Date(value)
+
+  const weekdays = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  const weekday = isNaN(dateObj.getTime()) ? '' : weekdays[dateObj.getDay()]
 
   return {
-    date,
-    time: time ? time.slice(0, 5) : ''
+    date: datePart,
+    time: timePart ? timePart.slice(0, 5) : '',
+    tag: weekday
   }
 }
-
 
 /* ============================================================================
 5. Render helpers (iconos, tags, cajas)
@@ -123,13 +128,14 @@ function renderCards(data) {
 6. Render Desktop / Mobile
 ============================================================================ */
 function renderRow(transaction) {
-  const { date, time } = formatDateTime(transaction.date)
+  const { date, time, tag } = formatDateTime(transaction.date)
 
   return `
     <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction.type)}">
       <td class="px-4 py-2 text-center">
         <div>${date}</div>
         <div class="text-xs text-gray-600">${time}</div>
+        <div class="text-xs text-gray-500">${tag}</div>
       </td>
       <td class="ui-td col-left col-sm">${transactionTypeTag(transaction.type)}</td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
@@ -175,7 +181,7 @@ function renderRow(transaction) {
 
 
 function renderCard(transaction) {
-  const { date, time } = formatDateTime(transaction.date)
+  const { date, time, tag } = formatDateTime(transaction.date)
 
   return `
     <div 
@@ -187,6 +193,7 @@ function renderCard(transaction) {
         <div class="card-datetime">
           <span class="card-date">${date}</span>
           <span class="card-time">${time}</span>
+          <span class="card-tag">${tag}</span>
         </div>
 
         <div class="card-actions">
