@@ -7,6 +7,7 @@ import { AuthRequest } from '../../types/auth-request'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { getNextValidTransactionDate, splitCategoriesByType } from './transaction.auxiliar'
+import { validateActiveCategoryTransaction } from './transaction.validator'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
 
@@ -212,6 +213,8 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
     return res.redirect('/transactions')
   }
   const defaultDate = await getNextValidTransactionDate(auth_req)
+  const categoryErrors = await validateActiveCategoryTransaction(transaction, auth_req)
+  const errors = categoryErrors ? categoryErrors : {}
   return renderTransactionForm(res, {
     title: 'Clonar Transacción',
     view: 'pages/transactions/form',
@@ -221,10 +224,10 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
       to_account: transaction.account,
       category: transaction.category,
       amount: Number(transaction.amount),
-      date: formatDateForInputLocal(transaction.date, timezone),
+      date: formatDateForInputLocal(defaultDate, timezone),
       description: transaction.description ?? ''
     },
-    errors: {},
+    errors: errors,
     mode,
     auth_req: auth_req,
     context: {

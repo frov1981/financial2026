@@ -1,6 +1,7 @@
 import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
+import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 
@@ -122,6 +123,30 @@ export const validateDeleteTransaction = async (transaction: Transaction, authRe
             (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() < now.getMonth())) {
             fieldErrors.general = 'No se puede eliminar transacciones de meses anteriores'
         }
+    }
+
+    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+}
+
+export const validateActiveCategoryTransaction = async (transaction: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
+    const fieldErrors: Record<string, string> = {}
+
+    if (!transaction.category || !transaction.category.id) {
+        return null
+    }
+
+    const categoryRepo = AppDataSource.getRepository(Category)
+    const category = await categoryRepo.findOne({
+        where: {
+            id: transaction.category.id,
+            user: { id: authReq.user.id },
+            is_active: true
+        }
+    })
+
+    if (!category) {
+        const category_name = transaction.category?.name || ''
+        fieldErrors.category = `La categoría "${category_name}" de esta transacción ya no está activa o no existe`
     }
 
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null

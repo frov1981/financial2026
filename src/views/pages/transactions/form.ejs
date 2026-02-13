@@ -84,6 +84,10 @@
           Transferencia
         </label>
       </div>
+
+      <% if (errors?.type) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.type %></p>
+      <% } %>
     </div>
     <% } %>
 
@@ -146,6 +150,10 @@
         >
         <div class="autocomplete-panel"></div>
       </div>
+
+      <% if (errors?.to_account) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.to_account %></p>
+      <% } %>
     </div>
     <% } %>
 
@@ -154,7 +162,7 @@
     <div class="mb-4">
       <label class="block font-medium mb-1">Categoría</label>
 
-      <div
+      <div 
         class="autocomplete"
         data-items-income='<%- JSON.stringify(active_income_categories) %>'
         data-items-expense='<%- JSON.stringify(active_expense_categories) %>'
@@ -176,6 +184,10 @@
         >
         <div class="autocomplete-panel"></div>
       </div>
+
+      <% if (errors?.category) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
+      <% } %>
     </div>
     <% } %>
 
@@ -193,6 +205,10 @@
         <%= isReadOnly('amount') ? 'readonly' : '' %>
         required
       >
+
+      <% if (errors?.amount) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.amount %></p>
+      <% } %>
     </div>
     <% } %>
 
@@ -208,6 +224,10 @@
         <%= isReadOnly('date') ? 'readonly' : '' %>
         required
       >
+
+      <% if (errors?.date) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.date %></p>
+      <% } %>
     </div>
     <% } %>
 
@@ -221,6 +241,10 @@
         class="w-full border rounded px-3 py-2"
         <%= isReadOnly('description') ? 'readonly' : '' %>
       ><%= transaction?.description || '' %></textarea>
+
+      <% if (errors?.description) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.description %></p>
+      <% } %>
     </div>
     <% } %>
 
