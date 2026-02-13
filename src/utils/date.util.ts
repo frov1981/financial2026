@@ -10,6 +10,7 @@ export const parseLocalDateToUTC = (
     .toJSDate()
 }
 
+/*
 export function formatDateForInputLocal(
   date: Date,
   timeZone: string = 'America/Guayaquil'
@@ -27,6 +28,15 @@ export function formatDateForInputLocal(
   const get = (t: string) => parts.find(p => p.type === t)?.value
 
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`
+}*/
+export function formatDateForInputLocal(
+  date: Date,
+  timeZone: string = 'America/Guayaquil'
+): string {
+  return DateTime
+    .fromJSDate(date, { zone: 'utc' })
+    .setZone(timeZone)
+    .toFormat("yyyy-MM-dd'T'HH:mm")
 }
 
 
