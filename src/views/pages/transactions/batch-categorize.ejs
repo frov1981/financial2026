@@ -1,0 +1,112 @@
+<script id="batch-data" type="application/json">
+<%- JSON.stringify({
+  active_income_categories: active_income_categories || [],
+  active_expense_categories: active_expense_categories || [],
+  transactions: transactions || [],
+  has_income: has_income || false,
+  has_expense: has_expense || false
+}) %>
+</script>
+
+<script>
+  window.USER_ID = "<%= USER_ID %>"
+  const batch_data = JSON.parse(document.getElementById('batch-data').textContent)
+  window.ACTIVE_INCOME_CATEGORIES = batch_data.active_income_categories
+  window.ACTIVE_EXPENSE_CATEGORIES = batch_data.active_expense_categories
+  window.BATCH_TRANSACTIONS = batch_data.transactions
+  window.HAS_INCOME = batch_data.has_income
+  window.HAS_EXPENSE = batch_data.has_expense
+</script>
+
+<% if (has_income) { %>
+  <div class="mb-4">
+    <label class="block font-medium mb-1">Categoría de Ingresos</label>
+
+    <div
+      id="batch-income-category-autocomplete"
+      class="autocomplete"
+      data-items='<%- JSON.stringify(active_income_categories || []) %>'
+      data-selected-id=""
+      data-placeholder="-- Escoja una categoría --"
+    >
+      <input
+        type="text"
+        id="batch-income-category-input"
+        class="autocomplete-input"
+        autocomplete="off"
+        placeholder="-- Escoja una categoría --"
+      >
+
+      <input
+        type="hidden"
+        id="batch-income-category-id"
+        class="autocomplete-hidden"
+        value=""
+      >
+
+      <div class="autocomplete-panel"></div>
+    </div>
+  </div>
+<% } %>
+<% if (has_expense) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Categoría de Gastos</label>
+
+      <div
+        id="batch-expense-category-autocomplete"
+        class="autocomplete"
+        data-items='<%- JSON.stringify(active_expense_categories || []) %>'
+        data-selected-id=""
+        data-placeholder="-- Escoja una categoría --"
+      >
+        <input
+          type="text"
+          id="batch-expense-category-input"
+          class="autocomplete-input"
+          autocomplete="off"
+          placeholder="-- Escoja una categoría --"
+        >
+
+        <input
+          type="hidden"
+          id="batch-expense-category-id"
+          class="autocomplete-hidden"
+          value=""
+        >
+
+        <div class="autocomplete-panel"></div>
+      </div>
+    <% } %>
+
+<div class="max-w-6xl mx-auto ui-page">
+  <!-- =========================
+       SCROLL INTERNO
+       ========================= -->
+  <div class="ui-scroll-area">
+
+    <!-- Mobile cards -->
+    <div id="batch-categorize-mobile" class="batch-categorize-mobile"></div>
+
+    <!-- Desktop table -->
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Fecha</th>
+            <th class="ui-th col-left col-sm">Tipo</th>
+            <th class="ui-th col-right">Monto</th>
+            <th class="ui-th col-left">Categoría</th>
+            <th class="ui-th col-left">Nueva Categoria</th>
+          </tr>
+        </thead>
+        <tbody id="transactions-table"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/indexes/batch-categorize-index.js"></script>
+<script src="/js/helpers/amount-helper.js"></script>
+<script src="/js/helpers/type-tags-helper.js"></script> 
+<script src="/js/forms/autocomplete-form.js"></script>

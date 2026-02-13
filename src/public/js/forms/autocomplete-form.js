@@ -95,45 +95,45 @@ function setupAutocomplete(container) {
 }
 
 function renderPanel(panel_el, items) {
-  panel_el.innerHTML = ''
+    panel_el.innerHTML = ''
 
-  if (items.length === 0) {
-    const empty_el = document.createElement('div')
-    empty_el.className = 'autocomplete-item'
-    empty_el.textContent = 'Sin resultados'
-    panel_el.appendChild(empty_el)
-    return
-  }
-
-  items.forEach((it, index) => {
-    const item_el = document.createElement('div')
-    item_el.className = 'autocomplete-item'
-    item_el.setAttribute('data-index', index)
-
-    const has_balance = typeof it.balance === 'number'
-
-    if (has_balance) {
-      item_el.classList.add('two-columns')
-
-      const name_el = document.createElement('div')
-      name_el.className = 'item-label'
-      name_el.textContent = it.name || ''
-
-      const balance_el = document.createElement('div')
-      balance_el.className = 'item-balance'
-      balance_el.textContent = formatBalance(it.balance)
-
-      // color según valor
-      balance_el.classList.add(it.balance > 0 ? 'positive' : 'negative')
-
-      item_el.appendChild(name_el)
-      item_el.appendChild(balance_el)
-    } else {
-      item_el.textContent = it.name || ''
+    if (items.length === 0) {
+        const empty_el = document.createElement('div')
+        empty_el.className = 'autocomplete-item'
+        empty_el.textContent = 'Sin resultados'
+        panel_el.appendChild(empty_el)
+        return
     }
 
-    panel_el.appendChild(item_el)
-  })
+    items.forEach((it, index) => {
+        const item_el = document.createElement('div')
+        item_el.className = 'autocomplete-item'
+        item_el.setAttribute('data-index', index)
+
+        const has_balance = typeof it.balance === 'number'
+
+        if (has_balance) {
+            item_el.classList.add('two-columns')
+
+            const name_el = document.createElement('div')
+            name_el.className = 'item-label'
+            name_el.textContent = it.name || ''
+
+            const balance_el = document.createElement('div')
+            balance_el.className = 'item-balance'
+            balance_el.textContent = formatBalance(it.balance)
+
+            // color según valor
+            balance_el.classList.add(it.balance > 0 ? 'positive' : 'negative')
+
+            item_el.appendChild(name_el)
+            item_el.appendChild(balance_el)
+        } else {
+            item_el.textContent = it.name || ''
+        }
+
+        panel_el.appendChild(item_el)
+    })
 }
 
 function updateActiveItem(panel_el, active_index) {
@@ -151,18 +151,22 @@ function updateActiveItem(panel_el, active_index) {
 function selectItem(item, input_el, hidden_el, panel_el) {
     setInputValue(item, input_el)
     hidden_el.value = item.id
+
+    hidden_el.dispatchEvent(new Event('change'))
+
     closePanel(panel_el)
 }
 
+
 function setInputValue(item, input_el) {
-  if (typeof item.balance === 'number') {
-    input_el.value = `${item.name} (${formatBalance(item.balance)})`
-    // opcional: color general según balance
-    input_el.style.color = item.balance > 0 ? 'green' : 'red'
-  } else {
-    input_el.value = item.name || ''
-    input_el.style.color = 'inherit'
-  }
+    if (typeof item.balance === 'number') {
+        input_el.value = `${item.name} (${formatBalance(item.balance)})`
+        // opcional: color general según balance
+        input_el.style.color = item.balance > 0 ? 'green' : 'red'
+    } else {
+        input_el.value = item.name || ''
+        input_el.style.color = 'inherit'
+    }
 }
 
 function openPanel(panel_el) {

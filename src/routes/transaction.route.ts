@@ -8,12 +8,15 @@ import {
   routeToFormUpdateTransaction,
   routeToPageTransaction
 } from '../controllers/transaction/transaction.controller'
+import { apiForGettingCategorizeTransactions } from '../controllers/transaction/batch-categorize.controller'
 
 const router = Router()
 
 /*Eventos de acción */
 router.post('/', apiForSavingTransaction)
 router.get('/list', apiForGettingTransactions)
+router.get('/batch-categorize', apiForGettingCategorizeTransactions)
+
 
 /*Eventos de enrutamiento */
 router.get('/', routeToPageTransaction)

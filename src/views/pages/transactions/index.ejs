@@ -14,32 +14,51 @@
 
     <div class="ui-toolbar">
 
-      <% if (context?.from === 'categories') { %>
-        <%- include('../../partials/btn-back', {
-          href: `/categories`,
-          title: 'Volver a categorías',
-          text: 'Volver'
+      <div id="toolbar-normal-actions" class="flex gap-2">
+        <% if (context?.from === 'categories') { %>
+          <%- include('../../partials/btn-back', {
+            href: `/categories`,
+            title: 'Volver a categorías',
+            text: 'Volver'
+          }) %>
+        <% } %>
+
+        <%- include('../../partials/btn-new', {
+          href:
+            context?.from === 'categories' && context?.category_id
+              ? `/transactions/insert?from=categories&category_id=${context.category_id}`
+              : '/transactions/insert',
+          title: 'Nueva transacción',
+          text: 'Nuevo'
         }) %>
-      <% } %>
 
-      <%- include('../../partials/btn-new', {
-        href:
-          context?.from === 'categories' && context?.category_id
-            ? `/transactions/insert?from=categories&category_id=${context.category_id}`
-            : '/transactions/insert',
-        title: 'Nueva transacción',
-        text: 'Nuevo'
-      }) %>
+        <%- include('../../partials/btn-filter', {
+          onclick: 'openFilters()',
+          title: 'Filtrar transacciones',
+          text: 'Filtrar'
+        }) %>
 
-      <%- include('../../partials/btn-filter', {
-        onclick: 'openFilters()',
-        title: 'Filtrar transacciones',
-        text: 'Filtrar'
-      }) %>
+        <%- include('../../partials/btn-categorize-batch', {
+          title: 'Categorizar Transacciones',
+          text: 'Categorizar'
+        }) %>
 
-      <%- include('../../partials/search-box', {
-        placeholder: 'Buscar transacciones...'
-      }) %>
+        <%- include('../../partials/search-box', {
+          placeholder: 'Buscar transacciones...'
+        }) %>
+      </div>
+
+      <div id="toolbar-batch-actions" class="flex gap-2 hidden">
+        <%- include('../../partials/btn-accept-batch', {
+          title: 'Aceptar Lote',
+          text: 'Aceptar'
+        }) %>
+
+        <%- include('../../partials/btn-cancel-batch', {
+          title: 'Cancelar Lote',
+          text: 'Cancelar'
+        }) %>
+      </div>
 
     </div>
   </div>
@@ -84,6 +103,7 @@
 </div>
 
 <script src="/js/indexes/transactions-index.js"></script>
+<script src="/js/indexes/transactions-batch-categorize-index.js"></script>
 <script src="/js/helpers/icon-helper.js"></script>
 <script src="/js/helpers/amount-helper.js"></script>
 <script src="/js/helpers/type-tags-helper.js"></script> 

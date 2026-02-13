@@ -57,6 +57,12 @@ function rowClassByType(type) {
   return ''
 }
 
+function isBatchActive() {
+  if (typeof batchGetState !== 'function') return false
+  const state = batchGetState()
+  return !!state?.active
+}
+
 /* ============================================================================
    Formateo ISO UTC (con Z) hacia America/Guayaquil
 ============================================================================ */
@@ -131,6 +137,15 @@ function renderRow(transaction) {
       <td class="ui-td col-left">${transaction.category?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
+
+          ${isBatchActive() ? `
+            <input
+              type="checkbox"
+              data-transaction-id="${transaction.id}"
+              onclick="event.stopPropagation(); batchToggleSelection(${transaction.id}, this.checked)"
+            >
+          ` : ''}
+
           <button 
             class="icon-btn edit" 
             title="Editar"
@@ -158,6 +173,7 @@ function renderRow(transaction) {
   `
 }
 
+
 function renderCard(transaction) {
   const { date, time } = formatDateTime(transaction.date)
 
@@ -174,6 +190,15 @@ function renderCard(transaction) {
         </div>
 
         <div class="card-actions">
+
+          ${isBatchActive() ? `
+            <input
+              type="checkbox"
+              data-transaction-id="${transaction.id}"
+              onclick="event.stopPropagation(); batchToggleSelection(${transaction.id}, this.checked)"
+            >
+          ` : ''}
+
           <button 
             class="icon-btn edit"
             onclick="event.stopPropagation(); goToTransactionUpdate(${transaction.id})">
@@ -183,7 +208,7 @@ function renderCard(transaction) {
             class="icon-btn clone"
             onclick="event.stopPropagation(); goToTransactionClone(${transaction.id})">
             ${iconClone()}
-            </button>
+          </button>
           <button 
             class="icon-btn delete"
             onclick="event.stopPropagation(); goToTransactionDelete(${transaction.id})">
@@ -236,6 +261,20 @@ async function loadTransactions(page = 1) {
 
   render(allItems)
   updatePaginationInfo()
+
+  if (isBatchActive()) {
+    if (typeof batchApplyUi === 'function') {
+      batchApplyUi(true)
+    }
+
+    if (typeof batchToggleRowActions === 'function') {
+      batchToggleRowActions(true)
+    }
+
+    if (typeof batchRestoreSelection === 'function') {
+      batchRestoreSelection()
+    }
+  }
 }
 
 /* ============================================================================
