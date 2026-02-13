@@ -64,28 +64,6 @@ function isBatchActive() {
 }
 
 /* ============================================================================
-   Formateo ISO UTC (con Z) hacia America/Guayaquil
-============================================================================ */
-function formatDateTime(value) {
-  if (!value || typeof value !== 'string') {
-    return { date: '', time: '', weekday: '' }
-  }
-
-  const [datePart, timePart] = value.split('T')
-
-  const dateObj = new Date(value)
-
-  const weekdays = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
-  const weekday = isNaN(dateObj.getTime()) ? '' : weekdays[dateObj.getDay()]
-
-  return {
-    date: datePart,
-    time: timePart ? timePart.slice(0, 5) : '',
-    tag: weekday
-  }
-}
-
-/* ============================================================================
 5. Render helpers (iconos, tags, cajas)
 ============================================================================ */
 function renderTable(data) {
@@ -128,20 +106,21 @@ function renderCards(data) {
 6. Render Desktop / Mobile
 ============================================================================ */
 function renderRow(transaction) {
-  const { date, time, tag } = formatDateTime(transaction.date)
+  const { date, time, weekday } = formatDateTime(transaction.date)
 
   return `
     <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction.type)}">
-      <td class="px-4 py-2 text-center">
+      <td class="px-4 py-2 text-center col-nowrap">
         <div>${date}</div>
         <div class="text-xs text-gray-600">${time}</div>
-        <div class="text-xs text-gray-500">${tag}</div>
+        <div class="text-xs text-gray-600">${weekday}</div>
       </td>
-      <td class="ui-td col-left col-sm">${transactionTypeTag(transaction.type)}</td>
+      <td class="ui-td col-left">${transactionTypeTag(transaction.type)}</td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
-      <td class="ui-td col-left">${transaction.account?.name || '-'}</td>
-      <td class="ui-td col-left">${transaction.category?.name || '-'}</td>
-      <td class="ui-td col-center">
+      <td class="ui-td col-left col-nowrap">${transaction.account?.name || '-'}</td>
+      <td class="ui-td col-left col-nowrap">${transaction.category?.name || '-'}</td>
+      <td class="ui-td col-left col-description">${transaction.description}</td>
+      <td class="ui-td col-center col-nowrap">
         <div class="icon-actions">
 
           ${isBatchActive() ? `
@@ -157,21 +136,21 @@ function renderRow(transaction) {
             title="Editar"
             onclick="goToTransactionUpdate(${transaction.id})">
             ${iconEdit()}
-            <span class="ui-btn-text">Editar</span>
+            <span class="ui-btn-text hide">Editar</span>
           </button>
           <button 
             class="icon-btn clone" 
             title="Clonar"
             onclick="goToTransactionClone(${transaction.id})">
             ${iconClone()}
-            <span class="ui-btn-text">Clonar</span>
+            <span class="ui-btn-text hide">Clonar</span>
           </button>
           <button 
             class="icon-btn delete" 
             title="Eliminar"
             onclick="goToTransactionDelete(${transaction.id})">
             ${iconDelete()}
-            <span class="ui-btn-text">Eliminar</span>
+            <span class="ui-btn-text hide">Eliminar</span>
           </button>
         </div>
       </td>
@@ -181,7 +160,7 @@ function renderRow(transaction) {
 
 
 function renderCard(transaction) {
-  const { date, time, tag } = formatDateTime(transaction.date)
+  const { date, time, weekday } = formatDateTime(transaction.date)
 
   return `
     <div 
@@ -193,7 +172,7 @@ function renderCard(transaction) {
         <div class="card-datetime">
           <span class="card-date">${date}</span>
           <span class="card-time">${time}</span>
-          <span class="card-tag">${tag}</span>
+          <span class="card-weekday">${weekday}</span>
         </div>
 
         <div class="card-actions">

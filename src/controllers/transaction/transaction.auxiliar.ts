@@ -8,11 +8,19 @@ export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise
 
   const now = new Date()
 
-  const startOfDay = new Date(now)
-  startOfDay.setHours(0, 0, 0, 0)
+  const startOfDay = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    0, 0, 0, 0
+  ))
 
-  const endOfDay = new Date(now)
-  endOfDay.setHours(23, 59, 59, 999)
+  const endOfDay = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    23, 59, 59, 999
+  ))
 
   const lastTxToday = await AppDataSource
     .getRepository(Transaction)
@@ -29,12 +37,12 @@ export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise
   if (lastTxToday.date > now) return now
 
   const next = new Date(lastTxToday.date)
-  const minutes = next.getMinutes()
+  const minutes = next.getUTCMinutes()
   const remainder = minutes % 5
   const increment = remainder === 0 ? 5 : 5 - remainder
 
-  next.setMinutes(minutes + increment)
-  next.setSeconds(0, 0)
+  next.setUTCMinutes(minutes + increment)
+  next.setUTCSeconds(0, 0)
 
   return next > now ? next : now
 }
@@ -94,6 +102,3 @@ export const calculateTransactionDeltas = (
 
   return deltas
 }
-
-
-

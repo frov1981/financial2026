@@ -3,6 +3,10 @@
 </script>
 
 <script>
+  window.TIMEZONE = "<%= TIMEZONE %>"
+</script>
+
+<script>
   window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
 </script>
 
@@ -30,12 +34,6 @@
               : '/transactions/insert',
           title: 'Nueva transacción',
           text: 'Nuevo'
-        }) %>
-
-        <%- include('../../partials/btn-filter', {
-          onclick: 'openFilters()',
-          title: 'Filtrar transacciones',
-          text: 'Filtrar'
         }) %>
 
         <%- include('../../partials/btn-categorize-batch', {
@@ -88,10 +86,11 @@
         <thead>
           <tr>
             <th class="ui-th col-left">Fecha</th>
-            <th class="ui-th col-left col-sm">Tipo</th>
-            <th class="ui-th col-right">Monto</th>
+            <th class="ui-th col-left">Tipo</th>
+            <th class="ui-th col-left">Monto</th>
             <th class="ui-th col-left">Cuenta</th>
             <th class="ui-th col-left">Categoría</th>
+            <th class="ui-th col-left">Descripción</th>
             <th class="ui-th col-left">Acciones</th>
           </tr>
         </thead>
@@ -107,3 +106,4 @@
 <script src="/js/helpers/icon-helper.js"></script>
 <script src="/js/helpers/amount-helper.js"></script>
 <script src="/js/helpers/type-tags-helper.js"></script> 
+<script src="/js/helpers/format-datetime-helper.js"></script>

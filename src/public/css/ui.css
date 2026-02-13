@@ -81,6 +81,27 @@
   flex-wrap: nowrap;
 }
 
+/* El contenedor normal usa todo el ancho disponible */
+#toolbar-normal-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+/* El wrapper del search se va a la derecha y se expande */
+#toolbar-normal-actions .search-box,
+#toolbar-normal-actions .search-input-wrapper {
+  margin-left: auto;
+  flex: 1;
+}
+
+/* El input ocupa todo el ancho del wrapper */
+#toolbar-normal-actions input[type="search"],
+#toolbar-normal-actions input[type="text"] {
+  width: 100%;
+}
+
 @media (max-width: 639px) {
   .ui-toolbar {
     overflow-x: auto;
@@ -213,7 +234,6 @@
 .ui-table td {
   padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--ui-gray-200);
-  white-space: nowrap;
 }
 
 .ui-table tr {
@@ -241,12 +261,15 @@
   padding: 0.4rem 0.7rem;
   font-size: 0.875rem;
   color: var(--ui-gray-700);
-  white-space: nowrap;
 }
 
 .ui-th {
   font-weight: 500;
   background: var(--ui-gray-50);
+}
+
+.hide {
+  display: none;
 }
 
 /* =========================================================
@@ -263,6 +286,20 @@
 
 .col-right {
   text-align: right;
+}
+
+.col-nowrap {
+  white-space: nowrap;
+}
+
+/* =========================================================
+   COLUMNA DESCRIPCIÓN – MULTILÍNEA
+   ========================================================= */
+
+.col-description {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 260px;
 }
 
 /* =========================================================
@@ -800,7 +837,7 @@
   color: var(--ui-gray-500);
 }
 
-.transaction-card .card-tag {
+.transaction-card .card-weekday {
   font-size: 11px;
   color: var(--ui-gray-900);
   border: 1px solid var(--ui-primary-500);

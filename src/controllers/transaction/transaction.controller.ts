@@ -49,7 +49,7 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
       transaction_form_policy,
       errors,
       mode,
-      context
+      context,
     }
   )
 }
@@ -111,6 +111,7 @@ export const routeToPageTransaction: RequestHandler = (req: Request, res: Respon
   const auth_req = req as AuthRequest
   const category_id = req.query.category_id || null
   const from = req.query.from || null
+  const timezone = auth_req.timezone || 'UTC'
 
   res.render(
     'layouts/main',
@@ -120,6 +121,7 @@ export const routeToPageTransaction: RequestHandler = (req: Request, res: Respon
       active_income_categories: [],
       active_expense_categories: [],
       USER_ID: auth_req.user?.id || 'guest',
+      TIMEZONE: timezone,
       context: {
         from,
         category_id: category_id
