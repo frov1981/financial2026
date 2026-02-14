@@ -48,6 +48,7 @@ export const routeToPageHome = async (req: Request, res: Response) => {
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
   try {
     logger.debug(`${apiForValidatingLogin.name}-Start}`)
+    const selectedFields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
     /* ============================
        Modo desarrollo: login directo
     ============================ */
@@ -55,7 +56,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
       const userRepo = AppDataSource.getRepository(User)
       const devUser = await userRepo.findOne({
         where: { id: 1 },
-        select: ['id', 'name', 'email']
+        select: selectedFields
       })
 
       if (devUser) {
@@ -72,7 +73,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({
       where: { name: username },
-      select: ['id', 'name', 'email']
+      select: selectedFields
     })
 
     if (!user) {
