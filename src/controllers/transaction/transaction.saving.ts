@@ -65,7 +65,7 @@ function getCategoryFromActiveList(active_categories: Category[], category_id: n
 }
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug('start saveTransaction')
+  logger.debug(`${saveTransaction.name}-Start`)
   logger.info('saveTransaction called', { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
@@ -74,6 +74,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const transaction_id = req.body.id ? Number(req.body.id) : undefined
   const mode: TransactionFormMode = req.body.mode || 'insert'
   const timezone = req.body.timezone || 'UTC'
+  logger.debug(`${saveTransaction.name}-Timezone for saving transaction: [${timezone}]`)
   const return_from = req.body.return_from
   const return_category_id = Number(req.body.return_category_id) || null
 
@@ -192,7 +193,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       tx.to_account = null
     }
 
-    logger.debug('Transaction after sanitization', { transaction: tx })
+    logger.debug(`${saveTransaction.name}-Transaction after sanitization`, { transaction: tx })
     const errors = await validateSaveTransaction(tx, auth_req)
     if (errors) throw { validationErrors: errors }
 
@@ -232,7 +233,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   } catch (err: any) {
     await query_runner.rollbackTransaction()
 
-    logger.error('Error saving transaction', {
+    logger.error(`${saveTransaction.name}-Error. `, {
       userId: auth_req.user.id,
       transaction_id,
       mode,
@@ -258,6 +259,6 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     })
   } finally {
     await query_runner.release()
-    logger.debug('end saveTransaction')
+      logger.debug(`${saveTransaction.name}-End`)
   }
 }

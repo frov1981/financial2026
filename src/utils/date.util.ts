@@ -5,9 +5,9 @@ export const parseLocalDateToUTC = (
   localDate: string,
   timezone: string
 ): Date => {
-  logger.debug(`Parsing local date '${localDate}' with timezone '${timezone}' to UTC`)
+  logger.debug(`parseLocalDateToUTC: LocalDate: ['${localDate}'] with timezone ['${timezone}']`)
   const dt = DateTime.fromISO(localDate, { zone: timezone }).toUTC().toJSDate()
-  logger.debug(`Parsed date in UTC: ${dt.toISOString()}`)
+  logger.debug(`parseLocalDateToUTC: Parsed date in UTC: [${dt.toISOString()}]`)
   return dt
 }
 
@@ -34,12 +34,11 @@ export function formatDateForInputLocal(
   date: Date,
   timeZone: string = 'America/Guayaquil'
 ): string {
-  logger.debug(`Formatting date '${date.toISOString()}' for input local with timezone '${timeZone}'`)
+  logger.debug(`formatDateForInputLocal: Input date: ['${date.toISOString()}'] with timezone ['${timeZone}']`)
   const dt = DateTime.fromJSDate(date, { zone: 'utc' }).setZone(timeZone).toFormat("yyyy-MM-dd'T'HH:mm")
-  logger.debug(`Formatted date for input local: ${dt}`)
+  logger.debug(`formatDateForInputLocal: Formatted date:  [${dt}]`)
   return dt
 }
-
 
 export function formatDateForSystemLocal(
     date: Date,

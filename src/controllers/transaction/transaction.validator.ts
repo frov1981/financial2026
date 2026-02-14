@@ -4,6 +4,7 @@ import { Account } from '../../entities/Account.entity'
 import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
+import { logger } from '../../utils/logger.util'
 
 export const validateSaveTransaction = async (tx: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
     const errors = await validate(tx)
@@ -105,7 +106,7 @@ export const validateSaveTransaction = async (tx: Transaction, authReq: AuthRequ
             }
         }
     }
-
+    logger.debug(`${validateSaveTransaction.name}-Errors: ${JSON.stringify(fieldErrors)}`)
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
 
@@ -125,6 +126,7 @@ export const validateDeleteTransaction = async (transaction: Transaction, authRe
         }
     }
 
+    logger.debug(`${validateDeleteTransaction.name}-Errors: ${JSON.stringify(fieldErrors)}`)
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
 
@@ -149,5 +151,6 @@ export const validateActiveCategoryTransaction = async (transaction: Transaction
         fieldErrors.category = `La categoría "${category_name}" de esta transacción ya no está activa o no existe`
     }
 
+    logger.debug(`${validateActiveCategoryTransaction.name}-Errors: ${JSON.stringify(fieldErrors)}`)
     return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
 }
