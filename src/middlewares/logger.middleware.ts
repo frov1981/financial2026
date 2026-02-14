@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express'
 import { logger } from '../utils/logger.util'
 
-const isProd = process.env.NODE_ENV === 'production'
+const mustLogger = process.env.NODE_LOG_REQUESTS === 'true'
 
 export const httpLogger: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now()
+  if (!mustLogger) return next()
   logger.debug(`${req.method} ${req.originalUrl}`, { headers: req.headers, query: req.query, body: req.body })
 
   res.on('finish', () => {

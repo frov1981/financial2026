@@ -8,7 +8,7 @@ const LEVELS: Record<LogLevel, number> = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 
 // Colores ANSI
 const COLORS: Record<LogLevel, string> = {
   DEBUG: '\x1b[34m', // azul
-  INFO: '\x1b[32m',  // verde
+  INFO: '\x1b[32m',  // verde 
   WARN: '\x1b[33m',  // amarillo
   ERROR: '\x1b[31m'  // rojo
 }
@@ -18,7 +18,7 @@ class Logger {
   private currentLevel: number
 
   constructor() {
-    const envLevel = (process.env.LOG_LEVEL || 'DEBUG').toUpperCase() as LogLevel
+    const envLevel = (process.env.NODE_LOG_LEVEL || 'DEBUG').toUpperCase() as LogLevel
     this.currentLevel = LEVELS[envLevel] ?? 0
   }
 
