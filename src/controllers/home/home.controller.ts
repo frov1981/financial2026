@@ -47,12 +47,16 @@ export const routeToPageHome = async (req: Request, res: Response) => {
 
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
   try {
+    logger.debug(`${apiForValidatingLogin.name}-Start}`)
     /* ============================
        Modo desarrollo: login directo
     ============================ */
     if (process.env.NODE_ENV === 'development') {
       const userRepo = AppDataSource.getRepository(User)
-      const devUser = await userRepo.findOneBy({ id: 1 })
+      const devUser = await userRepo.findOne({
+        where: { id: 1 },
+        select: ['id', 'name', 'email']
+      })
 
       if (devUser) {
         (req.session as any).userId = devUser.id
@@ -66,7 +70,10 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     ============================ */
     const { username, password } = req.body
     const userRepo = AppDataSource.getRepository(User)
-    const user = await userRepo.findOneBy({ name: username })
+    const user = await userRepo.findOne({
+      where: { name: username },
+      select: ['id', 'name', 'email']
+    })
 
     if (!user) {
       return res.render(
@@ -93,6 +100,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     ============================ */
     const timezone = String(req.body.timezone || 'UTC')
       ; (req.session as any).timezone = timezone
+    logger.debug(`${apiForValidatingLogin.name}-Timezone from request: [${timezone}]`)
 
     /* ============================
        Enviar código 2FA y guardar usuario pendiente
@@ -112,13 +120,15 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
 
     return res.redirect('/2fa')
   } catch (error) {
-    logger.error('Error en doLogin:', error)
+    logger.error(`${apiForValidatingLogin.name}-Error. }`, error)
     return res.render(
       'pages/login',
       {
         error: 'Error interno, intenta de nuevo'
       }
     )
+  } finally {
+    logger.debug(`${apiForValidatingLogin.name}-End}`)
   }
 }
 

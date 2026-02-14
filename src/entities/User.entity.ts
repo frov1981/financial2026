@@ -13,13 +13,13 @@ export class User {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @Column({ unique: true, })
+  @Column({ unique: true, select: false })
   email!: string
 
-  @Column({select: false})
+  @Column({ select: false })
   password_hash!: string
 
-  @Column()
+  @Column({ select: false })
   name!: string
 
   @CreateDateColumn({ type: 'timestamp' })
