@@ -23,8 +23,8 @@ export const routeToPageLogin = (req: Request, res: Response) => {
 }
 
 export const routeToPageHome = async (req: Request, res: Response) => {
-  const isDev = process.env.NODE_ENV === 'development'
-  const userId = isDev ? 1 : (req.session as any)?.userId
+  const skipLogin = process.env.NODE_SKIP_LOGIN === 'true'
+  const userId = skipLogin ? 1 : (req.session as any)?.userId
   if (!userId) {
     return res.redirect('/login')
   }
@@ -45,29 +45,43 @@ export const routeToPageHome = async (req: Request, res: Response) => {
     })
 }
 
+/*==============================================
+  APIs para acciones desde el frontend
+  Recibe los datos del usuario
+  Recibe la zona horaria del cliente para guardarla en sesión
+  Valida si NODE_SKIP_LOGIN=true para saltar login (desarrollo)
+  Si no, valida usuario y contraseña
+  Si es correcto, envía código 2FA y guarda usuario pendiente en sesión
+  Redirige a página de 2FA
+==============================================*/
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
   try {
     logger.debug(`${apiForValidatingLogin.name}-Start}`)
     const selectedFields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
+    const timezone = String(req.body.timezone || 'UTC')
+    logger.debug(`${apiForValidatingLogin.name}-Timezone from request: [${timezone}]`)
     /* ============================
-       Modo desarrollo: login directo
+       Modo Skip Login (Desarrollo)
+       Si existe la variable de entorno NODE_SKIP_LOGIN=true, se omite la validación de usuario y contraseña.
+       Se busca un usuario de desarrollo por ID (definido en DEV_USER_ID) y se inicia sesión con ese usuario.
+       Esto permite a los desarrolladores saltarse el proceso de login durante el desarrollo.
     ============================ */
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_SKIP_LOGIN === 'true') {
       const userRepo = AppDataSource.getRepository(User)
       const devUser = await userRepo.findOne({
-        where: { id: 1 },
+        where: { id: Number(process.env.DEV_USER_ID) || 1 },
         select: selectedFields
       })
 
       if (devUser) {
-        (req.session as any).userId = devUser.id
-          ; (req.session as any).timezone = 'America/Guayaquil'
+        (req.session as any).userId = devUser.id;
+        (req.session as any).timezone = timezone
         return res.redirect('/home')
       }
     }
 
     /* ============================
-       Login normal
+       Login Produccion
     ============================ */
     const { username, password } = req.body
     const userRepo = AppDataSource.getRepository(User)
@@ -99,15 +113,13 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     /* ============================
        Guardar timezone en sesión
     ============================ */
-    const timezone = String(req.body.timezone || 'UTC')
-      ; (req.session as any).timezone = timezone
-    logger.debug(`${apiForValidatingLogin.name}-Timezone from request: [${timezone}]`)
+    (req.session as any).timezone = timezone
 
     /* ============================
        Enviar código 2FA y guardar usuario pendiente
     ============================ */
-    await send2FACode(user)
-      ; (req.session as any).pending2FAUserId = user.id
+    await send2FACode(user);
+    (req.session as any).pending2FAUserId = user.id
 
     /* ============================
        Persistir sesión
@@ -158,4 +170,21 @@ export const apiForGettingKpis: RequestHandler = async (
     res.json({ message: 'Error' })
   }
 
+}
+
+export const apiForLogout: RequestHandler = async (req: Request, res: Response) => {
+  try {
+    req.session.destroy(err => {
+      if (err) {
+        logger.error('Error destroying session:', err)
+        return res.redirect('/home')
+      }
+
+      res.clearCookie('connect.sid')
+      return res.redirect('/login')
+    })
+  } catch (error) {
+    logger.error('Logout error:', error)
+    return res.redirect('/login')
+  }
 }

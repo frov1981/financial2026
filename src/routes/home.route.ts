@@ -1,17 +1,19 @@
 import { Router } from 'express'
 import {
     apiForGettingKpis,
+    apiForLogout,
     apiForValidatingLogin,
     routeToPageHome,
     routeToPageLogin,
     routeToPageRoot
-} from '../controllers/home/home.controller' 
+} from '../controllers/home/home.controller'
 import { sessionAuthMiddleware } from '../middlewares/session-auth.middleware'
 
 const router = Router()
 
 /*Eventos de acción */
 router.post('/login', apiForValidatingLogin)
+router.get('/logout', apiForLogout)
 router.get('/kpis', sessionAuthMiddleware, apiForGettingKpis)
 
 /*Eventos de enrutamiento */
