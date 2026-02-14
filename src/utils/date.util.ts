@@ -1,13 +1,14 @@
 import { DateTime } from 'luxon';
+import { logger } from './logger.util';
 
 export const parseLocalDateToUTC = (
   localDate: string,
   timezone: string
 ): Date => {
-  return DateTime
-    .fromISO(localDate, { zone: timezone })
-    .toUTC()
-    .toJSDate()
+  logger.debug(`Parsing local date '${localDate}' with timezone '${timezone}' to UTC`)
+  const dt = DateTime.fromISO(localDate, { zone: timezone }).toUTC().toJSDate()
+  logger.debug(`Parsed date in UTC: ${dt.toISOString()}`)
+  return dt
 }
 
 /*
@@ -33,10 +34,10 @@ export function formatDateForInputLocal(
   date: Date,
   timeZone: string = 'America/Guayaquil'
 ): string {
-  return DateTime
-    .fromJSDate(date, { zone: 'utc' })
-    .setZone(timeZone)
-    .toFormat("yyyy-MM-dd'T'HH:mm")
+  logger.debug(`Formatting date '${date.toISOString()}' for input local with timezone '${timeZone}'`)
+  const dt = DateTime.fromJSDate(date, { zone: 'utc' }).setZone(timeZone).toFormat("yyyy-MM-dd'T'HH:mm")
+  logger.debug(`Formatted date for input local: ${dt}`)
+  return dt
 }
 
 

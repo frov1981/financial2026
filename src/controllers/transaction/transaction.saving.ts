@@ -65,6 +65,7 @@ function getCategoryFromActiveList(active_categories: Category[], category_id: n
 }
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
+  logger.debug('start saveTransaction')
   logger.info('saveTransaction called', { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
@@ -191,6 +192,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       tx.to_account = null
     }
 
+    logger.debug('Transaction after sanitization', { transaction: tx })
     const errors = await validateSaveTransaction(tx, auth_req)
     if (errors) throw { validationErrors: errors }
 
@@ -256,5 +258,6 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     })
   } finally {
     await query_runner.release()
+    logger.debug('end saveTransaction')
   }
 }
