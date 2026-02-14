@@ -154,7 +154,7 @@ function renderRow(transaction) {
           </button>
         </div>
       </td>
-    </tr>
+    </tr> 
   `
 }
 
