@@ -193,7 +193,6 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       tx.to_account = null
     }
 
-    logger.debug(`${saveTransaction.name}-Transaction after sanitization`, { transaction: tx })
     const errors = await validateSaveTransaction(tx, auth_req)
     if (errors) throw { validationErrors: errors }
 

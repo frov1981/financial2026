@@ -56,10 +56,9 @@ export const routeToPageHome = async (req: Request, res: Response) => {
 ==============================================*/
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
   try {
-    logger.debug(`${apiForValidatingLogin.name}-Start}`)
+    logger.debug(`${apiForValidatingLogin.name}-Start`)
     const selectedFields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
     const timezone = String(req.body.timezone || 'UTC')
-    logger.debug(`${apiForValidatingLogin.name}-Timezone from request: [${timezone}]`)
     /* ============================
        Modo Skip Login (Desarrollo)
        Si existe la variable de entorno NODE_SKIP_LOGIN=true, se omite la validación de usuario y contraseña.
@@ -114,6 +113,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
        Guardar timezone en sesión
     ============================ */
     (req.session as any).timezone = timezone
+    logger.debug(`${apiForValidatingLogin.name}-Timezone from request: [${timezone}]`)
 
     /* ============================
        Enviar código 2FA y guardar usuario pendiente
@@ -133,7 +133,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
 
     return res.redirect('/2fa')
   } catch (error) {
-    logger.error(`${apiForValidatingLogin.name}-Error. }`, error)
+    logger.error(`${apiForValidatingLogin.name}-Error. `, error)
     return res.render(
       'pages/login',
       {
@@ -141,7 +141,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
       }
     )
   } finally {
-    logger.debug(`${apiForValidatingLogin.name}-End}`)
+    logger.debug(`${apiForValidatingLogin.name}-End`)
   }
 }
 
