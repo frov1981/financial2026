@@ -57,6 +57,9 @@ export const verify2FA = async (req: Request, res: Response) => {
     authCode.used_at = new Date()
     await repo.save(authCode)
 
+    // preserve timezone across session regeneration (otherwise it's lost)
+    const preservedTimezone = (req.session as any).timezone
+
     delete (req.session as any).pending2FAUserId
 
     req.session.regenerate(err => {
@@ -66,6 +69,7 @@ export const verify2FA = async (req: Request, res: Response) => {
       }
 
       ; (req.session as any).userId = pendingUserId
+      ; (req.session as any).timezone = preservedTimezone
 
       req.session.save(err2 => {
         if (err2) {
