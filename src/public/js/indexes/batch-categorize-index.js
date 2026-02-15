@@ -235,8 +235,74 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nextLayout !== currentLayout) {
       currentLayout = nextLayout
       render(BATCH_TRANSACTIONS)
-      updateNewCategoryLabels() // 🔴 importante: re-aplicar labels
+      updateNewCategoryLabels()
     }
   })
 })
+
+/* ============================================================================
+11. Guardar / Cancelar
+============================================================================ */
+const form = document.getElementById('batch-categorize-form')
+const cancelBtn = document.getElementById('batch-cancel-btn')
+const incomeIdsInput = document.getElementById('income-ids-input')
+const expenseIdsInput = document.getElementById('expense-ids-input')
+
+function buildPayload() {
+  const income_ids = []
+  const expense_ids = []
+
+  BATCH_TRANSACTIONS.forEach(tx => {
+    if (tx.type === 'income') income_ids.push(tx.id)
+    if (tx.type === 'expense') expense_ids.push(tx.id)
+  })
+
+  return {
+    income_ids,
+    expense_ids
+  }
+}
+
+function validateBatch() {
+  const payload = buildPayload()
+
+  if (payload.income_ids.length && !selected_income_category?.id) {
+    showError('Debe seleccionar categoría de ingresos')
+    return false
+  }
+
+  if (payload.expense_ids.length && !selected_expense_category?.id) {
+    showError('Debe seleccionar categoría de gastos')
+    return false
+  }
+
+  return true
+}
+
+function showError(message) {
+  alert(message)
+}
+
+if (form) {
+  form.addEventListener('submit', (e) => {
+    e.preventDefault()
+
+    if (!validateBatch()) {
+      return
+    }
+
+    const payload = buildPayload()
+    incomeIdsInput.value = JSON.stringify(payload.income_ids)
+    expenseIdsInput.value = JSON.stringify(payload.expense_ids)
+
+    form.submit()
+  })
+}
+
+if (cancelBtn) {
+  cancelBtn.addEventListener('click', () => {
+    window.history.back()
+  })
+}
+
 

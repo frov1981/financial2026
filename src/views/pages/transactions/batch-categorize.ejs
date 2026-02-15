@@ -18,6 +18,8 @@
   window.HAS_EXPENSE = batch_data.has_expense
 </script>
 
+<form id="batch-categorize-form" method="POST" action="/transactions/batch-categorize">
+
 <% if (has_income) { %>
   <div class="mb-4">
     <label class="block font-medium mb-1">Categoría de Ingresos</label>
@@ -40,6 +42,7 @@
       <input
         type="hidden"
         id="batch-income-category-id"
+        name="income_category_id"
         class="autocomplete-hidden"
         value=""
       >
@@ -70,6 +73,7 @@
         <input
           type="hidden"
           id="batch-expense-category-id"
+          name="expense_category_id"
           class="autocomplete-hidden"
           value=""
         >
@@ -105,6 +109,30 @@
 
   </div>
 </div>
+
+<!-- Hidden fields for transaction IDs -->
+<input type="hidden" id="income-ids-input" name="income_ids" value="">
+<input type="hidden" id="expense-ids-input" name="expense_ids" value="">
+
+<div class="mt-6 flex justify-end gap-3">
+  <button
+    type="button"
+    id="batch-cancel-btn"
+    class="ui-btn ui-btn-secondary"
+  >
+    Cancelar
+  </button>
+
+  <button
+    type="submit"
+    class="ui-btn ui-btn-primary"
+  >
+    Guardar
+  </button>
+</div>
+
+</form>
+
 
 <script src="/js/indexes/batch-categorize-index.js"></script>
 <script src="/js/helpers/amount-helper.js"></script>

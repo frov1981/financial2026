@@ -115,6 +115,7 @@ export const routeToPageTransaction: RequestHandler = (req: Request, res: Respon
   const auth_req = req as AuthRequest
   const category_id = req.query.category_id || null
   const from = req.query.from || null
+  const saved_batch = req.query.saved_batch === 'true'
   const timezone = auth_req.timezone || 'UTC'
   logger.debug(`${routeToPageTransaction.name}-Routing to transactions page with timezone: ${timezone}`)
   res.render(
@@ -128,7 +129,8 @@ export const routeToPageTransaction: RequestHandler = (req: Request, res: Respon
       TIMEZONE: timezone,
       context: {
         from,
-        category_id: category_id
+        category_id: category_id,
+        saved_batch
       },
     })
 }

@@ -154,6 +154,15 @@ function batchCancelCategorize() {
   batchClearUiSelection()
 }
 
+function batchRestoreState() {
+  batchClearState()
+  batchClearSelected()
+  batchApplyUi(false)
+
+  batchToggleRowActions(false)
+  batchClearUiSelection()
+}
+
 
 /* ============================================================================
    11. Binding de eventos
@@ -193,3 +202,4 @@ window.batchToggleSelection = batchToggleSelection
 window.batchStartCategorize = batchStartCategorize
 window.batchAcceptCategorize = batchAcceptCategorize
 window.batchCancelCategorize = batchCancelCategorize
+window.batchRestoreState = batchRestoreState

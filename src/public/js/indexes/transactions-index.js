@@ -8,6 +8,7 @@ const PAGE_SIZE = 10
 
 const context = window.TRANSACTIONS_CONTEXT || {}
 const CATEGORY_ID = context.category_id || null
+const SAVED_BATCH = context.saved_batch || false
 
 /* ============================================================================
 2. Variables de estado
@@ -376,6 +377,24 @@ if (savedFilters?.term) {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadTransactions()
+
+  // Si se guardó el batch, restaurar la vista limpia
+  if (SAVED_BATCH) {
+    // Restaurar el estado del batch
+    if (typeof batchRestoreState === 'function') {
+      batchRestoreState()
+    }
+    
+    // Mostrar notificación (opcional)
+    console.log('Batch categorization saved successfully')
+    
+    // Limpiar el parámetro de la URL
+    if (window.history.replaceState) {
+      const url = new URL(window.location)
+      url.searchParams.delete('saved_batch')
+      window.history.replaceState({}, document.title, url.toString())
+    }
+  }
 
   window.addEventListener('resize', () => {
     const nextLayout = getLayoutMode()
