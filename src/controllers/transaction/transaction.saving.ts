@@ -258,6 +258,6 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     })
   } finally {
     await query_runner.release()
-      logger.debug(`${saveTransaction.name}-End`)
+    logger.debug(`${saveTransaction.name}-End`)
   }
 }

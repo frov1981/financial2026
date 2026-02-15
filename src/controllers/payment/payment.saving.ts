@@ -31,13 +31,15 @@ const applyAccountDelta = (account: Account, oldTotal: number, newTotal: number)
 ============================ */
 
 export const savePayment: RequestHandler = async (req: Request, res: Response) => {
-    logger.debug('savePayment called', { body: req.body, param: req.params })
+    logger.debug(`${savePayment.name}-Start`)
+    logger.info('savePayment called', { body: req.body, param: req.params })
 
     const authReq = req as AuthRequest
     const paymentId = req.params.id ? Number(req.params.id) : req.body.id ? Number(req.body.id) : undefined
     const loanId = req.body.loan_id ? Number(req.body.loan_id) : undefined
     const action = req.body.action || 'save'
     const timezone = authReq.timezone || 'UTC'
+    logger.debug(`${savePayment.name}-Timezone for saving payment: [${timezone}]`)
 
     const accounts = await getActiveAccountsByUser(authReq)
     const formState = {
@@ -212,7 +214,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         return res.redirect(`/payments/${loanId}/loan`)
     } catch (err: any) {
         await queryRunner.rollbackTransaction()
-        logger.error('Error saving payment', { userId: authReq.user.id, paymentId: paymentId, loanId: loanId, error: err, stack: err?.stack })
+        logger.error(`${savePayment.name}-Error. `, { userId: authReq.user.id, paymentId: paymentId, loanId: loanId, error: err, stack: err?.stack })
 
         const validationErrors = err?.validationErrors || null
 
@@ -225,5 +227,6 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
     } finally {
         await queryRunner.release()
+        logger.debug(`${savePayment.name}-End`)
     }
 }

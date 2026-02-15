@@ -78,12 +78,14 @@ const findDisbursementAccountByBody = (body: any, disbursement_account: Account[
     Obtener cuentas activas del usuario para mostrar en el formulario 
 ============================ */
 export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
+  logger.debug(`${saveLoan.name}-Start`)
   logger.info('saveLoan called', { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
   const loan_id = req.body.id ? Number(req.body.id) : undefined
   const mode: LoanFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
+  logger.debug(`${saveLoan.name}-Timezone for saving loan: [${timezone}]`)
 
   const loan_group = await getActiveParentLoansByUser(auth_req)
   const disbursement_account = await getActiveAccountsByUser(auth_req)
@@ -252,7 +254,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   } catch (err: any) {
     await queryRunner.rollbackTransaction()
 
-    logger.error('Error saving loan', {
+    logger.error(`${saveLoan.name}-Error. `, {
       userId: auth_req.user.id,
       loan_id,
       mode,
@@ -281,5 +283,6 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     })
   } finally {
     await queryRunner.release()
+    logger.debug(`${saveLoan.name}-End`)
   }
 }

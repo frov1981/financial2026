@@ -77,8 +77,8 @@ function clearFilters(key) {
   localStorage.removeItem(key)
 }
 
-const formatDate = value =>
-  value ? new Date(value).toLocaleDateString('es-EC') : '-'
+/*const formatDate = value =>
+  value ? new Date(value).toLocaleDateString('es-EC') : '-'*/
 
 function isGroupCollapsed(groupId) {
   const state = loadFilters(COLLAPSE_KEY) || {}
@@ -127,8 +127,8 @@ function getParentBackgroundColor(index, total) {
 6. Render Desktop
 ========================================================= */
 function renderRow(loan) {
-  const group_id = loan.loan_group ? loan.loan_group.id : null
-		  
+  const { date, time, weekday } = formatDateTime(loan.start_date)
+  const group_id = loan.loan_group ? loan.loan_group.id : null		  
 
   if (group_id && isGroupCollapsed(group_id)) {
     return ''
@@ -139,17 +139,12 @@ function renderRow(loan) {
   return `
     <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">
-	   
-				 
-					
-	   
-	  
         ${loan.name}
       </td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
       <td class="ui-td col-right col-sm">${amountBox(loan.interest_amount)}</td>
       <td class="ui-td col-right">${amountBox(loan.balance)}</td>
-      <td class="ui-td col-left col-sm">${formatDate(loan.start_date)}</td>
+      <td class="ui-td col-left col-sm">${date} - ${weekday}</td>
       <td class="ui-td col-left col-sm">${statusTag(loan.is_active)}</td>
       <td class="ui-td col-left col-sm">${loan.disbursement_account ? loan.disbursement_account.name : '-'}</td>
       <td class="ui-td col-center">
@@ -182,9 +177,9 @@ function renderRow(loan) {
 7. Render Mobile
 ========================================================= */
 function renderCard(loan) {
+  const { date, time, weekday } = formatDateTime(loan.start_date)
   const group_id = loan.loan_group ? loan.loan_group.id : null
 		  
-
   if (group_id && isGroupCollapsed(group_id)) {
     return ''
   }
@@ -197,11 +192,6 @@ function renderCard(loan) {
 
       <div class="card-header">
         <div class="card-title">
-	  
-				
-					  
-	  
-	 
           ${loan.name}
         </div>
         <div class="card-actions">
@@ -230,7 +220,7 @@ function renderCard(loan) {
       </div>
 
       <div class="card-footer">
-        <span>${formatDate(loan.start_date)}</span>
+        <span>${date} - ${weekday}</span>
         <div class="card-tags">
           ${statusTag(loan.is_active)}
           <span>${loan.disbursement_account ? loan.disbursement_account.name : '-'}</span>
@@ -286,19 +276,10 @@ function renderTable(data) {
         <td class="ui-td col-left col-sm"></td>
         <td class="ui-td col-left col-sm"></td>
         <td class="ui-td col-center"></td>
-		 
-									 
-									 
-	
-	
       </tr>
     `
 
-    const loanRows = collapsed ? '' : loans.map(l => renderRow(l)).join('')
-			  
-		  
-	  
-
+    const loanRows = collapsed ? '' : loans.map(l => renderRow(l)).join('')	  
     return groupRow + loanRows
   }).join('')
 
@@ -338,9 +319,6 @@ function renderCards(data) {
 
     const cards = collapsed ? '' : loans.map(l => renderCard(l)).join('')
 			  
-		   
-	  
-
     return `
       <div class="loan-group ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
         <div class="loan-group-header">
@@ -348,10 +326,6 @@ function renderCards(data) {
             ${collapsed ? iconChevronOpen() : iconChevronClose()}
           </button>
           ${group.name}
-				 
-								
-								 
-	
         </div>
         <div class="loan-group-body">
           ${cards}
@@ -421,18 +395,6 @@ function getFilteredLoans() {
 
 function applyAllFilters() {
   const filtered = getFilteredLoans()
-
-		 
-	 
-
-		  
-		  
-		  
-			
-		
-  
-		
- 
 
   saveFilters(FILTER_KEY, { term: searchInput.value.trim().toLowerCase() })
   saveFilters(SCROLL_KEY, { y: 0 })

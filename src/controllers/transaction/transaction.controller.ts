@@ -101,7 +101,7 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .take(limit)
       .getManyAndCount()
 
-    logger.debug(`${apiForGettingTransactions.name}-Transactions found: [${items.length}], Total: [${total}], Page: [${page}], Limit: [${limit}]`)
+    logger.debug(`${apiForGettingTransactions.name}-Transactions found: [${items.length}], Total: [${total}], Page: [${page}], Limit: [${limit}], Search: [${search}], Category ID: [${category_id}]`)
     res.json({ items, total, page, limit, category_id: category_id })
   } catch (error) {
     logger.error(`${apiForGettingTransactions.name}-Error. `, error)
@@ -140,13 +140,13 @@ export const routeToFormInsertTransaction: RequestHandler = async (req: Request,
   const from = req.query.from || null
   const timezone = auth_req.timezone || 'UTC'
 
-  const defaultDate = await getNextValidTransactionDate(auth_req)
+  const default_date = await getNextValidTransactionDate(auth_req)
   logger.debug(`${routeToFormInsertTransaction.name}-Routing for inserting transaction form with timezone: [${timezone}]`)
   return renderTransactionForm(res, {
     title: 'Insertar Transacción',
     view: 'pages/transactions/form',
     transaction: {
-      date: formatDateForInputLocal(defaultDate, timezone),
+      date: formatDateForInputLocal(default_date, timezone),
       amount: '0.00',
     },
     errors: {},
@@ -219,9 +219,9 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
   if (!transaction) {
     return res.redirect('/transactions')
   }
-  const defaultDate = await getNextValidTransactionDate(auth_req)
-  const categoryErrors = await validateActiveCategoryTransaction(transaction, auth_req)
-  const errors = categoryErrors ? categoryErrors : {}  
+  const default_date = await getNextValidTransactionDate(auth_req)
+  const category_errors = await validateActiveCategoryTransaction(transaction, auth_req)
+  const errors = category_errors ? category_errors : {}  
   logger.debug(`${routeToFormCloneTransaction.name}-Routing for cloning transaction form with timezone: [${timezone}]`)
   return renderTransactionForm(res, {
     title: 'Clonar Transacción',
@@ -232,7 +232,7 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
       to_account: transaction.account,
       category: transaction.category,
       amount: Number(transaction.amount),
-      date: formatDateForInputLocal(defaultDate, timezone),
+      date: formatDateForInputLocal(default_date, timezone),
       description: transaction.description ?? ''
     },
     errors: errors,

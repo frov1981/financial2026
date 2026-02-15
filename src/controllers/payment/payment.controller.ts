@@ -10,28 +10,33 @@ import { getActiveAccountsByUser } from '../../services/populate-items.service'
 export { savePayment as apiForSavingAccount } from './payment.saving'
 
 export const apiForGettingPayments: RequestHandler = async (req: Request, res: Response) => {
-    const authReq = req as AuthRequest
-    const loanId = Number(req.params.loanId)
+    logger.debug(`${apiForGettingPayments.name}-Start`)
+    const auth_req = req as AuthRequest
+    const loan_id = Number(req.params.loan_id)
 
     try {
         const payments = await AppDataSource.getRepository(LoanPayment).find({
-            where: { loan: { id: loanId } },
+            where: { loan: { id: loan_id } },
             relations: { account: true },
             order: { payment_date: 'DESC' }
         })
+
+        logger.debug(`${apiForGettingPayments.name}-Payments found: [${payments.length}]`)
         res.json(payments)
-    } catch (err) {
-        logger.error('Error al listar pagos:', err)
+    } catch (error) {
+        logger.error(`${apiForGettingPayments.name}-Error. `, error)
         res.status(500).json({ error: 'Error al listar pagos' })
+    } finally {
+        logger.debug(`${apiForGettingPayments.name}-End`)
     }
 }
 
 export const routeToPagePayment: RequestHandler = async (req, res) => {
-    const authReq = req as AuthRequest
-    const loanId = Number(req.params.id)
+    const auth_req = req as AuthRequest
+    const loan_id = Number(req.params.id)
 
     const loan = await AppDataSource.getRepository(Loan).findOne({
-        where: { id: loanId }
+        where: { id: loan_id }
     })
 
     if (!loan) {
@@ -41,30 +46,32 @@ export const routeToPagePayment: RequestHandler = async (req, res) => {
     res.render('layouts/main', {
         title: 'Pagos',
         view: 'pages/payments/index',
-        USER_ID: authReq.user?.id || 'guest',
-        LOAN_ID: loanId,
+        USER_ID: auth_req.user?.id || 'guest',
+        LOAN_ID: loan_id,
         loan
     })
 }
 
 export const routeToFormInsertPayment: RequestHandler = async (req: Request, res: Response) => {
     const mode = 'insert'
-    const authReq = req as AuthRequest
-    const loanId = Number(req.params.loanId)
+    const auth_req = req as AuthRequest
+    const timezone = auth_req.timezone || 'UTC'
+    const loan_id = Number(req.params.loan_id)
 
-    const accounts = await getActiveAccountsByUser(authReq)
-    const defaultDate = await getNextValidTransactionDate(authReq)
+    const accounts = await getActiveAccountsByUser(auth_req)
+    const default_date = await getNextValidTransactionDate(auth_req)
+    logger.debug(`${routeToFormInsertPayment.name}-Routing for inserting payment form with timezone: [${timezone}]`)
     res.render(
         'layouts/main',
         {
             title: 'Insertar Pago',
             view: 'pages/payments/form',
             payment: {
-                payment_date: formatDateForInputLocal(defaultDate).slice(0, 16),
+                payment_date: formatDateForInputLocal(default_date, timezone),
                 principal_amount: '0.00',
                 interest_amount: '0.00',
             },
-            loan_id: loanId,
+            loan_id: loan_id,
             errors: {},
             accounts,
             mode,
@@ -73,17 +80,17 @@ export const routeToFormInsertPayment: RequestHandler = async (req: Request, res
 
 export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res: Response) => {
     const mode = 'update'
-    const authReq = req as AuthRequest
-    const paymentId = Number(req.params.id)
-    const timezone = authReq.timezone || 'UTC'
+    const auth_req = req as AuthRequest
+    const payment_id = Number(req.params.id)
+    const timezone = auth_req.timezone || 'UTC'
 
-    if (!Number.isInteger(paymentId) || paymentId <= 0) {
+    if (!Number.isInteger(payment_id) || payment_id <= 0) {
         return res.redirect('/payments')
     }
 
     const repoPayment = AppDataSource.getRepository(LoanPayment)
     const payment = await repoPayment.findOne({
-        where: { id: paymentId },
+        where: { id: payment_id },
         relations: { loan: true, account: true },
     })
 
@@ -91,7 +98,9 @@ export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res
         return res.redirect('/payments')
     }
 
-    const accounts = await getActiveAccountsByUser(authReq)
+    const accounts = await getActiveAccountsByUser(auth_req)
+
+    logger.debug(`${routeToFormUpdatePayment.name}-Routing for updating payment form with timezone: [${timezone}]`)
     res.render(
         'layouts/main',
         {
@@ -115,17 +124,17 @@ export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res
 
 export const routeToFormClonePayment: RequestHandler = async (req: Request, res: Response) => {
     const mode = 'insert'
-    const authReq = req as AuthRequest
-    const paymentId = Number(req.params.id)
-    const timezone = authReq.timezone || 'UTC'
+    const auth_req = req as AuthRequest
+    const payment_id = Number(req.params.id)
+    const timezone = auth_req.timezone || 'UTC'
 
-    if (!Number.isInteger(paymentId) || paymentId <= 0) {
+    if (!Number.isInteger(payment_id) || payment_id <= 0) {
         return res.redirect('/payments')
     }
 
     const repoPayment = AppDataSource.getRepository(LoanPayment)
     const payment = await repoPayment.findOne({
-        where: { id: paymentId },
+        where: { id: payment_id },
         relations: { loan: true, account: true }
     })
 
@@ -133,8 +142,10 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
         return res.redirect('/loans')
     }
 
-    const accounts = await getActiveAccountsByUser(authReq)
-    const defaultDate = await getNextValidTransactionDate(authReq)
+    const accounts = await getActiveAccountsByUser(auth_req)
+    const default_date = await getNextValidTransactionDate(auth_req)
+
+    logger.debug(`${routeToFormClonePayment.name}-Routing for cloning payment form with timezone: [${timezone}]`)
     res.render(
         'layouts/main',
         {
@@ -144,7 +155,7 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
                 note: payment.note ?? '',
                 principal_amount: payment.principal_amount,
                 interest_amount: payment.interest_amount,
-                payment_date: formatDateForInputLocal(payment.payment_date, timezone),
+                payment_date: formatDateForInputLocal(default_date, timezone),
                 account_id: payment.account ? payment.account.id : '',
                 account_name: payment.account ? payment.account.name : '',
             },
@@ -158,17 +169,17 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
 
 export const routeToFormDeletePayment: RequestHandler = async (req: Request, res: Response) => {
     const mode = 'delete'
-    const authReq = req as AuthRequest
-    const paymentId = Number(req.params.id)
-    const timezone = authReq.timezone || 'UTC'
+    const auth_req = req as AuthRequest
+    const payment_id = Number(req.params.id)
+    const timezone = auth_req.timezone || 'UTC'
 
-    if (!Number.isInteger(paymentId) || paymentId <= 0) {
+    if (!Number.isInteger(payment_id) || payment_id <= 0) {
         return res.redirect('/payments')
     }
 
     const repoPayment = AppDataSource.getRepository(LoanPayment)
     const payment = await repoPayment.findOne({
-        where: { id: paymentId },
+        where: { id: payment_id },
         relations: { loan: true, account: true },
     })
 
@@ -176,7 +187,9 @@ export const routeToFormDeletePayment: RequestHandler = async (req: Request, res
         return res.redirect('/payments')
     }
 
-    const accounts = await getActiveAccountsByUser(authReq)
+    const accounts = await getActiveAccountsByUser(auth_req)
+
+    logger.debug(`${routeToFormDeletePayment.name}-Routing for deleting payment form with timezone: [${timezone}]`)
     res.render(
         'layouts/main',
         {

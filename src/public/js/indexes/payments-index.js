@@ -67,16 +67,22 @@ const formatAmount = value =>
     maximumFractionDigits: 2
   })
 
-const formatDate = value =>
-  new Date(value).toLocaleDateString('es-EC')
+/*const formatDate = value =>
+  new Date(value).toLocaleDateString('es-EC')*/
 
 /* ============================
    5. Render helpers
 ============================ */
 function renderRow(payment) {
+  const { date, time, weekday } = formatDateTime(payment.payment_date)
+
   return `
     <tr id="payment-${payment.id}">
-      <td class="ui-td col-left">${formatDate(payment.payment_date)}</td>
+      <td class="px-4 py-2 text-center col-nowrap">
+        <div>${date}</div>
+        <div class="text-xs text-gray-600">${time}</div>
+        <div class="text-xs text-gray-600">${weekday}</div>
+      </td>
       <td class="ui-td col-right">${formatAmount(payment.principal_amount)}</td>
       <td class="ui-td col-right">${formatAmount(payment.interest_amount)}</td>
       <td class="ui-td col-left col-sm">${payment.account?.name || '-'}</td>
@@ -110,14 +116,17 @@ function renderRow(payment) {
 }
 
 function renderCard(payment) {
+  const { date, time, weekday } = formatDateTime(payment.payment_date)
+
   return `
     <div class="payment-card"
          data-id="${payment.id}"
          onclick="selectPaymentCard(event, ${payment.id})">
 
       <div class="card-header">
-        <div class="card-title">
-          ${formatDate(payment.payment_date)}
+        <div class="card-datetime">
+          <span class="card-date">${date}</span>
+          <span class="card-weekday">${weekday}</span>
         </div>
 
         <div class="card-actions">

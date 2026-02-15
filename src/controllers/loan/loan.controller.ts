@@ -6,6 +6,7 @@ import { getActiveAccountsByUser, getActiveParentLoansByUser } from '../../servi
 import { AuthRequest } from "../../types/auth-request"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
+import { getNextValidTransactionDate } from '../transaction/transaction.auxiliar'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
 type LoanFormViewParams = {
@@ -35,6 +36,7 @@ const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
 }
 
 export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
+  logger.debug(`${apiForGettingLoans.name}-Start`)
   const auth_req = req as AuthRequest
   const timezone = auth_req.timezone || 'UTC'
 
@@ -69,10 +71,13 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       loan_group: loan.loan_group ? { id: loan.loan_group.id, name: loan.loan_group.name } : null
     }))
 
+    logger.debug(`${apiForGettingLoans.name}-Loans found: [${loans.length}]`)
     res.json(loans)
   } catch (error) {
-    logger.error('Error al listar préstamos', error)
+    logger.error(`${apiForGettingLoans.name}-Error. `, error)
     res.status(500).json({ error: 'Error al listar préstamos' })
+  } finally {
+    logger.debug(`${apiForGettingLoans.name}-End`)
   }
 }
 
@@ -92,7 +97,9 @@ export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => 
 export const routeToFormInsertLoan: RequestHandler = async (req, res) => {
   const auth_req = req as AuthRequest
   const timezone = auth_req.timezone || 'UTC'
-  const default_date = new Date()
+
+  const default_date = await getNextValidTransactionDate(auth_req)
+  logger.debug(`${routeToFormInsertLoan.name}-Routing for inserting loan form with timezone: [${timezone}]`)
   return renderLoanForm(res, {
     title: 'Insertar Préstamo',
     view: 'pages/loans/form',
@@ -124,6 +131,8 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
   if (!loan) {
     return res.redirect('/loans')
   }
+
+  logger.debug(`${routeToFormUpdateLoan.name}-Routing for updating loan form with timezone: [${timezone}]`)
   return renderLoanForm(res, {
     title: 'Editar Préstamo',
     view: 'pages/loans/form',
@@ -156,6 +165,8 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
   if (!loan) {
     return res.redirect('/loans')
   }
+
+  logger.debug(`${routeToFormDeleteLoan.name}-Routing for deleting loan form with timezone: [${timezone}]`)
   return renderLoanForm(res, {
     title: 'Eliminar Préstamo',
     view: 'pages/loans/form',
