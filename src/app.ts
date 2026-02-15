@@ -2,6 +2,7 @@ import express, { NextFunction, Request, Response } from 'express'
 import session from 'express-session'
 import path from 'path'
 import { sessionStore } from './config/session-store'
+import { injectLayoutContext } from './middlewares/inject-balance.middleware'
 import { httpLogger } from './middlewares/logger.middleware'
 import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
 import accountRoutes from './routes/account.route'
@@ -68,10 +69,21 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 /* =======================
    Routes
 ======================= */
-app.use('/', homeRoutes)
+// Public routes
 app.use('/', authRoutes)
-app.use('/accounts', sessionAuthMiddleware, accountRoutes)
-app.use('/categories', sessionAuthMiddleware, categoryRoutes)
-app.use('/transactions', sessionAuthMiddleware, transactionRoutes)
-app.use('/loans', sessionAuthMiddleware, loanRoutes)
-app.use('/payments', sessionAuthMiddleware, paymentRoutes)
+
+// Home routes (with internal middleware handling)
+app.use('/', homeRoutes)
+
+// Protected routes (require session + layout context)
+const protectedRouter = express.Router()
+protectedRouter.use(sessionAuthMiddleware)
+protectedRouter.use(injectLayoutContext)
+
+protectedRouter.use('/accounts', accountRoutes)
+protectedRouter.use('/categories', categoryRoutes)
+protectedRouter.use('/transactions', transactionRoutes)
+protectedRouter.use('/loans', loanRoutes)
+protectedRouter.use('/payments', paymentRoutes)
+
+app.use(protectedRouter)

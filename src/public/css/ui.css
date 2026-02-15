@@ -1334,3 +1334,35 @@ input[data-balance-final] {
   margin-left: auto;
 }
 
+/* ==========================
+   Navbar - Balance Disponible
+========================== */
+.navbar-balance {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+}
+
+.navbar-balance.positive {
+  background-color: #16a34a;
+  border-color: #15803d;
+}
+
+.navbar-balance.negative {
+  background-color: #dc2626;
+  border-color: #b91c1c;
+}
+
+.navbar-balance:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+

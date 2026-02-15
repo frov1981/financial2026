@@ -5,6 +5,12 @@
       App Contable V1
     </div>
 
+    <% if (typeof net_balance !== 'undefined') { %>
+      <span class="navbar-balance <%= net_balance > 0 ? 'positive' : 'negative' %>">
+        $ <%= net_balance.toFixed(2) %>
+      </span>
+    <% } %>
+
     <!-- Botón hamburguesa (solo móvil) -->
     <button
       id="mobile-menu-btn"
@@ -39,6 +45,7 @@
     <li><a href="/categories" class="block py-2">Categorías</a></li>
     <li><a href="/transactions" class="block py-2">Transacciones</a></li>
     <li><a href="/loans" class="block py-2">Préstamos</a></li>
+    <li><a href="/logout" class="block py-2">Cerrar Sesión</a></li>
   </ul>
 </nav>
 
