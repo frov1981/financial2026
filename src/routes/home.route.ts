@@ -7,7 +7,7 @@ import {
     routeToPageLogin,
     routeToPageRoot
 } from '../controllers/home/home.controller'
-import { injectLayoutContext } from '../middlewares/inject-balance.middleware'
+import { injectNetBalance } from '../middlewares/inject-net-balance.middleware'
 import { sessionAuthMiddleware } from '../middlewares/session-auth.middleware'
 
 const router = Router()
@@ -20,7 +20,7 @@ router.get('/', routeToPageRoot)
 // Protected routes
 const protectedSubRouter = Router()
 protectedSubRouter.use(sessionAuthMiddleware)
-protectedSubRouter.use(injectLayoutContext)
+protectedSubRouter.use(injectNetBalance)
 
 protectedSubRouter.get('/logout', apiForLogout)
 protectedSubRouter.get('/kpis', apiForGettingKpis)

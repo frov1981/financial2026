@@ -6,8 +6,15 @@
     </div>
 
     <% if (typeof net_balance !== 'undefined') { %>
-      <span class="navbar-balance <%= net_balance > 0 ? 'positive' : 'negative' %>">
+      <span class="navbar-net-balance <%= net_balance > 0 ? 'positive' : 'negative' %>">
         $ <%= net_balance.toFixed(2) %>
+      </span>
+    <% } %>
+
+    
+    <% if (typeof loan_balance !== 'undefined') { %>
+      <span class="navbar-loan_balance">
+        $ <%= loan_balance.toFixed(2) %>
       </span>
     <% } %>
 
