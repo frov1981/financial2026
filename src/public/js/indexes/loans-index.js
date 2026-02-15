@@ -92,6 +92,12 @@ function toggleGroupCollapse(groupId) {
   applyAllFilters()
 }
 
+function getGroupPendingTotal(group_id) {
+  if (!window.groupTotals) return 0
+  const group = window.groupTotals.find(g => g.loan_group_id === group_id)
+  return group ? group.total_balance : 0
+}
+
 /* ============================
    Degradado por grupo (AGREGADO)
 ============================ */
@@ -128,7 +134,7 @@ function getParentBackgroundColor(index, total) {
 ========================================================= */
 function renderRow(loan) {
   const { date, time, weekday } = formatDateTime(loan.start_date)
-  const group_id = loan.loan_group ? loan.loan_group.id : null		  
+  const group_id = loan.loan_group ? loan.loan_group.id : null
 
   if (group_id && isGroupCollapsed(group_id)) {
     return ''
@@ -179,7 +185,7 @@ function renderRow(loan) {
 function renderCard(loan) {
   const { date, time, weekday } = formatDateTime(loan.start_date)
   const group_id = loan.loan_group ? loan.loan_group.id : null
-		  
+
   if (group_id && isGroupCollapsed(group_id)) {
     return ''
   }
@@ -260,6 +266,7 @@ function renderTable(data) {
     const group = entry.group
     const loans = entry.loans
     const collapsed = isGroupCollapsed(group.id)
+    const pending = getGroupPendingTotal(group.id)
 
     const groupRow = `
       <tr class="parent-row">
@@ -269,17 +276,14 @@ function renderTable(data) {
           </button>
           ${group.name}
         </td>
-        <td class="ui-td col-right"></td>
-        <td class="ui-td col-right col-sm"></td>
-        <td class="ui-td col-right"></td>
-        <td class="ui-td col-left col-sm"></td>
-        <td class="ui-td col-left col-sm"></td>
-        <td class="ui-td col-left col-sm"></td>
+        <td class="ui-td col-right group-pending" colspan="7">
+          Pendiente: ${amountBox(pending)}
+        </td>
         <td class="ui-td col-center"></td>
       </tr>
     `
 
-    const loanRows = collapsed ? '' : loans.map(l => renderRow(l)).join('')	  
+    const loanRows = collapsed ? '' : loans.map(l => renderRow(l)).join('')
     return groupRow + loanRows
   }).join('')
 
@@ -316,22 +320,32 @@ function renderCards(data) {
     const loans = entry.loans
     const collapsed = isGroupCollapsed(group.id)
     const bgColor = getParentBackgroundColor(index, totalParents)
+    const pending = getGroupPendingTotal(group.id)
+
 
     const cards = collapsed ? '' : loans.map(l => renderCard(l)).join('')
-			  
+
     return `
       <div class="loan-group ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
         <div class="loan-group-header">
           <button onclick="toggleGroupCollapse(${group.id})">
             ${collapsed ? iconChevronOpen() : iconChevronClose()}
           </button>
-          ${group.name}
+
+          <div class="group-header-content">
+            <span class="group-title">${group.name}</span>
+            <span class="group-pending">
+              Pendiente: ${amountBox(pending)}
+            </span>
+          </div>
         </div>
+
         <div class="loan-group-body">
           ${cards}
         </div>
       </div>
     `
+
   }).join('')
 
   container.innerHTML = html
@@ -354,7 +368,9 @@ function render(data) {
 ============================ */
 async function loadLoans() {
   const res = await fetch(API_BASE)
-  allLoans = await res.json()
+  const data = await res.json()
+  allLoans = data.loans || []
+  window.groupTotals = data.group_totals || []
 
   const cachedText = loadFilters(FILTER_KEY)
   const cachedStatus = loadFilters(STATUS_FILTER_KEY)
@@ -376,18 +392,18 @@ function getFilteredLoans() {
   const status = loadFilters(STATUS_FILTER_KEY)?.status || 'all'
 
   return allLoans.filter(loan => {
-		  
+
 
     const matchText =
       !term || loan.name.toLowerCase().includes(term)
-   
+
 
     const matchStatus =
       status === 'all' ||
-   
+
       (status === 'active' && loan.is_active) ||
       (status === 'inactive' && !loan.is_active)
-   
+
 
     return matchText && matchStatus
   })
@@ -483,8 +499,8 @@ statusBtn?.addEventListener('click', () => {
   const current = statusBtn.dataset.status || 'all'
   const next =
     current === 'all' ? 'active'
-    : current === 'active' ? 'inactive'
-    : 'all'
+      : current === 'active' ? 'inactive'
+        : 'all'
 
   applyStatusFilter(next)
 })

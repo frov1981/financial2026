@@ -72,7 +72,24 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
     }))
 
     logger.debug(`${apiForGettingLoans.name}-Loans found: [${loans.length}]`)
-    res.json(loans)
+
+    const group_totals_map: Record<number, { loan_group_id: number, loan_group_name: string, total_balance: number }> = {}
+    for (const loan of result) {
+      if (!loan.loan_group) continue
+      const group_id = loan.loan_group.id
+      if (!group_totals_map[group_id]) {
+        group_totals_map[group_id] = {
+          loan_group_id: group_id,
+          loan_group_name: loan.loan_group.name,
+          total_balance: 0
+        }
+      }
+      group_totals_map[group_id].total_balance += Number(loan.balance)
+    }
+    const group_totals = Object.values(group_totals_map)
+    logger.debug(`${apiForGettingLoans.name}-Loan groups with totals calculated: [${group_totals.length}]`)
+
+    res.json({ loans, group_totals })
   } catch (error) {
     logger.error(`${apiForGettingLoans.name}-Error. `, error)
     res.status(500).json({ error: 'Error al listar préstamos' })
