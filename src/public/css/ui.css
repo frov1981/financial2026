@@ -1444,5 +1444,20 @@ input[data-balance-final] {
   transform: translateY(-1px);
 }
 
+/* ==========================
+   Responsive - Mobile
+========================== */
+@media (max-width: 768px) {
+
+  .navbar-net-balance,
+  .navbar-loan_balance {
+    font-size: 0.70rem;          /* ~35% menos que 0.85rem */
+    padding: 3px 8px;            /* reducción proporcional */
+    border-radius: 7px;          /* ligeramente menor */
+  }
+
+}
+
+
 
 

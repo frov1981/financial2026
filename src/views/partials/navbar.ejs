@@ -7,14 +7,14 @@
 
     <% if (typeof net_balance !== 'undefined') { %>
       <span class="navbar-net-balance <%= net_balance > 0 ? 'positive' : 'negative' %>">
-        $ <%= net_balance.toFixed(2) %>
+      <%= net_balance.toFixed(2) %>
       </span>
     <% } %>
 
     
     <% if (typeof loan_balance !== 'undefined') { %>
       <span class="navbar-loan_balance">
-        $ <%= loan_balance.toFixed(2) %>
+      <%= loan_balance.toFixed(2) %>
       </span>
     <% } %>
 
