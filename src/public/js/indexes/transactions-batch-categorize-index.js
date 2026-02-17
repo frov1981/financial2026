@@ -63,13 +63,11 @@ function batchApplyUi(is_active) {
 /* ============================================================================
    6. UI: desactivar acciones por fila (editar / clonar / eliminar)
 ============================================================================ */
-function batchToggleRowActions(disabled) {
-  const buttons = document.querySelectorAll('.icon-actions button')
+function batchToggleActionButtons(hide) {
+  const buttons = document.querySelectorAll('.icon-btn')
 
   buttons.forEach(btn => {
-    btn.disabled = disabled
-    btn.classList.toggle('opacity-50', disabled)
-    btn.classList.toggle('pointer-events-none', disabled)
+    btn.classList.toggle('hidden', hide)
   })
 }
 
@@ -124,10 +122,8 @@ function batchClearUiSelection() {
 function batchStartCategorize() {
   batchSetState({ active: true })
   batchApplyUi(true)
-
   render(allItems)
-
-  batchToggleRowActions(true)
+  batchToggleActionButtons(true)
   batchRestoreSelection()
 }
 
@@ -147,10 +143,8 @@ function batchCancelCategorize() {
   batchClearState()
   batchClearSelected()
   batchApplyUi(false)
-
   render(allItems)
-
-  batchToggleRowActions(false)
+  batchToggleActionButtons(false)
   batchClearUiSelection()
 }
 
@@ -158,11 +152,9 @@ function batchRestoreState() {
   batchClearState()
   batchClearSelected()
   batchApplyUi(false)
-
-  batchToggleRowActions(false)
+  batchToggleActionButtons(false)
   batchClearUiSelection()
 }
-
 
 /* ============================================================================
    11. Binding de eventos
@@ -178,22 +170,6 @@ if (btn_batch_accept) {
 if (btn_batch_cancel) {
   btn_batch_cancel.addEventListener('click', batchCancelCategorize)
 }
-
-/* ============================================================================
-   12. Inicialización al cargar la página
-============================================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-  const batch_state = batchGetState()
-
-  if (batch_state.active) {
-    batchApplyUi(true)
-    batchToggleRowActions(true)
-    batchRestoreSelection()
-  } else {
-    batchApplyUi(false)
-    batchToggleRowActions(false)
-  }
-})
 
 /* ============================================================================
    13. Exponer funciones batch globalmente (para usar desde render de filas/cards)

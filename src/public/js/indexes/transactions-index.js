@@ -159,7 +159,6 @@ function renderRow(transaction) {
   `
 }
 
-
 function renderCard(transaction) {
   const { date, time, weekday } = formatDateTime(transaction.date)
 
@@ -254,8 +253,8 @@ async function loadTransactions(page = 1) {
       batchApplyUi(true)
     }
 
-    if (typeof batchToggleRowActions === 'function') {
-      batchToggleRowActions(true)
+    if (typeof batchToggleActionButtons === 'function') {
+      batchToggleActionButtons(true)
     }
 
     if (typeof batchRestoreSelection === 'function') {
@@ -384,10 +383,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof batchRestoreState === 'function') {
       batchRestoreState()
     }
-    
+
     // Mostrar notificación (opcional)
     console.log('Batch categorization saved successfully')
-    
+
     // Limpiar el parámetro de la URL
     if (window.history.replaceState) {
       const url = new URL(window.location)
@@ -402,6 +401,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nextLayout !== currentLayout) {
       currentLayout = nextLayout
       render(allItems)
+
+      if (isBatchActive()) {
+        batchApplyUi(true)
+        batchToggleActionButtons(true)
+        batchRestoreSelection()
+      }
     }
   })
+
 })

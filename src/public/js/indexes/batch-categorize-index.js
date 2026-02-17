@@ -52,6 +52,7 @@ function renderRow(transaction) {
       <td class="ui-td col-left">${date}</td>
       <td class="ui-td col-left col-sm">${transactionTypeTag(transaction.type)}</td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
+      <td class="ui-td col-left">${transaction.description}</td>
       <td class="ui-td col-left">${transaction.category?.name || '-'}</td>
       <td class="ui-td col-left">
         <span class="text-gray-400">Seleccione categoría...</span>
@@ -96,6 +97,9 @@ function renderCard(transaction) {
 
       <div class="card-content">
         <div class="card-info">
+          <div class="card-description">
+            ${transaction.description}
+          </div>
           <div class="card-category">
             Categoría actual:
             <strong>${transaction.category?.name || '-'}</strong>
