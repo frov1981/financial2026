@@ -10,6 +10,8 @@ const CARD_IDS = [
 ]
 
 const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
+const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
+
 let varChartDataLast6MonthsBalance = null
 let varChartDataLast6YearsBalance = null
 let varChartDataLast6YearsLoan = null
@@ -137,6 +139,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             })
         }
 
+        initHomeCarousel()
+
     } catch (err) {
         console.error('Error cargando dashboard', err)
     }
@@ -161,4 +165,89 @@ function toggleCard(id) {
         if (id === 'chart-data-last-6years-loan' && varChartDataLast6YearsLoan) varChartDataLast6YearsLoan.resize()
     }
 }
+
+/* ============================
+   Home Carousel Desktop Fix
+============================ */
+/* ============================
+   Home Carousel Desktop Fix
+============================ */
+/* ============================
+   Home Carousel Desktop Control
+============================ */
+function scrollCarouselNext() {
+    const carousel = document.querySelector('.home-carousel')
+    if (!carousel) return
+
+    const slide = carousel.querySelector('.home-slide')
+    if (!slide) return
+
+    carousel.scrollBy({
+        left: slide.offsetWidth,
+        behavior: 'smooth'
+    })
+}
+
+function scrollCarouselPrev() {
+    const carousel = document.querySelector('.home-carousel')
+    if (!carousel) return
+
+    const slide = carousel.querySelector('.home-slide')
+    if (!slide) return
+
+    carousel.scrollBy({
+        left: -slide.offsetWidth,
+        behavior: 'smooth'
+    })
+}
+
+function initHomeCarousel() {
+    const carousel = document.querySelector('.home-carousel')
+    if (!carousel) return
+
+    const prevBtn = document.getElementById('carousel-prev')
+    const nextBtn = document.getElementById('carousel-next')
+
+    // ============================
+    // Restaurar posición guardada
+    // ============================
+    const savedPosition = loadFilters(CAROUSEL_POSITION_KEY)
+
+    if (savedPosition && typeof savedPosition.scrollLeft === 'number') {
+        requestAnimationFrame(() => {
+            carousel.scrollLeft = savedPosition.scrollLeft
+        })
+    }
+
+    // ============================
+    // Guardar posición al hacer scroll
+    // ============================
+    carousel.addEventListener('scroll', () => {
+        saveFilters(CAROUSEL_POSITION_KEY, {
+            scrollLeft: carousel.scrollLeft
+        })
+        updateCarouselButtons()
+    })
+
+    // ============================
+    // Actualizar botones
+    // ============================
+    function updateCarouselButtons() {
+        if (!prevBtn || !nextBtn) return
+
+        const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth
+
+        prevBtn.disabled = carousel.scrollLeft <= 0
+        nextBtn.disabled = carousel.scrollLeft >= maxScrollLeft - 1
+    }
+
+    // Inicializar estado
+    updateCarouselButtons()
+
+    window.addEventListener('resize', updateCarouselButtons)
+}
+
+
+
+
 
