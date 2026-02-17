@@ -6,9 +6,9 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 
-export const validateSaveTransaction = async (tx: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
-    const errors = await validate(tx)
-    const fieldErrors: Record<string, string> = {}
+export const validateSaveTransaction = async (transaction: Transaction, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
+    const errors = await validate(transaction)
+    const field_errors: Record<string, string> = {}
 
     if (errors.length > 0) {
         errors.forEach(err => {
@@ -22,116 +22,115 @@ export const validateSaveTransaction = async (tx: Transaction, authReq: AuthRequ
 
             switch (err.property) {
                 case 'account':
-                    fieldErrors.account = message
+                    field_errors.account = message
                     break
                 case 'to_account':
-                    fieldErrors.to_account = message
+                    field_errors.to_account = message
                     break
                 case 'description':
-                    fieldErrors.description = message
+                    field_errors.description = message
                     break
                 case 'category':
-                    fieldErrors.category = message
+                    field_errors.category = message
                     break
                 default:
-                    fieldErrors.general = message
+                    field_errors.general = message
             }
         })
     }
 
     // Validación: la fecha debe ser del mes en curso o posterior
-    if (tx.date) {
+    if (transaction.date) {
         const now = new Date()
-        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
-        if (tx.date < startOfCurrentMonth) {
-            fieldErrors.date = 'La fecha debe ser del mes en curso o posterior'
+        const start_of_current_month = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+        if (transaction.date < start_of_current_month) {
+            field_errors.date = 'La fecha debe ser del mes en curso o posterior'
         }
     }
 
     // Validación: el monto debe ser mayor a cero
-    if (tx.amount === undefined || tx.amount === null || Number(tx.amount) <= 0) {
-        fieldErrors.amount = 'El monto debe ser mayor a cero'
+    if (transaction.amount === undefined || transaction.amount === null || Number(transaction.amount) <= 0) {
+        field_errors.amount = 'El monto debe ser mayor a cero'
     }
 
-    if (tx.type === 'income' || tx.type === 'expense') {
-        if (!tx.account) fieldErrors.account = 'Debe seleccionar una cuenta'
-        if (!tx.category) fieldErrors.category = 'Debe seleccionar una categoría'
-        if (tx.to_account) fieldErrors.to_account = 'Una transferencia no es válida para este tipo'
+    if (transaction.type === 'income' || transaction.type === 'expense') {
+        if (!transaction.account) field_errors.account = 'Debe seleccionar una cuenta'
+        if (!transaction.category) field_errors.category = 'Debe seleccionar una categoría'
+        if (transaction.to_account) field_errors.to_account = 'Una transferencia no es válida para este tipo'
     }
 
-    if (tx.type === 'transfer') {
-        if (!tx.account) fieldErrors.account = 'Debe seleccionar una cuenta origen'
-        if (!tx.to_account) fieldErrors.to_account = 'Debe seleccionar una cuenta destino'
-        if (tx.category) fieldErrors.category = 'Una transferencia no lleva categoría'
+    if (transaction.type === 'transfer') {
+        if (!transaction.account) field_errors.account = 'Debe seleccionar una cuenta origen'
+        if (!transaction.to_account) field_errors.to_account = 'Debe seleccionar una cuenta destino'
+        if (transaction.category) field_errors.category = 'Una transferencia no lleva categoría'
     }
 
     // Validación: para egresos, la cuenta debe tener saldo disponible
-    if (tx.type === 'expense') {
-        if (!tx.account || !tx.account.id) {
-            fieldErrors.account = 'Cuenta requerida para egreso'
+    if (transaction.type === 'expense') {
+        if (!transaction.account || !transaction.account.id) {
+            field_errors.account = 'Cuenta requerida para egreso'
         } else {
             const accRepo = AppDataSource.getRepository(Account)
-            const acc = await accRepo.findOne({ where: { id: tx.account.id, user: { id: authReq.user.id } } })
-            const accBalance = acc ? Number(acc.balance) : 0
+            const acc = await accRepo.findOne({ where: { id: transaction.account.id, user: { id: auth_req.user.id } } })
+            const acc_balance = acc ? Number(acc.balance) : 0
 
-            if (accBalance <= 0) {
-                fieldErrors.amount = 'No hay saldo disponible en la cuenta para realizar el egreso'
-            } else if (Number(tx.amount) > accBalance) {
-                fieldErrors.amount = 'Saldo insuficiente en la cuenta para este egreso'
+            if (acc_balance <= 0) {
+                field_errors.amount = 'No hay saldo disponible en la cuenta para realizar el egreso'
+            } else if (Number(transaction.amount) > acc_balance) {
+                field_errors.amount = 'Saldo insuficiente en la cuenta para este egreso'
             }
         }
     }
 
     // Validación: para transferencias, la cuenta origen debe tener saldo suficiente
-    if (tx.type === 'transfer') {
-        if (!tx.account || !tx.account.id) {
-            fieldErrors.account = 'Cuenta origen requerida para transferencia'
+    if (transaction.type === 'transfer') {
+        if (!transaction.account || !transaction.account.id) {
+            field_errors.account = 'Cuenta origen requerida para transferencia'
         }
-        if (!tx.to_account || !tx.to_account.id) {
-            fieldErrors.to_account = 'Cuenta destino requerida para transferencia'
+        if (!transaction.to_account || !transaction.to_account.id) {
+            field_errors.to_account = 'Cuenta destino requerida para transferencia'
         }
-        if (tx.account && tx.to_account && tx.account.id === tx.to_account.id) {
-            fieldErrors.to_account = 'La cuenta destino debe ser distinta a la cuenta origen'
+        if (transaction.account && transaction.to_account && transaction.account.id === transaction.to_account.id) {
+            field_errors.to_account = 'La cuenta destino debe ser distinta a la cuenta origen'
         }
 
-        if (tx.account && tx.account.id) {
+        if (transaction.account && transaction.account.id) {
             const accRepo = AppDataSource.getRepository(Account)
-            const acc = await accRepo.findOne({ where: { id: tx.account.id, user: { id: authReq.user.id } } })
-            const accBalance = acc ? Number(acc.balance) : 0
+            const acc = await accRepo.findOne({ where: { id: transaction.account.id, user: { id: auth_req.user.id } } })
+            const acc_balance = acc ? Number(acc.balance) : 0
 
-            if (accBalance <= 0) {
-                fieldErrors.amount = 'No hay saldo disponible en la cuenta origen para realizar la transferencia'
-            } else if (Number(tx.amount) > accBalance) {
-                fieldErrors.amount = 'Saldo insuficiente en la cuenta origen para esta transferencia'
+            if (acc_balance <= 0) {
+                field_errors.amount = 'No hay saldo disponible en la cuenta origen para realizar la transferencia'
+            } else if (Number(transaction.amount) > acc_balance) {
+                field_errors.amount = 'Saldo insuficiente en la cuenta origen para esta transferencia'
             }
         }
     }
-    logger.debug(`${validateSaveTransaction.name}-Errors: ${JSON.stringify(fieldErrors)}`)
-    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    logger.debug(`${validateSaveTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
+    return Object.keys(field_errors).length > 0 ? field_errors : null
 }
 
-export const validateDeleteTransaction = async (transaction: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
-    const userId = authReq.user.id
-    const fieldErrors: Record<string, string> = {}
+export const validateDeleteTransaction = async (transaction: Transaction, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
+    const field_errors: Record<string, string> = {}
 
     if (!transaction.date) {
-        fieldErrors.general = 'La transacción no tiene fecha registrada'
+        field_errors.general = 'La transacción no tiene fecha registrada'
     } else {
-        const txDate = new Date(transaction.date)
+        const transaction_date = new Date(transaction.date)
         const now = new Date()
 
-        if (txDate.getFullYear() < now.getFullYear() ||
-            (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() < now.getMonth())) {
-            fieldErrors.general = 'No se puede eliminar transacciones de meses anteriores'
+        if (transaction_date.getFullYear() < now.getFullYear() ||
+            (transaction_date.getFullYear() === now.getFullYear() && transaction_date.getMonth() < now.getMonth())) {
+            field_errors.general = 'No se puede eliminar transacciones de meses anteriores'
         }
     }
 
-    logger.debug(`${validateDeleteTransaction.name}-Errors: ${JSON.stringify(fieldErrors)}`)
-    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    logger.debug(`${validateDeleteTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
+    return Object.keys(field_errors).length > 0 ? field_errors : null
 }
 
-export const validateActiveCategoryTransaction = async (transaction: Transaction, authReq: AuthRequest): Promise<Record<string, string> | null> => {
-    const fieldErrors: Record<string, string> = {}
+export const validateActiveCategoryTransaction = async (transaction: Transaction, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
+    const field_errors: Record<string, string> = {}
 
     if (!transaction.category || !transaction.category.id) {
         return null
@@ -141,16 +140,16 @@ export const validateActiveCategoryTransaction = async (transaction: Transaction
     const category = await categoryRepo.findOne({
         where: {
             id: transaction.category.id,
-            user: { id: authReq.user.id },
+            user: { id: auth_req.user.id },
             is_active: true
         }
     })
 
     if (!category) {
         const category_name = transaction.category?.name || ''
-        fieldErrors.category = `La categoría "${category_name}" de esta transacción ya no está activa o no existe`
+        field_errors.category = `La categoría "${category_name}" de esta transacción ya no está activa o no existe`
     }
 
-    logger.debug(`${validateActiveCategoryTransaction.name}-Errors: ${JSON.stringify(fieldErrors)}`)
-    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    logger.debug(`${validateActiveCategoryTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
+    return Object.keys(field_errors).length > 0 ? field_errors : null
 }

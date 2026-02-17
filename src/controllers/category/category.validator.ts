@@ -4,6 +4,7 @@ import { Category } from '../../entities/Category.entity'
 import { CategoryGroup } from '../../entities/CategoryGroups.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
+import { logger } from '../../utils/logger.util'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
 
 export const validateCategory = async (category: Category, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
@@ -67,6 +68,7 @@ export const validateCategory = async (category: Category, auth_req: AuthRequest
     }
   }
 
+  logger.debug(`${validateCategory.name}-Errors: ${JSON.stringify(field_errors)}`)
   return Object.keys(field_errors).length > 0 ? field_errors : null
 }
 
@@ -109,5 +111,6 @@ export const validateDeleteCategory = async (category: Category, auth_req: AuthR
     field_errors.general = `No se puede eliminar la categoría porque tiene ${children_count} subcategoría(s) asociada(s)`
   }
 
+  logger.debug(`${validateDeleteCategory.name}-Errors: ${JSON.stringify(field_errors)}`)
   return Object.keys(field_errors).length > 0 ? field_errors : null
 }

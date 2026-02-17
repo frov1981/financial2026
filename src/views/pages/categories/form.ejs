@@ -84,19 +84,29 @@
     <!-- Grupo de Prestamos -->
      <% if (!isHidden('category_group_id')) { %>
     <div class="mb-4">
-      <label class="block font-medium mb-1">Grupo de Categorias</label>
+      <label class="block font-medium mb-1">Grupo</label>
+
       <div
         class="autocomplete"
         data-items='<%- JSON.stringify(category_group) %>'
         data-default-id="<%= category?.category_group?.id || '' %>"
         data-placeholder="-- Escoja una opción --"
       >
-        <input type="text" class="autocomplete-input" autocomplete="off" 
-          value="<%= category?.category_group?.name || '' %>" <%= isReadOnly('category_group_id') ? 'readonly' : '' %>>
-        <input type="hidden" class="autocomplete-hidden" name="category_group_id"
-          value="<%= category?.category_group?.id || '' %>">
+        <input 
+          type="text" 
+          class="autocomplete-input" 
+          autocomplete="off" 
+          value="<%= category?.category_group?.name || '' %>" 
+          <%= isReadOnly('category_group_id') ? 'readonly' : '' %>>
+        
+          <input type="hidden" 
+          class="autocomplete-hidden" 
+          name="category_group"
+          value="<%= category?.category_group?.id || '' %>"
+          >
         <div class="autocomplete-panel"></div>
       </div>
+
       <% if (errors?.category_group) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.category_group %></p>
       <% } %>

@@ -54,7 +54,7 @@ const buildCategoryView = (body: any, category_group: CategoryGroup[]) => {
    Obtener grupo de categoría desde el body y la lista de grupos del usuario
 ============================ */
 const findCategoryGroupByBody = (body: any, category_group: CategoryGroup[]): CategoryGroup | null => {
-  const category_group_id = body.category_group_id ? Number(body.category_group_id) : null
+  const category_group_id = body.category_group ? Number(body.category_group) : null
 
   if (!category_group_id) return null
 
@@ -69,6 +69,7 @@ const findCategoryGroupByBody = (body: any, category_group: CategoryGroup[]): Ca
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveCategory: RequestHandler = async (req: Request, res: Response) => {
+  logger.debug(`${saveCategory.name}-Start`)
   logger.info('saveCategory called', { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
@@ -143,7 +144,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     return res.redirect('/categories')
 
   } catch (err: any) {
-    logger.error('Error saving category', {
+    logger.error(`${saveCategory.name}-Error. `, {
       userId: auth_req.user.id,
       category_id,
       mode,
@@ -159,5 +160,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       ...form_state,
       errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
+  }finally {
+    logger.debug(`${saveCategory.name}-End`)
   }
 }
