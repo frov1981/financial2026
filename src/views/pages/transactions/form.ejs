@@ -250,7 +250,13 @@
     <% } %>
 
     <div class="flex justify-end gap-2">
-      <a href="/transactions" class="px-4 py-2 bg-gray-200 rounded">
+      <%
+        const cancelUrl =
+          context?.from === 'categories' && context?.category_id
+            ? `/transactions?from=categories&category_id=${context.category_id}`
+            : '/transactions'
+      %>
+      <a href="<%= cancelUrl %>" class="px-4 py-2 bg-gray-200 rounded">
         Cancelar
       </a>
 
@@ -258,7 +264,6 @@
         <button
           type="submit"
           class="px-4 py-2 bg-red-600 text-white rounded"
-          onclick="this.form.action.value='delete'"
         >
           Eliminar
         </button>

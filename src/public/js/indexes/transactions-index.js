@@ -195,7 +195,7 @@ function renderCard(transaction) {
             onclick="event.stopPropagation(); goToTransactionClone(${transaction.id})">
             ${iconClone()}
           </button>
-          <button 
+          <button  
             class="icon-btn delete"
             onclick="event.stopPropagation(); goToTransactionDelete(${transaction.id})">
             ${iconDelete()}

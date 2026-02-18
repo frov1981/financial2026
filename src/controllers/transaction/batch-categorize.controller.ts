@@ -12,6 +12,9 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
     const auth_req = req as AuthRequest;
     const ids_raw = String(req.query.ids || '');
     const ids = ids_raw.split(',').map(id => Number(id)).filter(id => Number.isInteger(id) && id > 0);
+    const return_from = req.query.from as string | undefined
+    const return_category_id = req.query.category_id ? Number(req.query.category_id) : null
+
 
     if (!ids.length) {
         return res.redirect('/transactions');
@@ -53,6 +56,10 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
             has_income,
             has_expense,
             USER_ID: auth_req.user?.id || 'guest',
+            context: {
+                from: return_from || null,
+                category_id: return_category_id || null
+            },
         }
     )
 }
@@ -60,14 +67,16 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
 export const apiForBatchCategorize: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const return_from = req.body.return_from
+    const return_category_id = req.body.return_category_id ? Number(req.body.return_category_id) : null
 
     try {
         const { income_category_id, expense_category_id, income_ids = '[]', expense_ids = '[]' } = req.body
-        
+
         // Parse JSON strings to arrays
         const income_ids_arr = typeof income_ids === 'string' ? JSON.parse(income_ids) : income_ids
         const expense_ids_arr = typeof expense_ids === 'string' ? JSON.parse(expense_ids) : expense_ids
-        
+
         const all_ids = [...income_ids_arr, ...expense_ids_arr]
         logger.debug(`${apiForBatchCategorize.name} - Start with data: [${all_ids}], income_category_id: [${income_category_id}], expense_category_id: [${expense_category_id}]`)
 
@@ -166,6 +175,12 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
         /* ============================================================
         6. Redirigir si todo correcto
         ============================================================ */
+        if (return_from === 'categories' && return_category_id) {
+            return res.redirect(
+                `/transactions?category_id=${return_category_id}&from=categories&saved_batch=true`
+            )
+        }
+        
         return res.redirect('/transactions?saved_batch=true')
 
     } catch (error) {

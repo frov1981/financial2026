@@ -3,40 +3,45 @@ import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 
-export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise<Date> => {
-  const userId = authReq.user.id
+type SplitCategoriesResult = {
+  active_income_categories: Category[]
+  active_expense_categories: Category[]
+}
+
+export const getNextValidTransactionDate = async (auth_req: AuthRequest): Promise<Date> => {
+  const user_id = auth_req.user.id
 
   const now = new Date()
 
-  const startOfDay = new Date(Date.UTC(
+  const start_of_day = new Date(Date.UTC(
     now.getUTCFullYear(),
     now.getUTCMonth(),
     now.getUTCDate(),
     0, 0, 0, 0
   ))
 
-  const endOfDay = new Date(Date.UTC(
+  const end_of_day = new Date(Date.UTC(
     now.getUTCFullYear(),
     now.getUTCMonth(),
     now.getUTCDate(),
     23, 59, 59, 999
   ))
 
-  const lastTxToday = await AppDataSource
+  const last_transaction_today = await AppDataSource
     .getRepository(Transaction)
     .createQueryBuilder('t')
-    .where('t.user_id = :userId', { userId })
+    .where('t.user_id = :user_id', { user_id })
     .andWhere('t.date BETWEEN :start AND :end', {
-      start: startOfDay,
-      end: endOfDay
+      start: start_of_day,
+      end: end_of_day
     })
     .orderBy('t.date', 'DESC')
     .getOne()
 
-  if (!lastTxToday || !lastTxToday.date) return now
-  if (lastTxToday.date > now) return now
+  if (!last_transaction_today || !last_transaction_today.date) return now
+  if (last_transaction_today.date > now) return now
 
-  const next = new Date(lastTxToday.date)
+  const next = new Date(last_transaction_today.date)
   const minutes = next.getUTCMinutes()
   const remainder = minutes % 5
   const increment = remainder === 0 ? 5 : 5 - remainder
@@ -47,10 +52,7 @@ export const getNextValidTransactionDate = async (authReq: AuthRequest): Promise
   return next > now ? next : now
 }
 
-export const splitCategoriesByType = (categories: Category[]): {
-  active_income_categories: Category[]
-  active_expense_categories: Category[]
-} => {
+export const splitCategoriesByType = (categories: Category[]): SplitCategoriesResult => {
   const active_income_categories: Category[] = []
   const active_expense_categories: Category[] = []
 
@@ -70,12 +72,9 @@ export const splitCategoriesByType = (categories: Category[]): {
   }
 }
 
-export const calculateTransactionDeltas = (
-  tx: Transaction,
-  factor: 1 | -1
-): Map<number, number> => {
+export const calculateTransactionDeltas = (transaction: Transaction, factor: 1 | -1): Map<number, number> => {
   const deltas = new Map<number, number>()
-  const amount = Number(tx.amount)
+  const amount = Number(transaction.amount)
 
   const addDelta = (accountId?: number, value?: number) => {
     if (!accountId || !value) return
@@ -83,22 +82,38 @@ export const calculateTransactionDeltas = (
     deltas.set(accountId, prev + value)
   }
 
-  if (tx.type === 'income' && tx.account?.id) {
-    addDelta(tx.account.id, amount * factor)
+  if (transaction.type === 'income' && transaction.account?.id) {
+    addDelta(transaction.account.id, amount * factor)
   }
 
-  if (tx.type === 'expense' && tx.account?.id) {
-    addDelta(tx.account.id, -amount * factor)
+  if (transaction.type === 'expense' && transaction.account?.id) {
+    addDelta(transaction.account.id, -amount * factor)
   }
 
-  if (tx.type === 'transfer') {
-    if (tx.account?.id) {
-      addDelta(tx.account.id, -amount * factor)
+  if (transaction.type === 'transfer') {
+    if (transaction.account?.id) {
+      addDelta(transaction.account.id, -amount * factor)
     }
-    if (tx.to_account?.id) {
-      addDelta(tx.to_account.id, amount * factor)
+    if (transaction.to_account?.id) {
+      addDelta(transaction.to_account.id, amount * factor)
     }
   }
-
   return deltas
+}
+
+export const buildReturnUrl = (from?: string, category_id?: number | null, extraParams?: Record<string, string>) => {
+  const params = new URLSearchParams()
+
+  if (from === 'categories' && category_id) {
+    params.set('category_id', String(category_id))
+    params.set('from', 'categories')
+  }
+
+  if (extraParams) {
+    for (const key in extraParams) {
+      params.set(key, extraParams[key])
+    }
+  }
+
+  return `/transactions${params.toString() ? `?${params}` : ''}`
 }

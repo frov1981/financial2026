@@ -129,6 +129,10 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       await query_runner.commitTransaction()
       await query_runner.release()
 
+      if (return_from === 'categories' && return_category_id) {
+        return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
+      }
+
       return res.redirect('/transactions')
     }
 

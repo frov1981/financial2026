@@ -129,15 +129,20 @@ function batchStartCategorize() {
 
 function batchAcceptCategorize() {
   const ids = batchGetSelected()
-
   if (!ids.length) {
     alert('Debe seleccionar al menos una transacción')
     return
   }
-
+  const params = new URLSearchParams(window.location.search)
+  const category_id = params.get('category_id')
+  const from = params.get('from')
   const query = ids.join(',')
-  location.href = `/transactions/batch-categorize?ids=${encodeURIComponent(query)}`
+  const next = new URLSearchParams({ ids: query })
+  if (category_id) next.set('category_id', category_id)
+  if (from) next.set('from', from)
+  location.href = `/transactions/batch-categorize?${next.toString()}`
 }
+
 
 function batchCancelCategorize() {
   batchClearState()

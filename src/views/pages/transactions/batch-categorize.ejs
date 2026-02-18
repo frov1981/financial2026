@@ -20,41 +20,43 @@
 
 <form id="batch-categorize-form" method="POST" action="/transactions/batch-categorize">
 
-<% if (has_income) { %>
-  <div class="mb-4">
-    <label class="block font-medium mb-1">Categoría de Ingresos</label>
+  <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
+  <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
 
-    <div
-      id="batch-income-category-autocomplete"
-      class="autocomplete"
-      data-items='<%- JSON.stringify(active_income_categories || []) %>'
-      data-selected-id=""
-      data-placeholder="-- Escoja una categoría --"
-    >
-      <input
-        type="text"
-        id="batch-income-category-input"
-        class="autocomplete-input"
-        autocomplete="off"
-        placeholder="-- Escoja una categoría --"
+  <% if (has_income) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Categoría de Ingresos</label>
+
+      <div
+        id="batch-income-category-autocomplete"
+        class="autocomplete"
+        data-items='<%- JSON.stringify(active_income_categories || []) %>'
+        data-selected-id=""
+        data-placeholder="-- Escoja una categoría --"
       >
+        <input
+          type="text"
+          id="batch-income-category-input"
+          class="autocomplete-input"
+          autocomplete="off"
+          placeholder="-- Escoja una categoría --"
+        >
 
-      <input
-        type="hidden"
-        id="batch-income-category-id"
-        name="income_category_id"
-        class="autocomplete-hidden"
-        value=""
-      >
+        <input
+          type="hidden"
+          id="batch-income-category-id"
+          name="income_category_id"
+          class="autocomplete-hidden"
+          value=""
+        >
 
-      <div class="autocomplete-panel"></div>
+        <div class="autocomplete-panel"></div>
+      </div>
     </div>
-  </div>
-<% } %>
-<% if (has_expense) { %>
+  <% } %>
+  <% if (has_expense) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Categoría de Gastos</label>
-
       <div
         id="batch-expense-category-autocomplete"
         class="autocomplete"
@@ -80,7 +82,8 @@
 
         <div class="autocomplete-panel"></div>
       </div>
-    <% } %>
+    </div>
+  <% } %>
 
 <div class="max-w-6xl mx-auto ui-page">
   <!-- =========================
