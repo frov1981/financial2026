@@ -1,0 +1,49 @@
+.ui-card {
+    background: var(--ui-white);
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.ui-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ui-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--ui-gray-900);
+}
+
+.ui-card-title .subtitle {
+    display: block;
+    font-size: 0.9em;
+    font-weight: normal;
+    opacity: 0.8;
+}
+
+.ui-card-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: var(--ui-gray-700);
+}
+
+.ui-card-body.collapsed {
+    display: none;
+}
+
+.ui-card-body {
+    padding: 0 1.25rem 1.25rem 1.25rem;
+}
+
+.ui-card-body.hidden {
+    display: none;
+}

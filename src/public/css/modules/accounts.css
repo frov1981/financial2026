@@ -1,0 +1,83 @@
+.accounts-mobile {
+    display: none;
+}
+
+.account-card {
+    border: 1px solid var(--ui-gray-200);
+    border-radius: 12px;
+    padding: 12px;
+    background: var(--ui-white);
+}
+
+.account-card.card-selected {
+    outline: 2px solid var(--ui-blue-600);
+    background: var(--ui-blue-50);
+}
+
+.account-card.inactive {
+    background: var(--ui-red-50);
+}
+
+.account-card .icon-btn {
+    padding: 0.375rem;
+    min-height: auto;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.card-balance {
+    margin: 8px 0;
+    font-size: 25px;
+    font-weight: 600;
+}
+
+.card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ui-gray-500);
+}
+
+.card-tags {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .accounts-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px;
+    }
+
+    .ui-table-wrapper {
+        display: none;
+    }
+}
+
+@media (min-width: 769px) {
+    .accounts-mobile {
+        display: none;
+    }
+
+    .ui-table-wrapper {
+        display: block;
+    }
+}

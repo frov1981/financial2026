@@ -1,0 +1,120 @@
+.transaction-card {
+    position: relative;
+    border: 1px solid var(--ui-gray-200);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: var(--ui-white);
+}
+
+.transaction-card+.transaction-card {
+    margin-top: 6px;
+}
+
+.transaction-card.card-selected::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--ui-blue-600);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+.transaction-card.card-selected {
+    border-color: transparent;
+}
+
+.transaction-card.income {
+    background: var(--ui-green-50);
+}
+
+.transaction-card.expense {
+    background: var(--ui-red-50);
+}
+
+.transaction-card.transfer {
+    background: var(--ui-purple-50);
+}
+
+.transaction-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+
+.transaction-card .card-datetime {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+}
+
+.transaction-card .card-date {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.transaction-card .card-time {
+    font-size: 11px;
+    color: var(--ui-gray-500);
+}
+
+.transaction-card .card-weekday {
+    font-size: 11px;
+    color: var(--ui-gray-900);
+    border: 1px solid var(--ui-primary-500);
+    background-color: var(--ui-primary-50);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.transaction-card .card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.transaction-card .icon-btn {
+    padding: 0.25rem;
+    min-height: auto;
+}
+
+.transaction-card .card-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.transaction-card .card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.transaction-card .card-account {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.transaction-card .card-category {
+    font-size: 10px;
+    color: var(--ui-gray-500);
+    line-height: 1.2;
+}
+
+.transaction-card .card-description {
+    margin-top: 2px;
+    font-size: 11px;
+    font-style: italic;
+    color: var(--ui-gray-500);
+    line-height: 1.2;
+    white-space: pre-line;
+}
+
+.transaction-card .card-amount {
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    font-weight: 700;
+    white-space: nowrap;
+}

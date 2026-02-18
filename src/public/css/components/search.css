@@ -1,0 +1,38 @@
+.ui-search {
+    position: relative;
+    flex: 1;
+    min-width: 120px;
+}
+
+.ui-search input {
+    width: 100%;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+    border: 1px solid var(--ui-gray-300);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    box-sizing: border-box;
+}
+
+.ui-search input:focus {
+    outline: none;
+    border-color: var(--ui-blue-600);
+}
+
+.ui-search-clear,
+.ui-search-search {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    z-index: 2;
+}
+
+.ui-search-clear {
+    left: 0;
+}
+
+.ui-search-search {
+    right: 0;
+}

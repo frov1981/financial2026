@@ -1,0 +1,45 @@
+.ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    white-space: nowrap;
+    background: transparent;
+}
+
+.ui-btn svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.ui-btn-default {
+    background: var(--ui-gray-200);
+    color: var(--ui-gray-900);
+}
+
+.ui-btn-default:hover {
+    background: var(--ui-gray-300);
+}
+
+.ui-btn-primary {
+    background: var(--ui-blue-600);
+    color: var(--ui-white);
+}
+
+.ui-btn-primary:hover {
+    background: var(--ui-blue-700);
+}
+
+.ui-btn-text {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .ui-btn-text {
+        display: inline;
+    }
+}

@@ -1,47 +1,4 @@
-:root {
-  --ui-white   : #ffffff;
-  --ui-gray-900: #111827;
-  --ui-gray-700: #374151;
-  --ui-gray-500: #6b7280;
-  --ui-gray-300: #d1d5db;
-  --ui-gray-200: #e5e7eb;
-  --ui-gray-100: #f3f4f6;
-  --ui-gray-50: #f9fafb;
 
-  --ui-blue-50: #eff6ff;
-  --ui-blue-100: #dbeafe;
-  --ui-blue-200: #bfdbfe;
-  --ui-blue-600: #2563eb;
-  --ui-blue-700: #1d4ed8;
-
-  --ui-green-50: #f0fdf4;
-  --ui-green-100: #dcfce7;
-  --ui-green-300: #86efac;
-  --ui-green-600: #047857;
-  --ui-green-700: #065f46;
-  --ui-green-800: #166534;
-
-  --ui-red-50: #fef2f2;
-  --ui-red-200: #fee2e2;
-  --ui-red-300: #fca5a5;
-  --ui-red-700: #b91c1c;
-  --ui-red-800: #991b1b;
-
-  --ui-indigo-100: #e0e7ff;
-  --ui-indigo-300: #a5b4fc;
-  --ui-indigo-800: #3730a3;
-
-  --ui-purple-50: #faf5ff;
-  --ui-purple-100: #ede9fe;
-  --ui-purple-300: #c4b5fd;
-  --ui-purple-800: #4c1d95;
-
-  --ui-lime-100: #dcedc8;
-  --ui-lime-200: #c5e1a5;
-  --ui-lime-700: #558b2f;
-
-  --ui-orange-700: #c2410c;
-}
 
 
 /* =========================================================
@@ -53,1236 +10,140 @@
    LAYOUT
    ========================================================= */
 
-.ui-container {
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: 0 0.1rem;
-}
+
 
 /* =========================================================
    TÍTULOS
    ========================================================= */
 
-.ui-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
+
 
 /* =========================================================
    TOOLBAR
    ========================================================= */
 
-.ui-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  flex-wrap: nowrap;
-}
+
 
 /* El contenedor normal usa todo el ancho disponible */
-#toolbar-normal-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-}
 
-/* El wrapper del search se va a la derecha y se expande */
-#toolbar-normal-actions .search-box,
-#toolbar-normal-actions .search-input-wrapper {
-  margin-left: auto;
-  flex: 1;
-}
-
-/* El input ocupa todo el ancho del wrapper */
-#toolbar-normal-actions input[type="search"],
-#toolbar-normal-actions input[type="text"] {
-  width: 100%;
-}
-
-@media (max-width: 639px) {
-  .ui-toolbar {
-    overflow-x: auto;
-  }
-}
 
 /* =========================================================
    BOTONES UI
    ========================================================= */
 
-.ui-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  white-space: nowrap;
-  background: transparent;
-}
-
-.ui-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-/* Variantes */
-
-.ui-btn-default {
-  background: var(--ui-gray-200);
-  color: var(--ui-gray-900);
-}
-
-.ui-btn-default:hover {
-  background: var(--ui-gray-300);
-}
-
-.ui-btn-primary {
-  background: var(--ui-blue-600);
-  color: var(--ui-white);
-}
-
-.ui-btn-primary:hover {
-  background: var(--ui-blue-700);
-}
-
-/* Texto responsive */
-
-.ui-btn-text {
-  display: none;
-}
-
-@media (min-width: 640px) {
-  .ui-btn-text {
-    display: inline;
-  }
-}
 
 /* =========================================================
    BUSCADOR
    ========================================================= */
 
-.ui-search {
-  position: relative;
-  flex: 1;
-  min-width: 120px;
-}
-
-.ui-search input {
-  width: 100%;
-  padding-left: 2.5rem;
-  padding-right: 2.5rem;
-  border: 1px solid var(--ui-gray-300);
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  box-sizing: border-box;
-}
-
-.ui-search input:focus {
-  outline: none;
-  border-color: var(--ui-blue-600);
-}
-
-/* Botones del search */
-
-.ui-search-clear,
-.ui-search-search {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  z-index: 2;
-}
-
-.ui-search-clear {
-  left: 0;
-}
-
-.ui-search-search {
-  right: 0;
-}
 
 /* =========================================================
    TABLAS
    ========================================================= */
 
-.ui-table-wrapper {
-  overflow-x: auto;
-  border: 1px solid var(--ui-gray-200);
-  border-radius: 0.5rem;
-}
-
-.ui-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.ui-table th {
-  background: var(--ui-gray-50);
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-align: left;
-  color: var(--ui-gray-700);
-}
-
-.ui-table th,
-.ui-table td {
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--ui-gray-200);
-}
-
-.ui-table tr {
-  cursor: pointer;
-}
-
-.ui-table tr:hover {
-  background-color: var(--ui-gray-100);
-}
-
-.ui-table tr.tr-selected {
-  background-color: var(--ui-blue-100);
-}
-
-.ui-table tr.tr-selected:hover {
-  background-color: var(--ui-blue-200);
-}
 
 /* =========================================================
    TABLA – BASE CELDAS
    ========================================================= */
 
-.ui-th,
-.ui-td {
-  padding: 0.4rem 0.7rem;
-  font-size: 0.875rem;
-  color: var(--ui-gray-700);
-}
 
-.ui-th {
-  font-weight: 500;
-  background: var(--ui-gray-50);
-}
 
-.hide {
-  display: none;
-}
 
 /* =========================================================
    ALINEACIÓN SEMÁNTICA
    ========================================================= */
 
-.col-left {
-  text-align: left;
-}
-
-.col-center {
-  text-align: center;
-}
-
-.col-right {
-  text-align: right;
-}
-
-.col-nowrap {
-  white-space: nowrap;
-}
 
 /* =========================================================
    COLUMNA DESCRIPCIÓN – MULTILÍNEA
    ========================================================= */
 
-.col-description {
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-width: 260px;
-}
+
 
 /* =========================================================
    COLUMNAS RESPONSIVE
    ========================================================= */
 
-.ui-col-sm,
-.col-sm {
-  display: none;
-}
 
-@media (min-width: 640px) {
-  .ui-col-sm,
-  .col-sm {
-    display: table-cell;
-  }
-}
 
 /* =========================================================
    PAGE LAYOUT
    ========================================================= */
 
-.ui-page {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 1rem);
-}
 
-.ui-header {
-  flex-shrink: 0;
-}
 
 /* =========================================================
    SCROLL AREA
    ========================================================= */
 
-.ui-scroll-area {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 1rem;
-}
+
 
 /* =========================================================
    MOBILE / DESKTOP SWITCH (ACCOUNTS)
    ========================================================= */
 
-.accounts-mobile {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .accounts-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 8px;
-  }
-
-  .ui-table-wrapper {
-    display: none;
-  }
-}
-
-@media (min-width: 769px) {
-  .accounts-mobile {
-    display: none;
-  }
-
-  .ui-table-wrapper {
-    display: block;
-  }
-}
-
-/* =========================================================
-   ACCOUNTS - MOBILE CARDS
-   ========================================================= */
-
-.account-card {
-  border: 1px solid var(--ui-gray-200);
-  border-radius: 12px;
-  padding: 12px;
-  background: var(--ui-white);
-}
-
-.account-card.card-selected {
-  outline: 2px solid var(--ui-blue-600);
-  background: var(--ui-blue-50);
-}
-
-.account-card.inactive {
-  background: var(--ui-red-50);
-}
-
-.account-card .icon-btn {
-  padding: 0.375rem;
-  min-height: auto;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.card-balance {
-  margin: 8px 0;
-  font-size: 25px;
-  font-weight: 600;
-}
-
-.card-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--ui-gray-500);
-}
-
-.card-tags {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
 
 /* ============================
    CATEGORIES – MOBILE CARDS
 ============================ */
 
-.categories-mobile {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .categories-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 8px;
-  }
-
-  .ui-table-wrapper {
-    display: none;
-  }
-}
-
-.category-card {
-  border: 1px solid var(--ui-gray-200);
-  border-radius: 12px;
-  padding: 12px;
-  background: var(--ui-white);
-}
-
-.category-card.card-selected {
-  outline: 2px solid var(--ui-blue-600);
-  background: var(--ui-blue-50);
-}
-
-.category-card.inactive {
-  background: var(--ui-red-50);
-}
-
-.category-card .icon-btn {
-  padding: 0.375rem;
-  min-height: auto;
-}
-
-.category-card .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.category-card .card-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.category-card .card-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.category-card .card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--ui-gray-200);
-  font-size: 12px;
-  color: var(--ui-gray-500);
-}
-
-.category-card .card-meta {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 500;
-}
-
-.category-card .card-tags {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.category-group {
-  border: 1px solid var(--ui-gray-200);
-  border-radius: 12px;
-  padding: 8px;
-  background: var(--ui-gray-50);
-  transition: background-color 0.3s ease;
-}
-
-.category-group-header {
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-}
-
-.category-group-header .group-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.category-group-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.category-group.collapsed .category-group-body {
-  display: none;
-}
 /* =========================================================
    LOANS - MOBILE CARDS (CON GROUP / PARENTS)
    ========================================================= */
-
-.loans-mobile {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .loans-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 8px;
-  }
-
-  .ui-table-wrapper {
-    display: none;
-  }
-}
-
-.loan-card {
-  border: 1px solid var(--ui-gray-200);
-  border-radius: 12px;
-  padding: 12px;
-  background: var(--ui-white);
-  position: relative;
-}
-
-.loan-card.card-selected::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 2px solid var(--ui-blue-600);
-  border-radius: 12px;
-  pointer-events: none;
-}
-
-.loan-card.card-selected {
-  border-color: transparent;
-}
-
-.loan-card.inactive {
-  background: var(--ui-red-50);
-}
-
-.loan-card .icon-btn {
-  padding: 0.375rem;
-  min-height: auto;
-}
-
-.loan-card .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.loan-card .card-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.loan-card .card-balance {
-  margin: 8px 0;
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.loan-card .card-sub {
-  font-size: 12px;
-  color: var(--ui-gray-500);
-}
-
-.loan-card .card-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.loan-card .card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--ui-gray-200);
-  font-size: 12px;
-  color: var(--ui-gray-500);
-}
-
-.loan-card .card-tags {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.loan-group {
-  border: 1px solid var(--ui-gray-200);
-  border-radius: 12px;
-  padding: 8px;
-  background: var(--ui-gray-50);
-  transition: background-color 0.3s ease;
-}
-
-.loan-group-header {
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-}
-
-.loan-group-header .group-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.loan-group-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.loan-group.collapsed .loan-group-body {
-  display: none;
-}
 
 /* ============================
    Total pendiente por grupo
 ============================ */
 
-.group-title {
-  font-weight: 600;
-}
-
-.group-pending {
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.parent-row .group-pending {
-  text-align: right;
-}
-
-.loan-group-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-}
-
-.group-header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
 
 
 /* =========================================================
    PAYMENTS - MOBILE CARDS
    ========================================================= */
 
-.payments-mobile {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .payments-mobile {
-    display: block;
-  }
-
-  .ui-table-wrapper {
-    display: none;
-  }
-}
-
-.payment-card {
-  border: 1px solid var(--ui-gray-200);
-  border-radius: 12px;
-  padding: 12px;
-  background: var(--ui-white);
-}
-
-.payment-card + .payment-card {
-  margin-top: 10px;
-}
-
-.payment-card .icon-btn {
-  padding: 0.375rem;
-  min-height: auto;
-}
-
-.payment-card {
-  position: relative;
-}
-
-.payment-card.card-selected::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 2px solid var(--ui-blue-600);
-  border-radius: 12px;
-  pointer-events: none;
-}
-
-.payment-card.card-selected {
-  border-color: transparent;
-}
-
-.payment-card .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.payment-card .card-datetime {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-}
-
-.payment-card .card-date {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.payment-card .card-time {
-  font-size: 11px;
-  color: var(--ui-gray-500);
-}
-
-.payment-card .card-weekday {
-  font-size: 11px;
-  color: var(--ui-gray-900);
-  border: 1px solid var(--ui-primary-500);
-  background-color: var(--ui-primary-50);
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.payment-card .card-title {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.payment-card .card-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.payment-card .card-body {
-  margin: 8px 0;
-}
-
-.payment-card .amount-main {
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.payment-card .amount-sub {
-  font-size: 12px;
-  color: var(--ui-gray-500);
-}
-
-.payment-card .card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--ui-gray-500);
-  margin-top: 6px;
-}
 
 /* =========================================================
    TRANSACTIONS - MOBILE CARDS
 ========================================================= */
 
-.transaction-card {
-  position: relative;
-  border: 1px solid var(--ui-gray-200);
-  border-radius: 10px;
-  padding: 8px 10px;
-  background: var(--ui-white);
-}
-
-.transaction-card + .transaction-card {
-  margin-top: 6px;
-}
-
-/* selección */
-.transaction-card.card-selected::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 2px solid var(--ui-blue-600);
-  border-radius: 10px;
-  pointer-events: none;
-}
-
-.transaction-card.card-selected {
-  border-color: transparent;
-}
-
-/* tipos */
-.transaction-card.income {
-  background: var(--ui-green-50);
-}
-
-.transaction-card.expense {
-  background: var(--ui-red-50);
-}
-
-.transaction-card.transfer {
-  background: var(--ui-purple-50);
-}
-
-/* =========================
-   Header
-========================= */
-
-.transaction-card .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 4px;
-}
-
-.transaction-card .card-datetime {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-}
-
-.transaction-card .card-date {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.transaction-card .card-time {
-  font-size: 11px;
-  color: var(--ui-gray-500);
-}
-
-.transaction-card .card-weekday {
-  font-size: 11px;
-  color: var(--ui-gray-900);
-  border: 1px solid var(--ui-primary-500);
-  background-color: var(--ui-primary-50);
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.transaction-card .card-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.transaction-card .icon-btn {
-  padding: 0.25rem;
-  min-height: auto;
-}
-
-/* =========================
-   Body layout
-========================= */
-
-.transaction-card .card-content {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.transaction-card .card-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.transaction-card .card-account {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.transaction-card .card-category {
-  font-size: 10px; /* ~20% menos */
-  color: var(--ui-gray-500);
-  line-height: 1.2;
-}
-
-.transaction-card .card-description {
-  margin-top: 2px;
-  font-size: 11px;
-  font-style: italic;
-  color: var(--ui-gray-500);
-  line-height: 1.2;
-  white-space: pre-line;
-}
-
-/* =========================
-   Amount (protagonista)
-========================= */
-
-.transaction-card .card-amount {
-  display: flex;
-  align-items: center;
-  font-size: 20px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 /* =========================================================
    NUMERIC VALUES — AMOUNTS
    ========================================================= */
-
-.amount-box {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.amount-value {
-  text-align: right;
-  font-weight: 500;
-}
-
-.amount-currency {
-  color: var(--ui-gray-500);
-  font-size: 0.75rem;
-}
-
-.amount-positive {
-  color: var(--ui-green-700);
-  font-weight: 600;
-}
-
-.amount-negative {
-  color: var(--ui-red-800);
-  font-weight: 600;
-}
-
-input[data-balance-target],
-input[data-balance-final] {
-  background-color: var(--ui-white);
-}
-
-/* Amount mobile */
-
-@media (max-width: 639px) {
-  .amount-box {
-    font-size: 0.8125rem;
-  }
-
-  .amount-currency {
-    display: none;
-  }
-}
 
 /* =========================================================
    NUMERIC VALUES — NUMBER BOX
    ========================================================= */
 
-.number-box {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
 
-.number-value {
-  text-align: right;
-  font-weight: 500;
-}
-
-@media (max-width: 639px) {
-  .number-box {
-    font-size: 0.8125rem;
-  }
-}
 
 /* =========================================================
    ICON BUTTONS
    ========================================================= */
 
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  min-height: 2.5rem;
-  cursor: pointer;
-}
-
-.icon-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
-  display: block;
-}
-
-.btn-text {
-  display: none;
-  white-space: nowrap;
-}
-
-@media (min-width: 640px) {
-  .icon-btn {
-    padding: 0.5rem 0.75rem;
-  }
-
-  .btn-text {
-    display: inline;
-  }
-}
 
 /* =========================================================
    TAGS — TRANSACCIONES / CUENTAS / ESTADOS
    ========================================================= */
 
-.tag,
-.tx-tag,
-.acc-tag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 12px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
+
 
 /* Transaction */
 
-.tx-income {
-  background-color: var(--ui-green-100);
-  color: var(--ui-green-800);
-  border-color: var(--ui-green-300);
-}
-
-.tx-expense {
-  background-color: var(--ui-red-200);
-  color: var(--ui-red-800);
-  border-color: var(--ui-red-300);
-}
-
-.tx-transfer {
-  background-color: var(--ui-indigo-100);
-  color: var(--ui-indigo-800);
-  border-color: var(--ui-indigo-300);
-}
 
 /* Account */
 
-.tag-cash {
-  background-color: var(--ui-green-100);
-  color: var(--ui-green-800);
-  border-color: var(--ui-green-300);
-}
-
-.tag-bank {
-  background-color: var(--ui-blue-100);
-  color: #1e3a8a;
-  border-color: #93c5fd;
-}
-
-.tag-card {
-  background-color: var(--ui-purple-100);
-  color: var(--ui-purple-800);
-  border-color: var(--ui-purple-300);
-}
-
-.tag-saving {
-  background-color: var(--ui-lime-100); /* fondo suave tipo verde claro para ahorros */
-  color: var(--ui-lime-700);            /* texto verde más oscuro */
-  border-color: var(--ui-lime-200);     /* borde a juego */
-}
-
-/* Status */
-
-.tag-active {
-  background-color: var(--ui-green-100);
-  color: var(--ui-green-800);
-  border-color: var(--ui-green-300);
-}
-
-.tag-inactive {
-  background-color: var(--ui-red-200);
-  color: var(--ui-red-800);
-  border-color: var(--ui-red-300);
-}
-
-@media (max-width: 639px) {
-  .tag,
-  .tx-tag,
-  .acc-tag {
-    font-size: 0.6875rem;
-    padding: 2px 10px;
-  }
-}
 
 /* =========================================================
    DASHBOARD / KPI CARDS
    ========================================================= */
 
 /* Card base */
-.ui-card {
-  background: var(--ui-white);
-  border-radius: 1rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  margin-bottom: 1rem;
-  overflow: hidden;
-}
 
-/* Header clickeable */
-.ui-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.ui-card-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--ui-gray-900);
-}
-
-.ui-card-title .subtitle {
-  display: block;
-  font-size: 0.9em;
-  font-weight: normal;
-  opacity: 0.8;
-}
-
-/* Icono de colapso */
-.ui-card-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  color: var(--ui-gray-700);
-}
-
-.ui-card-body.collapsed {
-  display: none;
-}
-
-/* Body */
-.ui-card-body {
-  padding: 0 1.25rem 1.25rem 1.25rem;
-}
-
-/* Compatibilidad con tu JS actual */
-.ui-card-body.hidden {
-  display: none;
-}
 
 /* =========================================================
    KPI GRID
    ========================================================= */
 
-.ui-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-@media (min-width: 1024px) {
-  .ui-kpi-grid.cols-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ui-kpi-grid.cols-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-/* =========================================================
-   KPI ITEM
-   ========================================================= */
-
-.ui-kpi-item {
-  background: var(--ui-gray-50);
-  border-radius: 0.75rem;
-  padding: 1rem;
-}
-
-.ui-kpi-label {
-  font-size: 0.75rem;
-  color: var(--ui-gray-500);
-  margin-bottom: 0.25rem;
-}
-
-.ui-kpi-value {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--ui-gray-900);
-}
-
-/* Variantes de color para valores */
-.ui-kpi-green {
-  color: var(--ui-green-600);
-}
-
-.ui-kpi-red {
-  color: var(--ui-red-700);
-}
-
-.ui-kpi-blue {
-  color: var(--ui-blue-700);
-}
-
-.ui-kpi-orange {
-  color: var(--ui-orange-700);
-}
 
 
 /* =========================================================
@@ -1292,261 +153,17 @@ input[data-balance-final] {
    ========================================================= */
 
 /* Contenedor principal del autocomplete */
-.autocomplete {
-  position: relative;
-  width: 100%;
-  font-family: sans-serif;
-}
-
-/* Panel que aparece debajo del input */
-.autocomplete-panel {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  border: 1px solid var(--ui-gray-300);
-  background-color: var(--ui-white);
-  max-height: 200px;
-  overflow-y: auto;
-  display: none;
-  z-index: 1000;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Panel abierto */
-.autocomplete-panel.open {
-  display: block;
-}
-
-/* Item dentro del panel */
-.autocomplete-item {
-  padding: 6px 10px;
-  cursor: pointer;
-  user-select: none;
-  line-height: 1.4;
-}
-
-/* Hover o seleccionado con teclado */
-.autocomplete-item:hover,
-.autocomplete-item.active {
-  background-color: var(--ui-gray-100);
-}
-
-/* Dos columnas: nombre y balance */
-.autocomplete-item.two-columns {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-/* Columna del nombre */
-.autocomplete-item .item-label {
-  flex: 1;
-}
-
-/* Columna del balance */
-.autocomplete-item .item-balance {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  font-weight: bold;
-  opacity: 0.8;
-}
-
-/* Verde si balance > 0 */
-.autocomplete-item .item-balance.positive {
-  color: var(--ui-green-800);
-}
-
-/* Rojo si balance <= 0 */
-.autocomplete-item .item-balance.negative {
-  color: var(--ui-red-800);
-}
-
-/* Input dentro del autocomplete */
-.autocomplete-input {
-  width: 100%;
-  padding: 6px 10px;
-  border: 1px solid var(--ui-gray-300);
-  border-radius: 4px;
-  box-sizing: border-box;
-}
 
 /* =========================================================
    FIX: Alineación consistente de grupos (categorías y loans)
    ========================================================= */
 
-.category-group,
-.loan-group {
-  text-align: left;
-}
-
-.category-group-header,
-.loan-group-header {
-  text-align: left;
-  justify-content: flex-start;
-}
-
-.category-group-header .group-actions,
-.loan-group-header .group-actions {
-  margin-left: auto;
-}
-
 /* ==========================
    Navbar - Balance Disponible
 ========================== */
-.navbar-net-balance {
-  display: inline-block;
-  margin-left: 12px;
-  padding: 5px 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #ffffff;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  letter-spacing: 0.3px;
-  transition: all 0.2s ease;
-}
 
-.navbar-net-balance.positive {
-  background-color: #16a34a;
-  border-color: #15803d;
-}
-
-.navbar-net-balance.negative {
-  background-color: #dc2626;
-  border-color: #b91c1c;
-}
-
-.navbar-net-balance:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* ==========================
-   Navbar - Balance Préstamos
-========================== */
-.navbar-loan_balance {
-  display: inline-block;
-  margin-left: 12px;
-  padding: 5px 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #ffffff;
-  background-color: #dc2626;
-  border: 1px solid #b91c1c;
-  border-radius: 10px;
-  letter-spacing: 0.3px;
-  transition: all 0.2s ease;
-}
-
-.navbar-loan_balance:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* ==========================
-   Responsive - Mobile
-========================== */
-@media (max-width: 768px) {
-
-  .navbar-net-balance,
-  .navbar-loan_balance {
-    font-size: 0.70rem;          /* ~35% menos que 0.85rem */
-    padding: 3px 8px;            /* reducción proporcional */
-    border-radius: 7px;          /* ligeramente menor */
-  }
-
-}
 
 /* ===========================
    HOME CAROUSEL
 =========================== */
 
-.home-carousel {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  width: 100%;
-}
-
-.home-carousel::-webkit-scrollbar {
-  display: none;
-}
-.home-carousel {
-  scrollbar-width: none;
-}
-
-.home-slide {
-  flex: 0 0 100%;
-  padding-right: 2rem; /* separación visual */
-  box-sizing: border-box;
-}
-
-/* Desktop */
-@media (min-width: 1024px) {
-  .home-slide {
-    flex: 0 0 100%; 
-  }
-}
-
-/* Carousel Container con controles navegación absoluta */
-.carousel-container {
-  position: relative;
-  width: 100%;
-}
-
-.carousel-nav {
-  position: absolute;
-  display: none;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background-color: white;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
-  justify-content: center;
-  align-items: center;
-}
-
-.carousel-nav-prev {
-  left: 1rem;
-}
-
-.carousel-nav-next {
-  right: 1rem;
-}
-
-.carousel-nav:hover:not(:disabled) {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.carousel-nav:active:not(:disabled) {
-  transform: translateY(-50%) scale(0.95);
-}
-
-.carousel-nav:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.carousel-nav svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* Mostrar botones solo en desktop */
-@media (min-width: 1024px) {
-  .carousel-nav {
-    display: flex;
-  }
-}

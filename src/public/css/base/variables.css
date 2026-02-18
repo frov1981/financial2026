@@ -1,0 +1,45 @@
+:root {
+    --ui-white: #ffffff;
+    
+    --ui-gray-900: #111827;
+    --ui-gray-700: #374151;
+    --ui-gray-500: #6b7280;
+    --ui-gray-300: #d1d5db;
+    --ui-gray-200: #e5e7eb;
+    --ui-gray-100: #f3f4f6;
+    --ui-gray-50: #f9fafb;
+
+    --ui-blue-50: #eff6ff;
+    --ui-blue-100: #dbeafe;
+    --ui-blue-200: #bfdbfe;
+    --ui-blue-600: #2563eb;
+    --ui-blue-700: #1d4ed8;
+
+    --ui-green-50: #f0fdf4;
+    --ui-green-100: #dcfce7;
+    --ui-green-300: #86efac;
+    --ui-green-600: #047857;
+    --ui-green-700: #065f46;
+    --ui-green-800: #166534;
+
+    --ui-red-50: #fef2f2;
+    --ui-red-200: #fee2e2;
+    --ui-red-300: #fca5a5;
+    --ui-red-700: #b91c1c;
+    --ui-red-800: #991b1b;
+
+    --ui-indigo-100: #e0e7ff;
+    --ui-indigo-300: #a5b4fc;
+    --ui-indigo-800: #3730a3;
+
+    --ui-purple-50: #faf5ff;
+    --ui-purple-100: #ede9fe;
+    --ui-purple-300: #c4b5fd;
+    --ui-purple-800: #4c1d95;
+
+    --ui-lime-100: #dcedc8;
+    --ui-lime-200: #c5e1a5;
+    --ui-lime-700: #558b2f;
+
+    --ui-orange-700: #c2410c;
+}

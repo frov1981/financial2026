@@ -1,0 +1,57 @@
+.navbar-net-balance {
+    display: inline-block;
+    margin-left: 12px;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+
+.navbar-net-balance.positive {
+    background-color: #16a34a;
+    border-color: #15803d;
+}
+
+.navbar-net-balance.negative {
+    background-color: #dc2626;
+    border-color: #b91c1c;
+}
+
+.navbar-net-balance:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.navbar-loan_balance {
+    display: inline-block;
+    margin-left: 12px;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #dc2626;
+    border: 1px solid #b91c1c;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+
+.navbar-loan_balance:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+
+    .navbar-net-balance,
+    .navbar-loan_balance {
+        font-size: 0.70rem;
+        padding: 3px 8px;
+        border-radius: 7px;
+    }
+
+}

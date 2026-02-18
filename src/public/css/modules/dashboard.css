@@ -1,0 +1,49 @@
+.ui-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+    .ui-kpi-grid.cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ui-kpi-grid.cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.ui-kpi-item {
+    background: var(--ui-gray-50);
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.ui-kpi-label {
+    font-size: 0.75rem;
+    color: var(--ui-gray-500);
+    margin-bottom: 0.25rem;
+}
+
+.ui-kpi-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--ui-gray-900);
+}
+
+.ui-kpi-green {
+    color: var(--ui-green-600);
+}
+
+.ui-kpi-red {
+    color: var(--ui-red-700);
+}
+
+.ui-kpi-blue {
+    color: var(--ui-blue-700);
+}
+
+.ui-kpi-orange {
+    color: var(--ui-orange-700);
+}

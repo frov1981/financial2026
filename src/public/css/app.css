@@ -1,0 +1,29 @@
+/* =========================
+   BASE
+========================= */
+@import url('./base/variables.css');
+@import url('./base/layout.css');
+
+/* =========================
+   COMPONENTS
+========================= */
+@import url('./components/buttons.css');
+@import url('./components/icon-buttons.css');
+@import url('./components/search.css');
+@import url('./components/tables.css');
+@import url('./components/cards.css');
+@import url('./components/tags.css');
+@import url('./components/amounts.css');
+@import url('./components/autocomplete.css');
+
+/* =========================
+   MODULES
+========================= */
+@import url('./modules/accounts.css');
+@import url('./modules/categories.css');
+@import url('./modules/loans.css');
+@import url('./modules/payments.css');
+@import url('./modules/transactions.css');
+@import url('./modules/dashboard.css');
+@import url('./modules/navbar.css');
+@import url('./modules/carousel.css');

@@ -1,0 +1,65 @@
+.amount-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.amount-value {
+    text-align: right;
+    font-weight: 500;
+}
+
+.amount-currency {
+    color: var(--ui-gray-500);
+    font-size: 0.75rem;
+}
+
+.amount-positive {
+    color: var(--ui-green-700);
+    font-weight: 600;
+}
+
+.amount-negative {
+    color: var(--ui-red-800);
+    font-weight: 600;
+}
+
+input[data-balance-target],
+input[data-balance-final] {
+    background-color: var(--ui-white);
+}
+
+.number-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.number-value {
+    text-align: right;
+    font-weight: 500;
+}
+
+@media (max-width: 639px) {
+    .amount-box {
+        font-size: 0.8125rem;
+    }
+
+    .amount-currency {
+        display: none;
+    }
+}
+
+@media (max-width: 639px) {
+    .number-box {
+        font-size: 0.8125rem;
+    }
+}
