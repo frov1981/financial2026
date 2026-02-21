@@ -47,19 +47,3 @@ input[data-balance-final] {
     text-align: right;
     font-weight: 500;
 }
-
-@media (max-width: 639px) {
-    .amount-box {
-        font-size: 0.8125rem;
-    }
-
-    .amount-currency {
-        display: none;
-    }
-}
-
-@media (max-width: 639px) {
-    .number-box {
-        font-size: 0.8125rem;
-    }
-}

@@ -37,9 +37,3 @@
 .ui-btn-text {
     display: none;
 }
-
-@media (min-width: 640px) {
-    .ui-btn-text {
-        display: inline;
-    }
-}

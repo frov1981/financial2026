@@ -1,78 +1,50 @@
-.tag,
-.tx-tag,
-.acc-tag {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px 12px;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1;
-    border: 1px solid transparent;
-    white-space: nowrap;
+.ui-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--ui-gray-200);
+    border-radius: 0.5rem;
 }
 
-.tx-income {
-    background-color: var(--ui-green-100);
-    color: var(--ui-green-800);
-    border-color: var(--ui-green-300);
+.ui-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.tx-expense {
-    background-color: var(--ui-red-200);
-    color: var(--ui-red-800);
-    border-color: var(--ui-red-300);
+.ui-table th {
+    background: var(--ui-gray-50);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    color: var(--ui-gray-700);
 }
 
-.tx-transfer {
-    background-color: var(--ui-indigo-100);
-    color: var(--ui-indigo-800);
-    border-color: var(--ui-indigo-300);
+.ui-table th,
+.ui-table td {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--ui-gray-200);
 }
 
-.tag-cash {
-    background-color: var(--ui-green-100);
-    color: var(--ui-green-800);
-    border-color: var(--ui-green-300);
+.ui-table tr {
+    cursor: pointer;
 }
 
-.tag-bank {
+.ui-table tr:hover {
+    background-color: var(--ui-gray-100);
+}
+
+.ui-table tr.tr-selected {
     background-color: var(--ui-blue-100);
-    color: #1e3a8a;
-    border-color: #93c5fd;
 }
 
-.tag-card {
-    background-color: var(--ui-purple-100);
-    color: var(--ui-purple-800);
-    border-color: var(--ui-purple-300);
+.ui-table tr.tr-selected:hover {
+    background-color: var(--ui-blue-200);
 }
 
-.tag-saving {
-    background-color: var(--ui-lime-100);
-    color: var(--ui-lime-700);
-    border-color: var(--ui-lime-200);
+.ui-col-sm,
+.col-sm {
+    display: none;
 }
 
-.tag-active {
-    background-color: var(--ui-green-100);
-    color: var(--ui-green-800);
-    border-color: var(--ui-green-300);
+.icon-actions .ui-btn-text {
+    display: none;
 }
 
-.tag-inactive {
-    background-color: var(--ui-red-200);
-    color: var(--ui-red-800);
-    border-color: var(--ui-red-300);
-}
-
-@media (max-width: 639px) {
-
-    .tag,
-    .tx-tag,
-    .acc-tag {
-        font-size: 0.6875rem;
-        padding: 2px 10px;
-    }
-}

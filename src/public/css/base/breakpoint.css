@@ -1,26 +1,11 @@
+/* =========================
+   MOBILE
+========================= */
 @media (max-width: 768px) {
 
-    .accounts-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 8px;
-    }
-
-    .categories-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 8px;
-    }
-
-    .loans-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 8px;
-    }
-
+    .accounts-mobile,
+    .categories-mobile,
+    .loans-mobile,
     .payments-mobile {
         display: flex;
         flex-direction: column;
@@ -35,12 +20,48 @@
         border-radius: 7px;
     }
 
+    .amount-box {
+        font-size: 0.8125rem;
+    }
+
+    .amount-currency {
+        display: none;
+    }
+
+    .number-box {
+        font-size: 0.8125rem;
+    }
+
     .ui-table-wrapper {
         display: none;
     }
 
 }
 
+/* =========================
+   TABLET / DESKTOP
+========================= */
+@media (min-width: 768px) {
+
+    .ui-btn-text,
+    .btn-text {
+        display: inline;
+    }
+
+    .icon-btn {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .ui-col-sm,
+    .col-sm {
+        display: table-cell;
+    }
+
+}
+
+/* =========================
+   DESKTOP LARGE
+========================= */
 @media (min-width: 1024px) {
 
     .carousel-nav {
