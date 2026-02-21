@@ -159,19 +159,19 @@ function renderRow(loan) {
             class="icon-btn edit" 
             onclick="goToLoanUpdate(${loan.id})">
             ${iconEdit()}
-            <span class="ui-btn-text hide">Editar</span>
+            <span class="ui-btn-text">Editar</span>
           </button>
           <button
             class="icon-btn delete" 
             onclick="goToLoanDelete(${loan.id})">
             ${iconDelete()}
-            <span class="ui-btn-text hide">Eliminar</span>
+            <span class="ui-btn-text">Eliminar</span>
           </button>
           <button 
             class="icon-btn" 
             onclick="goToLoanView(${loan.id})">
             ${iconList()}
-            <span class="ui-btn-text hide">Detalles</span>
+            <span class="ui-btn-text">Detalles</span>
           </button>
         </div>
       </td>

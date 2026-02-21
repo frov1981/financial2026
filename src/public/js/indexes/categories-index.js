@@ -121,7 +121,7 @@ function renderRow(category) {
         class="icon-btn deactivate" 
         onclick="goToCategoryUpdateStatus(${category.id})">
         ${iconViewOff()}
-        <span class="ui-btn-text hide">Desactivar</span>
+        <span class="ui-btn-text">Desactivar</span>
       </button>
     `
     : `
@@ -129,7 +129,7 @@ function renderRow(category) {
         class="icon-btn activate" 
         onclick="goToCategoryUpdateStatus(${category.id})">
         ${iconView()}
-        <span class="ui-btn-text hide">Activar</span>
+        <span class="ui-btn-text">Activar</span>
       </button>
     `
 
@@ -148,20 +148,20 @@ function renderRow(category) {
             class="icon-btn edit" 
             onclick="goToCategoryUpdate(${category.id})">
             ${iconEdit()}
-            <span class="ui-btn-text hide">Editar</span>
+            <span class="ui-btn-text">Editar</span>
           </button>
           <button 
             class="icon-btn delete" 
             onclick="goToCategoryDelete(${category.id})">
             ${iconDelete()}
-            <span class="ui-btn-text hide">Eliminar</span>
+            <span class="ui-btn-text">Eliminar</span>
           </button>
           ${statusButton}
           <button 
             class="icon-btn"
             onclick="goToCategoryList(${category.id})">
             ${iconList()}
-            <span class="ui-btn-text hide">Transacciones</span>
+            <span class="ui-btn-text">Transacciones</span>
           </button> 
         </div>
       </td>

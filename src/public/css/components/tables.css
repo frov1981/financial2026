@@ -44,6 +44,10 @@
     display: none;
 }
 
+.icon-actions .ui-btn-text {
+  display: none;
+}
+
 @media (min-width: 640px) {
 
     .ui-col-sm,
