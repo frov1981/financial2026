@@ -72,15 +72,3 @@
     width: 20px;
     height: 20px;
 }
-
-@media (min-width: 1024px) {
-    .carousel-nav {
-        display: flex;
-    }
-}
-
-@media (min-width: 1024px) {
-    .home-slide {
-        flex: 0 0 100%;
-    }
-}

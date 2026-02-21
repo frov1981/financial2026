@@ -83,6 +83,7 @@
     padding: 8px;
     background: var(--ui-gray-50);
     transition: background-color 0.3s ease;
+    text-align: left;
 }
 
 .loan-group-header {
@@ -90,12 +91,22 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 10px;
+    padding: 8px 12px;
+    text-align: left;
 }
 
 .loan-group-header .group-actions {
     display: flex;
     gap: 4px;
+    margin-left: auto;
+}
+
+.group-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
 .loan-group-body {
@@ -120,47 +131,4 @@
 
 .parent-row .group-pending {
     text-align: right;
-}
-
-.loan-group-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-}
-
-.group-header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}
-
-.category-group,
-.loan-group {
-    text-align: left;
-}
-
-.category-group-header,
-.loan-group-header {
-    text-align: left;
-    justify-content: flex-start;
-}
-
-.category-group-header .group-actions,
-.loan-group-header .group-actions {
-    margin-left: auto;
-}
-
-@media (max-width: 768px) {
-    .loans-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 8px;
-    }
-
-    .ui-table-wrapper {
-        display: none;
-    }
 }

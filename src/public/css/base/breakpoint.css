@@ -1,0 +1,58 @@
+@media (max-width: 768px) {
+
+    .accounts-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px;
+    }
+
+    .categories-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px;
+    }
+
+    .loans-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px;
+    }
+
+    .payments-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px;
+    }
+
+    .navbar-net-balance,
+    .navbar-loan_balance {
+        font-size: 0.70rem;
+        padding: 3px 8px;
+        border-radius: 7px;
+    }
+
+    .ui-table-wrapper {
+        display: none;
+    }
+
+}
+
+@media (min-width: 1024px) {
+
+    .carousel-nav {
+        display: flex;
+    }
+
+    .ui-kpi-grid.cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ui-kpi-grid.cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+}

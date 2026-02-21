@@ -70,6 +70,7 @@
     padding: 8px;
     background: var(--ui-gray-50);
     transition: background-color 0.3s ease;
+    text-align: left;
 }
 
 .category-group-header {
@@ -78,11 +79,13 @@
     align-items: center;
     justify-content: flex-start;
     gap: 8px;
+    text-align: left;
 }
 
 .category-group-header .group-actions {
     display: flex;
     gap: 4px;
+    margin-left: auto;
 }
 
 .category-group-body {
@@ -94,17 +97,4 @@
 
 .category-group.collapsed .category-group-body {
     display: none;
-}
-
-@media (max-width: 768px) {
-    .categories-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 8px;
-    }
-
-    .ui-table-wrapper {
-        display: none;
-    }
 }

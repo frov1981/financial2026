@@ -100,13 +100,3 @@
     color: var(--ui-gray-500);
     margin-top: 6px;
 }
-
-@media (max-width: 768px) {
-    .payments-mobile {
-        display: block;
-    }
-
-    .ui-table-wrapper {
-        display: none;
-    }
-}

@@ -44,14 +44,3 @@
     opacity: 0.9;
     transform: translateY(-1px);
 }
-
-@media (max-width: 768px) {
-
-    .navbar-net-balance,
-    .navbar-loan_balance {
-        font-size: 0.70rem;
-        padding: 3px 8px;
-        border-radius: 7px;
-    }
-
-}

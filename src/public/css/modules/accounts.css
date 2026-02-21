@@ -1,7 +1,3 @@
-.accounts-mobile {
-    display: none;
-}
-
 .account-card {
     border: 1px solid var(--ui-gray-200);
     border-radius: 12px;
@@ -23,29 +19,29 @@
     min-height: auto;
 }
 
-.card-header {
+.account-card .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.card-title {
+.account-card .card-title {
     font-size: 15px;
     font-weight: 600;
 }
 
-.card-balance {
+.account-card .card-balance {
     margin: 8px 0;
     font-size: 25px;
     font-weight: 600;
 }
 
-.card-actions {
+.account-card .card-actions {
     display: flex;
     gap: 4px;
 }
 
-.card-footer {
+.account-card .card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -53,31 +49,16 @@
     color: var(--ui-gray-500);
 }
 
-.card-tags {
+.account-card .card-tags {
     display: flex;
     gap: 6px;
     align-items: center;
 }
 
-@media (max-width: 768px) {
-    .accounts-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 8px;
-    }
-
-    .ui-table-wrapper {
-        display: none;
-    }
+.accounts-mobile {
+    display: none;
 }
 
-@media (min-width: 769px) {
-    .accounts-mobile {
-        display: none;
-    }
-
-    .ui-table-wrapper {
-        display: block;
-    }
+.ui-table-wrapper {
+    display: block;
 }
