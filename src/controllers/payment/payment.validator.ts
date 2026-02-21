@@ -5,93 +5,86 @@ import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
 import { logger } from '../../utils/logger.util'
 
-export const validateSavePayment = async (
-    authReq: AuthRequest,
-    payment: LoanPayment,
-    oldPayment: LoanPayment | null
-): Promise<Record<string, string> | null> => {
-    const userId = authReq.user.id
+export const validateSavePayment = async (auth_req: AuthRequest, payment: LoanPayment, old_payment: LoanPayment | null): Promise<Record<string, string> | null> => {
+    const user_id = auth_req.user.id
 
     const errors = await validate(payment)
-    const fieldErrors = errors.length > 0 ? mapValidationErrors(errors) : {}
+    const fields_errors = errors.length > 0 ? mapValidationErrors(errors) : {}
 
-    const paymentRepo = AppDataSource.getRepository(LoanPayment)
+    const payment_repo = AppDataSource.getRepository(LoanPayment)
 
     /* =========================
        Validación monto principal
     ============================ */
 
-    let availableAmount = payment.loan.balance
+    let available_amount = payment.loan.balance
 
-    if (oldPayment) {
-        availableAmount += oldPayment.principal_paid
+    if (old_payment) {
+        available_amount += old_payment.principal_paid
     }
 
-    if (payment.principal_paid > availableAmount) {
-        fieldErrors.principal_paid = 'El monto del capital supera el saldo pendiente del préstamo'
+    if (payment.principal_paid > available_amount) {
+        fields_errors.principal_paid = 'El monto del capital supera el saldo pendiente del préstamo'
     }
 
-    let totalPayment = payment.principal_paid + payment.interest_paid
-    if (totalPayment <= 0) {
-        fieldErrors.general = 'El monto total del pago (capital + intereses) debe ser mayor a cero'
+    let total_payment = payment.principal_paid + payment.interest_paid
+    if (total_payment <= 0) {
+        fields_errors.general = 'El monto total del pago (capital + intereses) debe ser mayor a cero'
     }
 
     /* =========================
        Validación fecha del pago
     ============================ */
 
-    const lastPayment = await paymentRepo.findOne({
+    const last_payment = await payment_repo.findOne({
         where: { loan: { id: payment.loan.id } },
         order: { payment_date: 'DESC' }
     })
 
     if (
-        lastPayment &&
-        (!oldPayment || lastPayment.id !== oldPayment.id) &&
-        payment.payment_date < lastPayment.payment_date
+        last_payment &&
+        (!old_payment || last_payment.id !== old_payment.id) &&
+        payment.payment_date.getTime() < last_payment.payment_date.getTime()
     ) {
-        fieldErrors.payment_date = 'La fecha del pago no puede ser anterior al último pago registrado'
+        fields_errors.payment_date = 'La fecha del pago no puede ser anterior al último pago registrado'
     }
 
-    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    return Object.keys(fields_errors).length > 0 ? fields_errors : null
 }
 
-export const validateDeletePayment = async (
-    authReq: AuthRequest,
-    payment: LoanPayment
-): Promise<Record<string, string> | null> => {
-    const userId = authReq.user.id
-    const fieldErrors: Record<string, string> = {}
+export const validateDeletePayment = async (auth_req: AuthRequest, payment: LoanPayment): Promise<Record<string, string> | null> => {
+    const user_id = auth_req.user.id
+    const fields_errors: Record<string, string> = {}
 
     const now = new Date()
-    const paymentDate = new Date(payment.payment_date)
+    const payment_date = new Date(payment.payment_date)
 
     /* =========================
        SAME MONTH VALIDATION
     ============================ */
 
-    const sameMonth =
-        paymentDate.getFullYear() === now.getFullYear() &&
-        paymentDate.getMonth() === now.getMonth()
+    const same_month =
+        payment_date.getFullYear() === now.getFullYear() &&
+        payment_date.getMonth() === now.getMonth()
 
-    if (!sameMonth) {
-        fieldErrors.general = 'Solo se pueden eliminar pagos del mes en curso'
+    if (!same_month) {
+        fields_errors.general = 'Solo se pueden eliminar pagos del mes en curso'
     }
 
     /* =========================
        LAST PAYMENT VALIDATION
     ============================ */
 
-    const paymentRepo = AppDataSource.getRepository(LoanPayment)
+    const payment_repo = AppDataSource.getRepository(LoanPayment)
 
-    const lastPayment = await paymentRepo.findOne({
+    const last_payment = await payment_repo.findOne({
         where: { loan: { id: payment.loan.id } },
         order: { payment_date: 'DESC', id: 'DESC' }
     })
 
-    if (!lastPayment || lastPayment.id !== payment.id) {
-        fieldErrors.general = 'Solo se puede eliminar el último pago registrado del préstamo'
+    if (!last_payment || last_payment.id !== payment.id) {
+        fields_errors.general = 'Solo se puede eliminar el último pago registrado del préstamo'
     }
 
-    return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    return Object.keys(fields_errors).length > 0 ? fields_errors : null
 }

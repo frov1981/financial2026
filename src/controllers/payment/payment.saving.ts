@@ -89,6 +89,12 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
             loan.balance += payment.principal_paid
             loan.interest_paid -= payment.interest_paid
+
+            // Si el ultimo pago es reversado, el prestamo se reactiva
+            if (loan.balance > 0) {
+                loan.is_active = true
+            }
+
             await loan_repo.save(loan)
 
             payment.account.balance += total
@@ -171,6 +177,15 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             applyLoanDelta(loan, old_principal, payment.principal_paid)
             applyInterestDelta(loan, old_payment.interest_paid, payment.interest_paid)
         }
+
+        // Si el balance es menor a cero, inactivar el prestamo
+        if (loan.balance <= 0) {
+            loan.balance = 0
+            loan.is_active = false
+        } else {
+            loan.is_active = true
+        }
+
         await loan_repo.save(loan)
 
         /* ============================

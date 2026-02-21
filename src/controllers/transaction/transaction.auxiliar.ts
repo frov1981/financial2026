@@ -2,6 +2,7 @@ import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
+import { DateTime } from 'luxon'
 
 type SplitCategoriesResult = {
   active_income_categories: Category[]
@@ -9,47 +10,30 @@ type SplitCategoriesResult = {
 }
 
 export const getNextValidTransactionDate = async (auth_req: AuthRequest): Promise<Date> => {
+
   const user_id = auth_req.user.id
+  const timezone = auth_req.timezone ?? 'UTC'
+  const now_utc = DateTime.utc()
+  const now_local = now_utc.setZone(timezone)
+  const start_of_day_utc = now_local.startOf('day').toUTC().toJSDate()
+  const end_of_day_utc = now_local.endOf('day').toUTC().toJSDate()
 
-  const now = new Date()
-
-  const start_of_day = new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    0, 0, 0, 0
-  ))
-
-  const end_of_day = new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    23, 59, 59, 999
-  ))
-
-  const last_transaction_today = await AppDataSource
+  const last_transaction = await AppDataSource
     .getRepository(Transaction)
     .createQueryBuilder('t')
     .where('t.user_id = :user_id', { user_id })
-    .andWhere('t.date BETWEEN :start AND :end', {
-      start: start_of_day,
-      end: end_of_day
-    })
+    .andWhere('t.date BETWEEN :start AND :end', { start: start_of_day_utc, end: end_of_day_utc })
     .orderBy('t.date', 'DESC')
     .getOne()
 
-  if (!last_transaction_today || !last_transaction_today.date) return now
-  if (last_transaction_today.date > now) return now
+  if (!last_transaction?.date) return now_utc.toJSDate()
 
-  const next = new Date(last_transaction_today.date)
-  const minutes = next.getUTCMinutes()
-  const remainder = minutes % 5
+  const last_transaction_utc = DateTime.fromJSDate(last_transaction.date, { zone: 'utc' })
+  const remainder = last_transaction_utc.minute % 5
   const increment = remainder === 0 ? 5 : 5 - remainder
+  const next_valid_utc = last_transaction_utc.plus({ minutes: increment }).set({ second: 0, millisecond: 0 })
 
-  next.setUTCMinutes(minutes + increment)
-  next.setUTCSeconds(0, 0)
-
-  return next > now ? next : now
+  return next_valid_utc.toJSDate()
 }
 
 export const splitCategoriesByType = (categories: Category[]): SplitCategoriesResult => {
