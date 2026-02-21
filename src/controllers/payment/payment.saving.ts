@@ -14,15 +14,20 @@ import { getActiveAccountsByUser } from '../../services/populate-items.service'
    Helpers de cálculo
 ============================ */
 
-const getTotal = (p: LoanPayment) => p.principal_amount + p.interest_amount
+const getTotal = (p: LoanPayment) => p.principal_paid + p.interest_paid
 
-const applyLoanDelta = (loan: Loan, oldPrincipal: number, newPrincipal: number) => {
-    const delta = newPrincipal - oldPrincipal
+const applyLoanDelta = (loan: Loan, old_principal: number, new_principal: number) => {
+    const delta = new_principal - old_principal
     loan.balance -= delta
 }
 
-const applyAccountDelta = (account: Account, oldTotal: number, newTotal: number) => {
-    const delta = newTotal - oldTotal
+const applyInterestDelta = (loan: Loan, old_interest: number, new_interest: number) => {
+    const delta = new_interest - old_interest
+    loan.interest_paid += delta
+}
+
+const applyAccountDelta = (account: Account, old_total: number, new_total: number) => {
+    const delta = new_total - old_total
     account.balance -= delta
 }
 
@@ -34,19 +39,19 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     logger.debug(`${savePayment.name}-Start`)
     logger.info('savePayment called', { body: req.body, param: req.params })
 
-    const authReq = req as AuthRequest
-    const paymentId = req.params.id ? Number(req.params.id) : req.body.id ? Number(req.body.id) : undefined
-    const loanId = req.body.loan_id ? Number(req.body.loan_id) : undefined
+    const auth_req = req as AuthRequest
+    const payment_id = req.params.id ? Number(req.params.id) : req.body.id ? Number(req.body.id) : undefined
+    const loan_id = req.body.loan_id ? Number(req.body.loan_id) : undefined
     const action = req.body.action || 'save'
-    const timezone = authReq.timezone || 'UTC'
+    const timezone = auth_req.timezone || 'UTC'
     logger.debug(`${savePayment.name}-Timezone for saving payment: [${timezone}]`)
 
-    const accounts = await getActiveAccountsByUser(authReq)
-    const formState = {
+    const accounts = await getActiveAccountsByUser(auth_req)
+    const form_state = {
         payment: { ...req.body },
-        loan_id: loanId,
+        loan_id: loan_id,
         accounts,
-        mode: action === 'delete' ? 'delete' : paymentId ? 'update' : 'insert'
+        mode: action === 'delete' ? 'delete' : payment_id ? 'update' : 'insert'
     }
 
     const queryRunner = AppDataSource.createQueryRunner()
@@ -54,133 +59,133 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     await queryRunner.startTransaction()
 
     try {
-        if (!loanId) throw new Error('Préstamo es requerido')
+        if (!loan_id) throw new Error('Préstamo es requerido')
 
-        const loanRepo = queryRunner.manager.getRepository(Loan)
-        const paymentRepo = queryRunner.manager.getRepository(LoanPayment)
-        const transactionRepo = queryRunner.manager.getRepository(Transaction)
-        const accountRepo = queryRunner.manager.getRepository(Account)
+        const loan_repo = queryRunner.manager.getRepository(Loan)
+        const payment_repo = queryRunner.manager.getRepository(LoanPayment)
+        const transaction_repo = queryRunner.manager.getRepository(Transaction)
+        const account_repo = queryRunner.manager.getRepository(Account)
 
-        const loan = await loanRepo.findOneByOrFail({ id: loanId })
+        const loan = await loan_repo.findOneByOrFail({ id: loan_id })
 
         /* ============================
            DELETE
         ============================ */
 
         if (action === 'delete') {
-            if (!paymentId) throw new Error('Pago es requerido para eliminar')
+            if (!payment_id) throw new Error('Pago es requerido para eliminar')
 
-            const payment = await paymentRepo.findOne({
-                where: { id: paymentId },
+            const payment = await payment_repo.findOne({
+                where: { id: payment_id },
                 relations: { transaction: true, account: true, loan: true }
             })
 
             if (!payment) throw new Error('Pago no encontrado')
 
-            const errors = await validateDeletePayment(authReq, payment)
-            if (errors) throw { validationErrors: errors }
+            const errors = await validateDeletePayment(auth_req, payment)
+            if (errors) throw { validation_errors: errors }
 
             const total = getTotal(payment)
 
-            loan.balance += payment.principal_amount
-            await loanRepo.save(loan)
+            loan.balance += payment.principal_paid
+            loan.interest_paid -= payment.interest_paid
+            await loan_repo.save(loan)
 
             payment.account.balance += total
-            await accountRepo.save(payment.account)
+            await account_repo.save(payment.account)
 
-            await paymentRepo.delete(payment.id)
+            await payment_repo.delete(payment.id)
 
             if (payment.transaction) {
-                await transactionRepo.delete(payment.transaction.id)
+                await transaction_repo.delete(payment.transaction.id)
             }
 
             await queryRunner.commitTransaction()
-            return res.redirect(`/payments/${loanId}/loan`)
+            return res.redirect(`/payments/${loan_id}/loan`)
         }
 
         /* ============================
            INSERT / UPDATE
         ============================ */
 
-        const accountId = Number(req.body.account_id)
-        if (!accountId) throw new Error('Cuenta es requerida')
+        const account_id = Number(req.body.account_id)
+        if (!account_id) throw new Error('Cuenta es requerida')
 
-        const account = await accountRepo.findOneByOrFail({
-            id: accountId,
-            user: { id: authReq.user.id }
+        const account = await account_repo.findOneByOrFail({
+            id: account_id,
+            user: { id: auth_req.user.id }
         })
 
         const note = String(req.body.note || '')
-        const principal_amount = Number(req.body.principal_amount || 0)
-        const interest_amount = Number(req.body.interest_amount || 0)
+        const principal_paid = Number(req.body.principal_paid || 0)
+        const interest_paid = Number(req.body.interest_paid || 0)
 
-        const payment_date = req.body.payment_date
-            ? parseLocalDateToUTC(req.body.payment_date, timezone)
-            : new Date()
+        const payment_date = req.body.payment_date ? parseLocalDateToUTC(req.body.payment_date, timezone) : new Date()
 
         let payment: LoanPayment
-        let oldPayment: LoanPayment | null = null
+        let old_payment: LoanPayment | null = null
 
-        let oldPrincipal = 0
-        let oldTotal = 0
+        let old_principal = 0
+        let old_total = 0
 
-        if (paymentId) {
-            oldPayment = await paymentRepo.findOne({
-                where: { id: paymentId },
+        if (payment_id) {
+            old_payment = await payment_repo.findOne({
+                where: { id: payment_id },
                 relations: { transaction: true, account: true }
             })
 
-            if (!oldPayment) throw new Error('Pago no encontrado')
+            if (!old_payment) throw new Error('Pago no encontrado')
 
-            oldPrincipal = oldPayment.principal_amount
-            oldTotal = getTotal(oldPayment)
+            old_principal = old_payment.principal_paid
+            old_total = getTotal(old_payment)
 
-            payment = oldPayment
+            payment = old_payment
             payment.note = note
-            payment.principal_amount = principal_amount
-            payment.interest_amount = interest_amount
+            payment.principal_paid = principal_paid
+            payment.interest_paid = interest_paid
             payment.payment_date = payment_date
             payment.account = account
             payment.loan = loan
         } else {
-            payment = paymentRepo.create({
+            payment = payment_repo.create({
                 loan,
                 note,
-                principal_amount,
-                interest_amount,
+                principal_paid,
+                interest_paid,
                 payment_date,
                 account
             })
         }
 
-        const errors = await validateSavePayment(authReq, payment, oldPayment)
-        if (errors) throw { validationErrors: errors }
+        const errors = await validateSavePayment(auth_req, payment, old_payment)
+        if (errors) throw { validation_errors: errors }
 
         /* ============================
            UPDATE LOAN
         ============================ */
 
-        if (!oldPayment) {
-            loan.balance -= payment.principal_amount
+        if (!old_payment) {
+            loan.balance -= payment.principal_paid
+            loan.interest_paid += payment.interest_paid
         } else {
-            applyLoanDelta(loan, oldPrincipal, payment.principal_amount)
+            applyLoanDelta(loan, old_principal, payment.principal_paid)
+            applyInterestDelta(loan, old_payment.interest_paid, payment.interest_paid)
         }
-
-        await loanRepo.save(loan)
+        await loan_repo.save(loan)
 
         /* ============================
            UPDATE ACCOUNT
         ============================ */
 
-        const newTotal = getTotal(payment)
+        const new_total = getTotal(payment)
 
-        if (!oldPayment) {
-            account.balance -= newTotal
+        if (!old_payment) {
+            account.balance -= new_total
         } else {
-            applyAccountDelta(account, oldTotal, newTotal)
+            applyAccountDelta(account, old_total, new_total)
         }
 
-        await accountRepo.save(account)
+        await account_repo.save(account)
 
         /* ============================
            TRANSACTION
@@ -188,41 +193,41 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
         let trx: Transaction
 
-        if (oldPayment && oldPayment.transaction) {
-            trx = oldPayment.transaction
-            trx.amount = newTotal
+        if (old_payment && old_payment.transaction) {
+            trx = old_payment.transaction
+            trx.amount = new_total
             trx.account = account
             trx.date = payment.payment_date
             trx.description = payment.note
         } else {
-            trx = transactionRepo.create({
-                user: { id: authReq.user.id } as any,
+            trx = transaction_repo.create({
+                user: { id: auth_req.user.id } as any,
                 type: 'expense',
-                amount: newTotal,
+                amount: new_total,
                 account,
                 date: payment.payment_date,
                 description: payment.note
             })
         }
 
-        await transactionRepo.save(trx)
+        await transaction_repo.save(trx)
 
         payment.transaction = trx
-        await paymentRepo.save(payment)
+        await payment_repo.save(payment)
 
         await queryRunner.commitTransaction()
-        return res.redirect(`/payments/${loanId}/loan`)
+        return res.redirect(`/payments/${loan_id}/loan`)
     } catch (err: any) {
         await queryRunner.rollbackTransaction()
-        logger.error(`${savePayment.name}-Error. `, { userId: authReq.user.id, paymentId: paymentId, loanId: loanId, error: err, stack: err?.stack })
+        logger.error(`${savePayment.name}-Error. `, { userId: auth_req.user.id, payment_id: payment_id, loan_id: loan_id, error: err, stack: err?.stack })
 
-        const validationErrors = err?.validationErrors || null
+        const validation_errors = err?.validation_errors || null
 
         return res.render('layouts/main', {
-            title: formState.mode === 'delete' ? 'Eliminar Pago' : formState.mode === 'insert' ? 'Insertar Pago' : 'Editar Pago',
+            title: form_state.mode === 'delete' ? 'Eliminar Pago' : form_state.mode === 'insert' ? 'Insertar Pago' : 'Editar Pago',
             view: 'pages/payments/form',
-            ...formState,
-            errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
+            ...form_state,
+            errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         })
 
     } finally {

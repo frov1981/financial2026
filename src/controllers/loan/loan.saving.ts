@@ -158,7 +158,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         user: { id: auth_req.user.id } as any,
         name: req.body.name,
         total_amount: 0,
-        interest_amount: 0,
+        interest_paid: 0,
         balance: 0,
         start_date: parseLocalDateToUTC(req.body.start_date, timezone),
         loan_group: selectedGroup,

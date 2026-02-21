@@ -83,8 +83,8 @@ function renderRow(payment) {
         <div class="text-xs text-gray-600">${time}</div>
         <div class="text-xs text-gray-600">${weekday}</div>
       </td>
-      <td class="ui-td col-right">${formatAmount(payment.principal_amount)}</td>
-      <td class="ui-td col-right">${formatAmount(payment.interest_amount)}</td>
+      <td class="ui-td col-right">${formatAmount(payment.principal_paid)}</td>
+      <td class="ui-td col-right">${formatAmount(payment.interest_paid)}</td>
       <td class="ui-td col-left col-sm">${payment.account?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
@@ -150,10 +150,10 @@ function renderCard(payment) {
 
       <div class="card-body">
         <div class="amount-main">
-          ${formatAmount(payment.principal_amount)}
+          ${formatAmount(payment.principal_paid)}
         </div>
         <div class="amount-sub">
-          Interés: ${formatAmount(payment.interest_amount)}
+          Interés: ${formatAmount(payment.interest_paid)}
         </div>
       </div>
 

@@ -68,8 +68,8 @@ export const routeToFormInsertPayment: RequestHandler = async (req: Request, res
             view: 'pages/payments/form',
             payment: {
                 payment_date: formatDateForInputLocal(default_date, timezone),
-                principal_amount: '0.00',
-                interest_amount: '0.00',
+                principal_paid: '0.00',
+                interest_paid: '0.00',
             },
             loan_id: loan_id,
             errors: {},
@@ -88,8 +88,8 @@ export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res
         return res.redirect('/payments')
     }
 
-    const repoPayment = AppDataSource.getRepository(LoanPayment)
-    const payment = await repoPayment.findOne({
+    const repo_payment = AppDataSource.getRepository(LoanPayment)
+    const payment = await repo_payment.findOne({
         where: { id: payment_id },
         relations: { loan: true, account: true },
     })
@@ -109,8 +109,8 @@ export const routeToFormUpdatePayment: RequestHandler = async (req: Request, res
             payment: {
                 id: payment.id,
                 note: payment.note,
-                principal_amount: payment.principal_amount,
-                interest_amount: payment.interest_amount,
+                principal_paid: payment.principal_paid,
+                interest_paid: payment.interest_paid,
                 payment_date: formatDateForInputLocal(payment.payment_date, timezone),
                 account_id: payment.account ? payment.account.id : '',
                 account_name: payment.account ? payment.account.name : '',
@@ -132,8 +132,8 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
         return res.redirect('/payments')
     }
 
-    const repoPayment = AppDataSource.getRepository(LoanPayment)
-    const payment = await repoPayment.findOne({
+    const repo_payment = AppDataSource.getRepository(LoanPayment)
+    const payment = await repo_payment.findOne({
         where: { id: payment_id },
         relations: { loan: true, account: true }
     })
@@ -153,8 +153,8 @@ export const routeToFormClonePayment: RequestHandler = async (req: Request, res:
             view: 'pages/payments/form',
             payment: {
                 note: payment.note ?? '',
-                principal_amount: payment.principal_amount,
-                interest_amount: payment.interest_amount,
+                principal_paid: payment.principal_paid,
+                interest_paid: payment.interest_paid,
                 payment_date: formatDateForInputLocal(default_date, timezone),
                 account_id: payment.account ? payment.account.id : '',
                 account_name: payment.account ? payment.account.name : '',
@@ -177,8 +177,8 @@ export const routeToFormDeletePayment: RequestHandler = async (req: Request, res
         return res.redirect('/payments')
     }
 
-    const repoPayment = AppDataSource.getRepository(LoanPayment)
-    const payment = await repoPayment.findOne({
+    const repo_payment = AppDataSource.getRepository(LoanPayment)
+    const payment = await repo_payment.findOne({
         where: { id: payment_id },
         relations: { loan: true, account: true },
     })
@@ -198,8 +198,8 @@ export const routeToFormDeletePayment: RequestHandler = async (req: Request, res
             payment: {
                 id: payment.id,
                 note: payment.note,
-                principal_amount: payment.principal_amount,
-                interest_amount: payment.interest_amount,
+                principal_paid: payment.principal_paid,
+                interest_paid: payment.interest_paid,
                 payment_date: formatDateForInputLocal(payment.payment_date, timezone),
                 account_id: payment.account ? payment.account.id : '',
                 account_name: payment.account ? payment.account.name : '',

@@ -15,7 +15,6 @@ import paymentRoutes from './routes/payment.route'
 import transactionRoutes from './routes/transaction.route'
 
 export const app = express()
-
 const isProd = process.env.NODE_ENV === 'production'
 
 /* =======================
@@ -29,7 +28,6 @@ app.use(httpLogger)
    Sesiones (MySQL Store)
 ======================= */
 app.set('trust proxy', 1)
-
 app.use(session({
   store: sessionStore,
   secret: process.env.SESSION_SECRET || 'nandoappsecret',
@@ -47,15 +45,8 @@ app.use(session({
    Views y estáticos
 ======================= */
 app.set('view engine', 'ejs')
-
-const viewsPath = isProd
-  ? path.join(process.cwd(), 'dist/views')
-  : path.join(process.cwd(), 'src/views')
-
-const publicPath = isProd
-  ? path.join(process.cwd(), 'dist/public')
-  : path.join(process.cwd(), 'src/public')
-
+const viewsPath = isProd ? path.join(process.cwd(), 'dist/views') : path.join(process.cwd(), 'src/views')
+const publicPath = isProd ? path.join(process.cwd(), 'dist/public') : path.join(process.cwd(), 'src/public')
 app.set('views', viewsPath)
 app.use(express.static(publicPath))
 
@@ -70,21 +61,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 /* =======================
    Routes
 ======================= */
-// Public routes
 app.use('/', authRoutes)
-
-// Home routes (with internal middleware handling)
 app.use('/', homeRoutes)
-
-// Protected routes (require session + layout context)
 const protectedRouter = express.Router()
 protectedRouter.use(sessionAuthMiddleware)
 protectedRouter.use(injectNetBalance)
-
 protectedRouter.use('/accounts', accountRoutes)
 protectedRouter.use('/categories', categoryRoutes)
 protectedRouter.use('/transactions', transactionRoutes)
 protectedRouter.use('/loans', injectLoanBalance, loanRoutes)
 protectedRouter.use('/payments', injectLoanBalance, paymentRoutes)
-
 app.use(protectedRouter)

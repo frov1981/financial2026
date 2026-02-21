@@ -258,8 +258,8 @@ export const getChartDataLast6YearsLoan = async (authReq: AuthRequest) => {
     .innerJoin('p.loan', 'l')
     .select([
       "YEAR(l.start_date) AS year",
-      "SUM(p.principal_amount) AS totalPaid",
-      "SUM(p.interest_amount) AS totalInterest"
+      "SUM(p.principal_paid) AS totalPaid",
+      "SUM(p.interest_paid) AS totalInterest"
     ])
     .where("l.user_id = :userId", { userId })
     .andWhere("l.is_active = 1")

@@ -58,7 +58,7 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       id: loan.id,
       name: loan.name,
       total_amount: loan.total_amount,
-      interest_amount: loan.interest_amount,
+      interest_paid: loan.interest_paid,
       balance: loan.balance,
       start_date: loan.start_date,
       end_date: loan.end_date,

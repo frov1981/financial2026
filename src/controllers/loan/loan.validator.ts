@@ -98,7 +98,7 @@ export const validateLoan = async (loan: Loan, auth_req: AuthRequest): Promise<R
       })
 
       const totalPrincipalPaid = payments.reduce(
-        (sum, p) => sum + Number(p.principal_amount),
+        (sum, p) => sum + Number(p.principal_paid),
         0
       )
 

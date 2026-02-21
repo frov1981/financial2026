@@ -24,14 +24,14 @@ export const validateSavePayment = async (
     let availableAmount = payment.loan.balance
 
     if (oldPayment) {
-        availableAmount += oldPayment.principal_amount
+        availableAmount += oldPayment.principal_paid
     }
 
-    if (payment.principal_amount > availableAmount) {
-        fieldErrors.principal_amount = 'El monto del capital supera el saldo pendiente del préstamo'
+    if (payment.principal_paid > availableAmount) {
+        fieldErrors.principal_paid = 'El monto del capital supera el saldo pendiente del préstamo'
     }
 
-    let totalPayment = payment.principal_amount + payment.interest_amount
+    let totalPayment = payment.principal_paid + payment.interest_paid
     if (totalPayment <= 0) {
         fieldErrors.general = 'El monto total del pago (capital + intereses) debe ser mayor a cero'
     }

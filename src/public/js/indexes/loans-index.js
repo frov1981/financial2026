@@ -148,7 +148,7 @@ function renderRow(loan) {
         ${loan.name}
       </td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
-      <td class="ui-td col-right col-sm">${amountBox(loan.interest_amount)}</td>
+      <td class="ui-td col-right col-sm">${amountBox(loan.interest_paid)}</td>
       <td class="ui-td col-right">${amountBox(loan.balance)}</td>
       <td class="ui-td col-left col-sm">${date} - ${weekday}</td>
       <td class="ui-td col-left col-sm">${statusTag(loan.is_active)}</td>
@@ -222,7 +222,7 @@ function renderCard(loan) {
       <div class="card-balance">${amountBox(loan.balance)}</div>
 
       <div class="card-sub">
-        Monto: ${amountBox(loan.total_amount)} · Interés: ${amountBox(loan.interest_amount)}
+        Monto: ${amountBox(loan.total_amount)} · Interés: ${amountBox(loan.interest_paid)}
       </div>
 
       <div class="card-footer">

@@ -26,11 +26,11 @@ export class LoanPayment {
 
   @IsNumber({}, { message: 'El monto debe ser numérico' })
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  principal_amount!: number
+  principal_paid!: number
 
   @IsNumber({}, { message: 'El monto debe ser numérico' })
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  interest_amount!: number
+  interest_paid!: number
 
   @IsDate({ message: 'La fecha del pago debe ser una fecha válida' })
   @Column({ type: 'timestamp' })
