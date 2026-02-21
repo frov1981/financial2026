@@ -136,7 +136,10 @@ function renderRow(category) {
   return `
     <tr id="category-${category.id}" class="${rowClass}">
       <td class="ui-td col-left">
-        ${category.name}
+        <div class="child-cell">
+          <span class="child-indent"></span>
+          <span class="child-name">${category.name}</span>
+        </div>
       </td>
       <td class="ui-td col-left">${categoryTypeTag(category.type)}</td>
       <td class="ui-td col-right col-sm">${numberBox(category.transactions_count)}</td>
@@ -271,10 +274,12 @@ function renderTable(data) {
     const parentRow = `
       <tr class="parent-row">
         <td class="ui-td col-left">
-          <button onclick="toggleCategoryCollapse(${group.id})">
-            ${collapsed ? iconChevronOpen() : iconChevronClose()}
-          </button>
-          ${group.name}
+          <div class="group-cell">
+            <button class="group-toggle" onclick="toggleCategoryCollapse(${group.id})">
+              ${collapsed ? iconChevronOpen() : iconChevronClose()}
+            </button>
+            <span class="group-name">${group.name}</span>
+          </div>
         </td>
         <td class="ui-td col-left"></td>
         <td class="ui-td col-right col-sm"></td>

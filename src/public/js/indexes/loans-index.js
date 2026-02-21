@@ -145,7 +145,10 @@ function renderRow(loan) {
   return `
     <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">
-        ${loan.name}
+        <div class="child-cell">
+          <span class="child-indent"></span>
+          <span class="child-name">${loan.name}</span>
+        </div>
       </td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
       <td class="ui-td col-right col-sm">${amountBox(loan.interest_paid)}</td>
@@ -271,10 +274,12 @@ function renderTable(data) {
     const groupRow = `
       <tr class="parent-row">
         <td class="ui-td col-left">
-          <button onclick="toggleGroupCollapse(${group.id})">
-            ${collapsed ? iconChevronOpen() : iconChevronClose()}
-          </button>
-          ${group.name}
+          <div class="group-cell">
+            <button class="group-toggle" onclick="toggleGroupCollapse(${group.id})">
+              ${collapsed ? iconChevronOpen() : iconChevronClose()}
+            </button>
+            <span class="group-name">${group.name}</span>
+          </div>
         </td>
         <td class="ui-td col-right group-pending" colspan="7">
           Pendiente: ${amountBox(pending)}

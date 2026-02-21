@@ -47,3 +47,36 @@
 .icon-actions .ui-btn-text {
     display: none;
 }
+
+.group-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.group-name {
+    display: flex;
+    align-items: center;
+}
+
+.child-cell {
+    display: flex;
+    align-items: center;
+}
+
+.child-indent {
+    width: 2rem;
+    flex-shrink: 0;
+}
+
+.child-name {
+    display: flex;
+    align-items: center;
+}
