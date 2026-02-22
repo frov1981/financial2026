@@ -29,12 +29,14 @@
               ? `/transactions/insert?from=categories&category_id=${context.category_id}`
               : '/transactions/insert',
           title: 'Nueva transacción',
-          text: 'Nuevo'
+          text: 'Nuevo',
+          data_btn: 'new'
         }) %>
 
         <%- include('../../partials/btn-categorize-batch', {
           title: 'Categorizar Transacciones',
-          text: 'Categorizar'
+          text: 'Categorizar',
+          data_btn: 'categorize'
         }) %>
 
         <%- include('../../partials/search-box', {

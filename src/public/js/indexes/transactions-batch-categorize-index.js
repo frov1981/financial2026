@@ -46,16 +46,19 @@ function batchClearSelected() {
    5. UI: alternar toolbar normal / batch
 ============================================================================ */
 function batchApplyUi(is_active) {
-  const normal_actions = document.getElementById('toolbar-normal-actions')
   const batch_actions = document.getElementById('toolbar-batch-actions')
+  const btn_new = document.querySelector('[data-btn="new"]')
+  const btn_categorize = document.querySelector('[data-btn="categorize"]')
 
-  if (!normal_actions || !batch_actions) return
+  if (!batch_actions) return
 
   if (is_active) {
-    normal_actions.classList.add('hidden')
+    if (btn_new) btn_new.classList.add('hidden')
+    if (btn_categorize) btn_categorize.classList.add('hidden')
     batch_actions.classList.remove('hidden')
   } else {
-    normal_actions.classList.remove('hidden')
+    if (btn_new) btn_new.classList.remove('hidden')
+    if (btn_categorize) btn_categorize.classList.remove('hidden')
     batch_actions.classList.add('hidden')
   }
 }
