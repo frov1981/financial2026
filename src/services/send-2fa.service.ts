@@ -4,7 +4,7 @@ import { AuthCode } from '../entities/AuthCode.entity'
 import { User } from '../entities/User.entity'
 import { generateNumericCode, hashCode } from '../utils/auth-code.util'
 import { logger } from '../utils/logger.util'
-import { send2FACodeMail } from './mail.service'
+import { send2FACodeMail } from './send-2fa-mail.service'
 
 export async function send2FACode(user: User): Promise<void> {
     const repo = AppDataSource.getRepository(AuthCode)

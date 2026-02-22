@@ -6,7 +6,7 @@ import { getActiveAccountsByUser, getActiveParentLoansByUser } from '../../servi
 import { AuthRequest } from "../../types/auth-request"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
-import { getNextValidTransactionDate } from '../transaction/transaction.auxiliar'
+import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
 type LoanFormViewParams = {

@@ -6,8 +6,9 @@ import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveC
 import { AuthRequest } from '../../types/auth-request'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
-import { getNextValidTransactionDate, splitCategoriesByType } from './transaction.auxiliar'
+import { splitCategoriesByType } from './transaction.auxiliar'
 import { validateActiveCategoryTransaction } from './transaction.validator'
+import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
 
