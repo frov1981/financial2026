@@ -120,7 +120,7 @@ function renderRow(transaction) {
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
       <td class="ui-td col-left col-nowrap">
         ${transaction.type === 'transfer'
-          ? `
+      ? `
             <div class="transfer-account">
               <span class="transfer-icon">${iconTransferOut()}</span>
               <span>${transaction.account?.name || '-'}</span>
@@ -130,8 +130,8 @@ function renderRow(transaction) {
               <span>${transaction.to_account?.name || '-'}</span>
             </div>
           `
-          : `${transaction.account?.name || '-'}`
-        }
+      : `${transaction.account?.name || '-'}`
+    }
       </td>
       <td class="ui-td col-left col-nowrap">${transaction.category?.name || '-'}</td>
       <td class="ui-td col-left col-description">${transaction.description}</td>
@@ -221,7 +221,7 @@ function renderCard(transaction) {
         <div class="card-info">
           <div class="card-account">
             ${transaction.type === 'transfer'
-              ? `
+      ? `
                 <div class="transfer-account">
                   <span class="transfer-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
@@ -231,8 +231,8 @@ function renderCard(transaction) {
                   <span>${transaction.to_account?.name || '-'}</span>
                 </div>
               `
-              : `<div class="card-account">${transaction.account?.name || '-'}</div>`
-            }
+      : `<div class="card-account">${transaction.account?.name || '-'}</div>`
+    }
           </div>
           <div class="card-category">${transaction.category?.name || '-'}</div>
           ${transaction.description ? `<div class="card-description">${transaction.description}</div>` : ''}
@@ -273,21 +273,16 @@ async function loadTransactions(page = 1) {
   totalPages = Math.ceil(data.total / PAGE_SIZE)
   currentPage = page
 
+  // 🔹 Guardar filtros incluyendo página
+  saveFilters(FILTER_KEY, { term: currentSearch, page: currentPage })
+
   render(allItems)
   updatePaginationInfo()
 
   if (isBatchActive()) {
-    if (typeof batchApplyUi === 'function') {
-      batchApplyUi(true)
-    }
-
-    if (typeof batchToggleActionButtons === 'function') {
-      batchToggleActionButtons(true)
-    }
-
-    if (typeof batchRestoreSelection === 'function') {
-      batchRestoreSelection()
-    }
+    if (typeof batchApplyUi === 'function') batchApplyUi(true)
+    if (typeof batchToggleActionButtons === 'function') batchToggleActionButtons(true)
+    if (typeof batchRestoreSelection === 'function') batchRestoreSelection()
   }
 }
 
@@ -296,9 +291,15 @@ async function loadTransactions(page = 1) {
 ============================================================================ */
 function applySearch() {
   currentSearch = searchInput.value.trim()
-  saveFilters(FILTER_KEY, { term: currentSearch })
+  currentPage = 1   // 🔹 Siempre volver a página 1 en nueva búsqueda
+
+  saveFilters(FILTER_KEY, { 
+    term: currentSearch,
+    page: currentPage
+  })
+
   clearBtn.classList.toggle('hidden', !currentSearch)
-  loadTransactions(1)
+  loadTransactions(currentPage)
 }
 
 /* ============================================================================
@@ -403,16 +404,24 @@ if (savedFilters?.term) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  loadTransactions()
+  const savedFilters = loadFilters(FILTER_KEY)
 
-  // Si se guardó el batch, restaurar la vista limpia
+  if (savedFilters?.term) {
+    currentSearch = savedFilters.term
+    searchInput.value = savedFilters.term
+    clearBtn.classList.remove('hidden')
+  }
+
+  const savedPage = savedFilters?.page || 1
+  currentPage = savedPage
+
+  loadTransactions(currentPage)
+
   if (SAVED_BATCH) {
-    // Restaurar el estado del batch
     if (typeof batchRestoreState === 'function') {
       batchRestoreState()
     }
 
-    // Limpiar el parámetro de la URL
     if (window.history.replaceState) {
       const url = new URL(window.location)
       url.searchParams.delete('saved_batch')
@@ -434,5 +443,4 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   })
-
 })
