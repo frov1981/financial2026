@@ -158,4 +158,17 @@ function iconChevronClose() {
   `;
 }
 
+/* ============================
+   Iconos transferencia
+============================ */
+
+/* Origen (sale dinero) */
+function iconTransferOut() {
+  return iconArrowLeft({ size: 3, color: '#dc2626' })
+}
+
+/* Destino (entra dinero) */
+function iconTransferIn() {
+  return iconArrowRight({ size: 3, color: '#16a34a' })
+}
 

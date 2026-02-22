@@ -118,7 +118,21 @@ function renderRow(transaction) {
       </td>
       <td class="ui-td col-left">${transactionTypeTag(transaction.type)}</td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
-      <td class="ui-td col-left col-nowrap">${transaction.account?.name || '-'}</td>
+      <td class="ui-td col-left col-nowrap">
+        ${transaction.type === 'transfer'
+          ? `
+            <div class="transfer-account">
+              <span class="transfer-icon">${iconTransferOut()}</span>
+              <span>${transaction.account?.name || '-'}</span>
+            </div>
+            <div class="transfer-account">
+              <span class="transfer-icon">${iconTransferIn()}</span>
+              <span>${transaction.to_account?.name || '-'}</span>
+            </div>
+          `
+          : `${transaction.account?.name || '-'}`
+        }
+      </td>
       <td class="ui-td col-left col-nowrap">${transaction.category?.name || '-'}</td>
       <td class="ui-td col-left col-description">${transaction.description}</td>
       <td class="ui-td col-center col-nowrap">
@@ -205,7 +219,21 @@ function renderCard(transaction) {
 
       <div class="card-content">
         <div class="card-info">
-          <div class="card-account">${transaction.account?.name || '-'}</div>
+          <div class="card-account">
+            ${transaction.type === 'transfer'
+              ? `
+                <div class="transfer-account">
+                  <span class="transfer-icon">${iconTransferOut()}</span>
+                  <span>${transaction.account?.name || '-'}</span>
+                </div>
+                <div class="transfer-account">
+                  <span class="transfer-icon">${iconTransferIn()}</span>
+                  <span>${transaction.to_account?.name || '-'}</span>
+                </div>
+              `
+              : `<div class="card-account">${transaction.account?.name || '-'}</div>`
+            }
+          </div>
           <div class="card-category">${transaction.category?.name || '-'}</div>
           ${transaction.description ? `<div class="card-description">${transaction.description}</div>` : ''}
         </div>
@@ -383,9 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof batchRestoreState === 'function') {
       batchRestoreState()
     }
-
-    // Mostrar notificación (opcional)
-    console.log('Batch categorization saved successfully')
 
     // Limpiar el parámetro de la URL
     if (window.history.replaceState) {

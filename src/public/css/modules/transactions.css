@@ -118,3 +118,19 @@
     font-weight: 700;
     white-space: nowrap;
 }
+
+.transaction-card .transfer-account {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.2;
+}
+
+.transaction-card .transfer-account+.transfer-account {
+    margin-top: 4px;
+}
+
+.transaction-card .transfer-icon {
+    display: flex;
+    align-items: center;
+}
