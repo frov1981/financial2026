@@ -34,10 +34,6 @@
         padding: 0 1.5rem;
     }
 
-    .ui-kpi-label {
-        white-space: normal;
-    }
-
     .home-slide {
         padding-right: 1rem;
     }
@@ -47,16 +43,24 @@
         min-height: auto;
     }
 
+    .ui-kpi-grid.cols-6 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ui-kpi-item {
+        padding: 0.50rem;
+    }
+
+    .ui-kpi-label {
+        white-space: normal;
+    }
+
     .ui-kpi-value {
         text-align: right;
         font-variant-numeric: tabular-nums;
         font-weight: 600;
-        font-size: small;
+        font-size: normal;
     }
-
-}
-
-@media (min-width: 768px) {
 
     .ui-btn-text,
     .btn-text {
@@ -70,18 +74,6 @@
     .ui-col-sm,
     .col-sm {
         display: table-cell;
-    }
-
-}
-
-@media (min-width: 1024px) {
-
-    .ui-kpi-grid.cols-3 {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .ui-kpi-grid.cols-4 {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
 }
