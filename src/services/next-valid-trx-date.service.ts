@@ -26,6 +26,8 @@ export const getNextValidTransactionDate = async (auth_req: AuthRequest): Promis
     const remainder = last_transaction_utc.minute % 5
     const increment = remainder === 0 ? 5 : 5 - remainder
     const next_valid_utc = last_transaction_utc.plus({ minutes: increment }).set({ second: 0, millisecond: 0 })
+    
+    if (next_valid_utc < now_utc) return now_utc.set({ second: 0, millisecond: 0 }).toJSDate()
 
     return next_valid_utc.toJSDate()
 }
