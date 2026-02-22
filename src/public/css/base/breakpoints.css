@@ -17,7 +17,8 @@
         border-radius: 7px;
     }
 
-    .amount-box {
+    .amount-box,
+    .number-box {
         font-size: 0.8125rem;
     }
 
@@ -25,12 +26,32 @@
         display: none;
     }
 
-    .number-box {
-        font-size: 0.8125rem;
-    }
-
     .ui-table-wrapper {
         display: none;
+    }
+
+    .carousel-container {
+        padding: 0 1.5rem;
+    }
+
+    .ui-kpi-label {
+        white-space: normal;
+    }
+
+    .home-slide {
+        padding-right: 1rem;
+    }
+
+    .home-slide .ui-card-body {
+        padding: 1rem;
+        min-height: auto;
+    }
+
+    .ui-kpi-value {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        font-size: small;
     }
 
 }
@@ -55,10 +76,6 @@
 
 @media (min-width: 1024px) {
 
-    .carousel-nav {
-        display: flex;
-    }
-
     .ui-kpi-grid.cols-3 {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -67,18 +84,4 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
-}
-
-@media (max-width: 768px) {
-    .carousel-container {
-        padding: 0 2.5rem;
-    }
-
-    .ui-kpi-label {
-        white-space: normal;
-    }
-
-    .home-slide {
-        padding-right: 1rem;
-    }
 }

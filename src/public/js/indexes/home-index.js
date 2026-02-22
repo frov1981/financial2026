@@ -45,27 +45,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ============================
         // KPIs Globales
         // ============================
-        document.getElementById('kpis-global-balance-total-income').textContent = `$${kpisGlobalBalance.totalIncome.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-expense').textContent = `$${kpisGlobalBalance.totalExpense.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-savings').textContent = `$${kpisGlobalBalance.totalSavings.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-withdrawals').textContent = `$${kpisGlobalBalance.totalWithdrawals.toFixed(2)}`
-        document.getElementById('kpis-global-balance-net-worth').textContent = `$${kpisGlobalBalance.netWorth.toFixed(2)}`
-        document.getElementById('kpis-global-balance-available-savings').textContent = `$${kpisGlobalBalance.availableSavings.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-income').textContent = `${kpisGlobalBalance.totalIncome.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-expense').textContent = `${kpisGlobalBalance.totalExpense.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-savings').textContent = `${kpisGlobalBalance.totalSavings.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-withdrawals').textContent = `${kpisGlobalBalance.totalWithdrawals.toFixed(2)}`
+        document.getElementById('kpis-global-balance-net-worth').textContent = `${kpisGlobalBalance.netWorth.toFixed(2)}`
+        document.getElementById('kpis-global-balance-available-savings').textContent = `${kpisGlobalBalance.availableSavings.toFixed(2)}`
         const netBalanceEl = document.getElementById('kpis-global-balance-net-balance')
-        netBalanceEl.textContent = `$${kpisGlobalBalance.netBalance.toFixed(2)}`
+        netBalanceEl.textContent = `${kpisGlobalBalance.netBalance.toFixed(2)}`
         netBalanceEl.classList.add(kpisGlobalBalance.netBalance >= 0 ? 'text-green-700' : 'text-red-700')
         // ============================
         // KPIs 6 Meses
         // ============================
-        document.getElementById('kpi-last-6months-total-income').textContent = `$${kpisLast6MonthsBalance.totalIncome.toFixed(2)}`
-        document.getElementById('kpi-last-6months-total-expense').textContent = `$${kpisLast6MonthsBalance.totalExpense.toFixed(2)}`
+        document.getElementById('kpi-last-6months-total-income').textContent = `${kpisLast6MonthsBalance.totalIncome.toFixed(2)}`
+        document.getElementById('kpi-last-6months-total-expense').textContent = `${kpisLast6MonthsBalance.totalExpense.toFixed(2)}`
         const balanceEl = document.getElementById('kpi-last-6months-balance')
-        balanceEl.textContent = `$${kpisLast6MonthsBalance.balance.toFixed(2)}`
+        balanceEl.textContent = `${kpisLast6MonthsBalance.balance.toFixed(2)}`
         balanceEl.classList.add(kpisLast6MonthsBalance.balance >= 0 ? 'text-green-700' : 'text-red-700')
-        document.getElementById('kpi-last-6months-avg-expense').textContent = `$${kpisLast6MonthsBalance.avgExpense.toFixed(2)}`
+        document.getElementById('kpi-last-6months-avg-expense').textContent = `${kpisLast6MonthsBalance.avgExpense.toFixed(2)}`
         const trendEl = document.getElementById('kpi-last-6months-trend')
         trendEl.textContent = kpisLast6MonthsBalance.trend >= 0 ? '▲' : '▼'
         trendEl.classList.add(kpisLast6MonthsBalance.trend >= 0 ? 'text-green-600' : 'text-red-600')
+
         // ============================
         // Chart 6 Meses
         // ============================
@@ -84,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
+                    plugins: { legend: { position: 'bottom', align: 'center', fullSize: true, labels: { boxWidth: 14, padding: 18 }, maxWidth: 1 } },
                     scales: { y: { beginAtZero: true } }
                 }
             })
@@ -166,12 +167,6 @@ function toggleCard(id) {
     }
 }
 
-/* ============================
-   Home Carousel Desktop Fix
-============================ */
-/* ============================
-   Home Carousel Desktop Fix
-============================ */
 /* ============================
    Home Carousel Desktop Control
 ============================ */

@@ -2,24 +2,50 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
+    align-items: stretch;
+}
+
+.ui-kpi-grid.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ui-kpi-grid.cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ui-kpi-grid.cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ui-kpi-grid.cols-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .ui-kpi-item {
     background: var(--ui-gray-50);
     border-radius: 0.75rem;
     padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 70px;
 }
 
 .ui-kpi-label {
     font-size: 0.75rem;
     color: var(--ui-gray-500);
     margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ui-kpi-value {
     font-size: 1.25rem;
     font-weight: 600;
     color: var(--ui-gray-900);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 .ui-kpi-green {

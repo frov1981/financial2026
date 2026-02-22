@@ -133,6 +133,7 @@ function getParentBackgroundColor(index, total) {
 6. Render Desktop
 ========================================================= */
 function renderRow(loan) {
+  console.log(loan)
   const { date, time, weekday } = formatDateTime(loan.start_date)
   const group_id = loan.loan_group ? loan.loan_group.id : null
 
@@ -151,11 +152,12 @@ function renderRow(loan) {
         </div>
       </td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
-      <td class="ui-td col-right col-sm">${amountBox(loan.interest_paid)}</td>
+      <td class="ui-td col-right>${amountBox(loan.principal_paid)}</td>
+      <td class="ui-td col-right">${amountBox(loan.interest_paid)}</td>
       <td class="ui-td col-right">${amountBox(loan.balance)}</td>
-      <td class="ui-td col-left col-sm">${date} - ${weekday}</td>
-      <td class="ui-td col-left col-sm">${statusTag(loan.is_active)}</td>
-      <td class="ui-td col-left col-sm">${loan.disbursement_account ? loan.disbursement_account.name : '-'}</td>
+      <td class="ui-td col-left">${date} - ${weekday}</td>
+      <td class="ui-td col-left">${statusTag(loan.is_active)}</td>
+      <td class="ui-td col-left">${loan.disbursement_account ? loan.disbursement_account.name : '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button 
@@ -225,7 +227,7 @@ function renderCard(loan) {
       <div class="card-balance">${amountBox(loan.balance)}</div>
 
       <div class="card-sub">
-        Monto: ${amountBox(loan.total_amount)} · Interés: ${amountBox(loan.interest_paid)}
+        Monto: ${amountBox(loan.total_amount)} · Capital: ${amountBox(loan.principal_paid)}· Interés: ${amountBox(loan.interest_paid)}
       </div>
 
       <div class="card-footer">
@@ -246,7 +248,7 @@ function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="8" class="ui-td col-center text-gray-500">
+        <td colspan="9" class="ui-td col-center text-gray-500">
           No se encontraron préstamos
         </td>
       </tr>

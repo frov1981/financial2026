@@ -72,32 +72,30 @@
   height: 20px;
 }
 
-.ui-kpi-grid {
-  align-items: stretch;
-}
-
-.ui-kpi-item {
+.home-slide .ui-card-body {
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 70px;
-  padding-right: 0.75rem;
-  border-right: 1px solid #e5e7eb;
+  gap: 1.25rem;
+  min-height: 320px;
 }
 
-.ui-kpi-item:last-child {
-  border-right: none;
+.home-slide .ui-card-header {
+  padding: 1.25rem 1.5rem 0 1.5rem;
 }
 
-.ui-kpi-label {
+.home-slide .ui-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.home-slide .subtitle {
   font-size: 0.85rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 500;
+  opacity: 0.7;
 }
 
-.ui-kpi-value {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
+.home-slide canvas {
+  max-height: 280px;
 }

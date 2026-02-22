@@ -21,6 +21,11 @@ const applyLoanDelta = (loan: Loan, old_principal: number, new_principal: number
     loan.balance -= delta
 }
 
+const applyPrincipalDelta = (loan: Loan, old_principal: number, new_principal: number) => {
+    const delta = new_principal - old_principal
+    loan.principal_paid += delta
+}
+
 const applyInterestDelta = (loan: Loan, old_interest: number, new_interest: number) => {
     const delta = new_interest - old_interest
     loan.interest_paid += delta
@@ -88,6 +93,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             const total = getTotal(payment)
 
             loan.balance += payment.principal_paid
+            loan.principal_paid -= payment.principal_paid
             loan.interest_paid -= payment.interest_paid
 
             // Si el ultimo pago es reversado, el prestamo se reactiva
@@ -172,9 +178,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
         if (!old_payment) {
             loan.balance -= payment.principal_paid
+            loan.principal_paid += payment.principal_paid
             loan.interest_paid += payment.interest_paid
         } else {
             applyLoanDelta(loan, old_principal, payment.principal_paid)
+            applyPrincipalDelta(loan, old_principal, payment.principal_paid)
             applyInterestDelta(loan, old_payment.interest_paid, payment.interest_paid)
         }
 
