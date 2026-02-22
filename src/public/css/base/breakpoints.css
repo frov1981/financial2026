@@ -1,6 +1,3 @@
-/* =========================
-   MOBILE
-========================= */
 @media (max-width: 768px) {
 
     .accounts-mobile,
@@ -38,9 +35,6 @@
 
 }
 
-/* =========================
-   TABLET / DESKTOP
-========================= */
 @media (min-width: 768px) {
 
     .ui-btn-text,
@@ -59,9 +53,6 @@
 
 }
 
-/* =========================
-   DESKTOP LARGE
-========================= */
 @media (min-width: 1024px) {
 
     .carousel-nav {
@@ -76,4 +67,18 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
+}
+
+@media (max-width: 768px) {
+    .carousel-container {
+        padding: 0 2.5rem;
+    }
+
+    .ui-kpi-label {
+        white-space: normal;
+    }
+
+    .home-slide {
+        padding-right: 1rem;
+    }
 }
