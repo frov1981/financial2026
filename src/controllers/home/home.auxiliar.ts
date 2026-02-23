@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
 import { Loan } from "../../entities/Loan.entity"
@@ -379,7 +380,7 @@ export const getKpisGlobalBalance = async (authReq: AuthRequest) => {
   const totalPrincipalPaid = Number(loanData?.totalPrincipalPaid || 0)
   const totalInterestPaid = Number(loanData?.totalInterestPaid || 0)
   const totalLoanBalance = Number(loanData?.totalLoanBalance || 0)
-  
+
   console.log(totalLoan, totalPrincipalPaid, totalInterestPaid, totalLoanBalance)
   return {
     totalIncome,
@@ -396,4 +397,96 @@ export const getKpisGlobalBalance = async (authReq: AuthRequest) => {
   }
 }
 
+export const getKpisLastYearBalance = async (authReq: AuthRequest) => {
+  const userId = authReq.user.id
+  const timezone = authReq.timezone ?? 'UTC'
+  const txRepo = AppDataSource.getRepository(Transaction)
+  const accountRepo = AppDataSource.getRepository(Account)
+  const loanRepo = AppDataSource.getRepository(Loan)
+
+  const fromDateUTC = DateTime.now()
+    .setZone(timezone)
+    .minus({ months: 12 })
+    .toUTC()
+    .toJSDate()
+
+  /* ============================
+     Ingresos y egresos
+  ============================ */
+  const incomeExpense = await txRepo
+    .createQueryBuilder('t')
+    .select([
+      "SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) AS income",
+      "SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense"
+    ])
+    .where('t.user_id = :userId', { userId })
+    .andWhere('t.created_at >= :fromDate', { fromDate: fromDateUTC })
+    .getRawOne()
+
+  const totalIncome = Number(incomeExpense?.income || 0)
+  const totalExpense = Number(incomeExpense?.expense || 0)
+
+  /* ============================
+     Ahorros y retiros
+  ============================ */
+  const savingsData = await txRepo
+    .createQueryBuilder('t')
+    .innerJoin('t.account', 'fromAcc')
+    .leftJoin('t.to_account', 'toAcc')
+    .select([
+      "SUM(CASE WHEN t.type = 'transfer' AND toAcc.type = 'saving' THEN t.amount ELSE 0 END) AS savings",
+      "SUM(CASE WHEN t.type = 'transfer' AND fromAcc.type = 'saving' THEN t.amount ELSE 0 END) AS withdrawals"
+    ])
+    .where('t.user_id = :userId', { userId })
+    .andWhere('t.created_at >= :fromDate', { fromDate: fromDateUTC })
+    .getRawOne()
+
+  const totalSavings = Number(savingsData?.savings || 0)
+  const totalWithdrawals = Number(savingsData?.withdrawals || 0)
+
+  /* ============================
+     Cuentas activas (balance actual)
+  ============================ */
+  const accounts = await accountRepo.find({
+    where: { user: { id: userId }, is_active: true }
+  })
+
+  const netWorth = accounts.reduce((sum, acc) => sum + Number(acc.balance), 0)
+  const availableSavings = accounts.filter(a => a.type === 'saving').reduce((sum, a) => sum + Number(a.balance), 0)
+  const netBalance = netWorth - availableSavings
+
+  /* ============================
+     Préstamos
+  ============================ */
+  const loanData = await loanRepo
+    .createQueryBuilder('l')
+    .select([
+      "SUM(l.total_amount) AS totalLoan",
+      "SUM(l.principal_paid) AS totalPrincipalPaid",
+      "SUM(l.interest_paid) AS totalInterestPaid",
+      "SUM(l.balance) AS totalLoanBalance"
+    ])
+    .where('l.user_id = :userId', { userId })
+    .andWhere('l.created_at >= :fromDate', { fromDate: fromDateUTC })
+    .getRawOne()
+
+  const totalLoan = Number(loanData?.totalLoan || 0)
+  const totalPrincipalPaid = Number(loanData?.totalPrincipalPaid || 0)
+  const totalInterestPaid = Number(loanData?.totalInterestPaid || 0)
+  const totalLoanBalance = Number(loanData?.totalLoanBalance || 0)
+
+  return {
+    totalIncome,
+    totalExpense,
+    totalSavings,
+    totalWithdrawals,
+    netWorth,
+    availableSavings,
+    netBalance,
+    totalLoan,
+    totalPrincipalPaid,
+    totalInterestPaid,
+    totalLoanBalance
+  }
+}
 
