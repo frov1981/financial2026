@@ -301,7 +301,6 @@ export const getChartDataLast6YearsLoan = async (authReq: AuthRequest) => {
 ============================================================================ */
 export const getKpisGlobalBalance = async (authReq: AuthRequest) => {
   const userId = authReq.user.id
-
   const txRepo = AppDataSource.getRepository(Transaction)
   const accountRepo = AppDataSource.getRepository(Account)
 
@@ -360,6 +359,28 @@ export const getKpisGlobalBalance = async (authReq: AuthRequest) => {
   ============================ */
   const netBalance = netWorth - availableSavings
 
+  const loanRepo = AppDataSource.getRepository(Loan)
+
+  /* ============================
+     KPIs Préstamos
+  ============================ */
+  const loanData = await loanRepo
+    .createQueryBuilder('l')
+    .select([
+      "SUM(l.total_amount) AS totalLoan",
+      "SUM(l.principal_paid) AS totalPrincipalPaid",
+      "SUM(l.interest_paid) AS totalInterestPaid",
+      "SUM(l.balance) AS totalLoanBalance"
+    ])
+    .where('l.user_id = :userId', { userId })
+    .getRawOne()
+
+  const totalLoan = Number(loanData?.totalLoan || 0)
+  const totalPrincipalPaid = Number(loanData?.totalPrincipalPaid || 0)
+  const totalInterestPaid = Number(loanData?.totalInterestPaid || 0)
+  const totalLoanBalance = Number(loanData?.totalLoanBalance || 0)
+  
+  console.log(totalLoan, totalPrincipalPaid, totalInterestPaid, totalLoanBalance)
   return {
     totalIncome,
     totalExpense,
@@ -367,7 +388,11 @@ export const getKpisGlobalBalance = async (authReq: AuthRequest) => {
     totalWithdrawals,
     netWorth,
     availableSavings,
-    netBalance
+    netBalance,
+    totalLoan,
+    totalPrincipalPaid,
+    totalInterestPaid,
+    totalLoanBalance
   }
 }
 

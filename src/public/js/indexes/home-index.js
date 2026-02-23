@@ -54,6 +54,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const netBalanceEl = document.getElementById('kpis-global-balance-net-balance')
         netBalanceEl.textContent = `${kpisGlobalBalance.netBalance.toFixed(2)}`
         netBalanceEl.classList.add(kpisGlobalBalance.netBalance >= 0 ? 'text-green-700' : 'text-red-700')
+        document.getElementById('kpis-global-balance-total-loan').textContent = `${kpisGlobalBalance.totalLoan.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-principal-paid').textContent = `${kpisGlobalBalance.totalPrincipalPaid.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-interest-paid').textContent = `${kpisGlobalBalance.totalInterestPaid.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-loan-balance').textContent = `${kpisGlobalBalance.totalLoanBalance.toFixed(2)}`
         // ============================
         // KPIs 6 Meses
         // ============================
