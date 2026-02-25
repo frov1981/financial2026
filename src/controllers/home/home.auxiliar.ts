@@ -9,33 +9,33 @@ import { AuthRequest } from "../../types/auth-request"
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)
 ============================================================================ */
-export const getChartDataLast6MonthsBalance = async (authReq: AuthRequest) => {
-  const userId = authReq.user.id
-  const txRepo = AppDataSource.getRepository(Transaction)
+export const getChartDataLast6MonthsBalance = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const transaction_repo = AppDataSource.getRepository(Transaction)
 
   /* ============================
      Rango de fechas
   ============================ */
-  const endDate = new Date()
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - 5)
-  startDate.setDate(1)
+  const end_date = new Date()
+  const start_date = new Date()
+  start_date.setMonth(start_date.getMonth() - 5)
+  start_date.setDate(1)
 
   /* ============================
      Query agregada por mes (MySQL)
   ============================ */
-  const rows = await txRepo
+  const rows = await transaction_repo
     .createQueryBuilder('t')
     .select([
       "DATE_FORMAT(t.date, '%Y-%m') AS month",
       "SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) AS income",
       "SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense"
     ])
-    .where('t.user_id = :userId', { userId })
+    .where('t.user_id = :user_id', { user_id })
     .andWhere('t.type IN (:...types)', { types: ['income', 'expense'] })
     .andWhere('t.date BETWEEN :start AND :end', {
-      start: startDate,
-      end: endDate
+      start: start_date,
+      end: end_date
     })
     .groupBy("DATE_FORMAT(t.date, '%Y-%m')")
     .orderBy("DATE_FORMAT(t.date, '%Y-%m')", 'ASC')
@@ -49,9 +49,9 @@ export const getChartDataLast6MonthsBalance = async (authReq: AuthRequest) => {
   const expense: number[] = []
   const balance: number[] = []
 
-  const cursor = new Date(startDate)
+  const cursor = new Date(start_date)
 
-  while (cursor <= endDate) {
+  while (cursor <= end_date) {
 
     const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
     const row = rows.find(r => r.month === key)
@@ -78,34 +78,34 @@ export const getChartDataLast6MonthsBalance = async (authReq: AuthRequest) => {
 /* ============================================================================
    Servicio: Resumen últimos 6 años (ingresos / egresos / balance)
 ============================================================================ */
-export const getChartDataLast6YearsBalance = async (authReq: AuthRequest) => {
-  const userId = authReq.user.id
-  const txRepo = AppDataSource.getRepository(Transaction)
+export const getChartDataLast6YearsBalance = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const transaction_repo = AppDataSource.getRepository(Transaction)
 
   /* ============================
      Rango de fechas
   ============================ */
-  const endDate = new Date()
-  const startDate = new Date()
-  startDate.setFullYear(startDate.getFullYear() - 5)
-  startDate.setMonth(0)
-  startDate.setDate(1)
+  const end_date = new Date()
+  const start_date = new Date()
+  start_date.setFullYear(start_date.getFullYear() - 5)
+  start_date.setMonth(0)
+  start_date.setDate(1)
 
   /* ============================
      Query agregada por año (MySQL)
   ============================ */
-  const rows = await txRepo
+  const rows = await transaction_repo
     .createQueryBuilder('t')
     .select([
       "YEAR(t.date) AS year",
       "SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) AS income",
       "SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense"
     ])
-    .where('t.user_id = :userId', { userId })
+    .where('t.user_id = :user_id', { user_id })
     .andWhere('t.type IN (:...types)', { types: ['income', 'expense'] })
     .andWhere('t.date BETWEEN :start AND :end', {
-      start: startDate,
-      end: endDate
+      start: start_date,
+      end: end_date
     })
     .groupBy('YEAR(t.date)')
     .orderBy('YEAR(t.date)', 'ASC')
@@ -119,9 +119,9 @@ export const getChartDataLast6YearsBalance = async (authReq: AuthRequest) => {
   const expense: number[] = []
   const balance: number[] = []
 
-  const cursor = new Date(startDate)
+  const cursor = new Date(start_date)
 
-  while (cursor <= endDate) {
+  while (cursor <= end_date) {
 
     const key = cursor.getFullYear()
     const row = rows.find(r => Number(r.year) === key)
@@ -148,33 +148,33 @@ export const getChartDataLast6YearsBalance = async (authReq: AuthRequest) => {
 /* ============================================================================
    KPIs últimos 6 meses
 ============================================================================ */
-export const getKpisLast6MonthsBalance = async (authReq: AuthRequest) => {
-  const userId = authReq.user.id
-  const txRepo = AppDataSource.getRepository(Transaction)
+export const getKpisLast6MonthsBalance = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const transaction_repo = AppDataSource.getRepository(Transaction)
 
   /* ============================
      Rango fechas
   ============================ */
-  const endDate = new Date()
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - 5)
-  startDate.setDate(1)
+  const end_date = new Date()
+  const start_date = new Date()
+  start_date.setMonth(start_date.getMonth() - 5)
+  start_date.setDate(1)
 
   /* ============================
      Query agregada mensual
   ============================ */
-  const rows = await txRepo
+  const rows = await transaction_repo
     .createQueryBuilder('t')
     .select([
       "DATE_FORMAT(t.date, '%Y-%m') AS month",
       "SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) AS income",
       "SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense"
     ])
-    .where('t.user_id = :userId', { userId })
+    .where('t.user_id = :user_id', { user_id })
     .andWhere('t.type IN (:...types)', { types: ['income', 'expense'] })
     .andWhere('t.date BETWEEN :start AND :end', {
-      start: startDate,
-      end: endDate
+      start: start_date,
+      end: end_date
     })
     .groupBy("DATE_FORMAT(t.date, '%Y-%m')")
     .orderBy("DATE_FORMAT(t.date, '%Y-%m')", 'ASC')
@@ -186,9 +186,9 @@ export const getKpisLast6MonthsBalance = async (authReq: AuthRequest) => {
   const income: number[] = []
   const expense: number[] = []
 
-  const cursor = new Date(startDate)
+  const cursor = new Date(start_date)
 
-  while (cursor <= endDate) {
+  while (cursor <= end_date) {
 
     const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
     const row = rows.find(r => r.month === key)
@@ -202,20 +202,20 @@ export const getKpisLast6MonthsBalance = async (authReq: AuthRequest) => {
   /* ============================
      KPIs
   ============================ */
-  const totalIncome = income.reduce((a, b) => a + b, 0)
-  const totalExpense = expense.reduce((a, b) => a + b, 0)
-  const balance = totalIncome - totalExpense
-  const avgExpense = totalExpense / income.length
+  const total_income = income.reduce((a, b) => a + b, 0)
+  const total_expense = expense.reduce((a, b) => a + b, 0)
+  const balance = total_income - total_expense
+  const avg_expense = total_expense / income.length
 
-  const lastBalance = income[income.length - 1] - expense[expense.length - 1]
+  const last_balance = income[income.length - 1] - expense[expense.length - 1]
   const prevBalance = income[income.length - 2] - expense[expense.length - 2]
-  const trend = lastBalance - prevBalance
+  const trend = last_balance - prevBalance
 
   return {
-    totalIncome,
-    totalExpense,
+    total_income,
+    total_expense,
     balance,
-    avgExpense,
+    avg_expense,
     trend
   }
 }
@@ -223,76 +223,76 @@ export const getKpisLast6MonthsBalance = async (authReq: AuthRequest) => {
 /* ============================================================================
    Servicio: Resumen anual de préstamos (total prestado, pagado, intereses, saldo)
 ============================================================================ */
-export const getChartDataLast6YearsLoan = async (authReq: AuthRequest) => {
-  const userId = authReq.user.id
-  const loanRepo = AppDataSource.getRepository(Loan)
-  const paymentRepo = AppDataSource.getRepository(LoanPayment)
-  const lastYears = 5
+export const getChartDataLast6YearsLoan = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const loan_repo = AppDataSource.getRepository(Loan)
+  const payment_repo = AppDataSource.getRepository(LoanPayment)
+  const last_years = 5
 
   /* ============================
      Determinar años a consultar
   ============================ */
-  const currentYear = new Date().getFullYear()
-  const years = Array.from({ length: lastYears }, (_, i) => currentYear - (lastYears - 1 - i))
+  const current_year = new Date().getFullYear()
+  const years = Array.from({ length: last_years }, (_, i) => current_year - (last_years - 1 - i))
 
   /* ============================
      Total prestado y saldo por año
   ============================ */
-  const loanRows = await loanRepo
+  const loan_rows = await loan_repo
     .createQueryBuilder('l')
     .select([
       "YEAR(l.start_date) AS year",
-      "SUM(l.total_amount) AS totalLoan",
+      "SUM(l.total_amount) AS total_loan",
       "SUM(l.balance) AS balance"
     ])
-    .where("l.user_id = :userId", { userId })
+    .where("l.user_id = :user_id", { user_id })
     .andWhere("l.is_active = 1")
     .groupBy("YEAR(l.start_date)")
     .orderBy("YEAR(l.start_date)", "ASC")
-    .getRawMany<{ year: string, totalLoan: string, balance: string }>()
+    .getRawMany<{ year: string, total_loan: string, balance: string }>()
 
   /* ============================
      Total pagado e intereses por año
   ============================ */
-  const paymentRows = await paymentRepo
+  const payment_rows = await payment_repo
     .createQueryBuilder('p')
     .innerJoin('p.loan', 'l')
     .select([
       "YEAR(l.start_date) AS year",
-      "SUM(p.principal_paid) AS totalPaid",
-      "SUM(p.interest_paid) AS totalInterest"
+      "SUM(p.principal_paid) AS total_paid",
+      "SUM(p.interest_paid) AS total_interest"
     ])
-    .where("l.user_id = :userId", { userId })
+    .where("l.user_id = :user_id", { user_id })
     .andWhere("l.is_active = 1")
     .groupBy("YEAR(l.start_date)")
     .orderBy("YEAR(l.start_date)", "ASC")
-    .getRawMany<{ year: string, totalPaid: string, totalInterest: string }>()
+    .getRawMany<{ year: string, total_paid: string, total_interest: string }>()
 
   /* ============================
      Normalización: asegurar todos los años
   ============================ */
   const labels: string[] = []
-  const totalLoan: number[] = []
-  const totalPaid: number[] = []
-  const totalInterest: number[] = []
+  const total_loan: number[] = []
+  const total_paid: number[] = []
+  const total_interest: number[] = []
   const balance: number[] = []
 
   years.forEach(y => {
-    const loanRow = loanRows.find(r => Number(r.year) === y)
-    const payRow = paymentRows.find(r => Number(r.year) === y)
+    const loanRow = loan_rows.find(r => Number(r.year) === y)
+    const payRow = payment_rows.find(r => Number(r.year) === y)
 
     labels.push(String(y))
-    totalLoan.push(loanRow ? Number(loanRow.totalLoan) : 0)
+    total_loan.push(loanRow ? Number(loanRow.total_loan) : 0)
     balance.push(loanRow ? Number(loanRow.balance) : 0)
-    totalPaid.push(payRow ? Number(payRow.totalPaid) : 0)
-    totalInterest.push(payRow ? Number(payRow.totalInterest) : 0)
+    total_paid.push(payRow ? Number(payRow.total_paid) : 0)
+    total_interest.push(payRow ? Number(payRow.total_interest) : 0)
   })
 
   return {
     labels,
-    totalLoan,
-    totalPaid,
-    totalInterest,
+    total_loan,
+    total_paid,
+    total_interest,
     balance
   }
 }
@@ -300,32 +300,32 @@ export const getChartDataLast6YearsLoan = async (authReq: AuthRequest) => {
 /* ============================================================================
    KPIs globales (solo Transactions + Accounts)
 ============================================================================ */
-export const getKpisGlobalBalance = async (authReq: AuthRequest) => {
-  const userId = authReq.user.id
-  const txRepo = AppDataSource.getRepository(Transaction)
-  const accountRepo = AppDataSource.getRepository(Account)
+export const getKpisGlobalBalance = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const transaction_repo = AppDataSource.getRepository(Transaction)
+  const account_repo = AppDataSource.getRepository(Account)
 
   /* ============================
      Ingresos y egresos
   ============================ */
-  const incomeExpense = await txRepo
+  const income_expense = await transaction_repo
     .createQueryBuilder('t')
     .select([
       "SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) AS income",
       "SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense"
     ])
-    .where('t.user_id = :userId', { userId })
+    .where('t.user_id = :user_id', { user_id })
     .getRawOne()
 
-  const totalIncome = Number(incomeExpense?.income || 0)
-  const totalExpense = Number(incomeExpense?.expense || 0)
+  const total_income = Number(income_expense?.income || 0)
+  const total_expense = Number(income_expense?.expense || 0)
 
   /* ============================
      Ahorros y retiros (TRANSFER)
      ahorro  = entra a saving
      retiro  = sale de saving
   ============================ */
-  const savingsData = await txRepo
+  const savings_data = await transaction_repo
     .createQueryBuilder('t')
     .innerJoin('t.account', 'fromAcc')
     .leftJoin('t.to_account', 'toAcc')
@@ -333,76 +333,75 @@ export const getKpisGlobalBalance = async (authReq: AuthRequest) => {
       "SUM(CASE WHEN t.type = 'transfer' AND toAcc.type = 'saving' THEN t.amount ELSE 0 END) AS savings",
       "SUM(CASE WHEN t.type = 'transfer' AND fromAcc.type = 'saving' THEN t.amount ELSE 0 END) AS withdrawals"
     ])
-    .where('t.user_id = :userId', { userId })
+    .where('t.user_id = :user_id', { user_id })
     .getRawOne()
 
-  const totalSavings = Number(savingsData?.savings || 0)
-  const totalWithdrawals = Number(savingsData?.withdrawals || 0)
+  const total_savings = Number(savings_data?.savings || 0)
+  const total_withdrawals = Number(savings_data?.withdrawals || 0)
 
   /* ============================
      Cuentas activas
   ============================ */
-  const accounts = await accountRepo.find({
-    where: { user: { id: userId }, is_active: true }
+  const accounts = await account_repo.find({
+    where: { user: { id: user_id }, is_active: true }
   })
 
-  const netWorth = accounts.reduce(
+  const net_worth = accounts.reduce(
     (sum, acc) => sum + Number(acc.balance),
     0
   )
 
-  const availableSavings = accounts
+  const available_savings = accounts
     .filter(a => a.type === 'saving')
     .reduce((sum, a) => sum + Number(a.balance), 0)
 
   /* ============================
      KPIs finales (7)
   ============================ */
-  const netBalance = netWorth - availableSavings
+  const net_balance = net_worth - available_savings
 
-  const loanRepo = AppDataSource.getRepository(Loan)
+  const loan_repo = AppDataSource.getRepository(Loan)
 
   /* ============================
      KPIs Préstamos
   ============================ */
-  const loanData = await loanRepo
+  const loan_data = await loan_repo
     .createQueryBuilder('l')
     .select([
-      "SUM(l.total_amount) AS totalLoan",
-      "SUM(l.principal_paid) AS totalPrincipalPaid",
-      "SUM(l.interest_paid) AS totalInterestPaid",
-      "SUM(l.balance) AS totalLoanBalance"
+      "SUM(l.total_amount) AS total_loan",
+      "SUM(l.principal_paid) AS total_principal_paid",
+      "SUM(l.interest_paid) AS total_interest_paid",
+      "SUM(l.balance) AS total_loan_balance"
     ])
-    .where('l.user_id = :userId', { userId })
+    .where('l.user_id = :user_id', { user_id })
     .getRawOne()
 
-  const totalLoan = Number(loanData?.totalLoan || 0)
-  const totalPrincipalPaid = Number(loanData?.totalPrincipalPaid || 0)
-  const totalInterestPaid = Number(loanData?.totalInterestPaid || 0)
-  const totalLoanBalance = Number(loanData?.totalLoanBalance || 0)
+  const total_loan = Number(loan_data?.total_loan || 0)
+  const total_principal_paid = Number(loan_data?.total_principal_paid || 0)
+  const total_interest_paid = Number(loan_data?.total_interest_paid || 0)
+  const total_loan_balance = Number(loan_data?.total_loan_balance || 0)
 
-  console.log(totalLoan, totalPrincipalPaid, totalInterestPaid, totalLoanBalance)
   return {
-    totalIncome,
-    totalExpense,
-    totalSavings,
-    totalWithdrawals,
-    netWorth,
-    availableSavings,
-    netBalance,
-    totalLoan,
-    totalPrincipalPaid,
-    totalInterestPaid,
-    totalLoanBalance
+    total_income,
+    total_expense,
+    total_savings,
+    total_withdrawals,
+    net_worth,
+    available_savings,
+    net_balance,
+    total_loan,
+    total_principal_paid,
+    total_interest_paid,
+    total_loan_balance
   }
 }
 
-export const getKpisLastYearBalance = async (authReq: AuthRequest) => {
-  const userId = authReq.user.id
-  const timezone = authReq.timezone ?? 'UTC'
-  const txRepo = AppDataSource.getRepository(Transaction)
-  const accountRepo = AppDataSource.getRepository(Account)
-  const loanRepo = AppDataSource.getRepository(Loan)
+export const getKpisLastYearBalance = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const timezone = auth_req.timezone ?? 'UTC'
+  const transaction_repo = AppDataSource.getRepository(Transaction)
+  const account_repo = AppDataSource.getRepository(Account)
+  const loan_repo = AppDataSource.getRepository(Loan)
 
   const fromDateUTC = DateTime.now()
     .setZone(timezone)
@@ -413,23 +412,23 @@ export const getKpisLastYearBalance = async (authReq: AuthRequest) => {
   /* ============================
      Ingresos y egresos
   ============================ */
-  const incomeExpense = await txRepo
+  const income_expense = await transaction_repo
     .createQueryBuilder('t')
     .select([
       "SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) AS income",
       "SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) AS expense"
     ])
-    .where('t.user_id = :userId', { userId })
+    .where('t.user_id = :user_id', { user_id })
     .andWhere('t.created_at >= :fromDate', { fromDate: fromDateUTC })
     .getRawOne()
 
-  const totalIncome = Number(incomeExpense?.income || 0)
-  const totalExpense = Number(incomeExpense?.expense || 0)
+  const total_income = Number(income_expense?.income || 0)
+  const total_expense = Number(income_expense?.expense || 0)
 
   /* ============================
      Ahorros y retiros
   ============================ */
-  const savingsData = await txRepo
+  const savings_data = await transaction_repo
     .createQueryBuilder('t')
     .innerJoin('t.account', 'fromAcc')
     .leftJoin('t.to_account', 'toAcc')
@@ -437,56 +436,56 @@ export const getKpisLastYearBalance = async (authReq: AuthRequest) => {
       "SUM(CASE WHEN t.type = 'transfer' AND toAcc.type = 'saving' THEN t.amount ELSE 0 END) AS savings",
       "SUM(CASE WHEN t.type = 'transfer' AND fromAcc.type = 'saving' THEN t.amount ELSE 0 END) AS withdrawals"
     ])
-    .where('t.user_id = :userId', { userId })
+    .where('t.user_id = :user_id', { user_id })
     .andWhere('t.created_at >= :fromDate', { fromDate: fromDateUTC })
     .getRawOne()
 
-  const totalSavings = Number(savingsData?.savings || 0)
-  const totalWithdrawals = Number(savingsData?.withdrawals || 0)
+  const total_savings = Number(savings_data?.savings || 0)
+  const total_withdrawals = Number(savings_data?.withdrawals || 0)
 
   /* ============================
      Cuentas activas (balance actual)
   ============================ */
-  const accounts = await accountRepo.find({
-    where: { user: { id: userId }, is_active: true }
+  const accounts = await account_repo.find({
+    where: { user: { id: user_id }, is_active: true }
   })
 
-  const netWorth = accounts.reduce((sum, acc) => sum + Number(acc.balance), 0)
-  const availableSavings = accounts.filter(a => a.type === 'saving').reduce((sum, a) => sum + Number(a.balance), 0)
-  const netBalance = netWorth - availableSavings
+  const net_worth = accounts.reduce((sum, acc) => sum + Number(acc.balance), 0)
+  const available_savings = accounts.filter(a => a.type === 'saving').reduce((sum, a) => sum + Number(a.balance), 0)
+  const net_balance = net_worth - available_savings
 
   /* ============================
      Préstamos
   ============================ */
-  const loanData = await loanRepo
+  const loan_data = await loan_repo
     .createQueryBuilder('l')
     .select([
-      "SUM(l.total_amount) AS totalLoan",
-      "SUM(l.principal_paid) AS totalPrincipalPaid",
-      "SUM(l.interest_paid) AS totalInterestPaid",
-      "SUM(l.balance) AS totalLoanBalance"
+      "SUM(l.total_amount) AS total_loan",
+      "SUM(l.principal_paid) AS total_principal_paid",
+      "SUM(l.interest_paid) AS total_interest_paid",
+      "SUM(l.balance) AS total_loan_balance"
     ])
-    .where('l.user_id = :userId', { userId })
+    .where('l.user_id = :user_id', { user_id })
     .andWhere('l.created_at >= :fromDate', { fromDate: fromDateUTC })
     .getRawOne()
 
-  const totalLoan = Number(loanData?.totalLoan || 0)
-  const totalPrincipalPaid = Number(loanData?.totalPrincipalPaid || 0)
-  const totalInterestPaid = Number(loanData?.totalInterestPaid || 0)
-  const totalLoanBalance = Number(loanData?.totalLoanBalance || 0)
+  const total_loan = Number(loan_data?.total_loan || 0)
+  const total_principal_paid = Number(loan_data?.total_principal_paid || 0)
+  const total_interest_paid = Number(loan_data?.total_interest_paid || 0)
+  const total_loan_balance = Number(loan_data?.total_loan_balance || 0)
 
   return {
-    totalIncome,
-    totalExpense,
-    totalSavings,
-    totalWithdrawals,
-    netWorth,
-    availableSavings,
-    netBalance,
-    totalLoan,
-    totalPrincipalPaid,
-    totalInterestPaid,
-    totalLoanBalance
+    total_income,
+    total_expense,
+    total_savings,
+    total_withdrawals,
+    net_worth,
+    available_savings,
+    net_balance,
+    total_loan,
+    total_principal_paid,
+    total_interest_paid,
+    total_loan_balance
   }
 }
 

@@ -5,6 +5,7 @@ import { Loan } from './Loan.entity'
 import { Transaction } from './Transaction.entity'
 import { CategoryGroup } from './CategoryGroups.entity'
 import { LoanGroup } from './LoanGroup.entity'
+import { CacheKpiBalance } from './CacheKpiBalance.entity'
 
 @Entity('users')
 //@Unique('UQ_users_email', ['email'])
@@ -42,5 +43,8 @@ export class User {
 
   @OneToMany(() => LoanGroup, group => group.user)
   loan_groups!: LoanGroup[]
+
+  @OneToMany(() => CacheKpiBalance, cache => cache.user)
+  cache_kpi_balances!: CacheKpiBalance[]
 
 }

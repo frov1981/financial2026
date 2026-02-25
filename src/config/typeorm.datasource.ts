@@ -10,6 +10,7 @@ import { User } from '../entities/User.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
 import { CategoryGroup } from '../entities/CategoryGroups.entity'
 import { LoanGroup } from '../entities/LoanGroup.entity'
+import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -27,7 +28,8 @@ export const AppDataSource = new DataSource({
     Loan,
     LoanGroup,
     LoanPayment,
-    Transaction
+    Transaction,
+    CacheKpiBalance,
   ],
   synchronize: false,
   timezone: 'Z',
