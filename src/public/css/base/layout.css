@@ -90,9 +90,3 @@
 #toolbar-normal-actions input[type="text"] {
     width: 100%;
 }
-
-@media (max-width: 639px) {
-    .ui-toolbar {
-        overflow-x: auto;
-    }
-}

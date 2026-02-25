@@ -62,9 +62,9 @@
         font-size: normal;
     }
 
-    .ui-btn-text,
-    .btn-text {
-        display: inline;
+    .ui-toolbar .ui-btn-text,
+    .ui-toolbar .btn-text {
+        display: none;
     }
 
     .icon-btn {

@@ -142,8 +142,8 @@ function renderRow(category) {
         </div>
       </td>
       <td class="ui-td col-left">${categoryTypeTag(category.type)}</td>
-      <td class="ui-td col-right col-sm">${numberBox(category.transactions_count)}</td>
-      <td class="ui-td col-left col-sm">${statusTag(category.is_active)}</td>
+      <td class="ui-td col-right">${numberBox(category.transactions_count)}</td>
+      <td class="ui-td col-left">${statusTag(category.is_active)}</td>
       
       <td class="ui-td col-center">
         <div class="icon-actions">

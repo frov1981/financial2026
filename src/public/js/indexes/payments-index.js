@@ -85,7 +85,7 @@ function renderRow(payment) {
       </td>
       <td class="ui-td col-right">${formatAmount(payment.principal_paid)}</td>
       <td class="ui-td col-right">${formatAmount(payment.interest_paid)}</td>
-      <td class="ui-td col-left col-sm">${payment.account?.name || '-'}</td>
+      <td class="ui-td col-left">${payment.account?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button
