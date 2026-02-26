@@ -2,8 +2,9 @@
    Constantes globales
 ============================ */
 const CARD_IDS = [
-    'kpis-global-balance',
-    'kpis-last-6months-balance',
+    /*'kpis-global-balance',
+    'kpis-last-6months-balance',*/
+    'kpis-cache-balance',
     'chart-data-last-6months-balance',
     'chart-data-last-6years-balance',
     'chart-data-last-6years-loan'
@@ -35,17 +36,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!res.ok) throw new Error('No autorizado')
 
         const {
-            kpisGlobalBalance,
-            kpisLast6MonthsBalance,
+            /*kpisGlobalBalance,
+            kpisLast6MonthsBalance,*/
+            kpisCacheBalance,
             chartDataLast6MonthsBalance,
             chartDataLast6YearsBalance,
             chartDataLast6YearsLoan,
         } = await res.json()
 
         // ============================
+        // KPIs Cache Balances
+        // ============================
+        document.getElementById('kpis-cache-balance-incomes').textContent = `${kpisCacheBalance.incomes.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-expenses').textContent = `${kpisCacheBalance.expenses.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-loans').textContent = `${kpisCacheBalance.loans.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-payments').textContent = `${kpisCacheBalance.payments.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-savings').textContent = `${kpisCacheBalance.savings.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-withdrawals').textContent = `${kpisCacheBalance.withdrawals.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-total-inflows').textContent = `${kpisCacheBalance.total_inflows.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-total-outflows').textContent = `${kpisCacheBalance.total_outflows.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-net-cash-flow').textContent = `${kpisCacheBalance.net_cash_flow.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-net-savings').textContent = `${kpisCacheBalance.net_savings.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-available-balance').textContent = `${kpisCacheBalance.available_balance.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-principal-breakdown').textContent = `${kpisCacheBalance.principal_breakdown.toFixed(2)}`
+        document.getElementById('kpis-cache-balance-interest-breakdown').textContent = `${kpisCacheBalance.interest_breakdown.toFixed(2)}`
+        // ============================
         // KPIs Globales
         // ============================
-        document.getElementById('kpis-global-balance-total-income').textContent = `${kpisGlobalBalance.total_income.toFixed(2)}`
+        /*document.getElementById('kpis-global-balance-total-income').textContent = `${kpisGlobalBalance.total_income.toFixed(2)}`
         document.getElementById('kpis-global-balance-total-expense').textContent = `${kpisGlobalBalance.total_expense.toFixed(2)}`
         document.getElementById('kpis-global-balance-total-savings').textContent = `${kpisGlobalBalance.total_savings.toFixed(2)}`
         document.getElementById('kpis-global-balance-total-withdrawals').textContent = `${kpisGlobalBalance.total_withdrawals.toFixed(2)}`
@@ -57,11 +75,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('kpis-global-balance-total-loan').textContent = `${kpisGlobalBalance.total_loan.toFixed(2)}`
         document.getElementById('kpis-global-balance-total-principal-paid').textContent = `${kpisGlobalBalance.total_principal_paid.toFixed(2)}`
         document.getElementById('kpis-global-balance-total-interest-paid').textContent = `${kpisGlobalBalance.total_interest_paid.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-loan-balance').textContent = `${kpisGlobalBalance.total_loan_balance.toFixed(2)}`
+        document.getElementById('kpis-global-balance-total-loan-balance').textContent = `${kpisGlobalBalance.total_loan_balance.toFixed(2)}`*/
         // ============================
         // KPIs 6 Meses
         // ============================
-        document.getElementById('kpi-last-6months-total-income').textContent = `${kpisLast6MonthsBalance.total_income.toFixed(2)}`
+        /*document.getElementById('kpi-last-6months-total-income').textContent = `${kpisLast6MonthsBalance.total_income.toFixed(2)}`
         document.getElementById('kpi-last-6months-total-expense').textContent = `${kpisLast6MonthsBalance.total_expense.toFixed(2)}`
         const balanceEl = document.getElementById('kpi-last-6months-balance')
         balanceEl.textContent = `${kpisLast6MonthsBalance.balance.toFixed(2)}`
@@ -69,8 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('kpi-last-6months-avg-expense').textContent = `${kpisLast6MonthsBalance.avg_expense.toFixed(2)}`
         const trendEl = document.getElementById('kpi-last-6months-trend')
         trendEl.textContent = kpisLast6MonthsBalance.trend >= 0 ? '▲' : '▼'
-        trendEl.classList.add(kpisLast6MonthsBalance.trend >= 0 ? 'text-green-600' : 'text-red-600')
-
+        trendEl.classList.add(kpisLast6MonthsBalance.trend >= 0 ? 'text-green-600' : 'text-red-600')*/
         // ============================
         // Chart 6 Meses
         // ============================

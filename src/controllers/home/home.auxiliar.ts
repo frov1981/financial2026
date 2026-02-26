@@ -5,6 +5,7 @@ import { Loan } from "../../entities/Loan.entity"
 import { LoanPayment } from "../../entities/LoanPayment.entity"
 import { Transaction } from "../../entities/Transaction.entity"
 import { AuthRequest } from "../../types/auth-request"
+import { CacheKpiBalance } from '../../entities/CacheKpiBalance.entity'
 
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)
@@ -357,7 +358,7 @@ export const getKpisGlobalBalance = async (auth_req: AuthRequest) => {
 
   /* ============================
      KPIs finales (7)
-  ============================ */                                                                                                                                                                                                                                                                                                                         
+  ============================ */
   const net_balance = net_worth - available_savings
 
   const loan_repo = AppDataSource.getRepository(Loan)
@@ -487,5 +488,51 @@ export const getKpisLastYearBalance = async (auth_req: AuthRequest) => {
     total_interest_paid,
     total_loan_balance
   }
+}
+
+/* ============================================================================
+   KPIs globales desde la Cache
+============================================================================ */
+export const getKpisCachelBalance = async (auth_req: AuthRequest) => {
+
+  const user_id = auth_req.user.id
+  const year_period = Number(auth_req.query.year_period || 0)
+  const month_period = Number(auth_req.query.month_period || 0)
+
+  const repo = AppDataSource.getRepository(CacheKpiBalance)
+
+  const qb = repo.createQueryBuilder('k').where('k.user_id = :user_id', { user_id })
+
+  if (year_period > 0) qb.andWhere('k.period_year = :year', { year: year_period })
+  if (year_period > 0 && month_period > 0) qb.andWhere('k.period_month = :month', { month: month_period })
+
+  const rows = await qb.getMany()
+
+  if (!rows.length) {
+    return {
+      incomes: 0, expenses: 0, savings: 0, withdrawals: 0, loans: 0, payments: 0, total_inflows: 0, total_outflows: 0, net_cash_flow: 0, net_savings: 0, available_balance: 0, principal_breakdown: 0, interest_breakdown: 0
+    }
+  }
+
+  const result = rows.reduce((acc, row) => {
+    acc.incomes += Number(row.incomes)
+    acc.expenses += Number(row.expenses)
+    acc.savings += Number(row.savings)
+    acc.withdrawals += Number(row.withdrawals)
+    acc.loans += Number(row.loans)
+    acc.payments += Number(row.payments)
+    acc.total_inflows += Number(row.total_inflows)
+    acc.total_outflows += Number(row.total_outflows)
+    acc.net_cash_flow += Number(row.net_cash_flow)
+    acc.net_savings += Number(row.net_savings)
+    acc.available_balance += Number(row.available_balance)
+    acc.principal_breakdown += Number(row.principal_breakdown)
+    acc.interest_breakdown += Number(row.interest_breakdown)
+    return acc
+  }, {
+    incomes: 0, expenses: 0, savings: 0, withdrawals: 0, loans: 0, payments: 0, total_inflows: 0, total_outflows: 0, net_cash_flow: 0, net_savings: 0, available_balance: 0, principal_breakdown: 0, interest_breakdown: 0
+  })
+
+  return result
 }
 
