@@ -1,63 +1,61 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique, Index, UpdateDateColumn } from 'typeorm'
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { User } from './User.entity'
 
+@Index('uq_user_period', ['user', 'period_year', 'period_month'], { unique: true })
 @Entity('cache_kpi_balances')
-@Unique('uq_cache_kpi_period', ['user', 'period_year', 'period_month'])
-@Index('idx_cache_kpi_user_year', ['user', 'period_year'])
-@Index('idx_cache_kpi_year_month', ['period_year', 'period_month'])
 export class CacheKpiBalance {
 
   @PrimaryGeneratedColumn()
   id!: number
 
-  @ManyToOne(() => User, user => user.cache_kpi_balances)
-  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_cache_kpi_user' })
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_cache_kpi_balances_user' })
   user!: User
 
-  @Column({ type: 'smallint' })
+  @Column({ type: 'int' })
   period_year!: number
 
-  @Column({ type: 'tinyint' })
+  @Column({ type: 'int' })
   period_month!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  total_income!: number
+  incomes!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  total_expense!: number
+  expenses!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  total_savings!: number
+  savings!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  total_withdrawals!: number
+  withdrawals!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  net_worth!: number
+  loans!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  available_savings!: number
+  payments!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  net_balance!: number
+  total_inflows!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  total_loan!: number
+  total_outflows!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  total_principal_paid!: number
+  net_cash_flow!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  total_interest_paid!: number
+  net_savings!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  total_loan_balance!: number
+  available_balance!: number
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at!: Date
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  principal_breakdown!: number
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at!: Date
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  interest_breakdown!: number
 
 }

@@ -357,7 +357,7 @@ export const getKpisGlobalBalance = async (auth_req: AuthRequest) => {
 
   /* ============================
      KPIs finales (7)
-  ============================ */
+  ============================ */                                                                                                                                                                                                                                                                                                                         
   const net_balance = net_worth - available_savings
 
   const loan_repo = AppDataSource.getRepository(Loan)
