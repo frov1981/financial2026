@@ -31,15 +31,15 @@
     }
 
     .carousel-container {
-        padding: 0 1.5rem;
+        padding: 0.5rem;
     }
 
     .home-slide {
-        padding-right: 1rem;
+        padding-right: 0rem;
     }
 
     .home-slide .ui-card-body {
-        padding: 1rem;
+        padding: 0.5rem;
         min-height: auto;
     }
 
