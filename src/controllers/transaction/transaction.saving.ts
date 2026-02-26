@@ -11,6 +11,7 @@ import { logger } from '../../utils/logger.util'
 import { getSqlErrorMessage } from '../../utils/sql-err.util'
 import { calculateTransactionDeltas, splitCategoriesByType } from '../transaction/transaction.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator'
+import { KpiCacheService } from '../../services/kpi-cache.service'
 
 /* ============================
    Título según modo
@@ -127,6 +128,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
       await query_runner.manager.remove(Transaction, existing)
       await query_runner.commitTransaction()
+      KpiCacheService.recalcMonthlyKPIs(existing).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
       await query_runner.release()
 
       if (return_from === 'categories' && return_category_id) {
@@ -139,65 +141,65 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     /* ============================
        INSERT / UPDATE
     ============================ */
-    let tx: Transaction
-    let prev_tx: Transaction | undefined
+    let transaction: Transaction
+    let previous_transaction: Transaction | undefined
 
     if (mode === 'insert') {
-      tx = repo_transaction.create({
+      transaction = repo_transaction.create({
         user: auth_req.user as any
       })
     } else {
       if (!existing) throw new Error('Transacción no encontrada')
 
-      prev_tx = Object.assign(new Transaction(), {
+      previous_transaction = Object.assign(new Transaction(), {
         type: existing.type,
         amount: existing.amount,
         account: existing.account,
         to_account: existing.to_account
       })
 
-      tx = existing
+      transaction = existing
     }
 
     const clean = sanitizeByPolicy(mode, req.body)
 
     if (clean.type !== undefined) {
-      tx.type = clean.type
+      transaction.type = clean.type
     }
 
     if (clean.account !== undefined) {
-      tx.account = getAccountFromActiveList(active_accounts, clean.account ? Number(clean.account) : null)
+      transaction.account = getAccountFromActiveList(active_accounts, clean.account ? Number(clean.account) : null)
     }
 
     if (clean.to_account !== undefined) {
-      tx.to_account = getAccountFromActiveList(active_accounts_for_transfer, clean.to_account ? Number(clean.to_account) : null)
+      transaction.to_account = getAccountFromActiveList(active_accounts_for_transfer, clean.to_account ? Number(clean.to_account) : null)
     }
 
     if (clean.category !== undefined) {
-      tx.category = getCategoryFromActiveList(active_categories, clean.category ? Number(clean.category) : null)
+      transaction.category = getCategoryFromActiveList(active_categories, clean.category ? Number(clean.category) : null)
     }
 
     if (clean.date) {
-      tx.date = parseLocalDateToUTC(clean.date, timezone)
+      transaction.date = parseLocalDateToUTC(clean.date, timezone)
     }
 
     if (clean.amount !== undefined) {
-      tx.amount = Number(clean.amount)
+      transaction.amount = Number(clean.amount)
     }
 
     if (clean.description !== undefined) {
-      tx.description = clean.description
+      transaction.description = clean.description
     }
 
-    if (tx.type === 'transfer') {
-      tx.category = null
+    if (transaction.type === 'transfer') {
+      transaction.category = null
     }
 
-    if (tx.type !== 'transfer') {
-      tx.to_account = null
+    if (transaction.type !== 'transfer') {
+      transaction.to_account = null
     }
 
-    const errors = await validateSaveTransaction(tx, auth_req)
+    const errors = await validateSaveTransaction(transaction, auth_req)
     if (errors) throw { validationErrors: errors }
 
     const deltas = new Map<number, number>()
@@ -209,11 +211,11 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       }
     }
 
-    if (prev_tx) {
-      mergeDeltas(calculateTransactionDeltas(prev_tx, -1))
+    if (previous_transaction) {
+      mergeDeltas(calculateTransactionDeltas(previous_transaction, -1))
     }
 
-    const saved_tx = await query_runner.manager.save(Transaction, tx)
+    const saved_tx = await query_runner.manager.save(Transaction, transaction)
     mergeDeltas(calculateTransactionDeltas(saved_tx, 1))
 
     for (const [acc_id, delta] of deltas) {
@@ -225,6 +227,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     }
 
     await query_runner.commitTransaction()
+    KpiCacheService.recalcMonthlyKPIs(transaction).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
     await query_runner.release()
 
     if (return_from === 'categories' && return_category_id) {
@@ -237,7 +240,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     await query_runner.rollbackTransaction()
 
     logger.error(`${saveTransaction.name}-Error. `, {
-      userId: auth_req.user.id,
+      user_id: auth_req.user.id,
       transaction_id,
       mode,
       error: err,

@@ -9,6 +9,7 @@ import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
 import { getActiveAccountsByUser } from '../../services/populate-items.service'
+import { KpiCacheService } from '../../services/kpi-cache.service'
 
 /* ============================
    Helpers de cálculo
@@ -113,6 +114,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             }
 
             await queryRunner.commitTransaction()
+            KpiCacheService.recalcMonthlyKPIs(payment.transaction).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
             return res.redirect(`/payments/${loan_id}/loan`)
         }
 
@@ -239,10 +241,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         await payment_repo.save(payment)
 
         await queryRunner.commitTransaction()
+        KpiCacheService.recalcMonthlyKPIs(payment.transaction).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
         return res.redirect(`/payments/${loan_id}/loan`)
     } catch (err: any) {
         await queryRunner.rollbackTransaction()
-        logger.error(`${savePayment.name}-Error. `, { userId: auth_req.user.id, payment_id: payment_id, loan_id: loan_id, error: err, stack: err?.stack })
+        logger.error(`${savePayment.name}-Error. `, { user_id: auth_req.user.id, payment_id: payment_id, loan_id: loan_id, error: err, stack: err?.stack })
 
         const validation_errors = err?.validation_errors || null
 

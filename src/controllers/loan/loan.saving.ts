@@ -10,6 +10,7 @@ import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
+import { KpiCacheService } from '../../services/kpi-cache.service'
 
 const getTitle = (mode: string) => {
   switch (mode) {
@@ -135,14 +136,15 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         await queryRunner.manager.save(account)
       }
 
-      const transactionId = existing.transaction?.id || null
+      const transaction_id = existing.transaction?.id || null
 
       await queryRunner.manager.delete(Loan, existing.id)
-      if (transactionId) {
-        await queryRunner.manager.delete(Transaction, transactionId)
+      if (transaction_id) {
+        await queryRunner.manager.delete(Transaction, transaction_id)
       }
 
       await queryRunner.commitTransaction()
+      KpiCacheService.recalcMonthlyKPIs(existing.transaction).catch(err => logger.error(`${saveLoan.name}-Error. `, { err }))
       return res.redirect('/loans')
     }
 
@@ -152,8 +154,8 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     let loan: Loan
 
     if (mode === 'insert') {
-      const selectedGroup = findLoanGroupByBody(req.body, loan_group)
-      const selectedDisbursementAccount = findDisbursementAccountByBody(req.body, disbursement_account)
+      const selected_group = findLoanGroupByBody(req.body, loan_group)
+      const selected_disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account)
       loan = queryRunner.manager.create(Loan, {
         user: { id: auth_req.user.id } as any,
         name: req.body.name,
@@ -161,8 +163,8 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         interest_paid: 0,
         balance: 0,
         start_date: parseLocalDateToUTC(req.body.start_date, timezone),
-        loan_group: selectedGroup,
-        disbursement_account: selectedDisbursementAccount,
+        loan_group: selected_group,
+        disbursement_account: selected_disbursement_account,
         is_active: true
       })
     } else {
@@ -179,67 +181,67 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (clean.loan_group_id !== undefined) { loan.loan_group = findLoanGroupByBody(req.body, loan_group) }
     if (clean.disbursement_account_id !== undefined) { loan.disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account) }
 
-    let newAccount: Account | null = loan.disbursement_account || null
-    let previousAmount = loan.total_amount
-    let previousBalance = loan.balance
+    let new_account: Account | null = loan.disbursement_account || null
+    let previous_amount = loan.total_amount
+    let previous_balance = loan.balance
 
     if (clean.total_amount !== undefined) {
-      const newAmount = Number(clean.total_amount)
+      const new_amount = Number(clean.total_amount)
       if (mode === 'insert') {
-        loan.total_amount = newAmount
-        loan.balance = newAmount
+        loan.total_amount = new_amount
+        loan.balance = new_amount
       } else {
-        const paidAmount = previousAmount - previousBalance
-        loan.total_amount = newAmount
-        loan.balance = newAmount - paidAmount
+        const paidAmount = previous_amount - previous_balance
+        loan.total_amount = new_amount
+        loan.balance = new_amount - paidAmount
       }
     }
 
     if (mode === 'insert') {
-      if (!newAccount) throw { code: 'DISBURSEMENT_REQUIRED' }
-      newAccount.balance += loan.total_amount
-      await queryRunner.manager.save(newAccount)
+      if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
+      new_account.balance += loan.total_amount
+      await queryRunner.manager.save(new_account)
 
-      loan.disbursement_account = newAccount
+      loan.disbursement_account = new_account
 
-      const trx = queryRunner.manager.create(Transaction, {
+      const transaction = queryRunner.manager.create(Transaction, {
         user: { id: auth_req.user.id } as any,
         type: 'income',
         amount: loan.total_amount,
-        account: newAccount,
+        account: new_account,
         date: loan.start_date,
         description: loan.name
       })
 
-      await queryRunner.manager.save(trx)
-      loan.transaction = trx
+      await queryRunner.manager.save(transaction)
+      loan.transaction = transaction
 
     } else {
       if (!loan.disbursement_account) { throw { code: 'DISBURSEMENT_NOT_FOUND' } }
-      if (!newAccount) throw { code: 'DISBURSEMENT_REQUIRED' }
+      if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
 
-      const oldAccount = await queryRunner.manager.findOneByOrFail(Account, {
+      const old_account = await queryRunner.manager.findOneByOrFail(Account, {
         id: loan.disbursement_account.id,
         user: { id: auth_req.user.id }
       })
 
-      if (oldAccount.id === newAccount.id) {
-        const delta = loan.total_amount - previousAmount
-        oldAccount.balance += delta
-        await queryRunner.manager.save(oldAccount)
+      if (old_account.id === new_account.id) {
+        const delta = loan.total_amount - previous_amount
+        old_account.balance += delta
+        await queryRunner.manager.save(old_account)
       } else {
-        oldAccount.balance -= previousAmount
-        newAccount.balance += loan.total_amount
-        await queryRunner.manager.save([oldAccount, newAccount])
+        old_account.balance -= previous_amount
+        new_account.balance += loan.total_amount
+        await queryRunner.manager.save([old_account, new_account])
       }
 
-      loan.disbursement_account = newAccount
+      loan.disbursement_account = new_account
 
       if (loan.transaction?.id) {
         loan.transaction.amount = loan.total_amount
         loan.transaction.date = loan.start_date
         loan.transaction.description = loan.name
-        loan.transaction.account = newAccount
+        loan.transaction.account = new_account
         await queryRunner.manager.save(loan.transaction)
       }
     }
@@ -249,13 +251,14 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
     await queryRunner.manager.save(loan)
     await queryRunner.commitTransaction()
+    KpiCacheService.recalcMonthlyKPIs(loan.transaction).catch(err => logger.error(`${saveLoan.name}-Error. `, { err }))
     return res.redirect('/loans')
 
   } catch (err: any) {
     await queryRunner.rollbackTransaction()
 
     logger.error(`${saveLoan.name}-Error. `, {
-      userId: auth_req.user.id,
+      user_id: auth_req.user.id,
       loan_id,
       mode,
       error: err,
