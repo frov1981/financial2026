@@ -31,7 +31,7 @@ function statusTag(isActive) {
   return `<div class="tag tag-inactive">Inactivo</div>`
 }
 
-// type!: 'cash' | 'bank' | 'card'
+// type!: 'cash' | 'bank' | 'card' | 'saving'
 function accountTypeTag(type) {
   switch (type) {
     case 'cash':
