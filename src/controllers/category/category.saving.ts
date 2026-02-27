@@ -41,7 +41,7 @@ const sanitizeByPolicy = (mode: CategoryFormMode, body: any) => {
    Construir objeto para la vista
 ============================ */
 const buildCategoryView = (body: any, category_group: CategoryGroup[]) => {
-  const category_group_id = body.category_group_id ? Number(body.category_group_id) : null
+  const category_group_id = body.category_group ? Number(body.category_group) : null
   const group = category_group_id ? category_group.find(g => g.id === category_group_id) || null : null
 
   return {

@@ -13,14 +13,14 @@ export const categoryFormMatrix: Record<CategoryFormMode, Record<string, Caterog
         type: 'read',
         name: 'edit',
         category_group: 'edit',
-        is_active: 'hidden'
+        is_active: 'edit'
     },
 
     delete: {
-        type: 'hidden',
+        type: 'read',
         name: 'read',
-        category_group: 'hidden',
-        is_active: 'hidden'
+        category_group: 'read',
+        is_active: 'read'
     },
 
     status: {

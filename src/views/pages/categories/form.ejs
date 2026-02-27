@@ -30,7 +30,7 @@
     <input type="hidden" name="mode" value="<%= mode %>">
 
     <!-- Tipo de categoría -->
-    <% if (!isHidden('type')) { %>
+    <% if (isEditable('type')) { %>
     <div class="mb-4" id="type-container">
       <label class="block font-medium mb-1">Tipo</label>
       <div class="flex gap-6">
@@ -61,6 +61,18 @@
         <p class="text-red-600 text-sm mt-1"><%= errors.type %></p>
       <% } %>
     </div>
+    <% } else { %>
+      <div class="mb-4">
+        <label class="block font-medium mb-1">Tipo</label>
+        <input
+          type="text"
+          name="type"
+          class="w-full border rounded px-3 py-2"
+          value="<%= category?.type === 'income' ? 'Ingreso' : 'Gasto' %>"
+          <%= isReadOnly('type') ? 'readonly' : '' %>
+          required
+        >
+      </div>
     <% } %>
 
     <!-- Nombre -->
@@ -82,7 +94,7 @@
     <% } %>
 
     <!-- Grupo de Prestamos -->
-     <% if (!isHidden('category_group_id')) { %>
+     <% if (!isHidden('category_group')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Grupo</label>
 
@@ -97,14 +109,16 @@
           class="autocomplete-input" 
           autocomplete="off" 
           value="<%= category?.category_group?.name || '' %>" 
-          <%= isReadOnly('category_group_id') ? 'readonly' : '' %>>
+          <%= isReadOnly('category_group') ? 'readonly' : '' %>>
         
           <input type="hidden" 
           class="autocomplete-hidden" 
           name="category_group"
           value="<%= category?.category_group?.id || '' %>"
           >
-        <div class="autocomplete-panel"></div>
+          <% if (!isReadOnly('category_group')) { %>
+          <div class="autocomplete-panel"></div>
+          <% } %>
       </div>
 
       <% if (errors?.category_group) { %>

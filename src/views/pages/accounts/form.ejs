@@ -28,7 +28,7 @@
     <input type="hidden" name="mode" value="<%= mode %>">
 
     <!-- Tipo de cuenta -->
-     <% if (!isHidden('type')) { %>
+    <% if (isEditable('type')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Tipo</label>
 
@@ -82,6 +82,18 @@
         <p class="text-red-600 text-sm mt-1"><%= errors.type %></p>
       <% } %>
     </div>
+    <% } else { %>
+      <div class="mb-4">
+        <label class="block font-medium mb-1">Tipo</label>
+        <input
+          type="text"
+          name="type"
+          class="w-full border rounded px-3 py-2"
+          value="<%= account?.type === 'cash' ? 'Efectivo' : account?.type === 'bank' ? 'Banco' : account?.type === 'card' ? 'Tarjeta' : 'Ahorros' %>"
+          <%= isReadOnly('type') ? 'readonly' : '' %>
+          required
+        >
+      </div>
     <% } %>
 
     <!-- Nombre -->

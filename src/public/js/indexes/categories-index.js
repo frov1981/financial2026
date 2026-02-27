@@ -115,7 +115,7 @@ function renderRow(category) {
 
   const rowClass = category.is_active ? '' : 'bg-red-50'
 
-  const statusButton = category.is_active
+  /*const statusButton = category.is_active
     ? `
       <button 
         class="icon-btn deactivate" 
@@ -131,7 +131,7 @@ function renderRow(category) {
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
-    `
+    `*/
 
   return `
     <tr id="category-${category.id}" class="${rowClass}">
@@ -159,7 +159,7 @@ function renderRow(category) {
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
-          ${statusButton}
+          ${/*statusButton*/''}
           <button 
             class="icon-btn"
             onclick="goToCategoryList(${category.id})">
@@ -179,7 +179,7 @@ function renderCard(category) {
     return ''
   }
 
-  const statusButton = category.is_active
+  /*const statusButton = category.is_active
     ? `
       <button 
         class="icon-btn deactivate"
@@ -193,7 +193,7 @@ function renderCard(category) {
         onclick="event.stopPropagation(); goToCategoryUpdateStatus(${category.id})">
         ${iconView()}
       </button>
-    `
+    `*/
 
   return `
     <div 
@@ -215,7 +215,7 @@ function renderCard(category) {
             onclick="event.stopPropagation(); goToCategoryDelete(${category.id})">
             ${iconDelete()}
           </button> 
-          ${statusButton}
+          ${/*statusButton*/''}
           <button 
             class="icon-btn"
             onclick="event.stopPropagation(); goToCategoryList(${category.id})">

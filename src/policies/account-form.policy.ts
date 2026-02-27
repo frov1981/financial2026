@@ -14,7 +14,7 @@ export const accountFormMatrix: Record<AccountFormMode, Record<string, AccountFi
         is_active: 'edit'
     },
     delete: {
-        type: 'hidden',
+        type: 'read',
         name: 'read',
         is_active: 'read'
     },
