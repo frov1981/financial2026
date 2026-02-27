@@ -64,3 +64,49 @@
 .ui-kpi-orange {
     color: var(--ui-orange-700);
 }
+
+.kpis-cache-balance-header-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.kpis-cache-balance-year-label {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.kpis-cache-balance-year-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: var(--ui-gray-100);
+    color: var(--ui-gray-700);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.kpis-cache-balance-year-btn:hover:not(:disabled) {
+    background: var(--ui-gray-200);
+}
+
+.kpis-cache-balance-year-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.kpis-cache-balance-year-btn svg {
+    width: 18px;
+    height: 18px;
+}

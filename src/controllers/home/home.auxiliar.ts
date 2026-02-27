@@ -536,3 +536,19 @@ export const getKpisCachelBalance = async (auth_req: AuthRequest) => {
   return result
 }
 
+/* ============================================================================
+   Obtener todos los años disponibles
+============================================================================ */
+export const getAvailableKpiYears = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const repo = AppDataSource.getRepository(CacheKpiBalance)
+  const rows = await repo.createQueryBuilder('k')
+    .select('DISTINCT k.period_year', 'year')
+    .where('k.user_id = :user_id', { user_id })
+    .orderBy('k.period_year', 'DESC')
+    .getRawMany()
+  const years = rows.map(r => Number(r.year))
+  // Agregamos 0 al inicio (representa "Todos")
+  return [0, ...years]
+}
+

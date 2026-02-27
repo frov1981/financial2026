@@ -25,72 +25,72 @@ export class KpiCacheService {
             // =========================
             const kpiData = await AppDataSource.manager.query(
                 `
-        SELECT
-          COALESCE((SELECT SUM(t.amount)
-                    FROM transactions t
-                    LEFT JOIN loans l ON l.transaction_id = t.id
-                    WHERE t.user_id = ?
-                      AND t.type = 'income'
-                      AND l.id IS NULL
-                      AND YEAR(t.date) = ?
-                      AND MONTH(t.date) = ?), 0) AS incomes,
+                SELECT
+                COALESCE((SELECT SUM(t.amount)
+                            FROM transactions t
+                            LEFT JOIN loans l ON l.transaction_id = t.id
+                            WHERE t.user_id = ?
+                            AND t.type = 'income'
+                            AND l.id IS NULL
+                            AND YEAR(t.date) = ?
+                            AND MONTH(t.date) = ?), 0) AS incomes,
 
-          COALESCE((SELECT SUM(t.amount)
-                    FROM transactions t
-                    LEFT JOIN loan_payments lp ON lp.transaction_id = t.id
-                    WHERE t.user_id = ?
-                      AND t.type = 'expense'
-                      AND lp.id IS NULL
-                      AND YEAR(t.date) = ?
-                      AND MONTH(t.date) = ?), 0) AS expenses,
+                COALESCE((SELECT SUM(t.amount)
+                            FROM transactions t
+                            LEFT JOIN loan_payments lp ON lp.transaction_id = t.id
+                            WHERE t.user_id = ?
+                            AND t.type = 'expense'
+                            AND lp.id IS NULL
+                            AND YEAR(t.date) = ?
+                            AND MONTH(t.date) = ?), 0) AS expenses,
 
-          COALESCE((SELECT SUM(t.amount)
-                    FROM transactions t
-                    JOIN accounts a_to ON a_to.id = t.to_account_id
-                    WHERE t.user_id = ?
-                      AND t.type = 'transfer'
-                      AND a_to.type = 'saving'
-                      AND YEAR(t.date) = ?
-                      AND MONTH(t.date) = ?), 0) AS savings,
+                COALESCE((SELECT SUM(t.amount)
+                            FROM transactions t
+                            JOIN accounts a_to ON a_to.id = t.to_account_id
+                            WHERE t.user_id = ?
+                            AND t.type = 'transfer'
+                            AND a_to.type = 'saving'
+                            AND YEAR(t.date) = ?
+                            AND MONTH(t.date) = ?), 0) AS savings,
 
-          COALESCE((SELECT SUM(t.amount)
-                    FROM transactions t
-                    JOIN accounts a_from ON a_from.id = t.account_id
-                    JOIN accounts a_to ON a_to.id = t.to_account_id
-                    WHERE t.user_id = ?
-                      AND t.type = 'transfer'
-                      AND a_from.type = 'saving'
-                      AND a_to.type <> 'saving'
-                      AND YEAR(t.date) = ?
-                      AND MONTH(t.date) = ?), 0) AS withdrawals,
+                COALESCE((SELECT SUM(t.amount)
+                            FROM transactions t
+                            JOIN accounts a_from ON a_from.id = t.account_id
+                            JOIN accounts a_to ON a_to.id = t.to_account_id
+                            WHERE t.user_id = ?
+                            AND t.type = 'transfer'
+                            AND a_from.type = 'saving'
+                            AND a_to.type <> 'saving'
+                            AND YEAR(t.date) = ?
+                            AND MONTH(t.date) = ?), 0) AS withdrawals,
 
-          COALESCE((SELECT SUM(l.total_amount)
-                    FROM loans l
-                    WHERE l.user_id = ?
-                      AND YEAR(l.start_date) = ?
-                      AND MONTH(l.start_date) = ?), 0) AS loans,
+                COALESCE((SELECT SUM(l.total_amount)
+                            FROM loans l
+                            WHERE l.user_id = ?
+                            AND YEAR(l.start_date) = ?
+                            AND MONTH(l.start_date) = ?), 0) AS loans,
 
-          COALESCE((SELECT SUM(lp.principal_paid + lp.interest_paid)
-                    FROM loan_payments lp
-                    JOIN loans l ON l.id = lp.loan_id
-                    WHERE l.user_id = ?
-                      AND YEAR(lp.payment_date) = ?
-                      AND MONTH(lp.payment_date) = ?), 0) AS payments,
+                COALESCE((SELECT SUM(lp.principal_paid + lp.interest_paid)
+                            FROM loan_payments lp
+                            JOIN loans l ON l.id = lp.loan_id
+                            WHERE l.user_id = ?
+                            AND YEAR(lp.payment_date) = ?
+                            AND MONTH(lp.payment_date) = ?), 0) AS payments,
 
-          COALESCE((SELECT SUM(lp.principal_paid)
-                    FROM loan_payments lp
-                    JOIN loans l ON l.id = lp.loan_id
-                    WHERE l.user_id = ?
-                      AND YEAR(lp.payment_date) = ?
-                      AND MONTH(lp.payment_date) = ?), 0) AS principal_breakdown,
+                COALESCE((SELECT SUM(lp.principal_paid)
+                            FROM loan_payments lp
+                            JOIN loans l ON l.id = lp.loan_id
+                            WHERE l.user_id = ?
+                            AND YEAR(lp.payment_date) = ?
+                            AND MONTH(lp.payment_date) = ?), 0) AS principal_breakdown,
 
-          COALESCE((SELECT SUM(lp.interest_paid)
-                    FROM loan_payments lp
-                    JOIN loans l ON l.id = lp.loan_id
-                    WHERE l.user_id = ?
-                      AND YEAR(lp.payment_date) = ?
-                      AND MONTH(lp.payment_date) = ?), 0) AS interest_breakdown
-        `,
+                COALESCE((SELECT SUM(lp.interest_paid)
+                            FROM loan_payments lp
+                            JOIN loans l ON l.id = lp.loan_id
+                            WHERE l.user_id = ?
+                            AND YEAR(lp.payment_date) = ?
+                            AND MONTH(lp.payment_date) = ?), 0) AS interest_breakdown
+                `,
                 [
                     user_id, year, month,
                     user_id, year, month,

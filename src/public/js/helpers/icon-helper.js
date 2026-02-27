@@ -172,3 +172,22 @@ function iconTransferIn() {
   return iconArrowRight({ size: 3, color: '#16a34a' })
 }
 
+function iconCarouselPrev() {
+  return `
+    <svg width="20" height="20" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  `
+}
+
+function iconCarouselNext() {
+  return `
+    <svg width="20" height="20" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  `
+}

@@ -2,8 +2,6 @@
    Constantes globales
 ============================ */
 const CARD_IDS = [
-    /*'kpis-global-balance',
-    'kpis-last-6months-balance',*/
     'kpis-cache-balance',
     'chart-data-last-6months-balance',
     'chart-data-last-6years-balance',
@@ -12,12 +10,20 @@ const CARD_IDS = [
 
 const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
 const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
+const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 
 let varChartDataLast6MonthsBalance = null
 let varChartDataLast6YearsBalance = null
 let varChartDataLast6YearsLoan = null
 
+let kpi_years = []
+let kpi_year_index = 0
+
+/* ============================
+   DOM Ready
+============================ */
 document.addEventListener('DOMContentLoaded', async () => {
+
     const savedState = loadFilters(CARD_STATE_KEY) || {}
 
     CARD_IDS.forEach(id => {
@@ -26,72 +32,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!body || !icon) return
 
         const isOpen = savedState[id] ?? true
-
         body.classList.toggle('collapsed', !isOpen)
         icon.innerHTML = isOpen ? iconChevronClose() : iconChevronOpen()
     })
 
+    const carousel_prev = document.getElementById('carousel-prev')
+    const carousel_next = document.getElementById('carousel-next')
+    if (carousel_prev) carousel_prev.innerHTML = iconCarouselPrev()
+    if (carousel_next) carousel_next.innerHTML = iconCarouselNext()
+
+    const kpi_prev = document.getElementById('kpis-cache-balance-prev')
+    const kpi_next = document.getElementById('kpis-cache-balance-next')
+    if (kpi_prev) kpi_prev.innerHTML = iconCarouselPrev()
+    if (kpi_next) kpi_next.innerHTML = iconCarouselNext()
+
     try {
+
         const res = await fetch('/kpis', { credentials: 'same-origin' })
         if (!res.ok) throw new Error('No autorizado')
 
         const {
-            /*kpisGlobalBalance,
-            kpisLast6MonthsBalance,*/
             kpisCacheBalance,
             chartDataLast6MonthsBalance,
             chartDataLast6YearsBalance,
             chartDataLast6YearsLoan,
+            availableYears
         } = await res.json()
 
-        // ============================
-        // KPIs Cache Balances
-        // ============================
-        document.getElementById('kpis-cache-balance-incomes').textContent = `${kpisCacheBalance.incomes.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-expenses').textContent = `${kpisCacheBalance.expenses.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-loans').textContent = `${kpisCacheBalance.loans.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-payments').textContent = `${kpisCacheBalance.payments.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-savings').textContent = `${kpisCacheBalance.savings.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-withdrawals').textContent = `${kpisCacheBalance.withdrawals.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-total-inflows').textContent = `${kpisCacheBalance.total_inflows.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-total-outflows').textContent = `${kpisCacheBalance.total_outflows.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-net-cash-flow').textContent = `${kpisCacheBalance.net_cash_flow.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-net-savings').textContent = `${kpisCacheBalance.net_savings.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-available-balance').textContent = `${kpisCacheBalance.available_balance.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-principal-breakdown').textContent = `${kpisCacheBalance.principal_breakdown.toFixed(2)}`
-        document.getElementById('kpis-cache-balance-interest-breakdown').textContent = `${kpisCacheBalance.interest_breakdown.toFixed(2)}`
-        // ============================
-        // KPIs Globales
-        // ============================
-        /*document.getElementById('kpis-global-balance-total-income').textContent = `${kpisGlobalBalance.total_income.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-expense').textContent = `${kpisGlobalBalance.total_expense.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-savings').textContent = `${kpisGlobalBalance.total_savings.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-withdrawals').textContent = `${kpisGlobalBalance.total_withdrawals.toFixed(2)}`
-        document.getElementById('kpis-global-balance-net-worth').textContent = `${kpisGlobalBalance.net_worth.toFixed(2)}`
-        document.getElementById('kpis-global-balance-available-savings').textContent = `${kpisGlobalBalance.available_savings.toFixed(2)}`
-        const netBalanceEl = document.getElementById('kpis-global-balance-net-balance')
-        netBalanceEl.textContent = `${kpisGlobalBalance.net_balance.toFixed(2)}`
-        netBalanceEl.classList.add(kpisGlobalBalance.net_balance >= 0 ? 'text-green-700' : 'text-red-700')
-        document.getElementById('kpis-global-balance-total-loan').textContent = `${kpisGlobalBalance.total_loan.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-principal-paid').textContent = `${kpisGlobalBalance.total_principal_paid.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-interest-paid').textContent = `${kpisGlobalBalance.total_interest_paid.toFixed(2)}`
-        document.getElementById('kpis-global-balance-total-loan-balance').textContent = `${kpisGlobalBalance.total_loan_balance.toFixed(2)}`*/
-        // ============================
-        // KPIs 6 Meses
-        // ============================
-        /*document.getElementById('kpi-last-6months-total-income').textContent = `${kpisLast6MonthsBalance.total_income.toFixed(2)}`
-        document.getElementById('kpi-last-6months-total-expense').textContent = `${kpisLast6MonthsBalance.total_expense.toFixed(2)}`
-        const balanceEl = document.getElementById('kpi-last-6months-balance')
-        balanceEl.textContent = `${kpisLast6MonthsBalance.balance.toFixed(2)}`
-        balanceEl.classList.add(kpisLast6MonthsBalance.balance >= 0 ? 'text-green-700' : 'text-red-700')
-        document.getElementById('kpi-last-6months-avg-expense').textContent = `${kpisLast6MonthsBalance.avg_expense.toFixed(2)}`
-        const trendEl = document.getElementById('kpi-last-6months-trend')
-        trendEl.textContent = kpisLast6MonthsBalance.trend >= 0 ? '▲' : '▼'
-        trendEl.classList.add(kpisLast6MonthsBalance.trend >= 0 ? 'text-green-600' : 'text-red-600')*/
-        // ============================
-        // Chart 6 Meses
-        // ============================
+        /* ============================
+           Inicializar navegación año
+        ============================ */
+
+        kpi_years = availableYears || [0]
+
+        const savedYear = loadFilters(KPI_YEAR_STATE_KEY)
+        kpi_year_index = kpi_years.indexOf(savedYear)
+        if (kpi_year_index < 0) kpi_year_index = 0
+
+        updateKpiYearLabel(kpi_years[kpi_year_index])
+        renderKpis(kpisCacheBalance)
+
+        initYearNavigation()
+
+        /* ============================
+           Charts
+        ============================ */
+
         if (typeof Chart !== 'undefined') {
+
             const ctxMonths = document.getElementById('varChartDataLast6MonthsBalance').getContext('2d')
             varChartDataLast6MonthsBalance = new Chart(ctxMonths, {
                 type: 'line',
@@ -103,19 +91,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         { label: 'Balance', data: chartDataLast6MonthsBalance.balance, borderDash: [6, 4], tension: 0.35 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', align: 'center', fullSize: true, labels: { boxWidth: 14, padding: 18 }, maxWidth: 1 } },
-                    scales: { y: { beginAtZero: true } }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             })
-        }
 
-        // ============================
-        // Chart 6 Años
-        // ============================
-        if (typeof Chart !== 'undefined') {
             const ctxYears = document.getElementById('varChartDataLast6YearsBalance').getContext('2d')
             varChartDataLast6YearsBalance = new Chart(ctxYears, {
                 type: 'line',
@@ -127,19 +105,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         { label: 'Balance', data: chartDataLast6YearsBalance.balance, borderDash: [6, 4], tension: 0.35 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: { y: { beginAtZero: true } }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             })
-        }
 
-        // ============================
-        // Chart Préstamos 6 Años
-        // ============================
-        if (typeof Chart !== 'undefined') {
             const ctxLoans = document.getElementById('loansAnnualChart').getContext('2d')
             varChartDataLast6YearsLoan = new Chart(ctxLoans, {
                 type: 'line',
@@ -152,12 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         { label: 'Saldo', data: chartDataLast6YearsLoan.balance, borderDash: [6, 4], tension: 0.35 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: { y: { beginAtZero: true } }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             })
         }
 
@@ -168,15 +131,92 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 })
 
-// ============================
-// Toggle Cards
-// ============================
+/* ============================
+   Render KPIs
+============================ */
+function renderKpis(data) {
+    document.getElementById('kpis-cache-balance-incomes').textContent = data.incomes.toFixed(2)
+    document.getElementById('kpis-cache-balance-expenses').textContent = data.expenses.toFixed(2)
+    document.getElementById('kpis-cache-balance-loans').textContent = data.loans.toFixed(2)
+    document.getElementById('kpis-cache-balance-payments').textContent = data.payments.toFixed(2)
+    document.getElementById('kpis-cache-balance-savings').textContent = data.savings.toFixed(2)
+    document.getElementById('kpis-cache-balance-withdrawals').textContent = data.withdrawals.toFixed(2)
+    document.getElementById('kpis-cache-balance-total-inflows').textContent = data.total_inflows.toFixed(2)
+    document.getElementById('kpis-cache-balance-total-outflows').textContent = data.total_outflows.toFixed(2)
+    document.getElementById('kpis-cache-balance-net-cash-flow').textContent = data.net_cash_flow.toFixed(2)
+    document.getElementById('kpis-cache-balance-net-savings').textContent = data.net_savings.toFixed(2)
+    document.getElementById('kpis-cache-balance-available-balance').textContent = data.available_balance.toFixed(2)
+    document.getElementById('kpis-cache-balance-principal-breakdown').textContent = data.principal_breakdown.toFixed(2)
+    document.getElementById('kpis-cache-balance-interest-breakdown').textContent = data.interest_breakdown.toFixed(2)
+}
+
+/* ============================
+   Year Navigation
+============================ */
+function initYearNavigation() {
+
+    const prevBtn = document.getElementById('kpis-cache-balance-prev')
+    const nextBtn = document.getElementById('kpis-cache-balance-next')
+
+    if (!prevBtn || !nextBtn) return
+
+    prevBtn.addEventListener('click', async () => {
+        if (kpi_year_index < kpi_years.length - 1) {
+            kpi_year_index++
+            await changeYear()
+        }
+    })
+
+    nextBtn.addEventListener('click', async () => {
+        if (kpi_year_index > 0) {
+            kpi_year_index--
+            await changeYear()
+        }
+    })
+
+    updateYearButtons()
+}
+
+async function changeYear() {
+
+    const year = kpi_years[kpi_year_index]
+
+    saveFilters(KPI_YEAR_STATE_KEY, year)
+    updateKpiYearLabel(year)
+    updateYearButtons()
+
+    const res = await fetch(`/kpis?year_period=${year}&month_period=0`, { credentials: 'same-origin' })
+    if (!res.ok) return
+
+    const { kpisCacheBalance } = await res.json()
+    renderKpis(kpisCacheBalance)
+}
+
+function updateKpiYearLabel(year) {
+    const label = document.getElementById('kpis-cache-balance-year-label')
+    if (!label) return
+    label.textContent = year === 0 ? 'KPIs Balances - Todos' : `KPIs Balances - ${year}`
+}
+
+function updateYearButtons() {
+    const prevBtn = document.getElementById('kpis-cache-balance-prev')
+    const nextBtn = document.getElementById('kpis-cache-balance-next')
+    if (!prevBtn || !nextBtn) return
+
+    prevBtn.disabled = kpi_year_index >= kpi_years.length - 1
+    nextBtn.disabled = kpi_year_index <= 0
+}
+
+/* ============================
+   Toggle Cards
+============================ */
 function toggleCard(id) {
     const body = document.getElementById(id)
     const icon = document.getElementById(`icon-${id}`)
     const isOpen = !body.classList.contains('collapsed')
     body.classList.toggle('collapsed', isOpen)
     icon.innerHTML = isOpen ? iconChevronOpen() : iconChevronClose()
+
     const state = loadFilters(CARD_STATE_KEY) || {}
     state[id] = !isOpen
     saveFilters(CARD_STATE_KEY, state)
@@ -189,44 +229,16 @@ function toggleCard(id) {
 }
 
 /* ============================
-   Home Carousel Desktop Control
+   Carousel
 ============================ */
-function scrollCarouselNext() {
-    const carousel = document.querySelector('.home-carousel')
-    if (!carousel) return
-
-    const slide = carousel.querySelector('.home-slide')
-    if (!slide) return
-
-    carousel.scrollBy({
-        left: slide.offsetWidth,
-        behavior: 'smooth'
-    })
-}
-
-function scrollCarouselPrev() {
-    const carousel = document.querySelector('.home-carousel')
-    if (!carousel) return
-
-    const slide = carousel.querySelector('.home-slide')
-    if (!slide) return
-
-    carousel.scrollBy({
-        left: -slide.offsetWidth,
-        behavior: 'smooth'
-    })
-}
-
 function initHomeCarousel() {
+
     const carousel = document.querySelector('.home-carousel')
     if (!carousel) return
 
     const prevBtn = document.getElementById('carousel-prev')
     const nextBtn = document.getElementById('carousel-next')
 
-    // ============================
-    // Restaurar posición guardada
-    // ============================
     const savedPosition = loadFilters(CAROUSEL_POSITION_KEY)
 
     if (savedPosition && typeof savedPosition.scrollLeft === 'number') {
@@ -235,9 +247,6 @@ function initHomeCarousel() {
         })
     }
 
-    // ============================
-    // Guardar posición al hacer scroll
-    // ============================
     carousel.addEventListener('scroll', () => {
         saveFilters(CAROUSEL_POSITION_KEY, {
             scrollLeft: carousel.scrollLeft
@@ -245,25 +254,25 @@ function initHomeCarousel() {
         updateCarouselButtons()
     })
 
-    // ============================
-    // Actualizar botones
-    // ============================
     function updateCarouselButtons() {
         if (!prevBtn || !nextBtn) return
-
         const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth
-
         prevBtn.disabled = carousel.scrollLeft <= 0
         nextBtn.disabled = carousel.scrollLeft >= maxScrollLeft - 1
     }
 
-    // Inicializar estado
     updateCarouselButtons()
-
     window.addEventListener('resize', updateCarouselButtons)
 }
 
+function scrollCarouselNext() {
+    const carousel = document.querySelector('.home-carousel')
+    if (!carousel) return
+    carousel.scrollBy({ left: carousel.clientWidth * 0.8, behavior: 'smooth' })
+}
 
-
-
-
+function scrollCarouselPrev() {
+    const carousel = document.querySelector('.home-carousel')
+    if (!carousel) return
+    carousel.scrollBy({ left: -carousel.clientWidth * 0.8, behavior: 'smooth' })
+}
