@@ -109,7 +109,8 @@ export const routeToFormUpdateAccount: RequestHandler = async (req: Request, res
     account: {
       id: account.id,
       type: account.type,
-      name: account.name
+      name: account.name,
+      is_active: account.is_active,
     },
     errors: {},
     mode: 'update',
@@ -140,7 +141,8 @@ export const routeToFormDeleteAccount: RequestHandler = async (req: Request, res
     account: {
       id: account.id,
       type: account.type,
-      name: account.name
+      name: account.name,
+      is_active: account.is_active,
     },
     errors: {},
     mode: 'delete',

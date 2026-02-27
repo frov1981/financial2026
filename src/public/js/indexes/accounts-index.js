@@ -82,7 +82,7 @@ function debounce(fn, delay) {
 function renderRow(account) {
   const rowClass = account.is_active ? '' : 'bg-red-50'
 
-  const statusButton = account.is_active
+  /*const statusButton = account.is_active
     ? `
       <button 
         class="icon-btn deactivate" 
@@ -98,7 +98,7 @@ function renderRow(account) {
         ${iconView()}
         <span class="ui-btn-text">Activar</span>
       </button>
-    `
+    `*/
 
   return `
     <tr id="account-${account.id}" class="${rowClass}">
@@ -122,7 +122,7 @@ function renderRow(account) {
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
-          ${statusButton}
+          ${/*statusButton*/''}
         </div>
       </td>
     </tr>
@@ -130,7 +130,7 @@ function renderRow(account) {
 }
 
 function renderCard(account) {
-  const statusButton = account.is_active
+  /*const statusButton = account.is_active
     ? `
       <button 
         class="icon-btn deactivate"
@@ -144,7 +144,7 @@ function renderCard(account) {
         onclick="event.stopPropagation(); goToAccountUpdateStatus(${account.id})">
         ${iconView()}
       </button>
-    `
+    `*/
 
   return `
     <div 
@@ -165,7 +165,7 @@ function renderCard(account) {
             onclick="event.stopPropagation(); goToAccountDelete(${account.id})">
             ${iconDelete()}
           </button>
-          ${statusButton}
+          ${/*statusButton*/''}
         </div>
       </div>
 

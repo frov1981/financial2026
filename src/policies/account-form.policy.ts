@@ -11,12 +11,12 @@ export const accountFormMatrix: Record<AccountFormMode, Record<string, AccountFi
     update: {
         type: 'read',
         name: 'edit',
-        is_active: 'hidden'
+        is_active: 'edit'
     },
     delete: {
         type: 'hidden',
         name: 'read',
-        is_active: 'hidden'
+        is_active: 'read'
     },
     status: {
         type: 'hidden',

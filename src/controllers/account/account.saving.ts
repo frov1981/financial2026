@@ -58,7 +58,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
 
   const form_state = {
     account: account_view,
-    accountFormPolicy: accountFormMatrix[mode],
+    account_form_policy: accountFormMatrix[mode],
     mode
   }
 
