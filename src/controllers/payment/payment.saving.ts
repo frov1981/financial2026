@@ -10,6 +10,7 @@ import { logger } from '../../utils/logger.util'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
 import { getActiveAccountsByUser } from '../../services/populate-items.service'
 import { KpiCacheService } from '../../services/kpi-cache.service'
+import { DateTime } from 'luxon'
 
 /* ============================
    Helpers de cálculo
@@ -46,6 +47,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     logger.info('savePayment called', { body: req.body, param: req.params })
 
     const auth_req = req as AuthRequest
+    const user_id = auth_req.user.id
     const payment_id = req.params.id ? Number(req.params.id) : req.body.id ? Number(req.body.id) : undefined
     const loan_id = req.body.loan_id ? Number(req.body.loan_id) : undefined
     const action = req.body.action || 'save'
@@ -97,6 +99,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             loan.principal_paid -= payment.principal_paid
             loan.interest_paid -= payment.interest_paid
 
+
+            const local_date = DateTime.fromJSDate(payment.transaction.date, { zone: 'utc' }).setZone(timezone)
+            const period_year = local_date.year
+            const period_month = local_date.month
+
             // Si el ultimo pago es reversado, el prestamo se reactiva
             if (loan.balance > 0) {
                 loan.is_active = true
@@ -114,7 +121,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             }
 
             await queryRunner.commitTransaction()
-            KpiCacheService.recalcMonthlyKPIs(payment.transaction, timezone).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
+            KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
             return res.redirect(`/payments/${loan_id}/loan`)
         }
 
@@ -241,7 +248,13 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         await payment_repo.save(payment)
 
         await queryRunner.commitTransaction()
-        KpiCacheService.recalcMonthlyKPIs(payment.transaction, timezone).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
+
+
+        const local_date = DateTime.fromJSDate(payment.transaction.date, { zone: 'utc' }).setZone(timezone)
+        const period_year = local_date.year
+        const period_month = local_date.month
+
+        KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
         return res.redirect(`/payments/${loan_id}/loan`)
     } catch (err: any) {
         await queryRunner.rollbackTransaction()

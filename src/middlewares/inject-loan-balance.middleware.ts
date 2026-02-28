@@ -5,7 +5,7 @@ import { logger } from '../utils/logger.util'
 
 export const injectLoanBalance = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        logger.debug(`${injectLoanBalance.name}-Middleware ejecutado`)
+        //logger.debug(`${injectLoanBalance.name}-Middleware ejecutado`)
         const auth_req = req as AuthRequest
         if (!auth_req.user) return next()
         const loan_balance = await LoanBalanceService.getPendingLoanBalance(auth_req.user.id)

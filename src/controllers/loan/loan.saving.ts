@@ -11,6 +11,7 @@ import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
 import { KpiCacheService } from '../../services/kpi-cache.service'
+import { DateTime } from 'luxon'
 
 const getTitle = (mode: string) => {
   switch (mode) {
@@ -83,6 +84,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   logger.info('saveLoan called', { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
+  const user_id =auth_req.user.id
   const loan_id = req.body.id ? Number(req.body.id) : undefined
   const mode: LoanFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
@@ -126,6 +128,10 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       const errors = await validateDeleteLoan(existing, auth_req)
       if (errors) throw { validationErrors: errors }
 
+      const local_date = DateTime.fromJSDate(existing.transaction.date, { zone: 'utc' }).setZone(timezone)
+      const period_year = local_date.year
+      const period_month = local_date.month
+
       if (existing.disbursement_account) {
         const account = await queryRunner.manager.findOneByOrFail(Account, {
           id: existing.disbursement_account.id,
@@ -144,7 +150,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       }
 
       await queryRunner.commitTransaction()
-      KpiCacheService.recalcMonthlyKPIs(existing.transaction, timezone).catch(err => logger.error(`${saveLoan.name}-Error. `, { err }))
+      KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
       return res.redirect('/loans')
     }
 
@@ -251,7 +257,14 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
     await queryRunner.manager.save(loan)
     await queryRunner.commitTransaction()
-    KpiCacheService.recalcMonthlyKPIs(loan.transaction, timezone).catch(err => logger.error(`${saveLoan.name}-Error. `, { err }))
+
+    if (loan.transaction) {
+      const local_date = DateTime.fromJSDate(loan.transaction.date, { zone: 'utc' }).setZone(timezone)
+      const period_year = local_date.year
+      const period_month = local_date.month
+      KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
+    }
+
     return res.redirect('/loans')
 
   } catch (err: any) {

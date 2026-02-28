@@ -12,6 +12,7 @@ import { getSqlErrorMessage } from '../../utils/sql-err.util'
 import { calculateTransactionDeltas, splitCategoriesByType } from '../transaction/transaction.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator'
 import { KpiCacheService } from '../../services/kpi-cache.service'
+import { DateTime } from 'luxon'
 
 /* ============================
    Título según modo
@@ -70,6 +71,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   logger.info('saveTransaction called', { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
+  const user_id = auth_req.user.id
   const repo_transaction = AppDataSource.getRepository(Transaction)
 
   const transaction_id = req.body.id ? Number(req.body.id) : undefined
@@ -126,10 +128,13 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
         })
       }
 
+      const local_date = DateTime.fromJSDate(existing.date, { zone: 'utc' }).setZone(timezone)
+      const period_year = local_date.year
+      const period_month = local_date.month
+
       await query_runner.manager.remove(Transaction, existing)
       await query_runner.commitTransaction()
-      KpiCacheService.recalcMonthlyKPIs(existing, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
-      await query_runner.release()
+      KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -225,10 +230,12 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
         balance: Number(acc.balance) + delta
       })
     }
+    const local_date = DateTime.fromJSDate(saved_transaction.date, { zone: 'utc' }).setZone(timezone)
+    const period_year = local_date.year
+    const period_month = local_date.month
 
     await query_runner.commitTransaction()
-    KpiCacheService.recalcMonthlyKPIs(saved_transaction, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
-    await query_runner.release()
+    KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
 
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)

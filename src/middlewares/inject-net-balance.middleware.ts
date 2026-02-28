@@ -6,7 +6,7 @@ import { logger } from '../utils/logger.util'
 export const injectNetBalance: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
-        logger.debug(`${injectNetBalance.name}-Middleware ejecutado`)
+        //logger.debug(`${injectNetBalance.name}-Middleware ejecutado`)
         const auth_req = req as AuthRequest
         const user = auth_req.user
         if (!user) return next()
