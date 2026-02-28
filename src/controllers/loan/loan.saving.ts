@@ -144,7 +144,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       }
 
       await queryRunner.commitTransaction()
-      KpiCacheService.recalcMonthlyKPIs(existing.transaction).catch(err => logger.error(`${saveLoan.name}-Error. `, { err }))
+      KpiCacheService.recalcMonthlyKPIs(existing.transaction, timezone).catch(err => logger.error(`${saveLoan.name}-Error. `, { err }))
       return res.redirect('/loans')
     }
 
@@ -251,7 +251,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
     await queryRunner.manager.save(loan)
     await queryRunner.commitTransaction()
-    KpiCacheService.recalcMonthlyKPIs(loan.transaction).catch(err => logger.error(`${saveLoan.name}-Error. `, { err }))
+    KpiCacheService.recalcMonthlyKPIs(loan.transaction, timezone).catch(err => logger.error(`${saveLoan.name}-Error. `, { err }))
     return res.redirect('/loans')
 
   } catch (err: any) {

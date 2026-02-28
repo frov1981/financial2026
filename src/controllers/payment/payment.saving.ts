@@ -114,7 +114,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             }
 
             await queryRunner.commitTransaction()
-            KpiCacheService.recalcMonthlyKPIs(payment.transaction).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
+            KpiCacheService.recalcMonthlyKPIs(payment.transaction, timezone).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
             return res.redirect(`/payments/${loan_id}/loan`)
         }
 
@@ -241,7 +241,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         await payment_repo.save(payment)
 
         await queryRunner.commitTransaction()
-        KpiCacheService.recalcMonthlyKPIs(payment.transaction).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
+        KpiCacheService.recalcMonthlyKPIs(payment.transaction, timezone).catch(err => logger.error(`${savePayment.name}-Error. `, { err }))
         return res.redirect(`/payments/${loan_id}/loan`)
     } catch (err: any) {
         await queryRunner.rollbackTransaction()

@@ -128,7 +128,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
       await query_runner.manager.remove(Transaction, existing)
       await query_runner.commitTransaction()
-      KpiCacheService.recalcMonthlyKPIs(existing).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
+      KpiCacheService.recalcMonthlyKPIs(existing, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
       await query_runner.release()
 
       if (return_from === 'categories' && return_category_id) {
@@ -215,8 +215,8 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       mergeDeltas(calculateTransactionDeltas(previous_transaction, -1))
     }
 
-    const saved_tx = await query_runner.manager.save(Transaction, transaction)
-    mergeDeltas(calculateTransactionDeltas(saved_tx, 1))
+    const saved_transaction = await query_runner.manager.save(Transaction, transaction)
+    mergeDeltas(calculateTransactionDeltas(saved_transaction, 1))
 
     for (const [acc_id, delta] of deltas) {
       const acc = await query_runner.manager.findOne(Account, { where: { id: acc_id } })
@@ -227,7 +227,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     }
 
     await query_runner.commitTransaction()
-    KpiCacheService.recalcMonthlyKPIs(transaction).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
+    KpiCacheService.recalcMonthlyKPIs(saved_transaction, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
     await query_runner.release()
 
     if (return_from === 'categories' && return_category_id) {
