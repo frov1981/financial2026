@@ -24,7 +24,7 @@ export class KpiCacheService {
             const start_date = start_of_month_utc.toJSDate()
             const end_date = start_of_next_month_utc.toJSDate()
 
-            logger.info(`recalcMonthlyKPIs. KPI_RANGE_DEBUG`, { timezone, period_year, period_month, start: start_of_month_utc.toISO(), end: start_of_next_month_utc.toISO() })
+            logger.debug(`recalcMonthlyKPIs. KPI_RANGE_DEBUG`, { timezone, period_year, period_month, start: start_of_month_utc.toISO(), end: start_of_next_month_utc.toISO() })
 
             const kpi_data = await AppDataSource.manager.query(
                 `
