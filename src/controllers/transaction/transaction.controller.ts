@@ -232,7 +232,7 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
     transaction: {
       type: transaction.type,
       account: transaction.account,
-      to_account: transaction.account,
+      to_account: transaction.to_account,
       category: transaction.category,
       amount: Number(transaction.amount),
       date: formatDateForInputLocal(default_date, timezone),
