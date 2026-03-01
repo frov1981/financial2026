@@ -120,20 +120,43 @@ function renderRow(transaction) {
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
       <td class="ui-td col-left col-nowrap">
         ${transaction.type === 'transfer'
-      ? `
-            <div class="transfer-account">
-              <span class="transfer-icon">${iconTransferOut()}</span>
+        ? `
+            <div class="grouped-icon-line">
+              <span class="grouped-icon">${iconTransferOut()}</span>
               <span>${transaction.account?.name || '-'}</span>
             </div>
-            <div class="transfer-account">
-              <span class="transfer-icon">${iconTransferIn()}</span>
+            <div class="grouped-icon-line">
+              <span class="grouped-icon">${iconTransferIn()}</span>
               <span>${transaction.to_account?.name || '-'}</span>
             </div>
           `
-      : `${transaction.account?.name || '-'}`
-    }
+      : transaction.type === 'income'
+      ? `
+        <div class="grouped-icon-line">
+          <span class="grouped-icon">${iconTransferIn()}</span>
+          <span>${transaction.account?.name || '-'}</span>
+        </div>
+      `
+      : transaction.type === 'expense'
+      ? `
+        <div class="grouped-icon-line">
+          <span class="grouped-icon">${iconTransferOut()}</span>
+          <span>${transaction.account?.name || '-'}</span>
+        </div>
+      `
+      : '-'
+      }
       </td>
-      <td class="ui-td col-left col-nowrap">${transaction.category?.name || '-'}</td>
+      <td class="ui-td col-left col-nowrap">
+      ${transaction.category?.name 
+        ? `
+        <div class="grouped-icon-line">
+          <span class="grouped-icon">${iconGrouped()}</span>
+          <span>${transaction.category?.name || '-'}</span>
+        </div>
+        ` : ''
+      }
+      </td>
       <td class="ui-td col-left col-description">${transaction.description}</td>
       <td class="ui-td col-center col-nowrap">
         <div class="icon-actions">
@@ -221,20 +244,42 @@ function renderCard(transaction) {
         <div class="card-info">
           <div class="card-account">
             ${transaction.type === 'transfer'
-      ? `
-                <div class="transfer-account">
-                  <span class="transfer-icon">${iconTransferOut()}</span>
+            ? `
+                <div class="grouped-icon-line">
+                  <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
-                <div class="transfer-account">
-                  <span class="transfer-icon">${iconTransferIn()}</span>
+                <div class="grouped-icon-line">
+                  <span class="grouped-icon">${iconTransferIn()}</span>
                   <span>${transaction.to_account?.name || '-'}</span>
                 </div>
               `
-      : `<div class="card-account">${transaction.account?.name || '-'}</div>`
-    }
+            : transaction.type === 'income'
+            ? `
+                <div class="grouped-icon-line">
+                  <span class="grouped-icon">${iconTransferIn()}</span>
+                  <span>${transaction.account?.name || '-'}</span>
+                </div>
+              `
+            : transaction.type === 'expense'
+            ? `
+                <div class="grouped-icon-line">
+                  <span class="grouped-icon">${iconTransferOut()}</span>
+                  <span>${transaction.account?.name || '-'}</span>
+                </div>
+              `
+            : '-'
+            }
           </div>
-          <div class="card-category">${transaction.category?.name || '-'}</div>
+          ${transaction.category?.name 
+            ? `<div class="card-category">
+                  <div class="grouped-icon-line">
+                    <span class="grouped-icon">${iconGrouped()}</span>
+                    <span>${transaction.category?.name || '-'}</span>
+                  </div>
+                </div>
+            ` : ''
+          }
           ${transaction.description ? `<div class="card-description">${transaction.description}</div>` : ''}
         </div>
 

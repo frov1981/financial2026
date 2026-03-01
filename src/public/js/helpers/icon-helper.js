@@ -191,3 +191,18 @@ function iconCarouselNext() {
     </svg>
   `
 }
+
+/* Grupo / Agrupación */
+function iconGroup({ size = 4, color = 'currentColor' } = {}) {
+  return `
+    <svg class="w-${size} h-${size}" fill="none" stroke="${color}" stroke-width="2"
+      viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M3 7h18M6 12h12M9 17h6"/>
+    </svg>
+  `
+}
+
+function iconGrouped() {
+  return iconGroup({ size: 3, color: '#1c1fdb' })
+}

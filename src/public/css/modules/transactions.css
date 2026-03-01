@@ -119,18 +119,19 @@
     white-space: nowrap;
 }
 
-.transaction-card .transfer-account {
+.grouped-icon-line {
     display: flex;
     align-items: center;
     gap: 6px;
     line-height: 1.2;
+    white-space: nowrap;
 }
 
-.transaction-card .transfer-account+.transfer-account {
+.grouped-icon-line + .grouped-icon-line {
     margin-top: 4px;
 }
 
-.transaction-card .transfer-icon {
+.grouped-icon {
     display: flex;
     align-items: center;
 }
