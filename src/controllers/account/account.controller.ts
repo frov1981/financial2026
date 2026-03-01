@@ -37,7 +37,7 @@ export const apiForGettingAccounts: RequestHandler = async (req: Request, res: R
 
     const result = await repository
       .createQueryBuilder('account')
-      .where('account.user_id = :userId', { userId: auth_req.user.id })
+      .where('account.user_id = :user_id', { user_id: auth_req.user.id })
       .addSelect(subQuery =>
         subQuery
           .select('COUNT(t.id)')

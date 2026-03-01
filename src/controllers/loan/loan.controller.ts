@@ -49,7 +49,7 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       .leftJoinAndSelect('loan.disbursement_account', 'disbursement_account')
       .leftJoinAndSelect('loan.transaction', 'transaction')
       .leftJoinAndSelect('loan.payments', 'payments')
-      .where('loan.user_id = :userId', { userId: auth_req.user.id })
+      .where('loan.user_id = :user_id', { user_id: auth_req.user.id })
       .orderBy('loan_group.name', 'ASC')
       .addOrderBy('loan.name', 'ASC')
       .getMany()

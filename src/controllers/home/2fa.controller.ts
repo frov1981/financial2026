@@ -68,7 +68,7 @@ export const verify2FA = async (req: Request, res: Response) => {
         return res.redirect('/login')
       }
 
-      ; (req.session as any).userId = pendingUserId
+      ; (req.session as any).user_id = pendingUserId
       ; (req.session as any).timezone = preservedTimezone
 
       req.session.save(err2 => {

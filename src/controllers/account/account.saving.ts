@@ -78,7 +78,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     if (mode === 'delete') {
       if (!existing) throw new Error('Cuenta no encontrada')
 
-      logger.info('Before deleting account', { userId: auth_req.user.id, mode, existing })
+      logger.info('Before deleting account', { user_id: auth_req.user.id, mode, existing })
 
       const errors = await validateDeleteAccount(auth_req, existing)
       if (errors) throw { validationErrors: errors }
@@ -121,7 +121,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       account.is_active = clean.is_active === 'true' || clean.is_active === true
     }
 
-    logger.info('Before saving account', { userId: auth_req.user.id, mode, account })
+    logger.info('Before saving account', { user_id: auth_req.user.id, mode, account })
 
     const errors = await validateSaveAccount(auth_req, account)
     if (errors) throw { validationErrors: errors }
@@ -133,7 +133,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
 
   } catch (err: any) {
     logger.error('Error saving account', {
-      userId: auth_req.user.id,
+      user_id: auth_req.user.id,
       account_id,
       mode,
       error: err,

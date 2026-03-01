@@ -8,29 +8,25 @@ import { logger } from '../../utils/logger.util'
 import { getAvailableKpiYears, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisCachelBalance, getKpisGlobalBalance, getKpisLast6MonthsBalance } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
-  if ((req.session as any)?.userId) {
+  if ((req.session as any)?.user_id) {
     return res.redirect('/home')
   }
   res.redirect('/login')
 }
 
 export const routeToPageLogin = (req: Request, res: Response) => {
-  res.render(
-    'pages/login',
-    {
-      error: null
-    })
+  res.render('pages/login', { error: null })
 }
 
 export const routeToPageHome = async (req: Request, res: Response) => {
-  const skipLogin = process.env.NODE_SKIP_LOGIN === 'true'
-  const userId = skipLogin ? 1 : (req.session as any)?.userId
-  if (!userId) {
+  const skip_login = process.env.NODE_SKIP_LOGIN === 'true'
+  const user_id = skip_login ? 1 : (req.session as any)?.user_id
+  if (!user_id) {
     return res.redirect('/login')
   }
 
-  const userRepo = AppDataSource.getRepository(User)
-  const user = await userRepo.findOneBy({ id: userId })
+  const user_repo = AppDataSource.getRepository(User)
+  const user = await user_repo.findOneBy({ id: user_id })
   if (!user) {
     return res.redirect('/login')
   }
@@ -57,7 +53,7 @@ export const routeToPageHome = async (req: Request, res: Response) => {
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
   try {
     logger.debug(`${apiForValidatingLogin.name}-Start`)
-    const selectedFields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
+    const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
     const timezone = String(req.body.timezone || 'UTC')
     /* ============================
        Modo Skip Login (Desarrollo)
@@ -66,14 +62,14 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
        Esto permite a los desarrolladores saltarse el proceso de login durante el desarrollo.
     ============================ */
     if (process.env.NODE_SKIP_LOGIN === 'true') {
-      const userRepo = AppDataSource.getRepository(User)
-      const devUser = await userRepo.findOne({
+      const user_repo = AppDataSource.getRepository(User)
+      const dev_user = await user_repo.findOne({
         where: { id: Number(process.env.DEV_USER_ID) || 1 },
-        select: selectedFields
+        select: selected_fields
       })
 
-      if (devUser) {
-        (req.session as any).userId = devUser.id;
+      if (dev_user) {
+        (req.session as any).user_id = dev_user.id;
         (req.session as any).timezone = timezone
         return res.redirect('/home')
       }
@@ -83,30 +79,20 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
        Login Produccion
     ============================ */
     const { username, password } = req.body
-    const userRepo = AppDataSource.getRepository(User)
-    const user = await userRepo.findOne({
+    const user_repo = AppDataSource.getRepository(User)
+    const user = await user_repo.findOne({
       where: { name: username },
-      select: selectedFields
+      select: selected_fields
     })
 
     if (!user) {
-      return res.render(
-        'pages/login',
-        {
-          error: 'Usuario no encontrado'
-        }
-      )
+      return res.render('pages/login', { error: 'Usuario no encontrado' })
     }
 
-    const validPassword = await bcrypt.compare(password, user.password_hash)
+    const valid_password = await bcrypt.compare(password, user.password_hash)
 
-    if (!validPassword) {
-      return res.render(
-        'pages/login',
-        {
-          error: 'Contraseña incorrecta'
-        }
-      )
+    if (!valid_password) {
+      return res.render('pages/login', { error: 'Contraseña incorrecta' })
     }
 
     /* ============================
@@ -146,14 +132,14 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
 }
 
 export const apiForGettingKpis: RequestHandler = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest
+  const auth_req = req as AuthRequest
 
   try {
-    const availableYears = await getAvailableKpiYears(authReq)
-    const kpisCacheBalance = await getKpisCachelBalance(authReq)
-    const chartDataLast6MonthsBalance = await getChartDataLast6MonthsBalance(authReq)
-    const chartDataLast6YearsBalance = await getChartDataLast6YearsBalance(authReq)
-    const chartDataLast6YearsLoan = await getChartDataLast6YearsLoan(authReq)
+    const availableYears = await getAvailableKpiYears(auth_req)
+    const kpisCacheBalance = await getKpisCachelBalance(auth_req)
+    const chartDataLast6MonthsBalance = await getChartDataLast6MonthsBalance(auth_req)
+    const chartDataLast6YearsBalance = await getChartDataLast6YearsBalance(auth_req)
+    const chartDataLast6YearsLoan = await getChartDataLast6YearsLoan(auth_req)
 
     res.json({
       availableYears,

@@ -14,14 +14,17 @@ export class User {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @Column({ unique: true, select: false })
+  @Column({ unique: true })
   email!: string
 
   @Column({ select: false })
   password_hash!: string
 
-  @Column({ select: false })
+  @Column()
   name!: string
+
+  @Column({ default: '' })
+  roles!: string
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date

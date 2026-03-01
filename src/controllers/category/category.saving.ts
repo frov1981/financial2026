@@ -145,7 +145,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
 
   } catch (err: any) {
     logger.error(`${saveCategory.name}-Error. `, {
-      userId: auth_req.user.id,
+      user_id: auth_req.user.id,
       category_id,
       mode,
       error: err,

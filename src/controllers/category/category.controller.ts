@@ -41,7 +41,7 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
       .createQueryBuilder('category')
       .innerJoin('category.user', 'user')
       .innerJoinAndSelect('category.category_group', 'group')
-      .where('user.id = :userId', { userId: auth_req.user.id })
+      .where('user.id = :user_id', { user_id: auth_req.user.id })
       .addSelect(subQuery =>
         subQuery
           .select('COUNT(t.id)')
