@@ -5,7 +5,7 @@ import { categoryFormMatrix } from '../../policies/category-form.policy'
 import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
-export { saveCategory as apiForSavingCatgory } from './category.saving'
+export { saveCategory as apiForSavingCategory } from './category.saving'
 
 type CategoryFormViewParams = {
   title: string

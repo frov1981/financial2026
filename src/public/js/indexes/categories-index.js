@@ -115,24 +115,6 @@ function renderRow(category) {
 
   const rowClass = category.is_active ? '' : 'bg-red-50'
 
-  /*const statusButton = category.is_active
-    ? `
-      <button 
-        class="icon-btn deactivate" 
-        onclick="goToCategoryUpdateStatus(${category.id})">
-        ${iconViewOff()}
-        <span class="ui-btn-text">Desactivar</span>
-      </button>
-    `
-    : `
-      <button 
-        class="icon-btn activate" 
-        onclick="goToCategoryUpdateStatus(${category.id})">
-        ${iconView()}
-        <span class="ui-btn-text">Activar</span>
-      </button>
-    `*/
-
   return `
     <tr id="category-${category.id}" class="${rowClass}">
       <td class="ui-td col-left">
@@ -159,7 +141,6 @@ function renderRow(category) {
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
-          ${/*statusButton*/''}
           <button 
             class="icon-btn"
             onclick="goToCategoryList(${category.id})">
@@ -178,22 +159,6 @@ function renderCard(category) {
   if (collapsed) {
     return ''
   }
-
-  /*const statusButton = category.is_active
-    ? `
-      <button 
-        class="icon-btn deactivate"
-        onclick="event.stopPropagation(); goToCategoryUpdateStatus(${category.id})">
-        ${iconViewOff()}
-      </button>
-    `
-    : `
-      <button 
-        class="icon-btn activate"
-        onclick="event.stopPropagation(); goToCategoryUpdateStatus(${category.id})">
-        ${iconView()}
-      </button>
-    `*/
 
   return `
     <div 
@@ -215,7 +180,6 @@ function renderCard(category) {
             onclick="event.stopPropagation(); goToCategoryDelete(${category.id})">
             ${iconDelete()}
           </button> 
-          ${/*statusButton*/''}
           <button 
             class="icon-btn"
             onclick="event.stopPropagation(); goToCategoryList(${category.id})">
@@ -282,9 +246,24 @@ function renderTable(data) {
           </div>
         </td>
         <td class="ui-td col-left"></td>
-        <td class="ui-td col-right col-sm"></td>
-        <td class="ui-td col-left col-sm"></td>
-        <td class="ui-td col-center"></td>
+        <td class="ui-td col-right"></td>
+        <td class="ui-td col-left"></td>
+        <td class="ui-td col-center">
+          <div class="icon-actions">
+            <button 
+              class="icon-btn edit" 
+              onclick="goToCategoryGroupUpdate(${group.id})">
+              ${iconEdit()}
+              <span class="ui-btn-text">Editar</span>
+            </button>
+            <button 
+              class="icon-btn delete" 
+              onclick="goToCategoryGroupDelete(${group.id})">
+              ${iconDelete()}
+              <span class="ui-btn-text">Eliminar</span>
+            </button>
+          </div>
+        </td>
       </tr>
     `
 
@@ -330,10 +309,24 @@ function renderCards(data) {
     return `
       <div class="category-group ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
         <div class="category-group-header">
-          <button onclick="toggleCategoryCollapse(${group.id})">
-            ${collapsed ? iconChevronOpen() : iconChevronClose()}
-          </button>
-          ${group.name}
+          <div class="group-header-left">
+            <button onclick="toggleCategoryCollapse(${group.id})">
+              ${collapsed ? iconChevronOpen() : iconChevronClose()}
+            </button>
+            <span>${group.name}</span>
+          </div>
+          <div class="group-header-actions">
+            <button 
+              class="icon-btn edit"
+              onclick="event.stopPropagation(); goToCategoryGroupUpdate(${group.id})">
+              ${iconEdit()}
+            </button>
+            <button 
+              class="icon-btn delete"
+              onclick="event.stopPropagation(); goToCategoryGroupDelete(${group.id})">
+              ${iconDelete()}
+            </button>
+          </div>
         </div>
         <div class="category-group-body">
           ${childCards}
@@ -466,6 +459,14 @@ function selectCategoryCard(event, id) {
 
   event.currentTarget.classList.add('card-selected')
   saveFilters(SELECTED_KEY, { id })
+}
+
+function goToCategoryGroupUpdate(id) {
+  location.href = `/category-groups/update/${id}`
+}
+
+function goToCategoryGroupDelete(id) {
+  location.href = `/category-groups/delete/${id}`
 }
 
 /* ============================

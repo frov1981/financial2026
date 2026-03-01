@@ -1,0 +1,91 @@
+<%
+  const rules = category_group_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'read'
+  const isEditable = field => rules[field] === 'edit'
+%>
+
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6">
+    <%= 
+      mode === 'insert' ? 'Insertar Categoria' :
+      mode === 'update' ? 'Editar Categoria' :
+      mode === 'delete' ? 'Eliminar Categoria' :
+      mode
+    %>
+  </h1>
+
+  <form method="post" action="/category-groups/">
+
+    <!-- Error general -->
+    <% if (errors?.general) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors.general %>
+      </div>
+    <% } %>
+
+    <!-- ID y acción -->
+    <input type="hidden" name="id" value="<%= category_group?.id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
+
+    <!-- Nombre -->
+    <% if (!isHidden('name')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Nombre</label>
+      <input
+        type="text"
+        name="name"
+        class="w-full border rounded px-3 py-2"
+        value="<%= category_group?.name || '' %>"
+        <%= isReadOnly('name') ? 'readonly' : '' %>
+        required
+      >
+      <% if (errors?.name) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <!-- Estado (solo activar / inactivar) -->
+    <% if (!isHidden('is_active')) { %>
+      <div class="mb-6">
+        <label class="block font-medium mb-1">Estado</label>
+        <select 
+          name="is_active" 
+          class="w-full border rounded px-3 py-2"
+          <%= isReadOnly('is_active') ? 'disabled' : '' %>
+        >
+          <option value="true" <%= category_group?.is_active ? 'selected' : '' %>>Activar</option>
+          <option value="false" <%= !category_group?.is_active ? 'selected' : '' %>>Inactivar</option>
+        </select>
+        <% if (errors?.is_active) { %>
+          <p class="text-red-600 text-sm mt-1"><%= errors.is_active %></p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <!-- Acciones -->
+    <div class="flex justify-end gap-2">
+      <a 
+        href="/categories" 
+        class="px-4 py-2 bg-gray-200 rounded">
+        Cancelar
+      </a>
+
+      <% if (mode === 'delete') { %>
+        <button 
+          class="px-4 py-2 bg-red-600 text-white rounded" 
+          onclick="this.form.action.value='delete'">
+          Eliminar
+        </button>
+      <% } else { %>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">
+          Guardar
+        </button>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<script src="/js/forms/category-group-form.js"></script>
+<script src="/js/forms/autocomplete-form.js"></script>

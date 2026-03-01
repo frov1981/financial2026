@@ -9,6 +9,7 @@ import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
 import accountRoutes from './routes/account.route'
 import authRoutes from './routes/auth.route'
 import categoryRoutes from './routes/category.route'
+import categoryGroupRoutes from './routes/category-group.route'
 import homeRoutes from './routes/home.route'
 import loanRoutes from './routes/loan.route'
 import paymentRoutes from './routes/payment.route'
@@ -68,6 +69,7 @@ protectedRouter.use(sessionAuthMiddleware)
 protectedRouter.use(injectNetBalance)
 protectedRouter.use('/accounts', accountRoutes)
 protectedRouter.use('/categories', categoryRoutes)
+protectedRouter.use('/category-groups', categoryGroupRoutes)
 protectedRouter.use('/transactions', transactionRoutes)
 protectedRouter.use('/loans', injectLoanBalance, loanRoutes)
 protectedRouter.use('/payments', injectLoanBalance, paymentRoutes)

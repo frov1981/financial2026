@@ -12,7 +12,7 @@ export const injectNetBalance: RequestHandler = async (req: Request, res: Respon
         if (!user) return next()
         const net_balance = await AccountBalanceService.getNetAvailableBalance(user.id)
         res.locals.net_balance = net_balance
-        logger.debug(`${injectNetBalance.name}-Balance inyectado para usuario [${user.id}]=[${net_balance}]`)
+        //logger.debug(`${injectNetBalance.name}-Balance inyectado para usuario [${user.id}]=[${net_balance}]`)
         next()
     } catch (error) {
         logger.error(`${injectNetBalance.name}-Error. `, error)

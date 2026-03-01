@@ -10,7 +10,7 @@ export const injectLoanBalance = async (req: Request, res: Response, next: NextF
         if (!auth_req.user) return next()
         const loan_balance = await LoanBalanceService.getPendingLoanBalance(auth_req.user.id)
         res.locals.loan_balance = loan_balance
-        logger.debug(`${injectLoanBalance.name}-Balance inyectado para usuario [${auth_req.user.id}]=[${loan_balance}]`)
+        //logger.debug(`${injectLoanBalance.name}-Balance inyectado para usuario [${auth_req.user.id}]=[${loan_balance}]`)
         next()
     } catch (error) {
         logger.error(`${injectLoanBalance.name}-Error. `, error)

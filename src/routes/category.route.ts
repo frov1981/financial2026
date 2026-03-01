@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import {
     apiForGettingCategories,
-    apiForSavingCatgory,
+    apiForSavingCategory,
     routeToFormDeleteCategory,
     routeToFormInsertCategory,
     routeToFormUpdateCategory,
@@ -13,7 +13,7 @@ const router = Router()
 
 /*Eventos de acción */
 router.get('/list', apiForGettingCategories)
-router.post('/', apiForSavingCatgory)
+router.post('/', apiForSavingCategory)
 
 /*Eventos de enrutamiento */
 router.get('/', routeToPageCategory)
