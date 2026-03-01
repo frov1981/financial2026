@@ -12,6 +12,7 @@ import categoryRoutes from './routes/category.route'
 import categoryGroupRoutes from './routes/category-group.route'
 import homeRoutes from './routes/home.route'
 import loanRoutes from './routes/loan.route'
+import loanGroupRoutes from './routes/loan-group.route'
 import paymentRoutes from './routes/payment.route'
 import transactionRoutes from './routes/transaction.route'
 
@@ -72,5 +73,6 @@ protectedRouter.use('/categories', categoryRoutes)
 protectedRouter.use('/category-groups', categoryGroupRoutes)
 protectedRouter.use('/transactions', transactionRoutes)
 protectedRouter.use('/loans', injectLoanBalance, loanRoutes)
+protectedRouter.use('/loan-groups', loanGroupRoutes)
 protectedRouter.use('/payments', injectLoanBalance, paymentRoutes)
 app.use(protectedRouter)

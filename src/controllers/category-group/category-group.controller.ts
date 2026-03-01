@@ -31,7 +31,7 @@ export const routeToFormInsertCategoryGroup: RequestHandler = async (req: Reques
   const auth_req = req as AuthRequest
   const timezone = auth_req.timezone || 'UTC'
   return renderCategoryGroupForm(res, {
-    title: 'Insertar Categoría',
+    title: 'Insertar Grupo de Categoría',
     view: 'pages/category-groups/form',
     category_group: {
       is_active: true
@@ -57,7 +57,7 @@ export const routeToFormUpdateCategoryGroup: RequestHandler = async (req: Reques
     return res.redirect('/categories')
   }
   return renderCategoryGroupForm(res, {
-    title: 'Editar Categoría',
+    title: 'Editar Grupo de Categoría',
     view: 'pages/category-groups/form',
     category_group: {
       id: category_group.id,
@@ -74,17 +74,17 @@ export const routeToFormDeleteCategoryGroup: RequestHandler = async (req: Reques
   const auth_req = req as AuthRequest
   const category_group_id = Number(req.params.id)
   if (!Number.isInteger(category_group_id) || category_group_id <= 0) {
-    return res.redirect('/category-groups')
+    return res.redirect('/categories')
   }
   const repo_category_group = AppDataSource.getRepository(CategoryGroup)
   const category_group = await repo_category_group.findOne({
     where: { id: category_group_id, user: { id: auth_req.user.id } },
   })
   if (!category_group) {
-    return res.redirect('/category-groups')
+    return res.redirect('/categories')
   }
   return renderCategoryGroupForm(res, {
-    title: 'Eliminar Categoría',
+    title: 'Eliminar Grupo de Categoría',
     view: 'pages/category-groups/form',
     category_group: {
       id: category_group.id,

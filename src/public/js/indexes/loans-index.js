@@ -53,6 +53,13 @@ const tableBody = document.getElementById('loans-table')
 const scrollContainer = document.querySelector('.ui-scroll-area')
 const statusBtn = document.querySelector('.js-status-filter-toggle')
 
+const newBtn = document.querySelector('[data-btn="new"]')
+const insertModal = document.getElementById('insert-modal')
+const insertModalContent = document.getElementById('insert-modal-content')
+const insertGroupBtn = document.getElementById('insert-group')
+const insertChildBtn = document.getElementById('insert-child')
+const closeInsertModalBtn = document.getElementById('close-modal')
+
 /* =========================================================
 4. Utils generales
 ========================================================= */
@@ -77,15 +84,12 @@ function clearFilters(key) {
   localStorage.removeItem(key)
 }
 
-/*const formatDate = value =>
-  value ? new Date(value).toLocaleDateString('es-EC') : '-'*/
-
 function isGroupCollapsed(groupId) {
   const state = loadFilters(COLLAPSE_KEY) || {}
   return !!state[groupId]
 }
 
-function toggleGroupCollapse(groupId) {
+function toogleLoanGroupCollapse(groupId) {
   const state = loadFilters(COLLAPSE_KEY) || {}
   state[groupId] = !state[groupId]
   saveFilters(COLLAPSE_KEY, state)
@@ -295,16 +299,31 @@ function renderTable(data) {
       <tr class="parent-row">
         <td class="ui-td col-left">
           <div class="group-cell">
-            <button class="group-toggle" onclick="toggleGroupCollapse(${group.id})">
+            <button class="group-toggle" onclick="toogleLoanGroupCollapse(${group.id})">
               ${collapsed ? iconChevronOpen() : iconChevronClose()}
             </button>
             <span class="group-name">${group.name}</span>
           </div>
         </td>
-        <td class="ui-td col-right group-pending" colspan="7">
+        <td class="ui-td col-right group-pending" colspan="3">
           Pendiente: ${amountBox(pending)}
         </td>
-        <td class="ui-td col-center"></td>
+        <td class="ui-td col-right" colspan="5">
+          <div class="icon-actions">
+            <button 
+                class="icon-btn edit" 
+                onclick="goToLoanGroupUpdate(${group.id})">
+                ${iconEdit()}
+                <span class="ui-btn-text">Editar</span>
+              </button>
+              <button 
+                class="icon-btn delete" 
+                onclick="goToLoanGroupDelete(${group.id})">
+                ${iconDelete()}
+                <span class="ui-btn-text">Eliminar</span>
+              </button>
+            </div>
+        </td>
       </tr>
     `
 
@@ -351,18 +370,35 @@ function renderCards(data) {
     const cards = collapsed ? '' : loans.map(l => renderCard(l)).join('')
 
     return `
-      <div class="loan-group ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
+      <div class="loan-group ${collapsed ? 'collapsed' : ''}" style="background:${bgColor};">
         <div class="loan-group-header">
-          <button onclick="toggleGroupCollapse(${group.id})">
-            ${collapsed ? iconChevronOpen() : iconChevronClose()}
-          </button>
 
-          <div class="group-header-content">
-            <span class="group-title">${group.name}</span>
-            <span class="group-pending">
+          <div class="loans-group-header-left">
+            <button onclick="toogleLoanGroupCollapse(${group.id})">
+              ${collapsed ? iconChevronOpen() : iconChevronClose()}
+            </button>
+          </div>
+
+          <div class="loans-group-center">
+            <span class="loans-group-title">${group.name}</span>
+            <span class="loans-group-pending">
               Pendiente: ${amountBox(pending)}
             </span>
           </div>
+
+          <div class="loans-group-actions">
+            <button 
+              class="icon-btn edit"
+              onclick="event.stopPropagation();goToLoanGroupUpdate(${group.id})">
+              ${iconEdit()}
+            </button>
+            <button 
+              class="icon-btn delete"
+              onclick="event.stopPropagation();goToLoanGroupDelete(${group.id})">
+              ${iconDelete()}
+            </button>
+          </div>
+
         </div>
 
         <div class="loan-group-body">
@@ -500,6 +536,18 @@ function selectLoanCard(event, id) {
 
   event.currentTarget.classList.add('card-selected')
   saveFilters(SELECTED_KEY, { id })
+}
+
+function goToLoanGroupInsert() {
+  location.href = `/loan-groups/insert`
+}
+
+function goToLoanGroupUpdate(id) {
+  location.href = `/loan-groups/update/${id}`
+}
+
+function goToLoanGroupDelete(id) {
+  location.href = `/loan-groups/delete/${id}`
 }
 
 /* =========================================================

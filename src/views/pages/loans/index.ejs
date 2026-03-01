@@ -24,6 +24,17 @@
         placeholder: 'Buscar préstamos...'
       }) %>
     </div>
+
+    <!-- Modal Insertar -->
+    <%- include('../../partials/ui-modal',{
+      modal_id:'insert-modal',
+      title:'¿Qué desea insertar?',
+      buttons:[
+        {id:'insert-group', text:'Grupo de Categorías', variant:'ui-modal-btn-primary'},
+        {id:'insert-child', text:'Categoría Hija', variant:'ui-modal-btn-success'},
+        {id:'close-modal', text:'Cancelar', variant:'ui-modal-btn-neutral'}
+      ]
+    }) %>    
   </div>
 
   <!-- =========================

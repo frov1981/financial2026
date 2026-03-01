@@ -11,9 +11,9 @@ import { validateCategoryGroup, validateDeleteCategoryGroup } from './category-g
 ============================ */
 const getTitle = (mode: string) => {
   switch (mode) {
-    case 'insert': return 'Insertar Grupo Categoría'
-    case 'update': return 'Editar Grupo Categoría'
-    case 'delete': return 'Eliminar Grupo Categoría'
+    case 'insert': return 'Insertar Grupo de Categoría'
+    case 'update': return 'Editar Grupo de Categoría'
+    case 'delete': return 'Eliminar Grupo de Categoría'
     default: return 'Indefinido'
   }
 }
@@ -40,9 +40,6 @@ const sanitizeByPolicy = (mode: CategoryGroupFormMode, body: any) => {
 const buildCategoryGroupView = (body: any, mode: CategoryGroupFormMode) => {
   return {
     ...body,
-    is_active: body.is_active !== undefined
-      ? body.is_active === 'true'
-      : mode === 'insert' ? true : false
   }
 }
 

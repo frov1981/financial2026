@@ -57,7 +57,7 @@ const newBtn = document.querySelector('[data-btn="new"]')
 const insertModal = document.getElementById('insert-modal')
 const insertModalContent = document.getElementById('insert-modal-content')
 const insertGroupBtn = document.getElementById('insert-group')
-const insertCategoryBtn = document.getElementById('insert-category')
+const insertChildBtn = document.getElementById('insert-child')
 const closeInsertModalBtn = document.getElementById('close-modal')
 
 /* ============================
@@ -512,20 +512,27 @@ statusToggleBtn?.addEventListener('click', () => {
 /* ============================
    Modal Nuevo (Grupo o Hija)
 ============================ */
+function openModal() {
+  if (insertModal) insertModal.classList.remove('hidden')
+}
+function closeModal() {
+  if (insertModal) insertModal.classList.add('hidden')
+}
+
 newBtn?.addEventListener('click', (e) => {
   e.preventDefault()
-  insertModal?.classList.remove('hidden')
+  openModal()
 })
 
 closeInsertModalBtn?.addEventListener('click', () => {
-  insertModal?.classList.add('hidden')
+  closeModal()
 })
 
 insertGroupBtn?.addEventListener('click', () => {
   goToCategoryGroupInsert()
 })
 
-insertCategoryBtn?.addEventListener('click', () => {
+insertChildBtn?.addEventListener('click', () => {
   location.href = '/categories/insert'
 })
 
