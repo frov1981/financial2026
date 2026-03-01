@@ -11,9 +11,9 @@ import { validateCategoryGroup, validateDeleteCategoryGroup } from './category-g
 ============================ */
 const getTitle = (mode: string) => {
   switch (mode) {
-    case 'insert': return 'Insertar Categoría'
-    case 'update': return 'Editar Categoría'
-    case 'delete': return 'Eliminar Categoría'
+    case 'insert': return 'Insertar Grupo Categoría'
+    case 'update': return 'Editar Grupo Categoría'
+    case 'delete': return 'Eliminar Grupo Categoría'
     default: return 'Indefinido'
   }
 }

@@ -11,21 +11,40 @@
     <!-- Toolbar -->
     <div class="ui-toolbar">
 
-      <%- include('../../partials/btn-new', {
-        href: '/categories/insert',
-        title: 'Nueva categoría',
-        text: 'Nuevo',
-        data_btn: 'new'
-      }) %>
+      <%- include('../../partials/btn-new', { href: '#' , title: 'Nueva categoría' , text: 'Nuevo' ,
+        data_btn: 'new' }) %>
 
-      <%- include('../../partials/btn-toggle-status.ejs', {
-        initialStatus: 'all'
-      }) %>
+        <%- include('../../partials/btn-toggle-status.ejs', { initialStatus: 'all' }) %>
 
-      <%- include('../../partials/search-box', {
-        placeholder: 'Buscar categorías...'
-      }) %>
+          <%- include('../../partials/search-box', { placeholder: 'Buscar categorías...' }) %>
 
+    </div>
+
+    <!-- Modal Insertar -->
+    <div id="insert-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div id="insert-modal-content" class="bg-white rounded-xl shadow-xl p-6 w-80 animate-fade-in">
+
+        <h2 class="text-lg font-semibold mb-4 text-center">
+          ¿Qué desea insertar?
+        </h2>
+
+        <div class="flex flex-col gap-3">
+
+          <button id="insert-group" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+            Grupo de Categorías
+          </button>
+
+          <button id="insert-category"
+            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+            Categoría Hija
+          </button>
+
+          <button id="close-modal" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition">
+            Cancelar
+          </button>
+
+        </div>
+      </div>
     </div>
   </div>
 

@@ -53,6 +53,13 @@ const tableBody = document.getElementById('categories-table')
 const scrollContainer = document.querySelector('.ui-scroll-area')
 const statusToggleBtn = document.querySelector('.js-status-filter-toggle')
 
+const newBtn = document.querySelector('[data-btn="new"]')
+const insertModal = document.getElementById('insert-modal')
+const insertModalContent = document.getElementById('insert-modal-content')
+const insertGroupBtn = document.getElementById('insert-group')
+const insertCategoryBtn = document.getElementById('insert-category')
+const closeInsertModalBtn = document.getElementById('close-modal')
+
 /* ============================
    4. Utils generales
 ============================ */
@@ -461,6 +468,10 @@ function selectCategoryCard(event, id) {
   saveFilters(SELECTED_KEY, { id })
 }
 
+function goToCategoryGroupInsert() {
+  location.href = `/category-groups/insert`
+}
+
 function goToCategoryGroupUpdate(id) {
   location.href = `/category-groups/update/${id}`
 }
@@ -496,6 +507,38 @@ statusToggleBtn?.addEventListener('click', () => {
       current === 'active' ? 'inactive' : 'all'
 
   applyStatusFilter(next)
+})
+
+/* ============================
+   Modal Nuevo (Grupo o Hija)
+============================ */
+newBtn?.addEventListener('click', (e) => {
+  e.preventDefault()
+  insertModal?.classList.remove('hidden')
+})
+
+closeInsertModalBtn?.addEventListener('click', () => {
+  insertModal?.classList.add('hidden')
+})
+
+insertGroupBtn?.addEventListener('click', () => {
+  goToCategoryGroupInsert()
+})
+
+insertCategoryBtn?.addEventListener('click', () => {
+  location.href = '/categories/insert'
+})
+
+insertModal?.addEventListener('click', (e) => {
+  if (!insertModalContent?.contains(e.target)) {
+    insertModal.classList.add('hidden')
+  }
+})
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    insertModal?.classList.add('hidden')
+  }
 })
 
 /* ============================
