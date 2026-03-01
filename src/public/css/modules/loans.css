@@ -132,3 +132,23 @@
 .parent-row .group-pending {
     text-align: right;
 }
+
+.loan-card .date-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.loan-card .weekday-text {
+  color: var(--ui-gray-500);
+}
+
+.loan-card .loan-amounts {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.loan-card .loan-amount-item {
+  flex: 1;
+}

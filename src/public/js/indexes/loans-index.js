@@ -155,7 +155,12 @@ function renderRow(loan) {
       <td class="ui-td col-right>${amountBox(loan.principal_paid)}</td>
       <td class="ui-td col-right">${amountBox(loan.interest_paid)}</td>
       <td class="ui-td col-right">${amountBox(loan.balance)}</td>
-      <td class="ui-td col-left">${date} - ${weekday}</td>
+      <td class="ui-td col-left">
+        <div class="date-block">
+          <div class="date-text">${date}</div>
+          <div class="weekday-text">${weekday}</div>
+        </div>
+      </td>
       <td class="ui-td col-left">${statusTag(loan.is_active)}</td>
       <td class="ui-td col-left">${loan.disbursement_account ? loan.disbursement_account.name : '-'}</td>
       <td class="ui-td col-center">
@@ -226,12 +231,25 @@ function renderCard(loan) {
 
       <div class="card-balance">${amountBox(loan.balance)}</div>
 
-      <div class="card-sub">
-        Monto: ${amountBox(loan.total_amount)} · Capital: ${amountBox(loan.principal_paid)}· Interés: ${amountBox(loan.interest_paid)}
-      </div>
+      <div class="card-sub loan-amounts">
+  <div class="loan-amount-item">
+    Monto: ${amountBox(loan.total_amount)}
+  </div>
+  <div class="loan-amount-item">
+    Capital: ${amountBox(loan.principal_paid)}
+  </div>
+  <div class="loan-amount-item">
+    Interés: ${amountBox(loan.interest_paid)}
+  </div>
+</div>
 
       <div class="card-footer">
-        <span>${date} - ${weekday}</span>
+        <span>
+          <div class="date-block">
+            <div class="date-text">${date}</div>
+            <div class="weekday-text">${weekday}</div>
+          </div>
+        </span>
         <div class="card-tags">
           ${statusTag(loan.is_active)}
           <span>${loan.disbursement_account ? loan.disbursement_account.name : '-'}</span>
