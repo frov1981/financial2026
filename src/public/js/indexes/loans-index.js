@@ -22,7 +22,7 @@ const API_BASE = '/loans/list'
 const FILTER_KEY = `loans.filters.${window.USER_ID}`
 const SELECTED_KEY = `loans.selected.${window.USER_ID}`
 const SCROLL_KEY = `loans.scroll.${window.USER_ID}`
-const STATUS_FILTER_KEY = `loans.status.${window.USER_ID}`
+const STATUS_FILTER_KEY = `loans.statusFilter.${window.USER_ID}`
 const COLLAPSE_KEY = `loans.collapse.${window.USER_ID}`
 
 /* =========================================================
@@ -51,7 +51,7 @@ const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('loans-table')
 const scrollContainer = document.querySelector('.ui-scroll-area')
-const statusBtn = document.querySelector('.js-status-filter-toggle')
+const statusToggleBtn = document.querySelector('.js-status-filter-toggle')
 
 const newBtn = document.querySelector('[data-btn="new"]')
 const insertModal = document.getElementById('insert-modal')
@@ -71,20 +71,7 @@ function debounce(fn, delay) {
   }
 }
 
-function saveFilters(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
-function loadFilters(key) {
-  const raw = localStorage.getItem(key)
-  return raw ? JSON.parse(raw) : null
-}
-
-function clearFilters(key) {
-  localStorage.removeItem(key)
-}
-
-function isGroupCollapsed(groupId) {
+function isLoanGroupCollapsed(groupId) {
   const state = loadFilters(COLLAPSE_KEY) || {}
   return !!state[groupId]
 }
@@ -102,9 +89,6 @@ function getGroupPendingTotal(group_id) {
   return group ? group.total_balance : 0
 }
 
-/* ============================
-   Degradado por grupo (AGREGADO)
-============================ */
 function getParentBackgroundColor(index, total) {
   if (total <= 1) return 'hsl(210, 40%, 96%)'
 
@@ -137,16 +121,13 @@ function getParentBackgroundColor(index, total) {
 6. Render Desktop
 ========================================================= */
 function renderRow(loan) {
-  console.log(loan)
   const { date, time, weekday } = formatDateTime(loan.start_date)
   const group_id = loan.loan_group ? loan.loan_group.id : null
-
-  if (group_id && isGroupCollapsed(group_id)) {
+  if (group_id && isLoanGroupCollapsed(group_id)) {
     return ''
   }
 
   const rowClass = loan.is_active ? '' : 'bg-red-50'
-
   return `
     <tr id="loan-${loan.id}" class="${rowClass}">
       <td class="ui-td col-left">
@@ -156,7 +137,7 @@ function renderRow(loan) {
         </div>
       </td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
-      <td class="ui-td col-right>${amountBox(loan.principal_paid)}</td>
+      <td class="ui-td col-right">${amountBox(loan.principal_paid)}</td>
       <td class="ui-td col-right">${amountBox(loan.interest_paid)}</td>
       <td class="ui-td col-right">${amountBox(loan.balance)}</td>
       <td class="ui-td col-left">
@@ -199,8 +180,7 @@ function renderRow(loan) {
 function renderCard(loan) {
   const { date, time, weekday } = formatDateTime(loan.start_date)
   const group_id = loan.loan_group ? loan.loan_group.id : null
-
-  if (group_id && isGroupCollapsed(group_id)) {
+  if (group_id && isLoanGroupCollapsed(group_id)) {
     return ''
   }
 
@@ -292,7 +272,7 @@ function renderTable(data) {
   const html = Array.from(groupsMap.values()).map(entry => {
     const group = entry.group
     const loans = entry.loans
-    const collapsed = isGroupCollapsed(group.id)
+    const collapsed = isLoanGroupCollapsed(group.id)
     const pending = getGroupPendingTotal(group.id)
 
     const groupRow = `
@@ -362,7 +342,7 @@ function renderCards(data) {
   const html = groups.map((entry, index) => {
     const group = entry.group
     const loans = entry.loans
-    const collapsed = isGroupCollapsed(group.id)
+    const collapsed = isLoanGroupCollapsed(group.id)
     const bgColor = getParentBackgroundColor(index, totalParents)
     const pending = getGroupPendingTotal(group.id)
 
@@ -449,22 +429,20 @@ async function loadLoans() {
 9. Filtros (texto + estado)
 ========================================================= */
 function getFilteredLoans() {
-  const term = searchInput.value.trim().toLowerCase()
-  const status = loadFilters(STATUS_FILTER_KEY)?.status || 'all'
+  const cached = loadFilters(FILTER_KEY)
+  const statusCached = loadFilters(STATUS_FILTER_KEY)
+
+  const term = cached?.term?.toLowerCase() || ''
+  const status = statusCached?.status || 'all'
 
   return allLoans.filter(loan => {
-
-
     const matchText =
       !term || loan.name.toLowerCase().includes(term)
 
-
     const matchStatus =
       status === 'all' ||
-
       (status === 'active' && loan.is_active) ||
       (status === 'inactive' && !loan.is_active)
-
 
     return matchText && matchStatus
   })
@@ -472,39 +450,37 @@ function getFilteredLoans() {
 
 function applyAllFilters() {
   const filtered = getFilteredLoans()
-
-  saveFilters(FILTER_KEY, { term: searchInput.value.trim().toLowerCase() })
-  saveFilters(SCROLL_KEY, { y: 0 })
-
   render(filtered)
+}
+
+function filterLoans() {
+  const term = searchInput.value.trim().toLowerCase()
+  saveFilters(FILTER_KEY, { term })
+  saveFilters(SCROLL_KEY, { y: 0 })
+  applyAllFilters()
 }
 
 /* =========================================================
 10. Status Filter UI
 ========================================================= */
 function syncStatusFilterButton(status) {
-  if (!statusBtn) return
+  if (!statusToggleBtn) return
 
-  const icon = statusBtn.querySelector('.ui-btn-icon')
-  const text = statusBtn.querySelector('.ui-btn-text')
+  const icon = statusToggleBtn.querySelector('.ui-btn-icon')
+  const text = statusToggleBtn.querySelector('.ui-btn-text')
 
   if (status === 'active') {
     icon.innerHTML = iconView()
-    text.textContent = 'Activos'
-    statusBtn.dataset.status = 'active'
-    return
-  }
-
-  if (status === 'inactive') {
+    text.textContent = 'Activas'
+  } else if (status === 'inactive') {
     icon.innerHTML = iconViewOff()
-    text.textContent = 'Inactivos'
-    statusBtn.dataset.status = 'inactive'
-    return
+    text.textContent = 'Inactivas'
+  } else {
+    icon.innerHTML = iconList()
+    text.textContent = 'Todas'
   }
 
-  icon.innerHTML = iconList()
-  text.textContent = 'Todos'
-  statusBtn.dataset.status = 'all'
+  statusToggleBtn.dataset.status = status
 }
 
 function applyStatusFilter(status) {
@@ -553,12 +529,15 @@ function goToLoanGroupDelete(id) {
 /* =========================================================
 12. Eventos
 ========================================================= */
+const debouncedFilter = debounce(filterLoans, 300)
+
 searchBtn?.addEventListener('click', applyAllFilters)
 
-searchInput?.addEventListener('input', debounce(() => {
+searchInput?.addEventListener('input', () => {
   clearBtn.classList.toggle('hidden', !searchInput.value)
-  applyAllFilters()
-}, 300))
+  debouncedFilter()
+})
+
 
 clearBtn?.addEventListener('click', () => {
   searchInput.value = ''
@@ -568,14 +547,53 @@ clearBtn?.addEventListener('click', () => {
   applyAllFilters()
 })
 
-statusBtn?.addEventListener('click', () => {
-  const current = statusBtn.dataset.status || 'all'
+statusToggleBtn?.addEventListener('click', () => {
+  const current = statusToggleBtn.dataset.status || 'all'
   const next =
     current === 'all' ? 'active'
       : current === 'active' ? 'inactive'
         : 'all'
 
   applyStatusFilter(next)
+})
+
+/* ============================
+   Modal Nuevo (Grupo o Hija)
+============================ */
+function openModal() {
+  if (insertModal) insertModal.classList.remove('hidden')
+}
+function closeModal() {
+  if (insertModal) insertModal.classList.add('hidden')
+}
+
+newBtn?.addEventListener('click', (e) => {
+  e.preventDefault()
+  openModal()
+})
+
+closeInsertModalBtn?.addEventListener('click', () => {
+  closeModal()
+})
+
+insertGroupBtn?.addEventListener('click', () => {
+  goToLoanGroupInsert()
+})
+
+insertChildBtn?.addEventListener('click', () => {
+  location.href = '/loans/insert'
+})
+
+insertModal?.addEventListener('click', (e) => {
+  if (!insertModalContent?.contains(e.target)) {
+    insertModal.classList.add('hidden')
+  }
+})
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    insertModal?.classList.add('hidden')
+  }
 })
 
 /* =========================================================

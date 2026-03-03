@@ -10,7 +10,7 @@
 
     <div class="ui-toolbar">
       <%- include('../../partials/btn-new', {
-        href: '/loans/insert',
+        href: '#',
         title: 'Nuevo Préstamo',
         text: 'Nuevo',
         data_btn: 'new'
@@ -30,8 +30,8 @@
       modal_id:'insert-modal',
       title:'¿Qué desea insertar?',
       buttons:[
-        {id:'insert-group', text:'Grupo de Categorías', variant:'ui-modal-btn-primary'},
-        {id:'insert-child', text:'Categoría Hija', variant:'ui-modal-btn-success'},
+        {id:'insert-group', text:'Grupo de Préstamo', variant:'ui-modal-btn-primary'},
+        {id:'insert-child', text:'Préstamo Hijo', variant:'ui-modal-btn-success'},
         {id:'close-modal', text:'Cancelar', variant:'ui-modal-btn-neutral'}
       ]
     }) %>    

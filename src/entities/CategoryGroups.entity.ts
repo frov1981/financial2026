@@ -9,10 +9,6 @@ export class CategoryGroup {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @ManyToOne(() => User, user => user.category_groups)
-  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_category_groups_user' })
-  user!: User
-
   @Column()
   @IsNotEmpty({ message: 'El nombre del grupo es obligatorio' })
   name!: string
@@ -22,4 +18,8 @@ export class CategoryGroup {
 
   @OneToMany(() => Category, category => category.category_group)
   categories!: Category[]
+
+  @ManyToOne(() => User, user => user.category_groups)
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_category_groups_user' })
+  user!: User
 }

@@ -71,12 +71,12 @@ function debounce(fn, delay) {
   }
 }
 
-function isCategoryCollapsed(parentId) {
+function isCategoryGroupCollapsed(parentId) {
   const state = loadFilters(COLLAPSE_KEY) || {}
   return !!state[parentId]
 }
 
-function toggleCategoryCollapse(parentId) {
+function toggleCategoryGroupCollapse(parentId) {
   const state = loadFilters(COLLAPSE_KEY) || {}
   state[parentId] = !state[parentId]
   saveFilters(COLLAPSE_KEY, state)
@@ -113,15 +113,12 @@ function getParentBackgroundColor(index, total) {
 function renderRow(category) {
   const isParent = false
   const isChild = true
-
-  const collapsed = isCategoryCollapsed(category.category_group.id)
-
+  const collapsed = isCategoryGroupCollapsed(category.category_group.id)
   if (collapsed) {
     return ''
   }
 
   const rowClass = category.is_active ? '' : 'bg-red-50'
-
   return `
     <tr id="category-${category.id}" class="${rowClass}">
       <td class="ui-td col-left">
@@ -161,8 +158,7 @@ function renderRow(category) {
 }
 
 function renderCard(category) {
-  const collapsed = isCategoryCollapsed(category.category_group.id)
-
+  const collapsed = isCategoryGroupCollapsed(category.category_group.id)
   if (collapsed) {
     return ''
   }
@@ -240,13 +236,13 @@ function renderTable(data) {
   const groups = Array.from(groupsMap.values())
 
   const html = groups.map(({ group, items }, index) => {
-    const collapsed = isCategoryCollapsed(group.id)
+    const collapsed = isCategoryGroupCollapsed(group.id)
 
     const parentRow = `
       <tr class="parent-row">
         <td class="ui-td col-left">
           <div class="group-cell">
-            <button class="group-toggle" onclick="toggleCategoryCollapse(${group.id})">
+            <button class="group-toggle" onclick="toggleCategoryGroupCollapse(${group.id})">
               ${collapsed ? iconChevronOpen() : iconChevronClose()}
             </button>
             <span class="group-name">${group.name}</span>
@@ -308,7 +304,7 @@ function renderCards(data) {
   const totalParents = groups.length
 
   const html = groups.map(({ group, items }, index) => {
-    const collapsed = isCategoryCollapsed(group.id)
+    const collapsed = isCategoryGroupCollapsed(group.id)
     const bgColor = getParentBackgroundColor(index, totalParents)
 
     const childCards = collapsed ? '' : items.map(c => renderCard(c)).join('')
@@ -317,7 +313,7 @@ function renderCards(data) {
       <div class="category-group ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
         <div class="category-group-header">
           <div class="group-header-left">
-            <button onclick="toggleCategoryCollapse(${group.id})">
+            <button onclick="toggleCategoryGroupCollapse(${group.id})">
               ${collapsed ? iconChevronOpen() : iconChevronClose()}
             </button>
             <span>${group.name}</span>
