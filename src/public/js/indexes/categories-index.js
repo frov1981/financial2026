@@ -248,10 +248,7 @@ function renderTable(data) {
             <span class="group-name">${group.name}</span>
           </div>
         </td>
-        <td class="ui-td col-left"></td>
-        <td class="ui-td col-right"></td>
-        <td class="ui-td col-left"></td>
-        <td class="ui-td col-center">
+        <td class="ui-td col-right" colspan="4">
           <div class="icon-actions">
             <button 
               class="icon-btn edit" 

@@ -133,19 +133,18 @@ function renderRow(loan) {
       <td class="ui-td col-left">
         <div class="child-cell">
           <span class="child-indent"></span>
-          <span class="child-name">${loan.name}</span>
+          <div class="loan-name-block">
+            <div class="loan-name">${loan.name}</div>
+            <div class="loan-date">
+              ${date} · ${weekday}
+            </div>
+          </div>
         </div>
       </td>
       <td class="ui-td col-right">${amountBox(loan.total_amount)}</td>
       <td class="ui-td col-right">${amountBox(loan.principal_paid)}</td>
       <td class="ui-td col-right">${amountBox(loan.interest_paid)}</td>
       <td class="ui-td col-right">${amountBox(loan.balance)}</td>
-      <td class="ui-td col-left">
-        <div class="date-block">
-          <div class="date-text">${date}</div>
-          <div class="weekday-text">${weekday}</div>
-        </div>
-      </td>
       <td class="ui-td col-left">${statusTag(loan.is_active)}</td>
       <td class="ui-td col-left">${loan.disbursement_account ? loan.disbursement_account.name : '-'}</td>
       <td class="ui-td col-center">
@@ -288,7 +287,7 @@ function renderTable(data) {
         <td class="ui-td col-right group-pending" colspan="3">
           Pendiente: ${amountBox(pending)}
         </td>
-        <td class="ui-td col-right" colspan="5">
+        <td class="ui-td col-right" colspan="4">
           <div class="icon-actions">
             <button 
                 class="icon-btn edit" 

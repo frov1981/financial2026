@@ -183,3 +183,18 @@
     margin-left: auto;
     align-items: center;
 }
+
+.loan-name-block {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.loan-name {
+    font-weight: 500;
+}
+
+.loan-date {
+    font-size: 12px;
+    color: var(--ui-gray-500);
+}
