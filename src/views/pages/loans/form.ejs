@@ -96,15 +96,59 @@
         data-default-id="<%= disbursement_account || '' %>"
         data-placeholder="-- Escoja una opción --"
       >
-        <input type="text" class="autocomplete-input" autocomplete="off" 
-          value="<%= loan?.disbursement_account?.name || '' %>" <%= isReadOnly('disbursement_account_id') ? 'readonly' : '' %>>
-        <input type="hidden" class="autocomplete-hidden" name="disbursement_account_id"
+        <input 
+          type="text" 
+          class="autocomplete-input" 
+          autocomplete="off" 
+          value="<%= loan?.disbursement_account?.name || '' %>" 
+          <%= isReadOnly('disbursement_account') ? 'readonly' : '' %>>
+        
+        <input 
+          type="hidden" 
+          class="autocomplete-hidden" 
+          name="disbursement_account_id"
           value="<%= loan?.disbursement_account?.id || '' %>">
+        <% if (!isReadOnly('disbursement_account_id')) { %>
         <div class="autocomplete-panel"></div>
+        <% } %>
       </div>
       
       <% if (errors?.disbursement_account) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.disbursement_account %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <!-- Categoria -->
+    <% if (!isHidden('category_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Categoría</label>
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(active_income_categories) %>'
+        data-default-id="<%= loan?.category?.id || '' %>"
+        data-placeholder="-- Escoja una opción --"
+      >
+        <input 
+          type="text" 
+          class="autocomplete-input" 
+          autocomplete="off" 
+          value="<%= loan?.category?.name || '' %>" 
+          <%= isReadOnly('category') ? 'readonly' : '' %>>
+        
+        <input 
+          type="hidden" 
+          class="autocomplete-hidden" 
+          name="category_id"
+          value="<%= loan?.category?.id || '' %>">
+
+        <% if (!isReadOnly('category_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      
+      <% if (errors?.category) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
       <% } %>
     </div>
     <% } %>
@@ -119,11 +163,22 @@
         data-default-id="<%= loan?.loan_group || '' %>"
         data-placeholder="-- Escoja una opción --"
       >
-        <input type="text" class="autocomplete-input" autocomplete="off" 
-          value="<%= loan?.loan_group?.name || '' %>" <%= isReadOnly('loan_group_id') ? 'readonly' : '' %>>
-        <input type="hidden" class="autocomplete-hidden" name="loan_group_id"
+        <input 
+          type="text" 
+          class="autocomplete-input" 
+          autocomplete="off" 
+          value="<%= loan?.loan_group?.name || '' %>" 
+          <%= isReadOnly('loan_group') ? 'readonly' : '' %>>
+        
+        <input 
+          type="hidden" 
+          class="autocomplete-hidden" 
+          name="loan_group_id"
           value="<%= loan?.loan_group?.id || '' %>">
+          
+        <% if (!isReadOnly('loan_group_id')) { %>
         <div class="autocomplete-panel"></div>
+        <% } %>
       </div>
       <% if (errors?.loan_group) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.loan_group %></p>

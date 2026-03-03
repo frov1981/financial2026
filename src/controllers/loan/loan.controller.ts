@@ -2,11 +2,12 @@ import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Loan } from "../../entities/Loan.entity"
 import { loanFormMatrix } from '../../policies/loan-form.policy'
-import { getActiveAccountsByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
+import { getActiveAccountsByUser, getActiveCategoriesByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
-import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
+import { splitCategoriesByType } from '../transaction/transaction.auxiliar'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
 type LoanFormViewParams = {
@@ -20,9 +21,13 @@ type LoanFormViewParams = {
 
 const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
   const { title, view, loan, errors, mode, auth_req } = params
+
   const disbursement_account = await getActiveAccountsByUser(auth_req)
   const loan_group = await getActiveParentLoansByUser(auth_req)
   const loan_form_policy = loanFormMatrix[mode]
+  const active_categories = await getActiveCategoriesByUser(auth_req)
+  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+
   return res.render('layouts/main', {
     title,
     view,
@@ -30,6 +35,7 @@ const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
     errors,
     loan_form_policy,
     disbursement_account,
+    active_income_categories,
     loan_group,
     mode
   })
@@ -49,6 +55,7 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       .leftJoinAndSelect('loan.disbursement_account', 'disbursement_account')
       .leftJoinAndSelect('loan.transaction', 'transaction')
       .leftJoinAndSelect('loan.payments', 'payments')
+      .leftJoinAndSelect('loan.category', 'category')
       .where('loan.user_id = :user_id', { user_id: auth_req.user.id })
       .orderBy('loan_group.name', 'ASC')
       .addOrderBy('loan.name', 'ASC')
@@ -67,9 +74,10 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       created_at: loan.created_at,
       note: loan.note,
       disbursement_account: loan.disbursement_account,
+      category: loan.category,
       transaction: loan.transaction,
       payments: loan.payments,
-      loan_group: loan.loan_group ? { id: loan.loan_group.id, name: loan.loan_group.name } : null
+      loan_group: loan.loan_group ? { id: loan.loan_group.id, name: loan.loan_group.name } : null,
     }))
 
     logger.debug(`${apiForGettingLoans.name}-Loans found: [${loans.length}]`)
@@ -126,6 +134,7 @@ export const routeToFormInsertLoan: RequestHandler = async (req, res) => {
       total_amount: '0.00',
       is_active: true,
       disbursement_account: null,
+      category: null,
       loan_group: null,
     },
     errors: {},
@@ -144,7 +153,7 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
   const repo_loan = AppDataSource.getRepository(Loan)
   const loan = await repo_loan.findOne({
     where: { id: loan_id, user: { id: auth_req.user.id } },
-    relations: { disbursement_account: true, transaction: true, loan_group: true }
+    relations: { disbursement_account: true, transaction: true, loan_group: true, category: true }
   })
   if (!loan) {
     return res.redirect('/loans')
@@ -162,6 +171,7 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
       start_date: formatDateForInputLocal(loan.start_date, timezone),
       transaction: loan.transaction || null,
       disbursement_account: loan.disbursement_account || null,
+      category: loan.category || null,
       loan_group: loan.loan_group || null,
     },
     errors: {},
@@ -178,7 +188,7 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
   const repo_loan = AppDataSource.getRepository(Loan)
   const loan = await repo_loan.findOne({
     where: { id: loan_id, user: { id: auth_req.user.id } },
-    relations: { disbursement_account: true, loan_group: true }
+    relations: { disbursement_account: true, loan_group: true, category: true }
   })
   if (!loan) {
     return res.redirect('/loans')
@@ -196,6 +206,7 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
       start_date: formatDateForInputLocal(loan.start_date, timezone),
       is_active: loan.is_active,
       disbursement_account: loan.disbursement_account || null,
+      category: loan.category || null,
       loan_group: loan.loan_group || null,
     },
     errors: {},

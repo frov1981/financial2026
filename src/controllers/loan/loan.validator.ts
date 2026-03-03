@@ -6,6 +6,7 @@ import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
+import { Category } from '../../entities/Category.entity'
 
 export const validateLoan = async (loan: Loan, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
 
@@ -23,6 +24,7 @@ export const validateLoan = async (loan: Loan, auth_req: AuthRequest): Promise<R
   const loan_repo = AppDataSource.getRepository(Loan)
   const payment_repo = AppDataSource.getRepository(LoanPayment)
   const account_repo = AppDataSource.getRepository(Account)
+  const category_repo = AppDataSource.getRepository(Category)
   const loan_group_repo = AppDataSource.getRepository(LoanGroup)
 
 
@@ -60,6 +62,19 @@ export const validateLoan = async (loan: Loan, auth_req: AuthRequest): Promise<R
     })
     if (!account) {
       field_errors.disbursement_account = 'La cuenta de desembolso no es válida o no pertenece al usuario'
+    }
+  }
+
+  if (loan.category && loan.category.id) {
+    const category = await category_repo.findOne({
+      where: {
+        id: loan.category.id,
+        user: { id: user_id },
+        is_active: true
+      }
+    })
+    if (!category) {
+      field_errors.category = 'La categoría no es válida o no pertenece al usuario'
     }
   }
 

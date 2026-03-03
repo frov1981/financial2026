@@ -147,6 +147,7 @@ function renderRow(loan) {
       <td class="ui-td col-right">${amountBox(loan.balance)}</td>
       <td class="ui-td col-left">${statusTag(loan.is_active)}</td>
       <td class="ui-td col-left">${loan.disbursement_account ? loan.disbursement_account.name : '-'}</td>
+      <td class="ui-td col-left">${loan.category ? loan.category.name : '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button 
@@ -215,16 +216,16 @@ function renderCard(loan) {
       <div class="card-balance">${amountBox(loan.balance)}</div>
 
       <div class="card-sub loan-amounts">
-  <div class="loan-amount-item">
-    Monto: ${amountBox(loan.total_amount)}
-  </div>
-  <div class="loan-amount-item">
-    Capital: ${amountBox(loan.principal_paid)}
-  </div>
-  <div class="loan-amount-item">
-    Interés: ${amountBox(loan.interest_paid)}
-  </div>
-</div>
+        <div class="loan-amount-item">
+          Monto: ${amountBox(loan.total_amount)}
+        </div>
+        <div class="loan-amount-item">
+          Capital: ${amountBox(loan.principal_paid)}
+        </div>
+        <div class="loan-amount-item">
+          Interés: ${amountBox(loan.interest_paid)}
+        </div>
+      </div>
 
       <div class="card-footer">
         <span>
@@ -236,6 +237,7 @@ function renderCard(loan) {
         <div class="card-tags">
           ${statusTag(loan.is_active)}
           <span>${loan.disbursement_account ? loan.disbursement_account.name : '-'}</span>
+          <span>${loan.category ? loan.category.name : '-'}</span>
         </div>
       </div>
     </div>
@@ -287,7 +289,7 @@ function renderTable(data) {
         <td class="ui-td col-right group-pending" colspan="3">
           Pendiente: ${amountBox(pending)}
         </td>
-        <td class="ui-td col-right" colspan="4">
+        <td class="ui-td col-right" colspan="5">
           <div class="icon-actions">
             <button 
                 class="icon-btn edit" 

@@ -3,6 +3,7 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColum
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
 import { CategoryGroup } from './CategoryGroups.entity'
+import { Loan } from './Loan.entity'
 
 @Entity('categories')
 export class Category {
@@ -29,7 +30,10 @@ export class Category {
   @OneToMany(() => Transaction, transaction => transaction.category)
   transactions!: Transaction[]
 
-   @ManyToOne(() => CategoryGroup, group => group.categories)
+  @OneToMany(() => Loan, loan => loan.category)
+  loans!: Loan[]
+
+  @ManyToOne(() => CategoryGroup, group => group.categories)
   @JoinColumn({ name: 'category_group_id', foreignKeyConstraintName: 'fk_categories_group' })
   category_group!: CategoryGroup | null
 

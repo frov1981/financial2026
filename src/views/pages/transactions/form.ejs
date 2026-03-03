@@ -115,7 +115,9 @@
           name="account"
           value="<%= transaction?.account?.id || '' %>"
         >
+        <% if (!isReadOnly('account')) { %>
         <div class="autocomplete-panel"></div>
+        <% } %>
       </div>
 
       <% if (errors?.account) { %>
@@ -148,7 +150,9 @@
           name="to_account"
           value="<%= transaction?.to_account?.id || '' %>"
         >
+        <% if (!isReadOnly('to_account')) { %>
         <div class="autocomplete-panel"></div>
+        <% } %>
       </div>
 
       <% if (errors?.to_account) { %>
@@ -183,7 +187,9 @@
           value="<%= transaction?.category?.id || '' %>"
         >
         
+        <% if (!isReadOnly('category')) { %>
         <div class="autocomplete-panel"></div>
+        <% } %>
       </div>
 
       <% if (errors?.category) { %>

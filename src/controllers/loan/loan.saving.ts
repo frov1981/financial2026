@@ -5,13 +5,15 @@ import { Loan } from '../../entities/Loan.entity'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { loanFormMatrix, LoanFormMode } from '../../policies/loan-form.policy'
-import { getActiveAccountsByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
+import { getActiveAccountsByUser, getActiveCategoriesByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
 import { KpiCacheService } from '../../services/kpi-cache.service'
 import { DateTime } from 'luxon'
+import { Category } from '../../entities/Category.entity'
+import { splitCategoriesByType } from '../transaction/transaction.auxiliar'
 
 const getTitle = (mode: string) => {
   switch (mode) {
@@ -76,6 +78,15 @@ const findDisbursementAccountByBody = (body: any, disbursement_account: Account[
   return disbursement_account.find(a => a.id === disbursement_account_id) || null
 }
 
+/* Obtiene una categoría activa por id desde el arreglo ya cargado */
+function findCategorybyBody(body: any, active_categories: Category[]): Category | null {
+  const category_id = body.category_id ? Number(body.category_id) : null
+
+  if (!category_id) return null
+
+  return active_categories.find(c => c.id === category_id) || null
+}
+
 /* ============================
     Obtener cuentas activas del usuario para mostrar en el formulario 
 ============================ */
@@ -84,7 +95,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   logger.info('saveLoan called', { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
-  const user_id =auth_req.user.id
+  const user_id = auth_req.user.id
   const loan_id = req.body.id ? Number(req.body.id) : undefined
   const mode: LoanFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
@@ -92,12 +103,17 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
   const loan_group = await getActiveParentLoansByUser(auth_req)
   const disbursement_account = await getActiveAccountsByUser(auth_req)
+  const active_categories = await getActiveCategoriesByUser(auth_req)
+  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+
+
   const loan_view = buildLoanView(req.body, loan_group, disbursement_account)
 
   const form_state = {
     loan: loan_view,
     loan_group,
     disbursement_account: disbursement_account,
+    active_income_categories: active_income_categories,
     loan_form_policy: loanFormMatrix[mode],
     mode
   }
@@ -114,7 +130,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (loan_id) {
       existing = await loanRepo.findOne({
         where: { id: loan_id, user: { id: auth_req.user.id } },
-        relations: { disbursement_account: true, transaction: true, loan_group: true }
+        relations: { disbursement_account: true, transaction: true, loan_group: true, category: true }
       })
       if (!existing) throw new Error('Préstamo no encontrado')
     }
@@ -162,6 +178,8 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (mode === 'insert') {
       const selected_group = findLoanGroupByBody(req.body, loan_group)
       const selected_disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account)
+      const selected_category = findCategorybyBody(req.body, active_income_categories)
+
       loan = queryRunner.manager.create(Loan, {
         user: { id: auth_req.user.id } as any,
         name: req.body.name,
@@ -171,6 +189,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         start_date: parseLocalDateToUTC(req.body.start_date, timezone),
         loan_group: selected_group,
         disbursement_account: selected_disbursement_account,
+        category: selected_category,
         is_active: true
       })
     } else {
@@ -186,8 +205,10 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (clean.note !== undefined) loan.note = clean.note
     if (clean.loan_group_id !== undefined) { loan.loan_group = findLoanGroupByBody(req.body, loan_group) }
     if (clean.disbursement_account_id !== undefined) { loan.disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account) }
+    if (clean.category_id !== undefined) { loan.category = findCategorybyBody(req.body, active_income_categories) }
 
     let new_account: Account | null = loan.disbursement_account || null
+    let new_category: Category | null = loan.category || null
     let previous_amount = loan.total_amount
     let previous_balance = loan.balance
 
@@ -205,16 +226,19 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
     if (mode === 'insert') {
       if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
+      if (!new_category) { throw { code: 'CATEGORY_NOT_FOUND' } }
       new_account.balance += loan.total_amount
       await queryRunner.manager.save(new_account)
 
       loan.disbursement_account = new_account
+      loan.category = new_category
 
       const transaction = queryRunner.manager.create(Transaction, {
         user: { id: auth_req.user.id } as any,
         type: 'income',
         amount: loan.total_amount,
         account: new_account,
+        category: new_category,
         date: loan.start_date,
         description: loan.name
       })
@@ -225,6 +249,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     } else {
       if (!loan.disbursement_account) { throw { code: 'DISBURSEMENT_NOT_FOUND' } }
       if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
+      if (!new_category) { throw { code: 'CATEGORY_NOT_FOUND' } }
 
       const old_account = await queryRunner.manager.findOneByOrFail(Account, {
         id: loan.disbursement_account.id,
@@ -248,6 +273,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         loan.transaction.date = loan.start_date
         loan.transaction.description = loan.name
         loan.transaction.account = new_account
+        loan.transaction.category = new_category
         await queryRunner.manager.save(loan.transaction)
       }
     }
@@ -286,6 +312,9 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         break
       case 'DISBURSEMENT_NOT_FOUND':
         validationErrors = { disbursement_account: 'Cuenta de desembolso actual no encontrada' }
+        break
+      case 'CATEGORY_NOT_FOUND':
+        validationErrors = { category: 'Categoría seleccionada no encontrada' }
         break
       default:
         // errores que vengan de validateLoan

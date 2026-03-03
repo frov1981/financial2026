@@ -6,6 +6,7 @@ import { LoanGroup } from './LoanGroup.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
+import { Category } from './Category.entity'
 
 @Entity('loans')
 //@Unique('UQ_loans_transaction', ['transaction'])
@@ -60,6 +61,10 @@ export class Loan {
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'disbursement_account_id', foreignKeyConstraintName: 'fk_loans_disbursement_account' })
   disbursement_account!: Account | null
+
+  @ManyToOne(() => Category)
+  @JoinColumn({ name: 'category_id', foreignKeyConstraintName: 'fk_loans_category' })
+  category!: Category | null  
 
   @OneToOne(() => Transaction)
   @JoinColumn({ name: 'transaction_id', foreignKeyConstraintName: 'fk_loans_transaction' })
