@@ -3,7 +3,7 @@ import { AppDataSource } from "../../config/typeorm.datasource"
 import { Loan } from "../../entities/Loan.entity"
 import { loanFormMatrix } from '../../policies/loan-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
-import { getActiveAccountsByUser, getActiveCategoriesByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
+import { getActiveAccountsByUser, getActiveCategoriesByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
@@ -25,8 +25,7 @@ const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
   const disbursement_account = await getActiveAccountsByUser(auth_req)
   const loan_group = await getActiveParentLoansByUser(auth_req)
   const loan_form_policy = loanFormMatrix[mode]
-  const active_categories = await getActiveCategoriesByUser(auth_req)
-  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+  const active_income_categories = await getActiveCategoriesForLoansByUser(auth_req)
 
   return res.render('layouts/main', {
     title,

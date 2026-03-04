@@ -57,6 +57,7 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
       id: category.id,
       name: category.name,
       type: category.type,
+      type_for_loan: category.type_for_loan,
       is_active: category.is_active,
       category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
       transactions_count: Number(result.raw[index].transactions_count)
@@ -87,7 +88,8 @@ export const routeToFormInsertCategory: RequestHandler = async (req: Request, re
     view: 'pages/categories/form',
     category: {
       type: null,
-      category_group: null,
+      type_for_loan: null,
+      category_group: null,      
       is_active: true
     },
     errors: {},
@@ -118,6 +120,7 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
       id: category.id,
       name: category.name,
       type: category.type,
+      type_for_loan: category.type_for_loan,
       is_active: category.is_active,
       category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
     },
@@ -148,6 +151,7 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
       id: category.id,
       name: category.name,
       type: category.type,
+      type_for_loan: category.type_for_loan,
       is_active: category.is_active,
       category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
     },

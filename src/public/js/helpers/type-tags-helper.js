@@ -66,4 +66,22 @@ function categoryTypeTag(type) {
   }
 }
 
+function categoryTypeForLoanTag(type) {
+  switch (type) {
+    case 'loan':
+      return `
+        <div class="tx-tag">
+          Prestamos
+        </div>
+      `
+    case 'payment':
+      return `
+        <div class="tx-tag ">
+          Pagos
+        </div>
+      `
+    default:
+      return ``
+  }
+}
 

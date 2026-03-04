@@ -5,7 +5,7 @@ import { Loan } from '../../entities/Loan.entity'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { loanFormMatrix, LoanFormMode } from '../../policies/loan-form.policy'
-import { getActiveAccountsByUser, getActiveCategoriesByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
+import { getActiveAccountsByUser, getActiveCategoriesByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
@@ -103,9 +103,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
   const loan_group = await getActiveParentLoansByUser(auth_req)
   const disbursement_account = await getActiveAccountsByUser(auth_req)
-  const active_categories = await getActiveCategoriesByUser(auth_req)
-  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
-
+  const active_income_categories = await getActiveCategoriesForLoansByUser(auth_req)
 
   const loan_view = buildLoanView(req.body, loan_group, disbursement_account)
 

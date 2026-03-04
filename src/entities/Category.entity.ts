@@ -23,6 +23,10 @@ export class Category {
   @IsIn(['income', 'expense'], { message: 'El tipo debe ser income o expense' })
   type!: 'income' | 'expense'
 
+  @Column({ type: 'varchar' })
+  @IsIn(['loan', 'payment', null], { message: 'El tipo debe ser loan o payment o vacío' })
+  type_for_loan!: 'loan' | 'payment' | null
+
   @Column({ default: true })
   @IsBoolean({ message: 'El estado debe ser true o false' })
   is_active!: boolean

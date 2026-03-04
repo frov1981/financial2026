@@ -75,6 +75,64 @@
       </div>
     <% } %>
 
+    <!-- Tipo de categoría -->
+    <% if (isEditable('type_for_loan')) { %>
+    <div class="mb-4" id="type-container">
+      <label class="block font-medium mb-1">Tipo de categoría para préstamos</label>
+      <div class="flex gap-6">
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type_for_loan"
+            value="loan"
+            <%= category?.type_for_loan === 'loan' || !category ? 'checked' : '' %>
+            <%= isReadOnly('type_for_loan') ? 'disabled' : '' %>
+          >
+          Para Préstamos
+        </label>
+
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type_for_loan"
+            value="payment"
+            <%= category?.type_for_loan === 'payment' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_loan') ? 'disabled' : '' %>
+          >
+          Para Pagos
+        </label>
+ 
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type_for_loan"
+            value=""
+            <%= category?.type_for_loan == null ? 'checked' : '' %>
+            <%= isReadOnly('type_for_loan') ? 'disabled' : '' %>
+          >
+          Sin tipo
+        </label>
+ 
+      </div>
+
+      <% if (errors?.type_for_loan) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.type_for_loan %></p>
+      <% } %>
+    </div>
+    <% } else { %>
+      <div class="mb-4">
+        <label class="block font-medium mb-1">Tipo de categoría para préstamos</label>
+        <input
+          type="text"
+          name="type_for_loan"
+          class="w-full border rounded px-3 py-2"
+          value="<%= category?.type_for_loan === 'loan' ? 'Para Préstamos' : category?.type_for_loan === 'payment' ? 'Para Pagos' : ''  %>"
+          <%= isReadOnly('type_for_loan') ? 'readonly' : '' %>
+          required
+        >
+      </div>
+    <% } %>
+
     <!-- Nombre -->
     <% if (!isHidden('name')) { %>
     <div class="mb-4">

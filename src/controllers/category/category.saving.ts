@@ -62,10 +62,6 @@ const findCategoryGroupByBody = (body: any, category_group: CategoryGroup[]): Ca
 }
 
 /* ============================
-   Obtener categorías activas del usuario para mostrar en el formulario
-============================ */
-
-/* ============================
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveCategory: RequestHandler = async (req: Request, res: Response) => {
@@ -121,6 +117,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       category = repo_category.create({
         user: { id: auth_req.user.id } as any,
         type: req.body.type,
+        type_for_loan: req.body.type_for_loan,
         name: req.body.name,
         category_group: selectedGroup,
         is_active: true
@@ -134,6 +131,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
 
     if (clean.name !== undefined) category.name = clean.name
     if (clean.type !== undefined) category.type = clean.type
+    if (clean.type_for_loan !== undefined) { category.type_for_loan = clean.type_for_loan === '' ? null : clean.type_for_loan }
     if (clean.category_group !== undefined) { category.category_group = findCategoryGroupByBody(req.body, category_group) }
     if (clean.is_active !== undefined) { category.is_active = clean.is_active === 'true' || clean.is_active === '1' }
 
@@ -160,7 +158,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       ...form_state,
       errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
-  }finally {
+  } finally {
     logger.debug(`${saveCategory.name}-End`)
   }
 }

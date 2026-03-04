@@ -198,6 +198,7 @@ function renderCard(category) {
 
         <div class="card-tags">
           ${categoryTypeTag(category.type)}
+          ${categoryTypeForLoanTag(category.type_for_loan)}
           ${statusTag(category.is_active)}
         </div>
       </div>
