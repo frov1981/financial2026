@@ -72,9 +72,18 @@
 
 .loan-card .card-tags {
     display: flex;
-    gap: 6px;
-    align-items: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.loan-card .tag-line {
+    text-align: right;
+}
+
+.loan-card .tag-line:not(:first-child) {
+    font-size: 12px;
+    color: var(--ui-gray-500);
 }
 
 .loan-group {
@@ -197,4 +206,26 @@
 .loan-date {
     font-size: 12px;
     color: var(--ui-gray-500);
+}
+
+.loan-card .loan-amounts {
+    display: flex;
+    gap: 8px;
+}
+
+.loan-card .loan-amount-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.loan-card .loan-amount-title {
+    text-align: left;
+    font-size: 11px;
+    color: var(--ui-gray-500);
+}
+
+.loan-card .loan-amount-value {
+    font-weight: 600;
+    font-size: 13px;
 }

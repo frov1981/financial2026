@@ -101,7 +101,7 @@
           class="autocomplete-input" 
           autocomplete="off" 
           value="<%= loan?.disbursement_account?.name || '' %>" 
-          <%= isReadOnly('disbursement_account') ? 'readonly' : '' %>>
+          <%= isReadOnly('disbursement_account_id') ? 'readonly' : '' %>>
         
         <input 
           type="hidden" 
@@ -134,7 +134,7 @@
           class="autocomplete-input" 
           autocomplete="off" 
           value="<%= loan?.category?.name || '' %>" 
-          <%= isReadOnly('category') ? 'readonly' : '' %>>
+          <%= isReadOnly('category_id') ? 'readonly' : '' %>>
         
         <input 
           type="hidden" 
@@ -168,7 +168,7 @@
           class="autocomplete-input" 
           autocomplete="off" 
           value="<%= loan?.loan_group?.name || '' %>" 
-          <%= isReadOnly('loan_group') ? 'readonly' : '' %>>
+          <%= isReadOnly('loan_group_id') ? 'readonly' : '' %>>
         
         <input 
           type="hidden" 

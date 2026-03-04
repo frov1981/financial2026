@@ -217,13 +217,16 @@ function renderCard(loan) {
 
       <div class="card-sub loan-amounts">
         <div class="loan-amount-item">
-          Monto: ${amountBox(loan.total_amount)}
+          <div class="loan-amount-title">Monto</div>
+          <div class="loan-amount-value">${amountBox(loan.total_amount)}</div>
         </div>
         <div class="loan-amount-item">
-          Capital: ${amountBox(loan.principal_paid)}
+          <div class="loan-amount-title">Capital</div>
+          <div class="loan-amount-value">${amountBox(loan.principal_paid)}</div>
         </div>
         <div class="loan-amount-item">
-          Interés: ${amountBox(loan.interest_paid)}
+          <div class="loan-amount-title">Interés</div>
+          <div class="loan-amount-value">${amountBox(loan.interest_paid)}</div>
         </div>
       </div>
 
@@ -234,12 +237,20 @@ function renderCard(loan) {
             <div class="weekday-text">${weekday}</div>
           </div>
         </span>
+
         <div class="card-tags">
-          ${statusTag(loan.is_active)}
-          <span>${loan.disbursement_account ? loan.disbursement_account.name : '-'}</span>
-          <span>${loan.category ? loan.category.name : '-'}</span>
+          <div class="tag-line">
+            ${statusTag(loan.is_active)}
+          </div>
+          <div class="tag-line">
+            ${loan.disbursement_account ? loan.disbursement_account.name : '-'}
+          </div>
+          <div class="tag-line">
+            ${loan.category ? loan.category.name : '-'}
+          </div>
+        </div> 
+
         </div>
-      </div>
     </div>
   `
 }

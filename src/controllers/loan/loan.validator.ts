@@ -112,10 +112,14 @@ export const validateLoan = async (loan: Loan, auth_req: AuthRequest): Promise<R
         where: { loan: { id: loan.id } }
       })
 
-      const totalPrincipalPaid = payments.reduce(
-        (sum, p) => sum + Number(p.principal_paid),
+      const totalPrincipalPaidCents = payments.reduce(
+        (sum, p) => sum + Math.round(Number(p.principal_paid) * 100),
         0
       )
+
+      const totalAmountCents = loan.total_amount !== undefined
+        ? Math.round(Number(loan.total_amount) * 100)
+        : 0
 
       // No permitir modificar total_amount si hay pagos
       if (
@@ -127,19 +131,26 @@ export const validateLoan = async (loan: Loan, auth_req: AuthRequest): Promise<R
       }
 
       // No permitir modificar start_date si hay pagos
-      if (
-        payments.length > 0 &&
-        loan.start_date &&
-        new Date(existing_loan.start_date).getTime() !== new Date(loan.start_date).getTime()
-      ) {
-        field_errors.start_date = 'No se puede modificar la fecha de inicio de un préstamo con pagos registrados'
-      }
+      // No permitir modificar start_date si hay pagos
+      if (payments.length > 0 && loan.start_date) {
 
+        const normalizeToMinute = (date: Date | string) => {
+          const d = new Date(date)
+          d.setSeconds(0, 0)
+          return d.getTime()
+        }
+
+        const existing_time = normalizeToMinute(existing_loan.start_date)
+        const new_time = normalizeToMinute(loan.start_date)
+
+        if (existing_time !== new_time) {
+          field_errors.start_date = 'No se puede modificar la fecha de inicio de un préstamo con pagos registrados'
+        }
+      }
       // No permitir total_amount menor al capital ya pagado
       if (
         loan.total_amount !== undefined &&
-        Number(loan.total_amount) < totalPrincipalPaid
-      ) {
+        totalAmountCents < totalPrincipalPaidCents) {
         field_errors.total_amount = 'El monto total no puede ser menor al capital ya pagado'
       }
 

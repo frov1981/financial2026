@@ -63,8 +63,38 @@ export class KpiCacheService {
             const net_savings = Number(record.savings) - Number(record.withdrawals)
             const available_balance = net_cash_flow - net_savings
 
-            await AppDataSource.getRepository(CacheKpiBalance).upsert(
-                {
+            const repo = AppDataSource.getRepository(CacheKpiBalance)
+
+            const existing = await repo.findOne({
+                where: {
+                    user: { id: user_id },
+                    period_year,
+                    period_month
+                },
+                relations: ['user'] // necesario porque estás usando relación
+            })
+
+            if (existing) {
+                await repo.update(
+                    { id: existing.id },
+                    {
+                        incomes: record.incomes,
+                        expenses: record.expenses,
+                        savings: record.savings,
+                        withdrawals: record.withdrawals,
+                        loans: record.loans,
+                        payments: record.payments,
+                        total_inflows,
+                        total_outflows,
+                        net_cash_flow,
+                        net_savings,
+                        available_balance,
+                        principal_breakdown: record.principal_breakdown,
+                        interest_breakdown: record.interest_breakdown
+                    }
+                )
+            } else {
+                await repo.insert({
                     user: { id: user_id } as any,
                     period_year,
                     period_month,
@@ -81,14 +111,16 @@ export class KpiCacheService {
                     available_balance,
                     principal_breakdown: record.principal_breakdown,
                     interest_breakdown: record.interest_breakdown
-                },
-                ['user', 'period_year', 'period_month']
-            )
-
+                })
+            }
             logger.info(`KPIs recalculados user=${user_id} periodo=${period_month}/${period_year}`)
 
         } catch (err: any) {
-            logger.error('Error recalculando KPIs', { error: err })
+            logger.error('Error recalculando KPIs', {
+                message: err?.message,
+                stack: err?.stack,
+                full: err
+            })
         }
 
     }
