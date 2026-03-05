@@ -1,9 +1,9 @@
 import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/typeorm.datasource'
+import { Category } from '../../entities/Category.entity'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
-import { logger } from '../../utils/logger.util'
 
 export const validateSavePayment = async (auth_req: AuthRequest, payment: LoanPayment, old_payment: LoanPayment | null): Promise<Record<string, string> | null> => {
     const user_id = auth_req.user.id
@@ -12,6 +12,7 @@ export const validateSavePayment = async (auth_req: AuthRequest, payment: LoanPa
     const fields_errors = errors.length > 0 ? mapValidationErrors(errors) : {}
 
     const payment_repo = AppDataSource.getRepository(LoanPayment)
+    const category_repo = AppDataSource.getRepository(Category)
 
     /* =========================
        Validación monto principal
@@ -30,6 +31,18 @@ export const validateSavePayment = async (auth_req: AuthRequest, payment: LoanPa
     let total_payment = payment.principal_paid + payment.interest_paid
     if (total_payment <= 0) {
         fields_errors.general = 'El monto total del pago (capital + intereses) debe ser mayor a cero'
+    }
+
+    /* =========================
+       Validación categoría
+    ============================ */
+    if (payment.category && payment.category.id) {
+        const category = await category_repo.findOne({
+            where: { id: payment.category.id, user: { id: user_id }, is_active: true }
+        })
+        if (!category) {
+            fields_errors.category = 'La categoría seleccionada no es válida'
+        }
     }
 
     /* =========================

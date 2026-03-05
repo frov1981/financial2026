@@ -1,19 +1,23 @@
-<div class="max-w-3xl mx-auto">
+<%
+  const rules = payment_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'read'
+  const isEditable = field => rules[field] === 'edit'
+%>
+
+<div class="max-w-xl mx-auto">
 
   <h1 class="text-2xl font-semibold mb-6">
     <%= 
-      mode === 'insert'
-        ? 'Insertar Pago'
-        : mode === 'update'
-        ? 'Editar Pago'
-        : mode === 'delete'
-        ? 'Eliminar Pago'
-        : mode
+      mode === 'insert' ? 'Insertar Pago' :
+      mode === 'update' ? 'Editar Pago' :
+      mode === 'delete' ? 'Eliminar Pago' :
+      mode
     %>
   </h1>
 
   <form method="post" action="/payments">
- 
+
     <% if (errors?.general) { %>
       <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
         <%= errors.general %>
@@ -22,77 +26,85 @@
 
     <!-- IDs -->
     <input type="hidden" name="id" value="<%= payment?.id || '' %>">
-    <input type="hidden" name="loan_id" value="<%= loan_id || LOAN_ID || '' %>">
-    <input type="hidden" name="action" value="save">
+    <input type="hidden" name="loan_id" value="<%= loan_id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
 
     <!-- Cuenta -->
-    <div class="mb-4" data-field="account" data-autocomplete>
-    <label class="block font-medium mb-1">Cuenta</label>
+    <% if (!isHidden('account_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Cuenta</label>
 
-    <div class="relative">
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(accounts) %>'
+        data-default-id="<%= payment?.account?.id || '' %>"
+        data-placeholder="-- Escoja una cuenta --"
+      >
         <input
-        type="text"
-        class="w-full border rounded px-3 py-2 pr-24 bg-white cursor-text"
-        placeholder="Buscar cuenta…"
-        data-autocomplete-input
-        autocomplete="off"
-        value="<%= payment?.account_name || '' %>"
-        <%= mode !== 'insert' ? 'readonly' : '' %>
+          type="text"
+          class="autocomplete-input"
+          autocomplete="off"
+          value="<%= payment?.account?.name || '' %>"
+          <%= isReadOnly('account_id') ? 'readonly' : '' %>
         >
 
-        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-        <span
-            class="autocomplete-balance"
-            data-autocomplete-display-balance
-        ></span>
-        </div>
-    </div>
-
-    <input
-        type="hidden"
-        name="account_id"
-        data-autocomplete-hidden
-        value="<%= payment?.account_id || '' %>"
-    >
-
-    <% if (mode === 'insert') { %>
-    <div class="relative">
-        <ul
-        class="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto hidden"
-        data-autocomplete-list
+        <input
+          type="hidden"
+          class="autocomplete-hidden"
+          name="account_id"
+          value="<%= payment?.account?.id || '' %>"
         >
-        <% accounts.forEach(a => { %>
-            <li
-            class="px-3 py-2 cursor-pointer hover:bg-gray-100"
-            data-autocomplete-item
-            data-id="<%= a.id %>"
-            data-label="<%= a.name %>"
-            data-balance="<%= Number(a.balance).toFixed(2) %>"
-            >
-            <div class="flex items-center gap-2 min-w-0 w-full">
-                <span class="flex-1 truncate autocomplete-label">
-                <%= a.name %>
-                </span>
 
-                <span
-                class="autocomplete-balance text-right whitespace-nowrap
-                <%= Number(a.balance) > 0 ? 'amount-positive' : 'amount-negative' %>"
-                >
-                <%= Number(a.balance).toFixed(2) %>
-                </span>
-            </div>
-            </li>
-        <% }) %>
-        </ul>
-    </div>
-    <% } %>
+        <% if (!isReadOnly('account_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
 
-    <% if (errors?.account) { %>
+      <% if (errors?.account) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.account %></p>
-    <% } %>
+      <% } %>
     </div>
+    <% } %>
+
+    <!-- Categoria -->
+    <% if (!isHidden('category_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Categoría</label>
+
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(active_expense_categories) %>'
+        data-default-id="<%= payment?.category?.id || '' %>"
+        data-placeholder="-- Escoja una categoría --"
+      >
+        <input
+          type="text"
+          class="autocomplete-input"
+          autocomplete="off"
+          value="<%= payment?.category?.name || '' %>"
+          <%= isReadOnly('category_id') ? 'readonly' : '' %>
+        >
+
+        <input
+          type="hidden"
+          class="autocomplete-hidden"
+          name="category_id"
+          value="<%= payment?.category?.id || '' %>"
+        >
+
+        <% if (!isReadOnly('category_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+
+      <% if (errors?.category) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
+      <% } %>
+    </div>
+    <% } %>
 
     <!-- Capital -->
+    <% if (!isHidden('principal_paid')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Monto Capital</label>
       <input
@@ -102,15 +114,18 @@
         name="principal_paid"
         class="w-full border rounded px-3 py-2"
         value="<%= payment?.principal_paid || '0.00' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('principal_paid') ? 'readonly' : '' %>
         required
       >
+
       <% if (errors?.principal_paid) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.principal_paid %></p>
       <% } %>
     </div>
+    <% } %>
 
-    <!-- Interés -->
+    <!-- Interes -->
+    <% if (!isHidden('interest_paid')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Interés</label>
       <input
@@ -120,14 +135,17 @@
         name="interest_paid"
         class="w-full border rounded px-3 py-2"
         value="<%= payment?.interest_paid || '0.00' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('interest_paid') ? 'readonly' : '' %>
       >
+
       <% if (errors?.interest_paid) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.interest_paid %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Fecha -->
+    <% if (!isHidden('payment_date')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Fecha de Pago</label>
       <input
@@ -135,29 +153,34 @@
         name="payment_date"
         class="w-full border rounded px-3 py-2"
         value="<%= payment?.payment_date || '' %>"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('payment_date') ? 'readonly' : '' %>
         required
       >
+
       <% if (errors?.payment_date) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.payment_date %></p>
       <% } %>
     </div>
+    <% } %>
 
     <!-- Nota -->
+    <% if (!isHidden('note')) { %>
     <div class="mb-6">
       <label class="block font-medium mb-1">Nota</label>
       <textarea
         name="note"
         rows="3"
         class="w-full border rounded px-3 py-2"
-        <%= mode === 'delete' ? 'readonly' : '' %>
+        <%= isReadOnly('note') ? 'readonly' : '' %>
       ><%= payment?.note || '' %></textarea>
     </div>
+    <% } %>
 
     <!-- Acciones -->
     <div class="flex justify-end gap-2">
+
       <a
-        href="/payments/<%= loan_id || LOAN_ID %>/loan"
+        href="/payments/<%= loan_id %>/loan"
         class="px-4 py-2 bg-gray-200 rounded"
       >
         Cancelar
@@ -167,7 +190,6 @@
         <button
           type="submit"
           class="px-4 py-2 bg-red-600 text-white rounded"
-          onclick="this.form.action.value='delete'"
         >
           Eliminar
         </button>
@@ -179,10 +201,12 @@
           Guardar
         </button>
       <% } %>
+
     </div>
 
   </form>
+
 </div>
 
+<script src="/js/forms/autocomplete-form.js"></script>
 <script src="/js/forms/payment-form.js"></script>
-<script src="/js/helpers/autocomplete-helper.js"></script>

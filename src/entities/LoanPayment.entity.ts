@@ -1,9 +1,10 @@
+import { IsDate, IsNotEmpty, IsNumber, IsPositive, Min } from 'class-validator'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Account } from './Account.entity'
+import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
 import { Transaction } from './Transaction.entity'
-import { IsDate, IsNotEmpty, IsNumber, IsPositive, Min } from 'class-validator'
 
 @Entity('loan_payments')
 export class LoanPayment {
@@ -41,5 +42,9 @@ export class LoanPayment {
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
+
+  @ManyToOne(() => Category)
+  @JoinColumn({ name: 'category_id', foreignKeyConstraintName: 'fk_loan_payments_category' })
+  category!: Category | null
 
 }

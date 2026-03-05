@@ -1,9 +1,10 @@
 import { IsBoolean, IsIn, IsNotEmpty } from 'class-validator'
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
-import { Transaction } from './Transaction.entity'
-import { User } from './User.entity'
 import { CategoryGroup } from './CategoryGroups.entity'
 import { Loan } from './Loan.entity'
+import { LoanPayment } from './LoanPayment.entity'
+import { Transaction } from './Transaction.entity'
+import { User } from './User.entity'
 
 @Entity('categories')
 export class Category {
@@ -36,6 +37,9 @@ export class Category {
 
   @OneToMany(() => Loan, loan => loan.category)
   loans!: Loan[]
+
+  @OneToMany(() => LoanPayment, payment => payment.category)
+  loan_payments!: LoanPayment[]
 
   @ManyToOne(() => CategoryGroup, group => group.categories)
   @JoinColumn({ name: 'category_group_id', foreignKeyConstraintName: 'fk_categories_group' })

@@ -9,7 +9,6 @@ import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
 
 @Entity('loans')
-//@Unique('UQ_loans_transaction', ['transaction'])
 export class Loan {
 
   @PrimaryGeneratedColumn()

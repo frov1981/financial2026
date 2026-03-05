@@ -1,19 +1,18 @@
 import { Request, RequestHandler, Response } from 'express'
+import { DateTime } from 'luxon'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
+import { Category } from '../../entities/Category.entity'
 import { Loan } from '../../entities/Loan.entity'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { loanFormMatrix, LoanFormMode } from '../../policies/loan-form.policy'
-import { getActiveAccountsByUser, getActiveCategoriesByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
+import { KpiCacheService } from '../../services/kpi-cache.service'
+import { getActiveAccountsByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
-import { KpiCacheService } from '../../services/kpi-cache.service'
-import { DateTime } from 'luxon'
-import { Category } from '../../entities/Category.entity'
-import { splitCategoriesByType } from '../transaction/transaction.auxiliar'
 
 const getTitle = (mode: string) => {
   switch (mode) {

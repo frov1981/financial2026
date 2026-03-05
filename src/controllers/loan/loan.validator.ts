@@ -65,6 +65,9 @@ export const validateLoan = async (loan: Loan, auth_req: AuthRequest): Promise<R
     }
   }
 
+  /* =========================
+     Validación categoría
+  ============================ */
   if (loan.category && loan.category.id) {
     const category = await category_repo.findOne({
       where: {

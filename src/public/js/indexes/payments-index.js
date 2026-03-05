@@ -86,6 +86,7 @@ function renderRow(payment) {
       <td class="ui-td col-right">${formatAmount(payment.principal_paid)}</td>
       <td class="ui-td col-right">${formatAmount(payment.interest_paid)}</td>
       <td class="ui-td col-left">${payment.account?.name || '-'}</td>
+      <td class="ui-td col-left">${payment.category?.name || '-'}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button
@@ -148,17 +149,26 @@ function renderCard(payment) {
         </div>
       </div>
 
-      <div class="card-body">
-        <div class="amount-main">
-          ${formatAmount(payment.principal_paid)}
+      <div class="card-body payment-amounts">
+        <div class="amount-item">
+          <div class="amount-label">Capital</div>
+          <div class="amount-value">${formatAmount(payment.principal_paid)}</div>
         </div>
-        <div class="amount-sub">
-          Interés: ${formatAmount(payment.interest_paid)}
+
+        <div class="amount-item">
+          <div class="amount-label">Interés</div>
+          <div class="amount-value">${formatAmount(payment.interest_paid)}</div>
+        </div>
+
+        <div class="amount-item">
+          <div class="amount-label">Total</div>
+          <div class="amount-value">${formatAmount(payment.principal_paid + payment.interest_paid)}</div>
         </div>
       </div>
 
       <div class="card-footer">
         <span>${payment.account?.name || '-'}</span>
+        <span>${payment.category?.name || '-'}</span>
       </div>
     </div>
   `
@@ -171,7 +181,7 @@ function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="5" class="ui-td col-center text-gray-500">
+        <td colspan="6" class="ui-td col-center text-gray-500">
           No se encontraron pagos
         </td>
       </tr>
