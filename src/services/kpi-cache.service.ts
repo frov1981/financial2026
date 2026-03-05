@@ -4,6 +4,11 @@ import { Transaction } from '../entities/Transaction.entity'
 import { DateTime } from 'luxon'
 import { logger } from '../utils/logger.util'
 
+
+function money(n: number) {
+    return Number(n.toFixed(2))
+}
+
 export class KpiCacheService {
 
     static async recalcMonthlyKPIs(user_id: number, period_year: number, period_month: number, timezone: string) {
@@ -57,11 +62,11 @@ export class KpiCacheService {
 
             const record = kpi_data[0]
 
-            const total_inflows = Number(record.incomes) + Number(record.loans)
-            const total_outflows = Number(record.expenses) + Number(record.payments)
-            const net_cash_flow = total_inflows - total_outflows
-            const net_savings = Number(record.savings) - Number(record.withdrawals)
-            const available_balance = net_cash_flow - net_savings
+            const total_inflows = money(Number(record.incomes) + Number(record.loans))
+            const total_outflows = money(Number(record.expenses) + Number(record.payments))
+            const net_cash_flow = money(total_inflows - total_outflows)
+            const net_savings = money(Number(record.savings) - Number(record.withdrawals))
+            const available_balance = money(net_cash_flow - net_savings)
 
             const repo = AppDataSource.getRepository(CacheKpiBalance)
 
@@ -73,6 +78,9 @@ export class KpiCacheService {
                 },
                 relations: ['user'] // necesario porque estás usando relación
             })
+
+            logger.debug(`recalcMonthlyKPIs.record`, { ...record, total_inflows, total_outflows, net_cash_flow, net_savings, available_balance })
+            logger.debug(`recalcMonthlyKPIs.existing_record`, { existing })
 
             if (existing) {
                 await repo.update(

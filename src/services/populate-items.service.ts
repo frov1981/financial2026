@@ -82,3 +82,16 @@ export const getActiveCategoriesForLoansByUser = async (authReq: AuthRequest): P
   })
   return categories
 }
+
+export const getActiveCategoriesForPaymentsByUser = async (authReq: AuthRequest): Promise<Category[]> => {
+  const repo = AppDataSource.getRepository(Category)
+  const categories = await repo.find({
+    where: {
+      user: { id: authReq.user.id },
+      is_active: true,
+      type_for_loan: 'payment'
+    },
+    order: { name: 'ASC' }
+  })
+  return categories
+}
