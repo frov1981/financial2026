@@ -13,6 +13,7 @@ import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
 import { Category } from '../../entities/Category.entity'
+import { getNextPaymentNumber } from '../../services/loan-payment-number.service'
 
 /* ============================
    Helpers
@@ -215,11 +216,13 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         let old_total = 0
 
         if (mode === 'insert') {
+            const payment_number = await getNextPaymentNumber(loan_id)
 
             payment = paymentRepo.create({
                 loan,
                 account,
                 category,
+                payment_number,
                 principal_paid: Number(clean.principal_paid || 0),
                 interest_paid: Number(clean.interest_paid || 0),
                 note: clean.note || '',

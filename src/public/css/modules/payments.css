@@ -16,7 +16,7 @@
 .payment-card .icon-btn {
     padding: 0.375rem;
     min-height: auto;
-} 
+}
 
 .payment-card {
     position: relative;
@@ -102,23 +102,62 @@
 }
 
 .payment-card .payment-amounts {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .payment-card .amount-item {
-  flex: 1;
+    flex: 1;
 }
 
 .payment-card .amount-label {
-  font-size: 11px;
-  color: var(--ui-gray-500);
-  text-align: left;
+    font-size: 11px;
+    color: var(--ui-gray-500);
+    text-align: left;
 }
 
 .payment-card .amount-value {
-  font-size: 18px;
-  font-weight: 600;
-  text-align: left;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.payment-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ui-gray-500);
+    margin-top: 6px;
+}
+
+.payment-card .footer-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.payment-card .footer-account {
+    font-weight: 600;
+    color: var(--ui-gray-700);
+}
+
+.payment-card .footer-category {
+    font-size: 11px;
+}
+
+.payment-card .footer-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.payment-card .footer-label {
+    font-size: 11px;
+}
+
+.payment-card .footer-number {
+    font-weight: 600;
+    color: var(--ui-gray-800);
 }

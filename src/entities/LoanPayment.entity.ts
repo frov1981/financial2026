@@ -12,6 +12,11 @@ export class LoanPayment {
   @PrimaryGeneratedColumn()
   id!: number
 
+  @IsPositive({ message: 'El número de pago debe ser un número positivo' })
+  @Min(1, { message: 'El número de pago debe ser al menos 1' })
+  @Column()
+  payment_number!: number
+
   @ManyToOne(() => Loan, loan => loan.payments)
   @JoinColumn({ name: 'loan_id', foreignKeyConstraintName: 'fk_loan_payments_loan' })
   loan!: Loan

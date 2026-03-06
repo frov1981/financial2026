@@ -87,6 +87,7 @@ function renderRow(payment) {
       <td class="ui-td col-right">${formatAmount(payment.interest_paid)}</td>
       <td class="ui-td col-left">${payment.account?.name || '-'}</td>
       <td class="ui-td col-left">${payment.category?.name || '-'}</td>
+      <td class="ui-td col-right">${numberBox(payment.payment_number)}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button
@@ -167,8 +168,15 @@ function renderCard(payment) {
       </div>
 
       <div class="card-footer">
-        <span>${payment.account?.name || '-'}</span>
-        <span>${payment.category?.name || '-'}</span>
+        <div class="footer-left">
+          <div class="footer-account">${payment.account?.name || '-'}</div>
+          <div class="footer-category">${payment.category?.name || '-'}</div>
+        </div>
+
+        <div class="footer-right">
+          <span class="footer-label">Pago No.</span>
+          <span class="footer-number">${payment.payment_number || '-'}</span>
+        </div>
       </div>
     </div>
   `
@@ -258,8 +266,8 @@ function filterPayments() {
     !term
       ? allPayments
       : allPayments.filter(p =>
-          p.account?.name?.toLowerCase().includes(term)
-        )
+        p.account?.name?.toLowerCase().includes(term)
+      )
   )
 }
 
