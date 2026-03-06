@@ -137,7 +137,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         if (payment_id) {
             existing = await paymentRepo.findOne({
                 where: { id: payment_id },
-                relations: { transaction: true, account: true }
+                relations: { transaction: true, account: true, loan: true }
             })
 
             if (!existing) throw new Error('Pago no encontrado')
