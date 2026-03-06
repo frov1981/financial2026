@@ -299,6 +299,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             trx = old_payment.transaction
             trx.amount = new_total
             trx.account = account
+            trx.category = payment.category
             trx.date = payment.payment_date
             trx.description = payment.note
 
@@ -309,6 +310,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
                 type: 'expense',
                 amount: new_total,
                 account,
+                category: payment.category,
                 date: payment.payment_date,
                 description: payment.note
             })
