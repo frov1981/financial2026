@@ -35,7 +35,9 @@ export const AppDataSource = new DataSource({
   timezone: 'Z',
   extra: {
     timezone: 'Z',
-    connectionLimit: 2
+    // el límite de conexiones para la pool del ORM. debe sumar con el de la
+    // sesión para no exceder el máximo del usuario MySQL.
+    connectionLimit: process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT, 10) : 3
   },
   logging: process.env.DB_LOGGING === 'true' ? true : false,
   logger: new OneLineSqlLogger()

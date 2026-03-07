@@ -81,8 +81,12 @@ export const verify2FA = async (req: Request, res: Response) => {
       })
     })
 
-  } catch (error) {
-    logger.error('verify2FA error', error)
+  } catch (error: any) {
+    logger.error('verify2FA error', {
+      message: error?.message,
+      stack: error?.stack,
+      orig: error
+    })
     res.render(
       'pages/2fa',
       {

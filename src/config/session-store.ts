@@ -14,7 +14,11 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   timezone: 'Z',
-  connectionLimit: 5
+  // limitar el número de conexiones dedicadas a sesiones. Si el servidor MySQL
+  // impone `max_user_connections` bajo (por ejemplo 5) debemos sumar los
+  // límites de ambas pools y quedarnos por debajo. 1 o 2 suele ser suficiente
+  // para la mayoría de apps.
+  connectionLimit: process.env.SESSION_DB_CONNECTION_LIMIT ? parseInt(process.env.SESSION_DB_CONNECTION_LIMIT, 10) : 1
 })
 
 /* ============================

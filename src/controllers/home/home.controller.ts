@@ -84,12 +84,14 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
       where: { name: username },
       select: selected_fields
     })
+    logger.debug('user lookup result', { username, found: !!user })
 
     if (!user) {
       return res.render('pages/login', { error: 'Usuario no encontrado' })
     }
 
     const valid_password = await bcrypt.compare(password, user.password_hash)
+    logger.debug('password validation', { username, valid: valid_password })
 
     if (!valid_password) {
       return res.render('pages/login', { error: 'Contraseña incorrecta' })
@@ -118,8 +120,13 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     })
 
     return res.redirect('/2fa')
-  } catch (error) {
-    logger.error(`${apiForValidatingLogin.name}-Error. `, error)
+  } catch (error: any) {
+    // el logger usa JSON.stringify, no imprime message/stack de los errores.
+    logger.error(`${apiForValidatingLogin.name}-Error.`, {
+      message: error?.message,
+      stack: error?.stack,
+      orig: error
+    })
     return res.render(
       'pages/login',
       {
