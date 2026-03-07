@@ -2,15 +2,15 @@ import 'reflect-metadata'
 import { DataSource } from 'typeorm'
 import { Account } from '../entities/Account.entity'
 import { AuthCode } from '../entities/AuthCode.entity'
+import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
 import { Category } from '../entities/Category.entity'
+import { CategoryGroup } from '../entities/CategoryGroups.entity'
 import { Loan } from '../entities/Loan.entity'
+import { LoanGroup } from '../entities/LoanGroup.entity'
 import { LoanPayment } from '../entities/LoanPayment.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
-import { CategoryGroup } from '../entities/CategoryGroups.entity'
-import { LoanGroup } from '../entities/LoanGroup.entity'
-import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -35,8 +35,6 @@ export const AppDataSource = new DataSource({
   timezone: 'Z',
   extra: {
     timezone: 'Z',
-    // el límite de conexiones para la pool del ORM. debe sumar con el de la
-    // sesión para no exceder el máximo del usuario MySQL.
     connectionLimit: process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT, 10) : 3
   },
   logging: process.env.DB_LOGGING === 'true' ? true : false,

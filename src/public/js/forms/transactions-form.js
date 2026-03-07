@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     panel_el.innerHTML = ''
 
     // volver a inicializar SOLO este autocomplete
+    // revisar la invocación global de setupAutocomplete en "src/public/js/forms/autocomplete-form.js" para evitar conflictos
     setupAutocomplete(categoryAutocomplete)
   }
 
