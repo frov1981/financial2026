@@ -21,6 +21,8 @@ function setupAutocomplete(container) {
     const hidden_el = container.querySelector('.autocomplete-hidden')
     const panel_el = container.querySelector('.autocomplete-panel')
 
+    if (!input_el || !hidden_el || !panel_el) return
+
     const items_raw = container.getAttribute('data-items') || '[]'
     const items = JSON.parse(items_raw)
     const default_id = container.getAttribute('data-default-id') || ''

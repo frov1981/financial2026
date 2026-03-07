@@ -81,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const hidden_el = categoryAutocomplete.querySelector('.autocomplete-hidden')
     const panel_el = categoryAutocomplete.querySelector('.autocomplete-panel')
 
+    if (!input_el || !hidden_el || !panel_el) return
+    
     input_el.value = ''
     hidden_el.value = ''
     panel_el.innerHTML = ''
