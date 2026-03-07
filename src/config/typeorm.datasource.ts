@@ -34,13 +34,9 @@ export const AppDataSource = new DataSource({
   synchronize: false,
   timezone: 'Z',
   extra: {
-    timezone: 'Z'
+    timezone: 'Z',
+    connectionLimit: 2
   },
   logging: process.env.DB_LOGGING === 'true' ? true : false,
   logger: new OneLineSqlLogger()
 })
-
-/*
--- CREATE USER 'ssr_user'@'localhost' IDENTIFIED BY '12345..';
--- GRANT ALL PRIVILEGES ON ssr_db.* TO 'ssr_user'@'localhost';
-*/
