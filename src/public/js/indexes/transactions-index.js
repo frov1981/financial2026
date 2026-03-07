@@ -109,6 +109,19 @@ function renderCards(data) {
 function renderRow(transaction) {
   const { date, time, weekday } = formatDateTime(transaction.date)
 
+  let action_name = ""
+  let action_id = 0
+  if (transaction.loan) {
+    action_name = "loan"
+    action_id = transaction.loan.id
+  } else if (transaction.loan_payment) {
+    action_name = "payment"
+    action_id = transaction.loan_payment.id
+  } else {
+    action_name = "transaction"
+    action_id = transaction.id
+  }
+
   return `
     <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction.type)}">
       <td class="px-4 py-2 text-center col-nowrap">
@@ -120,7 +133,7 @@ function renderRow(transaction) {
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
       <td class="ui-td col-left col-nowrap">
         ${transaction.type === 'transfer'
-        ? `
+      ? `
             <div class="grouped-icon-line">
               <span class="grouped-icon">${iconTransferOut()}</span>
               <span>${transaction.account?.name || '-'}</span>
@@ -131,39 +144,39 @@ function renderRow(transaction) {
             </div>
           `
       : transaction.type === 'income'
-      ? `
+        ? `
         <div class="grouped-icon-line">
           <span class="grouped-icon">${iconTransferIn()}</span>
           <span>${transaction.account?.name || '-'}</span>
         </div>
       `
-      : transaction.type === 'expense'
-      ? `
+        : transaction.type === 'expense'
+          ? `
         <div class="grouped-icon-line">
           <span class="grouped-icon">${iconTransferOut()}</span>
           <span>${transaction.account?.name || '-'}</span>
         </div>
       `
-      : '-'
-      }
+          : '-'
+    }
       </td>
       <td class="ui-td col-left col-nowrap">
-      ${transaction.category?.name 
-        ? `
+      ${transaction.category?.name
+      ? `
         <div class="grouped-icon-line">
           <span class="grouped-icon">${iconGrouped()}</span>
           <span>${transaction.category?.name || '-'}</span>
         </div>
         ` : ''
-      }
-      ${transaction.loan_payment?.loan?.category?.name 
-        ? `
+    }
+      ${transaction.loan_payment?.loan?.category?.name
+      ? `
         <div class="grouped-icon-line">
           <span class="grouped-icon">${iconGrouped()}</span>
           <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
         </div>
         ` : ''
-      }
+    }
       </td>
       <td class="ui-td col-left col-description">${transaction.description}</td>
       <td class="ui-td col-center col-nowrap">
@@ -180,21 +193,21 @@ function renderRow(transaction) {
           <button 
             class="icon-btn edit" 
             title="Editar"
-            onclick="goToTransactionUpdate(${transaction.id})">
+            onclick="goToRouteUpdate('${action_name}', ${action_id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
           <button 
             class="icon-btn clone" 
             title="Clonar"
-            onclick="goToTransactionClone(${transaction.id})">
+            onclick="goToRouteClone('${action_name}', ${action_id})">
             ${iconClone()}
             <span class="ui-btn-text">Clonar</span>
           </button>
           <button 
             class="icon-btn delete" 
             title="Eliminar"
-            onclick="goToTransactionDelete(${transaction.id})">
+            onclick="goToRouteDelete('${action_name}', ${action_id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
@@ -206,6 +219,19 @@ function renderRow(transaction) {
 
 function renderCard(transaction) {
   const { date, time, weekday } = formatDateTime(transaction.date)
+
+  let action_name = ""
+  let action_id = 0
+  if (transaction.loan) {
+    action_name = "loan"
+    action_id = transaction.loan.id
+  } else if (transaction.loan_payment) {
+    action_name = "payment"
+    action_id = transaction.loan_payment.id
+  } else {
+    action_name = "transaction"
+    action_id = transaction.id
+  }
 
   return `
     <div 
@@ -232,17 +258,17 @@ function renderCard(transaction) {
 
           <button 
             class="icon-btn edit"
-            onclick="event.stopPropagation(); goToTransactionUpdate(${transaction.id})">
+            onclick="event.stopPropagation(); goToRouteUpdate('${action_name}', ${action_id})">
             ${iconEdit()}
           </button>
           <button 
             class="icon-btn clone"
-            onclick="event.stopPropagation(); goToTransactionClone(${transaction.id})">
+            onclick="event.stopPropagation(); goToRouteClone('${action_name}', ${action_id})">
             ${iconClone()}
           </button>
           <button  
             class="icon-btn delete"
-            onclick="event.stopPropagation(); goToTransactionDelete(${transaction.id})">
+            onclick="event.stopPropagation(); goToRouteDelete('${action_name}', ${action_id})">
             ${iconDelete()}
           </button>
         </div>
@@ -252,7 +278,7 @@ function renderCard(transaction) {
         <div class="card-info">
           <div class="card-account">
             ${transaction.type === 'transfer'
-            ? `
+      ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
@@ -262,41 +288,41 @@ function renderCard(transaction) {
                   <span>${transaction.to_account?.name || '-'}</span>
                 </div>
               `
-            : transaction.type === 'income'
-            ? `
+      : transaction.type === 'income'
+        ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferIn()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
               `
-            : transaction.type === 'expense'
-            ? `
+        : transaction.type === 'expense'
+          ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
               `
-            : '-'
-            }
+          : '-'
+    }
           </div>
-          ${transaction.category?.name 
-            ? `<div class="card-category">
+          ${transaction.category?.name
+      ? `<div class="card-category">
                   <div class="grouped-icon-line">
                     <span class="grouped-icon">${iconGrouped()}</span>
                     <span>${transaction.category?.name || '-'}</span>
                   </div>
                 </div>
             ` : ''
-          }
-          ${transaction.loan_payment?.loan?.category?.name 
-            ? `<div class="card-category">
+    }
+          ${transaction.loan_payment?.loan?.category?.name
+      ? `<div class="card-category">
                   <div class="grouped-icon-line">
                     <span class="grouped-icon">${iconGrouped()}</span>
                     <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
                   </div>
                 </div>
             ` : ''
-          }
+    }
           ${transaction.description ? `<div class="card-description">${transaction.description}</div>` : ''}
         </div>
 
@@ -355,7 +381,7 @@ function applySearch() {
   currentSearch = searchInput.value.trim()
   currentPage = 1   // 🔹 Siempre volver a página 1 en nueva búsqueda
 
-  saveFilters(FILTER_KEY, { 
+  saveFilters(FILTER_KEY, {
     term: currentSearch,
     page: currentPage
   })
@@ -372,6 +398,51 @@ function applySearch() {
 /* ============================================================================
 11. Acciones (redirects / selects)
 ============================================================================ */
+function goToRouteUpdate(action_name, action_id) {
+  const params = new URLSearchParams()
+  if (CATEGORY_ID) {
+    params.set('category_id', CATEGORY_ID)
+    params.set('from', 'categories')
+  }
+  if (action_name === "loan") {
+    location.href = `/loans/update/${action_id}?${params.toString()}`
+  } else if (action_name === "payment") {
+    location.href = `/payments/update/${action_id}?${params.toString()}`
+  } else {
+    location.href = `/transactions/update/${action_id}?${params.toString()}`
+  }
+}
+
+function goToRouteClone(action_name, action_id) {
+  const params = new URLSearchParams()
+  if (CATEGORY_ID) {
+    params.set('category_id', CATEGORY_ID)
+    params.set('from', 'categories')
+  }
+  if (action_name === "loan") {
+    location.href = `/loans/clone/${action_id}?${params.toString()}`
+  } else if (action_name === "payment") {
+    location.href = `/payments/clone/${action_id}?${params.toString()}`
+  } else {
+    location.href = `/transactions/clone/${action_id}?${params.toString()}`
+  }
+}
+
+function goToRouteDelete(action_name, action_id) {
+  const params = new URLSearchParams()
+  if (CATEGORY_ID) {
+    params.set('category_id', CATEGORY_ID)
+    params.set('from', 'categories')
+  }
+  if (action_name === "loan") {
+    location.href = `/loans/delete/${action_id}?${params.toString()}`
+  } else if (action_name === "payment") {
+    location.href = `/payments/delete/${action_id}?${params.toString()}`
+  } else {
+    location.href = `/transactions/delete/${action_id}?${params.toString()}`
+  }
+}
+
 function goToTransactionUpdate(id) {
   const params = new URLSearchParams()
   if (CATEGORY_ID) {
