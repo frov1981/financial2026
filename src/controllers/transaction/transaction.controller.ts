@@ -74,6 +74,9 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .leftJoinAndSelect('t.category', 'category')
       .leftJoinAndSelect('t.loan', 'loan')
       .leftJoinAndSelect('t.loan_payment', 'loan_payment')
+      .leftJoinAndSelect('loan_payment.loan', 'paymentLoan')
+      .leftJoinAndSelect('paymentLoan.category', 'paymentLoanCategory')
+
       .where('t.user_id = :user_id', { user_id })
 
     if (category_id) {
@@ -83,14 +86,11 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
     if (search) {
       qb.andWhere(
         `(
-          CASE LOWER(t.type) WHEN 'income' THEN 'ingresos' WHEN 'expense' THEN 'egresos' WHEN 'transfer' THEN 'transferencias' END LIKE :search OR
-          CAST(t.amount AS CHAR) LIKE :search OR
-          LOWER(account.name) LIKE :search OR
-          LOWER(to_account.name) LIKE :search OR
-          LOWER(category.name) LIKE :search OR
-          LOWER(t.description) LIKE :search OR
-          DATE_FORMAT(t.date, '%d/%m/%Y') LIKE :search OR
-          DATE_FORMAT(t.date, '%Y-%m-%d') LIKE :search
+          t.type LIKE :search OR
+          account.name LIKE :search OR
+          to_account.name LIKE :search OR
+          category.name LIKE :search OR
+          t.description LIKE :search 
         )`,
         { search: `%${search.toLowerCase()}%` }
       )
@@ -224,7 +224,7 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
   }
   const default_date = await getNextValidTransactionDate(auth_req)
   const category_errors = await validateActiveCategoryTransaction(transaction, auth_req)
-  const errors = category_errors ? category_errors : {}  
+  const errors = category_errors ? category_errors : {}
   logger.debug(`${routeToFormCloneTransaction.name}-Routing for cloning transaction form with timezone: [${timezone}]`)
   return renderTransactionForm(res, {
     title: 'Clonar Transacción',

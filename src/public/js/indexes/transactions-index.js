@@ -156,6 +156,14 @@ function renderRow(transaction) {
         </div>
         ` : ''
       }
+      ${transaction.loan_payment?.loan?.category?.name 
+        ? `
+        <div class="grouped-icon-line">
+          <span class="grouped-icon">${iconGrouped()}</span>
+          <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
+        </div>
+        ` : ''
+      }
       </td>
       <td class="ui-td col-left col-description">${transaction.description}</td>
       <td class="ui-td col-center col-nowrap">
@@ -276,6 +284,15 @@ function renderCard(transaction) {
                   <div class="grouped-icon-line">
                     <span class="grouped-icon">${iconGrouped()}</span>
                     <span>${transaction.category?.name || '-'}</span>
+                  </div>
+                </div>
+            ` : ''
+          }
+          ${transaction.loan_payment?.loan?.category?.name 
+            ? `<div class="card-category">
+                  <div class="grouped-icon-line">
+                    <span class="grouped-icon">${iconGrouped()}</span>
+                    <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
                   </div>
                 </div>
             ` : ''
