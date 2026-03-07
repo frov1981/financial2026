@@ -74,8 +74,8 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .leftJoinAndSelect('t.category', 'category')
       .leftJoinAndSelect('t.loan', 'loan')
       .leftJoinAndSelect('t.loan_payment', 'loan_payment')
-      .leftJoinAndSelect('loan_payment.loan', 'paymentLoan')
-      .leftJoinAndSelect('paymentLoan.category', 'paymentLoanCategory')
+      //.leftJoinAndSelect('loan_payment.loan', 'paymentLoan')
+      //.leftJoinAndSelect('paymentLoan.category', 'paymentLoanCategory')
 
       .where('t.user_id = :user_id', { user_id })
 
