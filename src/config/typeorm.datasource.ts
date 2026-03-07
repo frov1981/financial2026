@@ -34,7 +34,8 @@ export const AppDataSource = new DataSource({
   synchronize: false,
   timezone: 'Z',
   extra: {
-    timezone: 'Z'
+    timezone: 'Z',
+    connectionLimit: 3
   },
   logging: process.env.DB_LOGGING === 'true' ? true : false,
   logger: new OneLineSqlLogger()
