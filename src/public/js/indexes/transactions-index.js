@@ -193,21 +193,21 @@ function renderRow(transaction) {
           <button 
             class="icon-btn edit" 
             title="Editar"
-            onclick="goToTransactionUpdate(${transaction.id})">
+            onclick="goToRouteUpdate('${action_name}', ${action_id})">
             ${iconEdit()}
             <span class="ui-btn-text">Editar</span>
           </button>
           <button 
             class="icon-btn clone" 
             title="Clonar"
-            onclick="goToTransactionClone(${transaction.id})">
+            onclick="goToRouteClone('${action_name}', ${action_id})">
             ${iconClone()}
             <span class="ui-btn-text">Clonar</span>
           </button>
           <button 
             class="icon-btn delete" 
             title="Eliminar"
-            onclick="goToTransactionDelete(${transaction.id})">
+            onclick="goToRouteDelete('${action_name}', ${action_id})">
             ${iconDelete()}
             <span class="ui-btn-text">Eliminar</span>
           </button>
@@ -258,17 +258,17 @@ function renderCard(transaction) {
 
           <button 
             class="icon-btn edit"
-            onclick="event.stopPropagation(); goToTransactionUpdate(${transaction.id})">
+            onclick="event.stopPropagation(); goToRouteUpdate('${action_name}', ${action_id})">
             ${iconEdit()}
           </button>
           <button 
             class="icon-btn clone"
-            onclick="event.stopPropagation(); goToTransactionClone(${transaction.id})">
+            onclick="event.stopPropagation(); goToRouteClone('${action_name}', ${action_id})">
             ${iconClone()}
           </button>
           <button  
             class="icon-btn delete"
-            onclick="event.stopPropagation(); goToTransactionDelete(${transaction.id})">
+            onclick="event.stopPropagation(); goToRouteDelete('${action_name}', ${action_id})">
             ${iconDelete()}
           </button>
         </div>
