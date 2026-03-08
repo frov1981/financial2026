@@ -1,8 +1,6 @@
-export type AccountFormMode = 'insert' | 'update' | 'delete' | 'status'
+import { AccountFormMatrix } from "../types/form-view-params";
 
-export type AccountFieldPolicy = 'edit' | 'read' | 'hidden'
-
-export const accountFormMatrix: Record<AccountFormMode, Record<string, AccountFieldPolicy>> = {
+export const accountFormMatrix: AccountFormMatrix = {
     insert: {
         type: 'edit',
         name: 'edit',
@@ -17,10 +15,5 @@ export const accountFormMatrix: Record<AccountFormMode, Record<string, AccountFi
         type: 'read',
         name: 'read',
         is_active: 'read'
-    },
-    status: {
-        type: 'hidden',
-        name: 'read',
-        is_active: 'edit'
     }
 }

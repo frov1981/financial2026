@@ -1,8 +1,9 @@
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
-import { accountFormMatrix, AccountFormMode } from '../../policies/account-form.policy'
+import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
+import { AccountFormMode } from '../../types/form-view-params'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteAccount, validateSaveAccount } from './account.validator'
 
@@ -13,7 +14,6 @@ const getTitle = (mode: AccountFormMode) => {
   switch (mode) {
     case 'insert': return 'Insertar Cuenta'
     case 'update': return 'Editar Cuenta'
-    case 'status': return 'Cambiar Estado de Cuenta'
     case 'delete': return 'Eliminar Cuenta'
     default: return 'Indefinido'
   }
@@ -31,7 +31,6 @@ const sanitizeByPolicy = (mode: AccountFormMode, body: any) => {
       clean[field] = body[field]
     }
   }
-
   return clean
 }
 

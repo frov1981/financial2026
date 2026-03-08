@@ -169,7 +169,6 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
   })
 }
 
-
 export const routeToFormCloneLoan: RequestHandler = async (req, res) => {
   const mode = 'insert'
   const auth_req = req as AuthRequest

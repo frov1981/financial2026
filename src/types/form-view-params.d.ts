@@ -1,5 +1,10 @@
 import { AuthRequest } from "./auth-request"
 
+export type AccountFormMode = 'insert' | 'update' | 'delete'
+export type AccountFieldPolicy = 'edit' | 'read' | 'hidden'
+type AccountFieldMatrix = Record<string, AccountFieldPolicy>
+type AccountFormMatrix = Record<AccountFormMode, AccountFieldMatrix>
+
 export type PaymentFieldMode = 'hidden' | 'read' | 'edit'
 export type PaymentFormMode = 'insert' | 'update' | 'delete'
 type PaymentFieldMatrix = Record<string, PaymentFieldMode>
