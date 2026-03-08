@@ -1,7 +1,6 @@
-export type PaymentFieldMode = 'hidden' | 'read' | 'edit'
-export type PaymentFormMode = 'insert' | 'update' | 'delete'
+import { PaymentFormMatrix } from "../types/form-view-params";
 
-export const paymentFormMatrix: Record<PaymentFormMode, Record<string, PaymentFieldMode>> = {
+export const paymentFormMatrix: PaymentFormMatrix = {
 
   insert: {
     account_id: 'edit',

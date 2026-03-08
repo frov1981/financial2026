@@ -2,18 +2,19 @@ import { Request, RequestHandler, Response } from 'express'
 import { DateTime } from 'luxon'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
+import { Category } from '../../entities/Category.entity'
 import { Loan } from '../../entities/Loan.entity'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { Transaction } from '../../entities/Transaction.entity'
-import { paymentFormMatrix, PaymentFormMode } from '../../policies/payment-form.policy'
+import { paymentFormMatrix } from '../../policies/payment-form.policy'
 import { KpiCacheService } from '../../services/kpi-cache.service'
+import { getNextPaymentNumber } from '../../services/loan-payment-number.service'
 import { getActiveAccountsByUser, getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
+import { PaymentFormMode } from '../../types/form-view-params'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
-import { Category } from '../../entities/Category.entity'
-import { getNextPaymentNumber } from '../../services/loan-payment-number.service'
 
 /* ============================
    Helpers
@@ -59,11 +60,10 @@ const sanitizeByPolicy = (mode: PaymentFormMode, body: any) => {
     const clean: any = {}
 
     for (const field in policy) {
-        if (policy[field] === 'edit' && body[field] !== undefined) {
+        if ((policy[field] === 'edit' || policy[field] === 'read') && body[field] !== undefined) {
             clean[field] = body[field]
         }
     }
-
     return clean
 }
 
@@ -71,12 +71,12 @@ const sanitizeByPolicy = (mode: PaymentFormMode, body: any) => {
    Construir objeto para la vista
 ============================ */
 
-const buildPaymentView = (body: any, accounts: Account[], categories: Category[]) => {
+const buildPaymentView = (body: any, account_list: Account[], catetory_list: Category[]) => {
     const account_id = body.account_id ? Number(body.account_id) : null
-    const account = account_id ? accounts.find(a => a.id === account_id) || null : null
+    const account = account_id ? account_list.find(a => a.id === account_id) || null : null
 
     const category_id = body.category_id ? Number(body.category_id) : null
-    const category = category_id ? categories.find(c => c.id === category_id) || null : null
+    const category = category_id ? catetory_list.find(c => c.id === category_id) || null : null
 
     return {
         ...body,
@@ -99,22 +99,26 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     const loan_id = req.body.loan_id ? Number(req.body.loan_id) : undefined
     const mode: PaymentFormMode = req.body.mode || 'insert'
     const timezone = auth_req.timezone || 'UTC'
+    const return_from = req.body.return_from
+    const return_category_id = Number(req.body.return_category_id) || null
 
     logger.debug(`${savePayment.name}-Timezone for saving payment: [${timezone}]`)
 
-    const accounts = await getActiveAccountsByUser(auth_req)
-    const active_expense_categories = await getActiveCategoriesForPaymentsByUser(auth_req)
+    const account_list = await getActiveAccountsByUser(auth_req)
+    const active_expense_category_list = await getActiveCategoriesForPaymentsByUser(auth_req)
 
-
-    const payment_view = buildPaymentView(req.body, accounts, active_expense_categories)
-
+    const payment_view = buildPaymentView(req.body, account_list, active_expense_category_list)
     const form_state = {
         payment: payment_view,
         loan_id,
-        accounts,
-        active_expense_categories,
+        account_list,
+        active_expense_category_list,
         payment_form_policy: paymentFormMatrix[mode],
-        mode
+        mode,
+        context: {
+            from: return_from || null,
+            category_id: return_category_id || null
+        }
     }
 
     const queryRunner = AppDataSource.createQueryRunner()
@@ -130,6 +134,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         const paymentRepo = queryRunner.manager.getRepository(LoanPayment)
         const transactionRepo = queryRunner.manager.getRepository(Transaction)
         const accountRepo = queryRunner.manager.getRepository(Account)
+        const categoryRepo = queryRunner.manager.getRepository(Category)
 
         const loan = await loanRepo.findOneByOrFail({ id: loan_id })
 
@@ -183,6 +188,10 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone)
                 .catch(err => logger.error(`${savePayment.name}-Error recalculando KPI`, { err }))
 
+            if (return_from === 'categories' && return_category_id) {
+                return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
+            }
+
             return res.redirect(`/payments/${loan_id}/loan`)
         }
 
@@ -203,7 +212,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         const category_id = Number(clean.category_id)
         if (!category_id) throw new Error('Categoría es requerida')
 
-        const category = await queryRunner.manager.getRepository('Category').findOneByOrFail({
+        const category = await categoryRepo.findOneByOrFail({
             id: category_id,
             user: { id: user_id },
             is_active: true
@@ -233,7 +242,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
             if (!existing) throw new Error('Pago no encontrado')
 
-            old_payment = existing
+            old_payment = structuredClone(existing)
 
             old_principal = existing.principal_paid
             old_total = getTotal(existing)
@@ -246,6 +255,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             if (clean.payment_date !== undefined) payment.payment_date = parseLocalDateToUTC(clean.payment_date, timezone)
 
             payment.account = account
+            payment.category = category
         }
 
         const errors = await validateSavePayment(auth_req, payment, old_payment)
@@ -330,6 +340,10 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
         KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone)
             .catch(err => logger.error(`${savePayment.name}-Error recalculando KPI`, { err }))
+
+        if (return_from === 'categories' && return_category_id) {
+            return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
+        }
 
         return res.redirect(`/payments/${loan_id}/loan`)
 

@@ -3,51 +3,45 @@ import { AppDataSource } from "../../config/typeorm.datasource"
 import { Loan } from "../../entities/Loan.entity"
 import { loanFormMatrix } from '../../policies/loan-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
-import { getActiveAccountsByUser, getActiveCategoriesByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
+import { getActiveAccountsByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
+import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
-import { splitCategoriesByType } from '../transaction/transaction.auxiliar'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
-type LoanFormViewParams = {
-  title: string
-  view: string
+type LoanFormViewParams = BaseFormViewParams & {
   loan: any
-  errors: any
-  mode: 'insert' | 'update' | 'delete'
-  auth_req: AuthRequest
 }
 
 const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
   const { title, view, loan, errors, mode, auth_req } = params
-
-  const disbursement_account = await getActiveAccountsByUser(auth_req)
-  const loan_group = await getActiveParentLoansByUser(auth_req)
   const loan_form_policy = loanFormMatrix[mode]
-  const active_income_categories = await getActiveCategoriesForLoansByUser(auth_req)
+  const disbursement_account_list = await getActiveAccountsByUser(auth_req)
+  const loan_group_list = await getActiveParentLoansByUser(auth_req)
+  const active_income_category_list = await getActiveCategoriesForLoansByUser(auth_req)
+  const category_id = auth_req.query.category_id || null
+  const from = auth_req.query.from || null
 
   return res.render('layouts/main', {
+    mode,
     title,
     view,
     loan,
     errors,
     loan_form_policy,
-    disbursement_account,
-    active_income_categories,
-    loan_group,
-    mode
+    disbursement_account_list,
+    active_income_category_list,
+    loan_group_list,
+    context: { category_id, from }
   })
 }
 
 export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
   logger.debug(`${apiForGettingLoans.name}-Start`)
   const auth_req = req as AuthRequest
-  const timezone = auth_req.timezone || 'UTC'
-
   try {
     const repository = AppDataSource.getRepository(Loan)
-
     const result = await repository
       .createQueryBuilder('loan')
       .leftJoinAndSelect('loan.loan_group', 'loan_group')
@@ -59,7 +53,6 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       .orderBy('loan_group.name', 'ASC')
       .addOrderBy('loan.name', 'ASC')
       .getMany()
-
     const loans = result.map(loan => ({
       id: loan.id,
       name: loan.name,
@@ -78,9 +71,7 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
       payments: loan.payments,
       loan_group: loan.loan_group ? { id: loan.loan_group.id, name: loan.loan_group.name } : null,
     }))
-
     logger.debug(`${apiForGettingLoans.name}-Loans found: [${loans.length}]`)
-
     const group_totals_map: Record<number, { loan_group_id: number, loan_group_name: string, total_balance: number }> = {}
     for (const loan of result) {
       if (!loan.loan_group) continue
@@ -96,7 +87,6 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
     }
     const group_totals = Object.values(group_totals_map)
     logger.debug(`${apiForGettingLoans.name}-Loan groups with totals calculated: [${group_totals.length}]`)
-
     res.json({ loans, group_totals })
   } catch (error) {
     logger.error(`${apiForGettingLoans.name}-Error. `, error)
@@ -108,7 +98,6 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
 
 export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const timezone = auth_req.timezone || 'UTC'
   res.render(
     'layouts/main',
     {
@@ -120,9 +109,9 @@ export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => 
 }
 
 export const routeToFormInsertLoan: RequestHandler = async (req, res) => {
+  const mode = 'insert'
   const auth_req = req as AuthRequest
   const timezone = auth_req.timezone || 'UTC'
-
   const default_date = await getNextValidTransactionDate(auth_req)
   logger.debug(`${routeToFormInsertLoan.name}-Routing for inserting loan form with timezone: [${timezone}]`)
   return renderLoanForm(res, {
@@ -132,17 +121,19 @@ export const routeToFormInsertLoan: RequestHandler = async (req, res) => {
       start_date: formatDateForInputLocal(default_date, timezone),
       total_amount: '0.00',
       is_active: true,
+      transaction: null,
       disbursement_account: null,
       category: null,
       loan_group: null,
     },
     errors: {},
-    mode: 'insert',
+    mode,
     auth_req,
   })
 }
 
 export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
+  const mode = 'update'
   const auth_req = req as AuthRequest
   const timezone = auth_req.timezone || 'UTC'
   const loan_id = Number(req.params.id)
@@ -157,7 +148,6 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
   if (!loan) {
     return res.redirect('/loans')
   }
-
   logger.debug(`${routeToFormUpdateLoan.name}-Routing for updating loan form with timezone: [${timezone}]`)
   return renderLoanForm(res, {
     title: 'Editar Préstamo',
@@ -168,26 +158,67 @@ export const routeToFormUpdateLoan: RequestHandler = async (req, res) => {
       total_amount: loan.total_amount,
       balance: loan.balance,
       start_date: formatDateForInputLocal(loan.start_date, timezone),
-      transaction: loan.transaction || null,
-      disbursement_account: loan.disbursement_account || null,
-      category: loan.category || null,
-      loan_group: loan.loan_group || null,
+      transaction: loan.transaction,
+      disbursement_account: loan.disbursement_account,
+      category: loan.category,
+      loan_group: loan.loan_group,
     },
     errors: {},
-    mode: 'update',
+    mode,
+    auth_req,
+  })
+}
+
+
+export const routeToFormCloneLoan: RequestHandler = async (req, res) => {
+  const mode = 'insert'
+  const auth_req = req as AuthRequest
+  const timezone = auth_req.timezone || 'UTC'
+  const loan_id = Number(req.params.id)
+  if (!Number.isInteger(loan_id) || loan_id <= 0) {
+    return res.redirect('/loans')
+  }
+  const repo_loan = AppDataSource.getRepository(Loan)
+  const loan = await repo_loan.findOne({
+    where: { id: loan_id, user: { id: auth_req.user.id } },
+    relations: { disbursement_account: true, transaction: true, loan_group: true, category: true }
+  })
+  if (!loan) {
+    return res.redirect('/loans')
+  }
+  const default_date = await getNextValidTransactionDate(auth_req)
+  logger.debug(`${routeToFormUpdateLoan.name}-Routing for updating loan form with timezone: [${timezone}]`)
+  return renderLoanForm(res, {
+    title: 'Insertar Préstamo',
+    view: 'pages/loans/form',
+    loan: {
+      name: loan.name,
+      total_amount: loan.total_amount,
+      balance: loan.balance,
+      start_date: formatDateForInputLocal(default_date, timezone),
+      transaction: loan.transaction,
+      disbursement_account: loan.disbursement_account,
+      category: loan.category,
+      loan_group: loan.loan_group,
+    },
+    errors: {},
+    mode,
     auth_req,
   })
 }
 
 export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
+  const mode = 'delete'
   const auth_req = req as AuthRequest
   const timezone = auth_req.timezone || 'UTC'
   const loan_id = Number(req.params.id)
-  if (!Number.isInteger(loan_id) || loan_id <= 0) return res.redirect('/loans')
+  if (!Number.isInteger(loan_id) || loan_id <= 0) {
+    return res.redirect('/loans')
+  }
   const repo_loan = AppDataSource.getRepository(Loan)
   const loan = await repo_loan.findOne({
     where: { id: loan_id, user: { id: auth_req.user.id } },
-    relations: { disbursement_account: true, loan_group: true, category: true }
+    relations: { disbursement_account: true, transaction: true, loan_group: true, category: true }
   })
   if (!loan) {
     return res.redirect('/loans')
@@ -204,12 +235,13 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
       balance: loan.balance,
       start_date: formatDateForInputLocal(loan.start_date, timezone),
       is_active: loan.is_active,
-      disbursement_account: loan.disbursement_account || null,
-      category: loan.category || null,
-      loan_group: loan.loan_group || null,
+      transaction: loan.transaction,
+      disbursement_account: loan.disbursement_account,
+      category: loan.category,
+      loan_group: loan.loan_group,
     },
     errors: {},
-    mode: 'delete',
+    mode,
     auth_req,
   })
 }

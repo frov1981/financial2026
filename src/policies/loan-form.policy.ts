@@ -1,7 +1,6 @@
-export type LoanFieldMode = 'hidden' | 'read' | 'edit'
-export type LoanFormMode = 'insert' | 'update' | 'delete'
+import { LoanFormMatrix, } from "../types/form-view-params";
 
-export const loanFormMatrix: Record<LoanFormMode, Record<string, LoanFieldMode>> = {
+export const loanFormMatrix: LoanFormMatrix = {
     insert: {
         name: 'edit',
         total_amount: 'edit',
@@ -29,9 +28,9 @@ export const loanFormMatrix: Record<LoanFormMode, Record<string, LoanFieldMode>>
         total_amount: 'read',
         start_date: 'read',
         loan_group_id: 'read',
-        disbursement_account_id: 'hidden',
-        category_id: 'hidden',
+        disbursement_account_id: 'read',
+        category_id: 'read',
         note: 'read',
-        is_active: 'hidden'
+        is_active: 'read'
     }
 }

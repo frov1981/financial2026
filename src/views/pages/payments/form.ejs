@@ -5,6 +5,17 @@
   const isEditable = field => rules[field] === 'edit'
 %>
 
+<%
+const cancel_url =
+  context?.from === 'categories' && context?.category_id
+    ? `/transactions?from=categories&category_id=${context.category_id}`
+    : `/payments/${loan_id}/loan`
+%>
+
+<script>
+  window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
+</script>
+
 <div class="max-w-xl mx-auto">
 
   <h1 class="text-2xl font-semibold mb-6">
@@ -12,7 +23,7 @@
       mode === 'insert' ? 'Insertar Pago' :
       mode === 'update' ? 'Editar Pago' :
       mode === 'delete' ? 'Eliminar Pago' :
-      mode
+      ''
     %>
   </h1>
 
@@ -28,6 +39,8 @@
     <input type="hidden" name="id" value="<%= payment?.id || '' %>">
     <input type="hidden" name="loan_id" value="<%= loan_id || '' %>">
     <input type="hidden" name="mode" value="<%= mode %>">
+    <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
+    <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
 
     <!-- Cuenta -->
     <% if (!isHidden('account_id')) { %>
@@ -36,7 +49,7 @@
 
       <div
         class="autocomplete"
-        data-items='<%- JSON.stringify(accounts) %>'
+        data-items='<%- JSON.stringify(account_list) %>'
         data-default-id="<%= payment?.account?.id || '' %>"
         data-placeholder="-- Escoja una cuenta --"
       >
@@ -73,7 +86,7 @@
 
       <div
         class="autocomplete"
-        data-items='<%- JSON.stringify(active_expense_categories) %>'
+        data-items='<%- JSON.stringify(active_expense_category_list) %>'
         data-default-id="<%= payment?.category?.id || '' %>"
         data-placeholder="-- Escoja una categoría --"
       >
@@ -179,10 +192,7 @@
     <!-- Acciones -->
     <div class="flex justify-end gap-2">
 
-      <a
-        href="/payments/<%= loan_id %>/loan"
-        class="px-4 py-2 bg-gray-200 rounded"
-      >
+      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">
         Cancelar
       </a>
 
@@ -203,9 +213,7 @@
       <% } %>
 
     </div>
-
   </form>
-
 </div>
 
 <script src="/js/forms/autocomplete-form.js"></script>

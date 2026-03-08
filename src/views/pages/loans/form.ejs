@@ -5,13 +5,24 @@
   const isEditable = field => rules[field] === 'edit'
 %>
 
+<%
+const cancel_url =
+  context?.from === 'categories' && context?.category_id
+    ? `/transactions?from=categories&category_id=${context.category_id}`
+    : `/loans`
+%>
+
+<script>
+  window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
+</script>
+
 <div class="max-w-xl mx-auto">
   <h1 class="text-2xl font-semibold mb-6">
     <%= 
       mode === 'insert' ? 'Insertar Préstamo' : 
       mode === 'update' ? 'Editar Préstamo' :
       mode === 'delete' ? 'Eliminar Préstamo' : 
-      mode
+      ''
     %>
   </h1>
 
@@ -27,6 +38,8 @@
     <input type="hidden" name="id" value="<%= loan?.id || '' %>">
     <input type="hidden" name="mode" value="<%= mode %>">
     <input type="hidden" name="status" value="<%= loan?.status || 'active' %>">
+    <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
+    <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
 
     <!-- Nombre -->
     <% if (!isHidden('name')) { %>
@@ -92,8 +105,8 @@
       <label class="block font-medium mb-1">Cuenta de desembolso</label>
       <div
         class="autocomplete"
-        data-items='<%- JSON.stringify(disbursement_account) %>'
-        data-default-id="<%= disbursement_account || '' %>"
+        data-items='<%- JSON.stringify(disbursement_account_list) %>'
+        data-default-id="<%= loan?.disbursement_account?.id || '' %>"
         data-placeholder="-- Escoja una opción --"
       >
         <input 
@@ -125,7 +138,7 @@
       <label class="block font-medium mb-1">Categoría</label>
       <div
         class="autocomplete"
-        data-items='<%- JSON.stringify(active_income_categories) %>'
+        data-items='<%- JSON.stringify(active_income_category_list) %>'
         data-default-id="<%= loan?.category?.id || '' %>"
         data-placeholder="-- Escoja una opción --"
       >
@@ -159,7 +172,7 @@
       <label class="block font-medium mb-1">Grupo de Préstamos</label>
       <div
         class="autocomplete"
-        data-items='<%- JSON.stringify(loan_group) %>'
+        data-items='<%- JSON.stringify(loan_group_list) %>'
         data-default-id="<%= loan?.loan_group || '' %>"
         data-placeholder="-- Escoja una opción --"
       >
@@ -188,9 +201,7 @@
 
     <!-- Acciones -->
     <div class="flex justify-end gap-2">
-      <a 
-        href="/loans" 
-        class="px-4 py-2 bg-gray-200 rounded">
+      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">
         Cancelar
       </a>
 

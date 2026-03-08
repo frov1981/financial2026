@@ -22,10 +22,7 @@ type TransactionFormViewParams = {
   errors: any
   mode: 'insert' | 'update' | 'delete'
   auth_req: AuthRequest
-  context: {
-    category_id: any
-    from: any
-  }
+  context: { category_id: any; from: any }
 }
 
 const renderTransactionForm = async (res: Response, params: TransactionFormViewParams) => {
@@ -154,7 +151,7 @@ export const routeToFormInsertTransaction: RequestHandler = async (req: Request,
     },
     errors: {},
     mode,
-    auth_req: auth_req,
+    auth_req,
     context: {
       category_id: category_id,
       from
@@ -169,6 +166,7 @@ export const routeToFormUpdateTransaction: RequestHandler = async (req: Request,
   const category_id = req.query.category_id || null
   const from = req.query.from || null
   const timezone = auth_req.timezone || 'UTC'
+
   if (!Number.isInteger(transaction_id) || transaction_id <= 0) {
     return res.redirect('/transactions')
   }
@@ -196,9 +194,9 @@ export const routeToFormUpdateTransaction: RequestHandler = async (req: Request,
     },
     errors: {},
     mode,
-    auth_req: auth_req,
+    auth_req,
     context: {
-      category_id: category_id,
+      category_id,
       from
     }
   })

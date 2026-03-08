@@ -6,10 +6,11 @@ import { Category } from '../../entities/Category.entity'
 import { Loan } from '../../entities/Loan.entity'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { Transaction } from '../../entities/Transaction.entity'
-import { loanFormMatrix, LoanFormMode } from '../../policies/loan-form.policy'
+import { loanFormMatrix } from '../../policies/loan-form.policy'
 import { KpiCacheService } from '../../services/kpi-cache.service'
 import { getActiveAccountsByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
+import { LoanFormMode } from '../../types/form-view-params'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
@@ -31,27 +32,31 @@ const sanitizeByPolicy = (mode: LoanFormMode, body: any) => {
   const clean: any = {}
 
   for (const field in policy) {
-    if (policy[field] === 'edit' && body[field] !== undefined) {
+    if ((policy[field] === 'edit' || policy[field] === 'read') && body[field] !== undefined) {
       clean[field] = body[field]
     }
   }
-
   return clean
 }
 
 /* ============================
    Construir objeto para la vista
 ============================ */
-const buildLoanView = (body: any, loan_group: LoanGroup[], disbursement_account: Account[]) => {
+const buildLoanView = (body: any, loan_group_list: LoanGroup[], disbursement_account_list: Account[], category_list: Category[]) => {
   const loan_group_id = body.loan_group_id ? Number(body.loan_group_id) : null
-  const group = loan_group_id ? loan_group.find(p => p.id === loan_group_id) || null : null
+  const group = loan_group_id ? loan_group_list.find(p => p.id === loan_group_id) || null : null
+
   const disbursement_id = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
-  const disbursement = disbursement_id ? disbursement_account.find(a => a.id === disbursement_id) || null : null
+  const disbursement = disbursement_id ? disbursement_account_list.find(a => a.id === disbursement_id) || null : null
+
+  const category_id = body.category_id ? Number(body.category_id) : null
+  const category = category_id ? category_list.find(c => c.id === category_id) || null : null
 
   return {
     ...body,
     loan_group: group ? { id: group.id, name: group.name } : null,
-    disbursement_account: disbursement ? { id: disbursement.id, name: disbursement.name } : null
+    disbursement_account: disbursement ? { id: disbursement.id, name: disbursement.name } : null,
+    category: category ? { id: category.id, name: category.name } : null
   }
 }
 
@@ -98,21 +103,28 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const loan_id = req.body.id ? Number(req.body.id) : undefined
   const mode: LoanFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
+  const return_from = req.body.return_from
+  const return_category_id = Number(req.body.return_category_id) || null
+
   logger.debug(`${saveLoan.name}-Timezone for saving loan: [${timezone}]`)
 
-  const loan_group = await getActiveParentLoansByUser(auth_req)
-  const disbursement_account = await getActiveAccountsByUser(auth_req)
-  const active_income_categories = await getActiveCategoriesForLoansByUser(auth_req)
+  const loan_group_list = await getActiveParentLoansByUser(auth_req)
+  const disbursement_account_list = await getActiveAccountsByUser(auth_req)
+  const active_income_category_list = await getActiveCategoriesForLoansByUser(auth_req)
 
-  const loan_view = buildLoanView(req.body, loan_group, disbursement_account)
+  const loan_view = buildLoanView(req.body, loan_group_list, disbursement_account_list, active_income_category_list)
 
   const form_state = {
     loan: loan_view,
-    loan_group,
-    disbursement_account: disbursement_account,
-    active_income_categories: active_income_categories,
+    loan_group_list,
+    disbursement_account_list,
+    active_income_category_list,
     loan_form_policy: loanFormMatrix[mode],
-    mode
+    mode,
+    context: {
+      from: return_from || null,
+      category_id: return_category_id || null
+    }
   }
 
   const queryRunner = AppDataSource.createQueryRunner()
@@ -164,6 +176,11 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
       await queryRunner.commitTransaction()
       KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
+
+      if (return_from === 'categories' && return_category_id) {
+        return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
+      }
+
       return res.redirect('/loans')
     }
 
@@ -173,9 +190,9 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     let loan: Loan
 
     if (mode === 'insert') {
-      const selected_group = findLoanGroupByBody(req.body, loan_group)
-      const selected_disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account)
-      const selected_category = findCategorybyBody(req.body, active_income_categories)
+      const selected_group = findLoanGroupByBody(req.body, loan_group_list)
+      const selected_disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account_list)
+      const selected_category = findCategorybyBody(req.body, active_income_category_list)
 
       loan = queryRunner.manager.create(Loan, {
         user: { id: auth_req.user.id } as any,
@@ -200,9 +217,9 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (clean.start_date !== undefined) loan.start_date = parseLocalDateToUTC(clean.start_date, timezone)
     if (clean.is_active !== undefined) loan.is_active = clean.is_active === 'true' || clean.is_active === '1'
     if (clean.note !== undefined) loan.note = clean.note
-    if (clean.loan_group_id !== undefined) { loan.loan_group = findLoanGroupByBody(req.body, loan_group) }
-    if (clean.disbursement_account_id !== undefined) { loan.disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account) }
-    if (clean.category_id !== undefined) { loan.category = findCategorybyBody(req.body, active_income_categories) }
+    if (clean.loan_group_id !== undefined) { loan.loan_group = findLoanGroupByBody(req.body, loan_group_list) }
+    if (clean.disbursement_account_id !== undefined) { loan.disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account_list) }
+    if (clean.category_id !== undefined) { loan.category = findCategorybyBody(req.body, active_income_category_list) }
 
     let new_account: Account | null = loan.disbursement_account || null
     let new_category: Category | null = loan.category || null
@@ -286,6 +303,10 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       const period_year = local_date.year
       const period_month = local_date.month
       KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
+    }
+
+    if (return_from === 'categories' && return_category_id) {
+      return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
     }
 
     return res.redirect('/loans')
