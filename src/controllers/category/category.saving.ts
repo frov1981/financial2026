@@ -2,11 +2,12 @@ import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { CategoryGroup } from '../../entities/CategoryGroups.entity'
-import { categoryFormMatrix, CategoryFormMode } from '../../policies/category-form.policy'
+import { categoryFormMatrix } from '../../policies/category-form.policy'
 import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { validateCategory, validateDeleteCategory } from './category.validator'
+import { CategoryFormMode } from '../../types/form-view-params'
 
 /* ============================
    Obtener título según el modo del formulario
@@ -29,7 +30,7 @@ const sanitizeByPolicy = (mode: CategoryFormMode, body: any) => {
   const clean: any = {}
 
   for (const field in policy) {
-    if (policy[field] === 'edit' && body[field] !== undefined) {
+    if ((policy[field] === 'edit' || policy[field] === 'read') && body[field] !== undefined) {
       clean[field] = body[field]
     }
   }
@@ -40,9 +41,9 @@ const sanitizeByPolicy = (mode: CategoryFormMode, body: any) => {
 /* ============================
    Construir objeto para la vista
 ============================ */
-const buildCategoryView = (body: any, category_group: CategoryGroup[]) => {
+const buildCategoryView = (body: any, category_group_list: CategoryGroup[]) => {
   const category_group_id = body.category_group ? Number(body.category_group) : null
-  const group = category_group_id ? category_group.find(g => g.id === category_group_id) || null : null
+  const group = category_group_id ? category_group_list.find(g => g.id === category_group_id) || null : null
 
   return {
     ...body,
@@ -53,12 +54,12 @@ const buildCategoryView = (body: any, category_group: CategoryGroup[]) => {
 /* ============================
    Obtener grupo de categoría desde el body y la lista de grupos del usuario
 ============================ */
-const findCategoryGroupByBody = (body: any, category_group: CategoryGroup[]): CategoryGroup | null => {
-  const category_group_id = body.category_group ? Number(body.category_group) : null
+const findCategoryGroupByBody = (body: any, category_group_list: CategoryGroup[]): CategoryGroup | null => {
+  const category_group_id = body.category_group_id ? Number(body.category_group_id) : null
 
   if (!category_group_id) return null
 
-  return category_group.find(g => g.id === category_group_id) || null
+  return category_group_list.find(g => g.id === category_group_id) || null
 }
 
 /* ============================
@@ -73,12 +74,12 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
   const mode: CategoryFormMode = req.body.mode || 'insert'
 
   const repo_category = AppDataSource.getRepository(Category)
-  const category_group = await getActiveParentCategoriesByUser(auth_req)
-  const category_view = buildCategoryView(req.body, category_group)
+  const category_group_list = await getActiveParentCategoriesByUser(auth_req)
+  const category_view = buildCategoryView(req.body, category_group_list)
 
   const form_state = {
     category: category_view,
-    category_group,
+    category_group_list,
     category_form_policy: categoryFormMatrix[mode],
     mode
   }
@@ -113,7 +114,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     let category: Category
 
     if (mode === 'insert') {
-      const selectedGroup = findCategoryGroupByBody(req.body, category_group)
+      const selectedGroup = findCategoryGroupByBody(req.body, category_group_list)
       category = repo_category.create({
         user: { id: auth_req.user.id } as any,
         type: req.body.type,
@@ -132,7 +133,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     if (clean.name !== undefined) category.name = clean.name
     if (clean.type !== undefined) category.type = clean.type
     if (clean.type_for_loan !== undefined) { category.type_for_loan = clean.type_for_loan === '' ? null : clean.type_for_loan }
-    if (clean.category_group !== undefined) { category.category_group = findCategoryGroupByBody(req.body, category_group) }
+    if (clean.category_group_id !== undefined) { category.category_group = findCategoryGroupByBody(req.body, category_group_list) }
     if (clean.is_active !== undefined) { category.is_active = clean.is_active === 'true' || clean.is_active === '1' }
 
     const errors = await validateCategory(category, auth_req)

@@ -5,6 +5,11 @@ export type AccountFieldPolicy = 'edit' | 'read' | 'hidden'
 type AccountFieldMatrix = Record<string, AccountFieldPolicy>
 type AccountFormMatrix = Record<AccountFormMode, AccountFieldMatrix>
 
+export type CaterogyFieldMode = 'hidden' | 'read' | 'edit'
+export type CategoryFormMode = 'insert' | 'update' | 'delete'
+type CategoryFieldMatrix = Record<string, CaterogyFieldMode>
+type CategoryFormMatrix = Record<CategoryFormMode, CategoryFieldMatrix>
+
 export type PaymentFieldMode = 'hidden' | 'read' | 'edit'
 export type PaymentFormMode = 'insert' | 'update' | 'delete'
 type PaymentFieldMatrix = Record<string, PaymentFieldMode>

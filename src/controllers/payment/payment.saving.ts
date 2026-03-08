@@ -85,6 +85,23 @@ const buildPaymentView = (body: any, account_list: Account[], catetory_list: Cat
     }
 }
 
+/* Obtiene una categoría activa por id desde el arreglo ya cargado */
+function findCategorybyBody(body: any, active_category_list: Category[]): Category | null {
+  const category_id = body.category_id ? Number(body.category_id) : null
+
+  if (!category_id) return null
+
+  return active_category_list.find(c => c.id === category_id) || null
+}
+
+/* Obtiene una categoría activa por id desde el arreglo ya cargado */
+function findAccountbyBody(body: any, account_list: Account[]): Account | null {
+  const account_id = body.account_id ? Number(body.account_id) : null
+
+  if (!account_id) return null
+
+  return account_list.find(a => a.id === account_id) || null
+}
 /* ============================
    Controller
 ============================ */

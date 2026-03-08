@@ -1,12 +1,11 @@
-export type CaterogyFieldMode = 'hidden' | 'read' | 'edit'
-export type CategoryFormMode = 'insert' | 'update' | 'delete' | 'status'
+import { CategoryFormMatrix } from "../types/form-view-params";
 
-export const categoryFormMatrix: Record<CategoryFormMode, Record<string, CaterogyFieldMode>> = {
+export const categoryFormMatrix: CategoryFormMatrix = {
     insert: {
         type: 'edit',
         type_for_loan: 'edit',
         name: 'edit',
-        category_group: 'edit',
+        category_group_id: 'edit',
         is_active: 'hidden'
     },
 
@@ -14,7 +13,7 @@ export const categoryFormMatrix: Record<CategoryFormMode, Record<string, Caterog
         type: 'read',
         type_for_loan: 'edit',
         name: 'edit',
-        category_group: 'edit',
+        category_group_id: 'edit',
         is_active: 'edit'
     },
 
@@ -22,15 +21,7 @@ export const categoryFormMatrix: Record<CategoryFormMode, Record<string, Caterog
         type: 'read',
         type_for_loan: 'read',
         name: 'read',
-        category_group: 'read',
+        category_group_id: 'read',
         is_active: 'read'
-    },
-
-    status: {
-        type: 'hidden',
-        type_for_loan: 'hidden',
-        name: 'read',
-        category_group: 'hidden',
-        is_active: 'edit'
     }
 }

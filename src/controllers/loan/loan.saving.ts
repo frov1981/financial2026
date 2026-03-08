@@ -63,32 +63,32 @@ const buildLoanView = (body: any, loan_group_list: LoanGroup[], disbursement_acc
 /* ============================
     Obtener grupo de préstamo desde el body y la lista de grupos del usuario  
 ============================ */
-const findLoanGroupByBody = (body: any, loan_group: LoanGroup[]): LoanGroup | null => {
+const findLoanGroupByBody = (body: any, loan_group_list: LoanGroup[]): LoanGroup | null => {
   const loan_group_id = body.loan_group_id ? Number(body.loan_group_id) : null
 
   if (!loan_group_id) return null
 
-  return loan_group.find(p => p.id === loan_group_id) || null
+  return loan_group_list.find(p => p.id === loan_group_id) || null
 }
 
 /* ============================
    Obtener cuenta de desembolso desde el body y la lista de cuentas del usuario  
 ============================ */
-const findDisbursementAccountByBody = (body: any, disbursement_account: Account[]): Account | null => {
+const findDisbursementAccountByBody = (body: any, disbursement_account_list: Account[]): Account | null => {
   const disbursement_account_id = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
 
   if (!disbursement_account_id) return null
 
-  return disbursement_account.find(a => a.id === disbursement_account_id) || null
+  return disbursement_account_list.find(a => a.id === disbursement_account_id) || null
 }
 
 /* Obtiene una categoría activa por id desde el arreglo ya cargado */
-function findCategorybyBody(body: any, active_categories: Category[]): Category | null {
+function findCategorybyBody(body: any, active_category_list: Category[]): Category | null {
   const category_id = body.category_id ? Number(body.category_id) : null
 
   if (!category_id) return null
 
-  return active_categories.find(c => c.id === category_id) || null
+  return active_category_list.find(c => c.id === category_id) || null
 }
 
 /* ============================

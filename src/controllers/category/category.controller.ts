@@ -5,33 +5,30 @@ import { categoryFormMatrix } from '../../policies/category-form.policy'
 import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
+import { BaseFormViewParams } from '../../types/form-view-params'
 export { saveCategory as apiForSavingCategory } from './category.saving'
 
-type CategoryFormViewParams = {
-  title: string
-  view: string
+type CategoryFormViewParams = BaseFormViewParams & {
   category: any
-  errors: any
-  mode: 'insert' | 'update' | 'delete' | 'status'
-  auth_req: AuthRequest
 }
 
 const renderCategoryForm = async (res: Response, params: CategoryFormViewParams) => {
   const { title, view, category, errors, mode, auth_req } = params
-  const category_group = await getActiveParentCategoriesByUser(auth_req)
+  const category_group_list = await getActiveParentCategoriesByUser(auth_req)
   const category_form_policy = categoryFormMatrix[mode]
   return res.render('layouts/main', {
+    mode,
     title,
     view,
     category,
     errors,
     category_form_policy,
-    category_group,
-    mode
+    category_group_list,
   })
 }
 
 export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
+  logger.debug(`${apiForGettingCategories.name}-Start`)
   const auth_req = req as AuthRequest
 
   try {
@@ -65,14 +62,15 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
 
     res.json(categories)
   } catch (error) {
-    logger.error('Error al listar categorías', error)
+    logger.error(`${apiForGettingCategories.name}-Error. `, error)
     res.status(500).json({ error: 'Error al listar categorías' })
+  } finally {
+    logger.debug(`${apiForGettingCategories.name}-End`)
   }
 }
 
 export const routeToPageCategory: RequestHandler = (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const timezone = auth_req.timezone || 'UTC'
   res.render('layouts/main', {
     title: 'Categorías',
     view: 'pages/categories/index',
@@ -81,26 +79,26 @@ export const routeToPageCategory: RequestHandler = (req: Request, res: Response)
 }
 
 export const routeToFormInsertCategory: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'insert'
   const auth_req = req as AuthRequest
-  const timezone = auth_req.timezone || 'UTC'
   return renderCategoryForm(res, {
     title: 'Insertar Categoría',
     view: 'pages/categories/form',
     category: {
       type: null,
       type_for_loan: null,
-      category_group: null,      
+      category_group: null,
       is_active: true
     },
     errors: {},
-    mode: 'insert',
+    mode,
     auth_req
   })
 }
 
 export const routeToFormUpdateCategory: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'update'
   const auth_req = req as AuthRequest
-  const timezone = auth_req.timezone || 'UTC'
   const category_id = Number(req.params.id)
   if (!Number.isInteger(category_id) || category_id <= 0) {
     return res.redirect('/categories')
@@ -122,15 +120,16 @@ export const routeToFormUpdateCategory: RequestHandler = async (req: Request, re
       type: category.type,
       type_for_loan: category.type_for_loan,
       is_active: category.is_active,
-      category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
+      category_group: category.category_group,
     },
     errors: {},
-    mode: 'update',
+    mode,
     auth_req
   })
 }
 
 export const routeToFormDeleteCategory: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'delete'
   const auth_req = req as AuthRequest
   const category_id = Number(req.params.id)
   if (!Number.isInteger(category_id) || category_id <= 0) {
@@ -153,17 +152,17 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
       type: category.type,
       type_for_loan: category.type_for_loan,
       is_active: category.is_active,
-      category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
+      category_group: category.category_group,
     },
     errors: {},
-    mode: 'delete',
+    mode,
     auth_req
   })
 }
 
 export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Request, res: Response) => {
+  const mode = 'update'
   const auth_req = req as AuthRequest
-  const timezone = auth_req.timezone || 'UTC'
   const category_id = Number(req.params.id)
   if (!Number.isInteger(category_id) || category_id <= 0) {
     return res.redirect('/categories')
@@ -184,10 +183,10 @@ export const routeToFormUpdateStatusCategory: RequestHandler = async (req: Reque
       name: category.name,
       type: category.type,
       is_active: category.is_active,
-      category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
+      category_group: category.category_group,
     },
     errors: {},
-    mode: 'status',
+    mode,
     auth_req
   })
 }

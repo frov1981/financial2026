@@ -27,7 +27,7 @@ const sanitizeByPolicy = (mode: AccountFormMode, body: any) => {
   const clean: any = {}
 
   for (const field in policy) {
-    if (policy[field] === 'edit' && body[field] !== undefined) {
+    if ((policy[field] === 'edit' || policy[field] === 'read') && body[field] !== undefined) {
       clean[field] = body[field]
     }
   }
