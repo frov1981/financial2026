@@ -11,6 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const categoryHiddenInput = document.querySelector('input[name="category"]')
   const categoryBlock = categoryHiddenInput?.closest('.mb-4')
 
+  /* Bloque Cuenta origen */
+  /* Bloque Cuenta origen */
+  const accountHiddenInput = document.querySelector('input[name="account"]')
+  const accountAutocomplete = accountHiddenInput?.closest('.autocomplete')
+
+  const transferAccountItems =
+    document.querySelector('input[name="to_account"]')
+      ?.closest('.autocomplete')
+      ?.dataset.items
+
+  const originalAccountItems = accountAutocomplete?.dataset.items
+
+
   const categoryAutocomplete = categoryBlock?.querySelector('.autocomplete')
   const categoryTextInput = categoryBlock?.querySelector('.autocomplete-input')
   const categoryHiddenInputReal = categoryBlock?.querySelector('.autocomplete-hidden')
@@ -53,7 +66,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toAccountHiddenInput) toAccountHiddenInput.value = ''
   }
 
+  function updateAccountSource(type) {
+    if (!accountAutocomplete) return
+
+    if (type === 'transfer') {
+      accountAutocomplete.dataset.items = transferAccountItems
+    } else {
+      accountAutocomplete.dataset.items = originalAccountItems
+    }
+
+    reloadAccountAutocomplete()
+  }
+
   function updateVisibility(type) {
+    updateAccountSource(type)
+
     if (toAccountBlock) {
       if (type === 'transfer') {
         toAccountBlock.style.display = ''
@@ -82,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const panel_el = categoryAutocomplete.querySelector('.autocomplete-panel')
 
     if (!input_el || !hidden_el || !panel_el) return
-    
+
     input_el.value = ''
     hidden_el.value = ''
     panel_el.innerHTML = ''
@@ -92,6 +119,21 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAutocomplete(categoryAutocomplete)
   }
 
+  function reloadAccountAutocomplete() {
+    if (!accountAutocomplete) return
+
+    const input_el = accountAutocomplete.querySelector('.autocomplete-input')
+    const hidden_el = accountAutocomplete.querySelector('.autocomplete-hidden')
+    const panel_el = accountAutocomplete.querySelector('.autocomplete-panel')
+
+    if (!input_el || !hidden_el || !panel_el) return
+
+    input_el.value = ''
+    hidden_el.value = ''
+    panel_el.innerHTML = ''
+
+    setupAutocomplete(accountAutocomplete)
+  }
 
   radios.forEach(radio => {
     radio.addEventListener('change', () => {

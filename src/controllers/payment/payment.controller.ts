@@ -4,11 +4,12 @@ import { Loan } from "../../entities/Loan.entity"
 import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { paymentFormMatrix } from '../../policies/payment-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
-import { getActiveAccountsByUser, getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service'
+import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
+import { getActiveAccounts } from '../cache/cache-accounts.service'
 export { savePayment as apiForSavingAccount } from './payment.saving'
 
 type PaymentFormViewParams = BaseFormViewParams & {
@@ -19,7 +20,8 @@ const renderPaymentForm = async (res: Response, params: PaymentFormViewParams) =
     const { title, view, payment, errors, mode, auth_req } = params
     const payment_form_policy = paymentFormMatrix[mode]
     const active_expense_category_list = await getActiveCategoriesForPaymentsByUser(auth_req)
-    const account_list = await getActiveAccountsByUser(auth_req)
+    /*const account_list = await getActiveAccountsByUser(auth_req)*/
+    const account_list = await getActiveAccounts(auth_req)
     const loan_id = auth_req.params.loan_id || payment.loan?.id || null
     const category_id = auth_req.query.category_id || null
     const from = auth_req.query.from || null

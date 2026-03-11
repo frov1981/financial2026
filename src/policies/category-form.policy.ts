@@ -4,7 +4,7 @@ export const categoryFormMatrix: CategoryFormMatrix = {
     insert: {
         type: 'edit',
         type_for_loan: 'edit',
-        name: 'edit',
+        name: 'edit', 
         category_group_id: 'edit',
         is_active: 'hidden'
     },

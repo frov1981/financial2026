@@ -3,12 +3,13 @@ import { AppDataSource } from '../../config/typeorm.datasource'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
-import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { splitCategoriesByType } from './transaction.auxiliar'
 import { validateActiveCategoryTransaction } from './transaction.validator'
+import { getActiveExpenseCategories, getActiveIncomeCategories } from '../cache/cache-categories.service'
+import { getActiveAccounts, getActiveAccountsForTransfer } from '../cache/cache-accounts.service'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
 
@@ -28,11 +29,16 @@ type TransactionFormViewParams = {
 const renderTransactionForm = async (res: Response, params: TransactionFormViewParams) => {
   const { title, view, transaction, errors, mode, auth_req, context } = params
 
-  const active_accounts = await getActiveAccountsByUser(auth_req)
-  const active_accounts_for_transfer = await getActiveAccountsForTransferByUser(auth_req)
-  const active_categories = await getActiveCategoriesByUser(auth_req)
+  /*const active_accounts = await getActiveAccountsByUser(auth_req)
+  const active_accounts_for_transfer = await getActiveAccountsForTransferByUser(auth_req)*/
+  const active_accounts = await getActiveAccounts(auth_req)
+  const active_accounts_for_transfer = await getActiveAccountsForTransfer(auth_req)
+
   const transaction_form_policy = transactionFormMatrix[mode]
-  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+  /*const active_categories = await getActiveCategoriesByUser(auth_req)
+  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)*/
+  const active_income_categories = await getActiveIncomeCategories(auth_req)
+  const active_expense_categories = await getActiveExpenseCategories(auth_req)
 
   return res.render(
     'layouts/main',

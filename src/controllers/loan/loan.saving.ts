@@ -8,12 +8,13 @@ import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { loanFormMatrix } from '../../policies/loan-form.policy'
 import { KpiCacheService } from '../../services/kpi-cache.service'
-import { getActiveAccountsByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
+import { getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { LoanFormMode } from '../../types/form-view-params'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
+import { getActiveAccounts } from '../cache/cache-accounts.service'
 
 const getTitle = (mode: string) => {
   switch (mode) {
@@ -109,7 +110,8 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   logger.debug(`${saveLoan.name}-Timezone for saving loan: [${timezone}]`)
 
   const loan_group_list = await getActiveParentLoansByUser(auth_req)
-  const disbursement_account_list = await getActiveAccountsByUser(auth_req)
+  /*const disbursement_account_list = await getActiveAccountsByUser(auth_req)*/
+  const disbursement_account_list = await getActiveAccounts(auth_req)
   const active_income_category_list = await getActiveCategoriesForLoansByUser(auth_req)
 
   const loan_view = buildLoanView(req.body, loan_group_list, disbursement_account_list, active_income_category_list)

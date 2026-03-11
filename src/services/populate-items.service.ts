@@ -30,7 +30,7 @@ export const getActiveParentCategoriesByUser = async (auth_req: AuthRequest): Pr
   })
 }
 
-export const getActiveAccountsByUser = async (authReq: AuthRequest): Promise<Account[]> => {
+export const getActiveAccountsByUser_Deprecated = async (authReq: AuthRequest): Promise<Account[]> => {
   const repo = AppDataSource.getRepository(Account)
   /* type!: 'cash' | 'bank' | 'card' | 'saving' */
   const accounts = await repo.find({
@@ -45,7 +45,7 @@ export const getActiveAccountsByUser = async (authReq: AuthRequest): Promise<Acc
   return accounts
 }
 
-export const getActiveAccountsForTransferByUser = async (authReq: AuthRequest): Promise<Account[]> => {
+export const getActiveAccountsForTransferByUser_Deprecated = async (authReq: AuthRequest): Promise<Account[]> => {
   const repo = AppDataSource.getRepository(Account)
   const accounts = await repo.find({
     where: {
@@ -58,7 +58,7 @@ export const getActiveAccountsForTransferByUser = async (authReq: AuthRequest): 
   return accounts
 }
 
-export const getActiveCategoriesByUser = async (authReq: AuthRequest): Promise<Category[]> => {
+export const getActiveCategoriesByUser_Deprecated = async (authReq: AuthRequest): Promise<Category[]> => {
   const repo = AppDataSource.getRepository(Category)
   const categories = await repo.find({
     where: {

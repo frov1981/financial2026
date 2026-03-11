@@ -14,15 +14,7 @@ type AccountFormViewParams = BaseFormViewParams & {
 const renderAccountForm = async (res: Response, params: AccountFormViewParams) => {
   const { title, view, account, errors, mode, auth_req } = params
   const account_form_policy = accountFormMatrix[mode]
-
-  return res.render('layouts/main', {
-    mode,
-    title,
-    view,
-    account,
-    errors,
-    account_form_policy,
-  })
+  return res.render('layouts/main', { mode, title, view, account, errors, account_form_policy, auth_req, })
 }
 
 export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {

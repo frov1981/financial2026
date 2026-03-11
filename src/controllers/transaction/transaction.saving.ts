@@ -1,18 +1,19 @@
 import { Request, RequestHandler, Response } from 'express'
+import { DateTime } from 'luxon'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix, TransactionFormMode } from '../../policies/transaction-form.policy'
-import { getActiveAccountsByUser, getActiveAccountsForTransferByUser, getActiveCategoriesByUser } from '../../services/populate-items.service'
+import { KpiCacheService } from '../../services/kpi-cache.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { getSqlErrorMessage } from '../../utils/sql-err.util'
+import { getActiveAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../cache/cache-accounts.service'
+import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories } from '../cache/cache-categories.service'
 import { calculateTransactionDeltas, splitCategoriesByType } from '../transaction/transaction.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator'
-import { KpiCacheService } from '../../services/kpi-cache.service'
-import { DateTime } from 'luxon'
 
 /* ============================
    Título según modo
@@ -53,18 +54,18 @@ const buildTransactionView = (body: any) => {
 }
 
 /* Obtiene una cuenta activa por id desde el arreglo ya cargado */
-function getAccountFromActiveList(active_accounts: Account[], account_id: number | null): Account | null {
+/*function getAccountFromActiveList(active_accounts: Account[], account_id: number | null): Account | null {
   if (!account_id) return null
   const account = active_accounts.find(a => a.id === account_id) || null
   return account
-}
+}*/
 
 /* Obtiene una categoría activa por id desde el arreglo ya cargado */
-function getCategoryFromActiveList(active_categories: Category[], category_id: number | null): Category | null {
+/*function getCategoryFromActiveList(active_categories: Category[], category_id: number | null): Category | null {
   if (!category_id) return null
   const category = active_categories.find(c => c.id === category_id) || null
   return category
-}
+}*/
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
   logger.debug(`${saveTransaction.name}-Start`)
@@ -81,10 +82,16 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const return_from = req.body.return_from
   const return_category_id = Number(req.body.return_category_id) || null
 
-  const active_accounts_for_transfer = await getActiveAccountsForTransferByUser(auth_req)
-  const active_accounts = await getActiveAccountsByUser(auth_req)
-  const active_categories = await getActiveCategoriesByUser(auth_req)
-  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+  /*const active_accounts = await getActiveAccountsByUser(auth_req)
+  const active_accounts_for_transfer = await getActiveAccountsForTransferByUser(auth_req)*/
+  const active_accounts = await getActiveAccounts(auth_req)
+  const active_accounts_for_transfer = await getActiveAccountsForTransfer(auth_req)
+
+  /*const active_categories = await getActiveCategoriesByUser(auth_req)
+  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)*/
+  const active_categories = await getActiveCategories(auth_req)
+  const active_income_categories = await getActiveIncomeCategories(auth_req)
+  const active_expense_categories = await getActiveExpenseCategories(auth_req)
 
   const transaction_view = buildTransactionView(req.body)
 
@@ -173,15 +180,18 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     }
 
     if (clean.account !== undefined) {
-      transaction.account = getAccountFromActiveList(active_accounts, clean.account ? Number(clean.account) : null)
+      /*transaction.account = getAccountFromActiveList(active_accounts, clean.account ? Number(clean.account) : null)*/
+      transaction.account = await getActiveAccountById(auth_req, Number(clean.account))
     }
 
     if (clean.to_account !== undefined) {
-      transaction.to_account = getAccountFromActiveList(active_accounts_for_transfer, clean.to_account ? Number(clean.to_account) : null)
+      /*transaction.to_account = getAccountFromActiveList(active_accounts_for_transfer, clean.to_account ? Number(clean.to_account) : null)*/
+      transaction.to_account = await getActiveAccountById(auth_req, Number(clean.to_account))
     }
 
     if (clean.category !== undefined) {
-      transaction.category = getCategoryFromActiveList(active_categories, clean.category ? Number(clean.category) : null)
+      /*transaction.category = getCategoryFromActiveList(active_categories, clean.category ? Number(clean.category) : null)*/
+      transaction.category = await getActiveCategoryById(Number(clean.category), auth_req)
     }
 
     if (clean.date) {

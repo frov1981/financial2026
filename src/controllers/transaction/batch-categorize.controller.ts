@@ -3,10 +3,10 @@ import { In } from 'typeorm';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Category } from '../../entities/Category.entity';
 import { Transaction } from '../../entities/Transaction.entity';
-import { getActiveCategoriesByUser } from '../../services/populate-items.service';
 import { AuthRequest } from '../../types/auth-request';
 import { logger } from '../../utils/logger.util';
 import { splitCategoriesByType } from './transaction.auxiliar';
+import { getActiveCategories, getActiveExpenseCategories, getActiveIncomeCategories } from '../cache/cache-categories.service';
 
 export const apiForGettingCategorizeTransactions: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest;
@@ -16,12 +16,10 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
     const return_category_id = req.query.category_id ? Number(req.query.category_id) : null
 
 
-    if (!ids.length) {
-        return res.redirect('/transactions');
-    }
+    if (!ids.length) { return res.redirect('/transactions') }
 
-    const active_categories = await getActiveCategoriesByUser(auth_req)
-    const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+    const active_income_categories = await getActiveIncomeCategories(auth_req)
+    const active_expense_categories = await getActiveExpenseCategories(auth_req)
 
     const repo_transaction = AppDataSource.getRepository(Transaction);
     const transactions = await repo_transaction.find({
@@ -87,8 +85,11 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
         /* ============================================================
         1. Re-cargar categorías activas (para re-render en caso error)
         ============================================================ */
-        const active_categories = await getActiveCategoriesByUser(auth_req)
-        const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+        /*const active_categories = await getActiveCategoriesByUser(auth_req)
+        const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)*/
+
+        const active_income_categories = await getActiveIncomeCategories(auth_req)
+        const active_expense_categories = await getActiveExpenseCategories(auth_req)
 
         /* ============================================================
         2. Re-cargar transacciones seleccionadas
@@ -180,14 +181,17 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
                 `/transactions?category_id=${return_category_id}&from=categories&saved_batch=true`
             )
         }
-        
+
         return res.redirect('/transactions?saved_batch=true')
 
     } catch (error) {
         logger.error(`${apiForBatchCategorize.name} - Error`, error)
 
-        const active_categories = await getActiveCategoriesByUser(auth_req)
-        const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)
+        /* const active_categories = await getActiveCategoriesByUser(auth_req)
+         const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)*/
+
+        const active_income_categories = await getActiveIncomeCategories(auth_req)
+        const active_expense_categories = await getActiveExpenseCategories(auth_req)
 
         return res.status(500).render('layouts/main', {
             title: 'Categorizar Transacciones',

@@ -3,11 +3,12 @@ import { AppDataSource } from "../../config/typeorm.datasource"
 import { Loan } from "../../entities/Loan.entity"
 import { loanFormMatrix } from '../../policies/loan-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
-import { getActiveAccountsByUser, getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
+import { getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
+import { getActiveAccounts } from '../cache/cache-accounts.service'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
 type LoanFormViewParams = BaseFormViewParams & {
@@ -17,7 +18,9 @@ type LoanFormViewParams = BaseFormViewParams & {
 const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
   const { title, view, loan, errors, mode, auth_req } = params
   const loan_form_policy = loanFormMatrix[mode]
-  const disbursement_account_list = await getActiveAccountsByUser(auth_req)
+  /*const disbursement_account_list = await getActiveAccountsByUser(auth_req)*/
+  const disbursement_account_list = await getActiveAccounts(auth_req)
+
   const loan_group_list = await getActiveParentLoansByUser(auth_req)
   const active_income_category_list = await getActiveCategoriesForLoansByUser(auth_req)
   const category_id = auth_req.query.category_id || null

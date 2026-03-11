@@ -9,12 +9,13 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { paymentFormMatrix } from '../../policies/payment-form.policy'
 import { KpiCacheService } from '../../services/kpi-cache.service'
 import { getNextPaymentNumber } from '../../services/loan-payment-number.service'
-import { getActiveAccountsByUser, getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service'
+import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { PaymentFormMode } from '../../types/form-view-params'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
+import { getActiveAccounts } from '../cache/cache-accounts.service'
 
 /* ============================
    Helpers
@@ -87,20 +88,20 @@ const buildPaymentView = (body: any, account_list: Account[], catetory_list: Cat
 
 /* Obtiene una categoría activa por id desde el arreglo ya cargado */
 function findCategorybyBody(body: any, active_category_list: Category[]): Category | null {
-  const category_id = body.category_id ? Number(body.category_id) : null
+    const category_id = body.category_id ? Number(body.category_id) : null
 
-  if (!category_id) return null
+    if (!category_id) return null
 
-  return active_category_list.find(c => c.id === category_id) || null
+    return active_category_list.find(c => c.id === category_id) || null
 }
 
 /* Obtiene una categoría activa por id desde el arreglo ya cargado */
 function findAccountbyBody(body: any, account_list: Account[]): Account | null {
-  const account_id = body.account_id ? Number(body.account_id) : null
+    const account_id = body.account_id ? Number(body.account_id) : null
 
-  if (!account_id) return null
+    if (!account_id) return null
 
-  return account_list.find(a => a.id === account_id) || null
+    return account_list.find(a => a.id === account_id) || null
 }
 /* ============================
    Controller
@@ -121,7 +122,8 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
     logger.debug(`${savePayment.name}-Timezone for saving payment: [${timezone}]`)
 
-    const account_list = await getActiveAccountsByUser(auth_req)
+    /*const account_list = await getActiveAccountsByUser(auth_req)*/
+    const account_list = await getActiveAccounts(auth_req)
     const active_expense_category_list = await getActiveCategoriesForPaymentsByUser(auth_req)
 
     const payment_view = buildPaymentView(req.body, account_list, active_expense_category_list)
