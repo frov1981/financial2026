@@ -1,8 +1,8 @@
 <%
   const rules = account_form_policy
   const isHidden = field => rules[field] === 'hidden'
-  const isReadOnly = field => rules[field] === 'read'
-  const isEditable = field => rules[field] === 'edit'
+  const isReadOnly = field => rules[field] === 'readonly'
+  const isEditable = field => rules[field] === 'editable'
 %>
 
 <div class="max-w-xl mx-auto">
@@ -10,7 +10,6 @@
     <%=
       mode === 'insert' ? 'Insertar Cuenta' 
     : mode === 'update' ? 'Editar Cuenta' 
-    : mode === 'status' ? 'Editar Estado de la Cuenta' 
     : mode === 'delete' ? 'Eliminar Cuenta'
     : mode 
     %>
@@ -28,7 +27,7 @@
     <input type="hidden" name="mode" value="<%= mode %>">
 
     <!-- Tipo de cuenta -->
-    <% if (isEditable('type')) { %>
+    <% if (!isHidden('type')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Tipo</label>
 
@@ -38,7 +37,7 @@
             type="radio"
             name="type"
             value="cash"
-            <%= account?.type === 'cash' || !account ? 'checked' : '' %>
+            <%= account?.type === 'cash' ? 'checked' : '' %>
             <%= isReadOnly('type') ? 'disabled' : '' %>
           >
           Efectivo
@@ -78,22 +77,14 @@
         </label>
       </div>
 
+      <% if (isReadOnly('type')) { %>
+        <input type="hidden" name="type" value="<%= account?.type %>">
+      <% } %>
+
       <% if (errors?.type) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.type %></p>
       <% } %>
     </div>
-    <% } else { %>
-      <div class="mb-4">
-        <label class="block font-medium mb-1">Tipo</label>
-        <input
-          type="text"
-          name="type"
-          class="w-full border rounded px-3 py-2"
-          value="<%= account?.type === 'cash' ? 'Efectivo' : account?.type === 'bank' ? 'Banco' : account?.type === 'card' ? 'Tarjeta' : 'Ahorros' %>"
-          <%= isReadOnly('type') ? 'readonly' : '' %>
-          required
-        >
-      </div>
     <% } %>
 
     <!-- Nombre -->
@@ -127,6 +118,10 @@
           <option value="true" <%= account?.is_active ? 'selected' : '' %>>Activar</option>
           <option value="false" <%= !account?.is_active ? 'selected' : '' %>>Inactivar</option>
         </select>
+
+        <% if (isReadOnly('is_active')) { %>
+          <input type="hidden" name="is_active" value="<%= account?.is_active %>">
+        <% } %>
 
         <% if (errors?.is_active) { %>
           <p class="text-red-600 text-sm mt-1"><%= errors.is_active %></p>

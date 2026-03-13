@@ -1,7 +1,7 @@
 import { AuthRequest } from "./auth-request"
 
 export type AccountFormMode = 'insert' | 'update' | 'delete'
-export type AccountFieldPolicy = 'edit' | 'read' | 'hidden'
+export type AccountFieldPolicy = 'editable' | 'readonly' | 'hidden'
 type AccountFieldMatrix = Record<string, AccountFieldPolicy>
 type AccountFormMatrix = Record<AccountFormMode, AccountFieldMatrix>
 

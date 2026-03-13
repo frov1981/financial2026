@@ -5,7 +5,6 @@ import {
     routeToFormDeleteAccount,
     routeToFormInsertAccount,
     routeToFormUpdateAccount,
-    routeToFormUpdateStatusAccount,
     routeToPageAccount
 } from '../controllers/account/account.controller'
 
@@ -20,7 +19,6 @@ router.get('/', routeToPageAccount)
 router.get('/insert', routeToFormInsertAccount)
 router.get('/update/:id', routeToFormUpdateAccount)
 router.get('/delete/:id', routeToFormDeleteAccount)
-router.get('/status/:id', routeToFormUpdateStatusAccount)
 
 
 export default router

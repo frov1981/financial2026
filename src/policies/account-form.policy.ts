@@ -2,18 +2,18 @@ import { AccountFormMatrix } from "../types/form-view-params";
 
 export const accountFormMatrix: AccountFormMatrix = {
     insert: {
-        type: 'edit',
-        name: 'edit',
-        is_active: 'hidden'
+        type: 'editable',
+        name: 'editable',
+        is_active: 'readonly'
     },
     update: {
-        type: 'read',
-        name: 'edit',
-        is_active: 'edit'
+        type: 'readonly',
+        name: 'editable',
+        is_active: 'editable'
     },
     delete: {
-        type: 'read',
-        name: 'read',
-        is_active: 'read'
+        type: 'readonly',
+        name: 'readonly',
+        is_active: 'readonly'
     }
 }

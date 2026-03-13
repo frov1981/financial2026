@@ -4,8 +4,11 @@ import { Account } from '../../entities/Account.entity'
 import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { AccountFormMode } from '../../types/form-view-params'
+import { parseBoolean } from '../../utils/bool.util'
 import { logger } from '../../utils/logger.util'
+import { deleteAccountsCache, getAccountById } from '../cache/cache-accounts.service'
 import { validateDeleteAccount, validateSaveAccount } from './account.validator'
+import { parseError } from '../../utils/error.util'
 
 /* ============================
    Título según modo
@@ -25,9 +28,8 @@ const getTitle = (mode: AccountFormMode) => {
 const sanitizeByPolicy = (mode: AccountFormMode, body: any) => {
   const policy = accountFormMatrix[mode]
   const clean: any = {}
-
   for (const field in policy) {
-    if ((policy[field] === 'edit' || policy[field] === 'read') && body[field] !== undefined) {
+    if ((policy[field] === 'editable' || policy[field] === 'readonly') && body[field] !== undefined) {
       clean[field] = body[field]
     }
   }
@@ -40,59 +42,45 @@ const sanitizeByPolicy = (mode: AccountFormMode, body: any) => {
 const buildAccountView = (body: any) => {
   return {
     ...body,
-    is_active: body.is_active === 'true' || body.is_active === true
+    is_active: parseBoolean(body.is_active)
   }
 }
 
 export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
   logger.debug('saveAccount called', { body: req.body, param: req.params })
-
   const auth_req = req as AuthRequest
-  const repo_account = AppDataSource.getRepository(Account)
-
   const account_id = req.body.id ? Number(req.body.id) : undefined
   const mode: AccountFormMode = req.body.mode || 'insert'
-
-  const account_view = buildAccountView(req.body)
+  const repo_account = AppDataSource.getRepository(Account)
 
   const form_state = {
-    account: account_view,
+    account: buildAccountView(req.body),
     account_form_policy: accountFormMatrix[mode],
     mode
   }
 
   try {
     let existing: Account | null = null
-
     if (account_id) {
-      existing = await repo_account.findOne({
-        where: { id: account_id, user: { id: auth_req.user.id } }
-      })
+      existing = await getAccountById(auth_req, account_id)
       if (!existing) throw new Error('Cuenta no encontrada')
     }
-
     /* ============================
        DELETE
     ============================ */
     if (mode === 'delete') {
       if (!existing) throw new Error('Cuenta no encontrada')
-
-      logger.info('Before deleting account', { user_id: auth_req.user.id, mode, existing })
-
       const errors = await validateDeleteAccount(auth_req, existing)
       if (errors) throw { validationErrors: errors }
-
       await repo_account.delete(existing.id)
+      deleteAccountsCache(auth_req)
       logger.info('Account deleted from database.')
-
       return res.redirect('/accounts')
     }
-
     /* ============================
-       INSERT / UPDATE / STATUS
+       INSERT / UPDATE
     ============================ */
     let account: Account
-
     if (mode === 'insert') {
       account = repo_account.create({
         user: { id: auth_req.user.id } as any,
@@ -105,42 +93,26 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       if (!existing) throw new Error('Cuenta no encontrada')
       account = existing
     }
-
+    /*=================================
+      Aplicar sanitización por policy
+    =================================*/
     const clean = sanitizeByPolicy(mode, req.body)
-
-    if (clean.type !== undefined) {
-      account.type = clean.type
-    }
-
-    if (clean.name !== undefined) {
-      account.name = clean.name
-    }
-
-    if (clean.is_active !== undefined) {
-      account.is_active = clean.is_active === 'true' || clean.is_active === true
-    }
-
-    logger.info('Before saving account', { user_id: auth_req.user.id, mode, account })
-
+    if (clean.type !== undefined) { account.type = clean.type }
+    if (clean.name !== undefined) { account.name = clean.name }
+    if (clean.is_active !== undefined) { account.is_active = parseBoolean(clean.is_active) }
     const errors = await validateSaveAccount(auth_req, account)
     if (errors) throw { validationErrors: errors }
 
+    /*=================================
+      Guardar en base de datos y limpiar cache
+    =================================*/
     await repo_account.save(account)
     logger.info('Account saved to database.')
-
+    deleteAccountsCache(auth_req)
     return res.redirect('/accounts')
-
   } catch (err: any) {
-    logger.error('Error saving account', {
-      user_id: auth_req.user.id,
-      account_id,
-      mode,
-      error: err,
-      stack: err?.stack
-    })
-
+    logger.error('Error saving account', { user_id: auth_req.user.id, account_id, mode, error: parseError(err) })
     const validation_errors = err?.validationErrors || null
-
     return res.render('layouts/main', {
       title: getTitle(mode),
       view: 'pages/accounts/form',
