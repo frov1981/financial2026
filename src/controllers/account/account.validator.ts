@@ -36,9 +36,8 @@ export const validateDeleteAccount = async (auth_req: AuthRequest, account: Acco
     // TRANSACTION REFERENCE VALIDATION
     const transaction_repo = AppDataSource.getRepository(Transaction)
     const used_in_transactions = await transaction_repo.existsBy([
-        { user: { id: user_id } },
-        { account: { id: account.id } },
-        { to_account: { id: account.id } }
+        { user: { id: user_id }, account: { id: account.id } },
+        { user: { id: user_id }, to_account: { id: account.id } }
     ])
     if (used_in_transactions) {
         if (field_errors.general) {
