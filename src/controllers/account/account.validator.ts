@@ -5,7 +5,7 @@ import { Account } from '../../entities/Account.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
-import { getAccountByName } from '../cache/cache-accounts.service'
+import { getAccountByName } from '../../cache/cache-accounts.service'
 
 export const validateSaveAccount = async (auth_req: AuthRequest, account: Account): Promise<Record<string, string> | null> => {
     const user_id = auth_req.user.id

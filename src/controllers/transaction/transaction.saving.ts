@@ -10,8 +10,8 @@ import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { getSqlErrorMessage } from '../../utils/sql-err.util'
-import { getActiveAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../cache/cache-accounts.service'
-import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories } from '../cache/cache-categories.service'
+import { getActiveAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
+import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service'
 import { calculateTransactionDeltas, splitCategoriesByType } from '../transaction/transaction.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator'
 
@@ -191,7 +191,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
     if (clean.category !== undefined) {
       /*transaction.category = getCategoryFromActiveList(active_categories, clean.category ? Number(clean.category) : null)*/
-      transaction.category = await getActiveCategoryById(Number(clean.category), auth_req)
+      transaction.category = await getActiveCategoryById(auth_req, Number(clean.category))
     }
 
     if (clean.date) {

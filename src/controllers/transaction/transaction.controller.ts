@@ -8,8 +8,8 @@ import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { splitCategoriesByType } from './transaction.auxiliar'
 import { validateActiveCategoryTransaction } from './transaction.validator'
-import { getActiveExpenseCategories, getActiveIncomeCategories } from '../cache/cache-categories.service'
-import { getActiveAccounts, getActiveAccountsForTransfer } from '../cache/cache-accounts.service'
+import { getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service'
+import { getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
 

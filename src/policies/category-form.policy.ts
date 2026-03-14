@@ -2,26 +2,24 @@ import { CategoryFormMatrix } from "../types/form-view-params";
 
 export const categoryFormMatrix: CategoryFormMatrix = {
     insert: {
-        type: 'edit',
-        type_for_loan: 'edit',
-        name: 'edit', 
-        category_group_id: 'edit',
-        is_active: 'hidden'
+        type: 'editable',
+        type_for_loan: 'editable',
+        name: 'editable',
+        category_group_id: 'editable',
+        is_active: 'readonly'
     },
-
     update: {
-        type: 'read',
-        type_for_loan: 'edit',
-        name: 'edit',
-        category_group_id: 'edit',
-        is_active: 'edit'
+        type: 'readonly',
+        type_for_loan: 'editable',
+        name: 'editable',
+        category_group_id: 'editable',
+        is_active: 'editable'
     },
-
     delete: {
-        type: 'read',
-        type_for_loan: 'read',
-        name: 'read',
-        category_group_id: 'read',
-        is_active: 'read'
+        type: 'readonly',
+        type_for_loan: 'readonly',
+        name: 'readonly',
+        category_group_id: 'readonly',
+        is_active: 'readonly'
     }
 }

@@ -1,9 +1,10 @@
 import { Request, RequestHandler, Response } from 'express'
+import { getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
 import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
+import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
-import { getAccountById, getAccountsWithCountBase } from '../cache/cache-accounts.service'
 export { saveAccount as apiForSavingAccount } from './account.saving'
 
 type AccountFormViewParams = BaseFormViewParams & {
@@ -28,11 +29,11 @@ export const apiForGettingAccounts: RequestHandler = async (req: Request, res: R
   logger.debug(`${apiForGettingAccounts.name}-Start`)
   const auth_req = req as AuthRequest
   try {
-    const accounts = await getAccountsWithCountBase(auth_req)
+    const accounts = await getAccountsForApi(auth_req)
     logger.debug(`${apiForGettingAccounts.name}-AccountsRetrieved. Count: ${accounts.length}`)
     res.json(accounts)
   } catch (error) {
-    logger.error(`${apiForGettingAccounts.name}-Error. `, error)
+    logger.error(`${apiForGettingAccounts.name}-Error. `, parseError(error))
     res.status(500).json({ error: 'Error al listar cuentas' })
   } finally {
     logger.debug(`${apiForGettingAccounts.name}-End`)

@@ -15,7 +15,7 @@ import { PaymentFormMode } from '../../types/form-view-params'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
-import { getActiveAccounts } from '../cache/cache-accounts.service'
+import { getActiveAccounts } from '../../cache/cache-accounts.service'
 
 /* ============================
    Helpers

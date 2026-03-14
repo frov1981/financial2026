@@ -1,13 +1,15 @@
 import { Request, RequestHandler, Response } from 'express'
+import { deleteCategoriesCache, getCategoryById } from '../../cache/cache-categories.service'
+import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-group.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
-import { CategoryGroup } from '../../entities/CategoryGroups.entity'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
-import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
+import { CategoryFormMode } from '../../types/form-view-params'
+import { parseBoolean } from '../../utils/bool.util'
+import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
 import { validateCategory, validateDeleteCategory } from './category.validator'
-import { CategoryFormMode } from '../../types/form-view-params'
 
 /* ============================
    Obtener título según el modo del formulario
@@ -16,7 +18,6 @@ const getTitle = (mode: string) => {
   switch (mode) {
     case 'insert': return 'Insertar Categoría'
     case 'update': return 'Editar Categoría'
-    case 'status': return 'Editar Estado de la Categoría'
     case 'delete': return 'Eliminar Categoría'
     default: return 'Indefinido'
   }
@@ -28,38 +29,24 @@ const getTitle = (mode: string) => {
 const sanitizeByPolicy = (mode: CategoryFormMode, body: any) => {
   const policy = categoryFormMatrix[mode]
   const clean: any = {}
-
   for (const field in policy) {
-    if ((policy[field] === 'edit' || policy[field] === 'read') && body[field] !== undefined) {
+    if ((policy[field] === 'editable' || policy[field] === 'readonly') && body[field] !== undefined) {
       clean[field] = body[field]
     }
   }
-
   return clean
 }
 
 /* ============================
    Construir objeto para la vista
 ============================ */
-const buildCategoryView = (body: any, category_group_list: CategoryGroup[]) => {
-  const category_group_id = body.category_group ? Number(body.category_group) : null
-  const group = category_group_id ? category_group_list.find(g => g.id === category_group_id) || null : null
-
+const buildCategoryView = async (auth_req: AuthRequest, body: any) => {
+  const category_group_id = Number(body.category_group_id)
+  const category_group = await getCategoryGroupById(auth_req, category_group_id)
   return {
     ...body,
-    category_group: group ? { id: group.id, name: group.name } : null
+    category_group
   }
-}
-
-/* ============================
-   Obtener grupo de categoría desde el body y la lista de grupos del usuario
-============================ */
-const findCategoryGroupByBody = (body: any, category_group_list: CategoryGroup[]): CategoryGroup | null => {
-  const category_group_id = body.category_group_id ? Number(body.category_group_id) : null
-
-  if (!category_group_id) return null
-
-  return category_group_list.find(g => g.id === category_group_id) || null
 }
 
 /* ============================
@@ -68,91 +55,84 @@ const findCategoryGroupByBody = (body: any, category_group_list: CategoryGroup[]
 export const saveCategory: RequestHandler = async (req: Request, res: Response) => {
   logger.debug(`${saveCategory.name}-Start`)
   logger.info('saveCategory called', { body: req.body, param: req.params })
-
   const auth_req = req as AuthRequest
-  const category_id = req.body.id ? Number(req.body.id) : undefined
+  const category_id = Number(req.body.id)
+  const category_group_id = Number(req.body.category_group_id)
   const mode: CategoryFormMode = req.body.mode || 'insert'
-
   const repo_category = AppDataSource.getRepository(Category)
-  const category_group_list = await getActiveParentCategoriesByUser(auth_req)
-  const category_view = buildCategoryView(req.body, category_group_list)
 
   const form_state = {
-    category: category_view,
-    category_group_list,
+    category: await buildCategoryView(auth_req, req.body),
+    category_group_list: await getActiveCategoryGroup(auth_req),
     category_form_policy: categoryFormMatrix[mode],
     mode
   }
 
   try {
     let existing: Category | null = null
-
     if (category_id) {
-      existing = await repo_category.findOne({
-        where: { id: category_id, user: { id: auth_req.user.id } },
-        relations: { category_group: true, parent: true }
-      })
+      existing = await getCategoryById(auth_req, category_id)
       if (!existing) throw new Error('Categoría no encontrada')
     }
-
     /* =========================
        DELETE
     ============================ */
     if (mode === 'delete') {
       if (!existing) throw new Error('Categoría no encontrada')
-
-      const errors = await validateDeleteCategory(existing, auth_req)
+      const errors = await validateDeleteCategory(auth_req, existing)
       if (errors) throw { validationErrors: errors }
-
       await repo_category.delete(existing.id)
+      deleteCategoriesCache(auth_req)
       return res.redirect('/categories')
     }
-
     /* =========================
-       INSERT / UPDATE / STATUS
+       INSERT / UPDATE
     ============================ */
     let category: Category
 
     if (mode === 'insert') {
-      const selectedGroup = findCategoryGroupByBody(req.body, category_group_list)
+      const selected_group = await getCategoryGroupById(auth_req, category_group_id)
       category = repo_category.create({
         user: { id: auth_req.user.id } as any,
         type: req.body.type,
         type_for_loan: req.body.type_for_loan,
         name: req.body.name,
-        category_group: selectedGroup,
+        category_group: selected_group,
         is_active: true
       })
     } else {
       if (!existing) throw new Error('Categoría no encontrada')
       category = existing
     }
-
+    /*=================================
+      Aplicar sanitización por policy
+    =================================*/
     const clean = sanitizeByPolicy(mode, req.body)
-
     if (clean.name !== undefined) category.name = clean.name
     if (clean.type !== undefined) category.type = clean.type
     if (clean.type_for_loan !== undefined) { category.type_for_loan = clean.type_for_loan === '' ? null : clean.type_for_loan }
-    if (clean.category_group_id !== undefined) { category.category_group = findCategoryGroupByBody(req.body, category_group_list) }
-    if (clean.is_active !== undefined) { category.is_active = clean.is_active === 'true' || clean.is_active === '1' }
-
-    const errors = await validateCategory(category, auth_req)
+    if (clean.category_group_id !== undefined) { category.category_group = await getCategoryGroupById(auth_req, Number(clean.category_group_id)) }
+    if (clean.is_active !== undefined) { category.is_active = parseBoolean(clean.is_active) }
+    const errors = await validateCategory(auth_req, category)
     if (errors) throw { validationErrors: errors }
-
+    /*=================================
+          Guardar en base de datos y limpiar cache
+        =================================*/
     await repo_category.save(category)
+    logger.info('Category saved to database.')
+    deleteCategoriesCache(auth_req)
     return res.redirect('/categories')
-
   } catch (err: any) {
+    /* ============================
+       Manejo de errores
+    ============================ */
     logger.error(`${saveCategory.name}-Error. `, {
       user_id: auth_req.user.id,
       category_id,
       mode,
-      error: err,
-      stack: err?.stack
+      error: parseError(err)
     })
-
     const validationErrors = err?.validationErrors || null
-
     return res.render('layouts/main', {
       title: getTitle(mode),
       view: 'pages/categories/form',

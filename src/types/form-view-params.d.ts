@@ -5,7 +5,7 @@ export type AccountFieldPolicy = 'editable' | 'readonly' | 'hidden'
 type AccountFieldMatrix = Record<string, AccountFieldPolicy>
 type AccountFormMatrix = Record<AccountFormMode, AccountFieldMatrix>
 
-export type CaterogyFieldMode = 'hidden' | 'read' | 'edit'
+export type CaterogyFieldMode = 'hidden' | 'readonly' | 'editable'
 export type CategoryFormMode = 'insert' | 'update' | 'delete'
 type CategoryFieldMatrix = Record<string, CaterogyFieldMode>
 type CategoryFormMatrix = Record<CategoryFormMode, CategoryFieldMatrix>

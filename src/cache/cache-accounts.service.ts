@@ -1,16 +1,22 @@
-import { AppDataSource } from "../../config/typeorm.datasource";
-import { Account } from "../../entities/Account.entity";
-import { AuthRequest } from "../../types/auth-request";
-import { logger } from "../../utils/logger.util";
+import { AppDataSource } from "../config/typeorm.datasource";
+import { Account } from "../entities/Account.entity";
+import { AuthRequest } from "../types/auth-request";
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
-type AccountWithCount = Account & { transaction_count: number }
+type DTOAccount = {
+    id: number
+    name: string
+    type: string
+    balance: number
+    is_active: boolean
+    transaction_count: number
+}
 
 const getAccountsBase = async (user_id: number): Promise<Account[]> => {
     const cache_key = cacheKeys.accountsByUser(user_id)
     const cached_accounts = cache.get<Account[]>(cache_key)
-    if (cached_accounts) {
+    if (cached_accounts !== undefined) {
         return cached_accounts
     }
     const repo = AppDataSource.getRepository(Account)
@@ -19,8 +25,15 @@ const getAccountsBase = async (user_id: number): Promise<Account[]> => {
         order: { name: 'ASC' }
     })
     cache.set(cache_key, accounts)
-    logger.debug('Accounts retrieved from database and cached', { user_id, count: accounts.length })
     return accounts
+}
+
+export const deleteAccountsCache = (auth_req: AuthRequest): void => {
+    const user_id = auth_req.user.id
+    const cache_key = cacheKeys.accountsByUser(user_id)
+    const cache_key_api = cacheKeys.accountsByUserForApi(user_id)
+    cache.del(cache_key)
+    cache.del(cache_key_api)
 }
 
 export const getAccounts = async (auth_req: AuthRequest): Promise<Account[]> => {
@@ -64,18 +77,11 @@ export const getActiveAccountsForTransfer = async (auth_req: AuthRequest): Promi
     return active_accounts_for_transfer
 }
 
-export const deleteAccountsCache = (auth_req: AuthRequest): void => {
+export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccount[]> => {
     const user_id = auth_req.user.id
-    const cache_key = cacheKeys.accountsByUser(user_id)
-    cache.del(cache_key)
-    logger.debug('Accounts cache deleted', { user_id })
-}
-
-export const getAccountsWithCountBase = async (auth_req: AuthRequest): Promise<AccountWithCount[]> => {
-    const user_id = auth_req.user.id
-    const cache_key = cacheKeys.accountsByUser(user_id)
-    const cached_accounts = cache.get<AccountWithCount[]>(cache_key)
-    if (cached_accounts) {
+    const cache_key = cacheKeys.accountsByUserForApi(user_id)
+    const cached_accounts = cache.get<DTOAccount[]>(cache_key)
+    if (cached_accounts !== undefined) {
         return cached_accounts
     }
     const repository = AppDataSource.getRepository(Account)
@@ -91,8 +97,13 @@ export const getAccountsWithCountBase = async (auth_req: AuthRequest): Promise<A
         )
         .orderBy('account.name', 'ASC')
         .getRawAndEntities()
-    const accounts: AccountWithCount[] = result.entities.map((account, index) => ({
-        ...account,
+
+    const accounts: DTOAccount[] = result.entities.map((account, index) => ({
+        id: account.id,
+        name: account.name,
+        type: account.type,
+        balance: account.balance,
+        is_active: account.is_active,
         transaction_count: Number(result.raw[index].transaction_count)
     }))
     cache.set(cache_key, accounts)

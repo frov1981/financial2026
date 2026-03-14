@@ -9,7 +9,7 @@ import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
-import { getActiveAccounts } from '../cache/cache-accounts.service'
+import { getActiveAccounts } from '../../cache/cache-accounts.service'
 export { savePayment as apiForSavingAccount } from './payment.saving'
 
 type PaymentFormViewParams = BaseFormViewParams & {

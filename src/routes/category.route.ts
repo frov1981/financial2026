@@ -5,7 +5,6 @@ import {
     routeToFormDeleteCategory,
     routeToFormInsertCategory,
     routeToFormUpdateCategory,
-    routeToFormUpdateStatusCategory,
     routeToPageCategory
 } from '../controllers/category/category.controller'
 
@@ -20,7 +19,5 @@ router.get('/', routeToPageCategory)
 router.get('/insert', routeToFormInsertCategory)
 router.get('/update/:id', routeToFormUpdateCategory)
 router.get('/delete/:id', routeToFormDeleteCategory)
-router.get('/status/:id', routeToFormUpdateStatusCategory)
-
 
 export default router

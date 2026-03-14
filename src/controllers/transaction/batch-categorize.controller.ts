@@ -6,7 +6,7 @@ import { Transaction } from '../../entities/Transaction.entity';
 import { AuthRequest } from '../../types/auth-request';
 import { logger } from '../../utils/logger.util';
 import { splitCategoriesByType } from './transaction.auxiliar';
-import { getActiveCategories, getActiveExpenseCategories, getActiveIncomeCategories } from '../cache/cache-categories.service';
+import { getActiveCategories, getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service';
 
 export const apiForGettingCategorizeTransactions: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest;

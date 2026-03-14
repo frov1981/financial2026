@@ -1,4 +1,4 @@
-import { IsBoolean, IsIn, IsNotEmpty } from 'class-validator'
+import { IsBoolean, IsIn, IsNotEmpty, IsOptional } from 'class-validator'
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { CategoryGroup } from './CategoryGroups.entity'
 import { Loan } from './Loan.entity'
@@ -25,7 +25,8 @@ export class Category {
   type!: 'income' | 'expense'
 
   @Column({ type: 'varchar' })
-  @IsIn(['loan', 'payment', null], { message: 'El tipo debe ser loan o payment o vacío' })
+  @IsOptional()
+  @IsIn(['loan', 'payment'], { message: 'El tipo debe ser loan o payment o vacío' })
   type_for_loan!: 'loan' | 'payment' | null
 
   @Column({ default: true })

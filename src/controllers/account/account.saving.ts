@@ -6,7 +6,7 @@ import { AuthRequest } from '../../types/auth-request'
 import { AccountFormMode } from '../../types/form-view-params'
 import { parseBoolean } from '../../utils/bool.util'
 import { logger } from '../../utils/logger.util'
-import { deleteAccountsCache, getAccountById } from '../cache/cache-accounts.service'
+import { deleteAccountsCache, getAccountById } from '../../cache/cache-accounts.service'
 import { validateDeleteAccount, validateSaveAccount } from './account.validator'
 import { parseError } from '../../utils/error.util'
 
@@ -47,7 +47,8 @@ const buildAccountView = (body: any) => {
 }
 
 export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug('saveAccount called', { body: req.body, param: req.params })
+  logger.debug(`${saveAccount.name}-Start`)
+  logger.info('saveAccount called', { body: req.body, param: req.params })
   const auth_req = req as AuthRequest
   const account_id = req.body.id ? Number(req.body.id) : undefined
   const mode: AccountFormMode = req.body.mode || 'insert'
@@ -102,7 +103,6 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     if (clean.is_active !== undefined) { account.is_active = parseBoolean(clean.is_active) }
     const errors = await validateSaveAccount(auth_req, account)
     if (errors) throw { validationErrors: errors }
-
     /*=================================
       Guardar en base de datos y limpiar cache
     =================================*/
@@ -111,7 +111,15 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     deleteAccountsCache(auth_req)
     return res.redirect('/accounts')
   } catch (err: any) {
-    logger.error('Error saving account', { user_id: auth_req.user.id, account_id, mode, error: parseError(err) })
+    /* ============================
+       Manejo de errores
+    ============================ */
+    logger.error('Error saving account', {
+      user_id: auth_req.user.id,
+      account_id,
+      mode,
+      error: parseError(err)
+    })
     const validation_errors = err?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -119,5 +127,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       ...form_state,
       errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
+  } finally {
+    logger.debug(`${saveAccount.name}-End`)
   }
 }

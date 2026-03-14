@@ -1,8 +1,8 @@
 <%
   const rules = category_form_policy
   const isHidden = field => rules[field] === 'hidden'
-  const isReadOnly = field => rules[field] === 'read'
-  const isEditable = field => rules[field] === 'edit'
+  const isReadOnly = field => rules[field] === 'readonly'
+  const isEditable = field => rules[field] === 'editable'
 %>
 
 <div class="max-w-xl mx-auto">
@@ -181,6 +181,11 @@
           <option value="true" <%= category?.is_active ? 'selected' : '' %>>Activar</option>
           <option value="false" <%= !category?.is_active ? 'selected' : '' %>>Inactivar</option>
         </select>
+        
+        <% if (isReadOnly('is_active')) { %>
+          <input type="hidden" name="is_active" value="<%= category?.is_active %>">
+        <% } %>
+
         <% if (errors?.is_active) { %>
           <p class="text-red-600 text-sm mt-1"><%= errors.is_active %></p>
         <% } %>
