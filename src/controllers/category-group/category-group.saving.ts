@@ -1,10 +1,14 @@
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { CategoryGroup } from '../../entities/CategoryGroups.entity'
-import { categoryGroupFormMatrix, CategoryGroupFormMode } from '../../policies/category-group-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { validateCategoryGroup, validateDeleteCategoryGroup } from './category-group.validator'
+import { CategoryGroupFormMode } from '../../types/form-view-params'
+import { categoryGroupFormMatrix } from '../../policies/category-group-form.policy'
+import { parseBoolean } from '../../utils/bool.util'
+import { deleteCategoryGroupCache, getCategoryGroupById } from '../../cache/cache-category-group.service'
+import { parseError } from '../../utils/error.util'
 
 /* ============================
    Obtener título según el modo del formulario
@@ -24,13 +28,11 @@ const getTitle = (mode: string) => {
 const sanitizeByPolicy = (mode: CategoryGroupFormMode, body: any) => {
   const policy = categoryGroupFormMatrix[mode]
   const clean: any = {}
-
   for (const field in policy) {
-    if (policy[field] === 'edit' && body[field] !== undefined) {
+    if ((policy[field] === 'editable' || policy[field] === 'readonly') && body[field] !== undefined) {
       clean[field] = body[field]
     }
   }
-
   return clean
 }
 
@@ -40,6 +42,7 @@ const sanitizeByPolicy = (mode: CategoryGroupFormMode, body: any) => {
 const buildCategoryGroupView = (body: any, mode: CategoryGroupFormMode) => {
   return {
     ...body,
+    is_active: parseBoolean(body.is_active),
   }
 }
 
@@ -49,11 +52,9 @@ const buildCategoryGroupView = (body: any, mode: CategoryGroupFormMode) => {
 export const saveCategoryGroup: RequestHandler = async (req: Request, res: Response) => {
   logger.debug(`${saveCategoryGroup.name}-Start`)
   logger.info('saveCategoryGroup called', { body: req.body, param: req.params })
-
   const auth_req = req as AuthRequest
-  const category_group_id = req.body.id ? Number(req.body.id) : undefined
+  const category_group_id = Number(req.body.id)
   const mode: CategoryGroupFormMode = req.body.mode || 'insert'
-
   const repo_category_group = AppDataSource.getRepository(CategoryGroup)
   const category_group_view = buildCategoryGroupView(req.body, mode)
 
@@ -65,32 +66,25 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
 
   try {
     let existing: CategoryGroup | null = null
-
     if (category_group_id) {
-      existing = await repo_category_group.findOne({
-        where: { id: category_group_id, user: { id: auth_req.user.id } },
-      })
+      existing = await getCategoryGroupById(auth_req, category_group_id)
       if (!existing) throw new Error('Grupo de Categoría no encontrada')
     }
-
     /* =========================
        DELETE
     ============================ */
     if (mode === 'delete') {
       if (!existing) throw new Error('Grupo de Categoría no encontrada')
-
       const errors = await validateDeleteCategoryGroup(existing, auth_req)
       if (errors) throw { validationErrors: errors }
-
       await repo_category_group.delete(existing.id)
+      deleteCategoryGroupCache(auth_req)
       return res.redirect('/categories')
     }
-
     /* =========================
-       INSERT / UPDATE / STATUS
+       INSERT / UPDATE
     ============================ */
     let category_group: CategoryGroup
-
     if (mode === 'insert') {
       category_group = repo_category_group.create({
         user: { id: auth_req.user.id } as any,
@@ -101,29 +95,31 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
       if (!existing) throw new Error('Grupo de Categoría no encontrada')
       category_group = existing
     }
-
+    /*=================================
+      Aplicar sanitización por policy
+    =================================*/
     const clean = sanitizeByPolicy(mode, req.body)
-
     if (clean.name !== undefined) category_group.name = clean.name
-    if (clean.is_active !== undefined) { category_group.is_active = clean.is_active === 'true' || clean.is_active === '1' }
-
+    if (clean.is_active !== undefined) { category_group.is_active = parseBoolean(clean.is_active) }
     const errors = await validateCategoryGroup(category_group, auth_req)
     if (errors) throw { validationErrors: errors }
-
+    /*=================================
+      Guardar en base de datos y limpiar cache
+    =================================*/
     await repo_category_group.save(category_group)
+    deleteCategoryGroupCache(auth_req)
     return res.redirect('/categories')
-
   } catch (err: any) {
+    /* ============================
+       Manejo de errores
+    ============================ */
     logger.error(`${saveCategoryGroup.name}-Error. `, {
       user_id: auth_req.user.id,
-      category_group_id: category_group_id,
+      category_group_id,
       mode,
-      error: err,
-      stack: err?.stack
+      error: parseError(err),
     })
-
     const validationErrors = err?.validationErrors || null
-
     return res.render('layouts/main', {
       title: getTitle(mode),
       view: 'pages/category-groups/form',

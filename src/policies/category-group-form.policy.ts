@@ -1,19 +1,16 @@
-export type CaterogyGroupFieldMode = 'hidden' | 'read' | 'edit'
-export type CategoryGroupFormMode = 'insert' | 'update' | 'delete'
+import { CategoryGroupFormMatrix } from "../types/form-view-params";
 
-export const categoryGroupFormMatrix: Record<CategoryGroupFormMode, Record<string, CaterogyGroupFieldMode>> = {
+export const categoryGroupFormMatrix: CategoryGroupFormMatrix = {
     insert: {
-        name: 'edit',
-        is_active: 'hidden'
+        name: 'editable',
+        is_active: 'readonly'
     },
-
     update: {
-        name: 'edit',
-        is_active: 'read'
+        name: 'editable',
+        is_active: 'readonly'
     },
-
     delete: {
-        name: 'read',
-        is_active: 'read'
+        name: 'readonly',
+        is_active: 'readonly'
     },
 }

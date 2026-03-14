@@ -10,6 +10,11 @@ export type CategoryFormMode = 'insert' | 'update' | 'delete'
 type CategoryFieldMatrix = Record<string, CaterogyFieldMode>
 type CategoryFormMatrix = Record<CategoryFormMode, CategoryFieldMatrix>
 
+export type CategoryGroupFieldMode = 'hidden' | 'readonly' | 'editable'
+export type CategoryGroupFormMode = 'insert' | 'update' | 'delete'
+type CategoryGroupFieldMatrix = Record<string, CategoryGroupFieldMode>
+type CategoryGroupFormMatrix = Record<CategoryGroupFormMode, CategoryGroupFieldMatrix>
+
 export type PaymentFieldMode = 'hidden' | 'read' | 'edit'
 export type PaymentFormMode = 'insert' | 'update' | 'delete'
 type PaymentFieldMatrix = Record<string, PaymentFieldMode>

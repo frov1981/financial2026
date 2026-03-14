@@ -45,7 +45,8 @@ const buildCategoryView = async (auth_req: AuthRequest, body: any) => {
   const category_group = await getCategoryGroupById(auth_req, category_group_id)
   return {
     ...body,
-    category_group
+    is_active: parseBoolean(body.is_active),
+    category_group,
   }
 }
 
@@ -116,8 +117,8 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     const errors = await validateCategory(auth_req, category)
     if (errors) throw { validationErrors: errors }
     /*=================================
-          Guardar en base de datos y limpiar cache
-        =================================*/
+      Guardar en base de datos y limpiar cache
+    =================================*/
     await repo_category.save(category)
     logger.info('Category saved to database.')
     deleteCategoriesCache(auth_req)
@@ -130,7 +131,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       user_id: auth_req.user.id,
       category_id,
       mode,
-      error: parseError(err)
+      error: parseError(err),
     })
     const validationErrors = err?.validationErrors || null
     return res.render('layouts/main', {

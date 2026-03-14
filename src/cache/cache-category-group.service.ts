@@ -46,6 +46,13 @@ export const getCategoryGroupById = async (auth_req: AuthRequest, category_group
     return category_group || null
 }
 
+export const getCategoryGroupByName = async (auth_req: AuthRequest, name: string): Promise<CategoryGroup | null> => {
+    const user_id = auth_req.user.id
+    const category_groups = await getCategoryBase(user_id)
+    const category_group = category_groups.find(category_group => category_group.name.toLowerCase() === name.toLowerCase())
+    return category_group || null
+}
+
 export const getActiveCategoryGroupById = async (category_group_id: number, auth_req: AuthRequest): Promise<CategoryGroup | null> => {
     const user_id = auth_req.user.id
     const category_groups = await getCategoryBase(user_id)

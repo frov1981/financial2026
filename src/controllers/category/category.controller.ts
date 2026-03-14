@@ -58,15 +58,15 @@ export const routeToFormInsertCategory: RequestHandler = async (req: Request, re
   return renderCategoryForm(res, {
     title: 'Insertar Categoría',
     view: 'pages/categories/form',
+    errors: {},
+    mode,
+    auth_req,
     category: {
       type: null,
       type_for_loan: null,
       category_group: null,
       is_active: true
     },
-    errors: {},
-    mode,
-    auth_req
   })
 }
 

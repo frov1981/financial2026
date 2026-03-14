@@ -1,17 +1,14 @@
-import { validate } from 'class-validator'
-import { AppDataSource } from '../../config/typeorm.datasource'
-import { Category } from '../../entities/Category.entity'
-import { CategoryGroup } from '../../entities/CategoryGroups.entity'
-import { Transaction } from '../../entities/Transaction.entity'
-import { AuthRequest } from '../../types/auth-request'
-import { logger } from '../../utils/logger.util'
-import { mapValidationErrors } from '../../validators/map-errors.validator'
 import { plainToInstance } from 'class-transformer'
+import { validate } from 'class-validator'
 import { getCategoryByName } from '../../cache/cache-categories.service'
 import { getCategoryGroupById } from '../../cache/cache-category-group.service'
+import { AppDataSource } from '../../config/typeorm.datasource'
+import { Category } from '../../entities/Category.entity'
+import { Transaction } from '../../entities/Transaction.entity'
+import { AuthRequest } from '../../types/auth-request'
+import { mapValidationErrors } from '../../validators/map-errors.validator'
 
 export const validateCategory = async (auth_req: AuthRequest, category: Category): Promise<Record<string, string> | null> => {
-  const user_id = auth_req.user.id
   const category_instance = plainToInstance(Category, category)
   const errors = await validate(category_instance)
   const field_errors = errors.length > 0 ? mapValidationErrors(errors) : {}
