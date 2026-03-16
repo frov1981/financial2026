@@ -28,14 +28,6 @@ const getAccountsBase = async (user_id: number): Promise<Account[]> => {
     return accounts
 }
 
-export const deleteAccountsCache = (auth_req: AuthRequest): void => {
-    const user_id = auth_req.user.id
-    const cache_key = cacheKeys.accountsByUser(user_id)
-    const cache_key_api = cacheKeys.accountsByUserForApi(user_id)
-    cache.del(cache_key)
-    cache.del(cache_key_api)
-}
-
 export const getAccounts = async (auth_req: AuthRequest): Promise<Account[]> => {
     const user_id = auth_req.user.id
     const accounts: Account[] = await getAccountsBase(user_id)
@@ -54,6 +46,13 @@ export const getAccountByName = async (auth_req: AuthRequest, name: string): Pro
     const accounts = await getAccountsBase(user_id)
     const account = accounts.find(account => account.name === name)
     return account || null
+}
+
+export const getAccountsForDisbursement = async (auth_req: AuthRequest): Promise<Account[]> => {
+    const user_id = auth_req.user.id
+    const accounts: Account[] = await getAccountsBase(user_id)
+    const active_accounts_for_disbursement: Account[] = accounts.filter(account => ['cash', 'bank', 'card'].includes(account.type))
+    return active_accounts_for_disbursement
 }
 
 export const getActiveAccountById = async (auth_req: AuthRequest, account_id: number): Promise<Account | null> => {
@@ -75,6 +74,13 @@ export const getActiveAccountsForTransfer = async (auth_req: AuthRequest): Promi
     const accounts: Account[] = await getAccountsBase(user_id)
     const active_accounts_for_transfer: Account[] = accounts.filter(account => account.is_active && ['cash', 'bank', 'card', 'saving'].includes(account.type))
     return active_accounts_for_transfer
+}
+
+export const getActiveAccountsForDisbursement = async (auth_req: AuthRequest): Promise<Account[]> => {
+    const user_id = auth_req.user.id
+    const accounts: Account[] = await getAccountsBase(user_id)
+    const active_accounts_for_disbursement: Account[] = accounts.filter(account => account.is_active && ['cash', 'bank', 'card'].includes(account.type))
+    return active_accounts_for_disbursement
 }
 
 export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccount[]> => {

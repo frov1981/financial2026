@@ -1,8 +1,8 @@
 <%
   const rules = loan_form_policy
   const isHidden = field => rules[field] === 'hidden'
-  const isReadOnly = field => rules[field] === 'read'
-  const isEditable = field => rules[field] === 'edit'
+  const isReadOnly = field => rules[field] === 'readonly'
+  const isEditable = field => rules[field] === 'editable'
 %>
 
 <%
@@ -37,7 +37,7 @@ const cancel_url =
     <!-- ID y acción -->
     <input type="hidden" name="id" value="<%= loan?.id || '' %>">
     <input type="hidden" name="mode" value="<%= mode %>">
-    <input type="hidden" name="status" value="<%= loan?.status || 'active' %>">
+    <input type="hidden" name="is_active" value="<%= loan?.is_active || 'true' %>">
     <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
     <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
 

@@ -31,14 +31,6 @@ const getCategoriesBase = async (user_id: number): Promise<Category[]> => {
     return categories
 }
 
-export const deleteCategoriesCache = (auth_req: AuthRequest): void => {
-    const user_id = auth_req.user.id
-    const cache_key = cacheKeys.categoriesByUser(user_id)
-    const cache_key_api = cacheKeys.categoriesByUserForApi(user_id)
-    cache.del(cache_key_api)
-    cache.del(cache_key)
-}
-
 export const getCategories = async (auth_req: AuthRequest): Promise<Category[]> => {
     const user_id = auth_req.user.id
     const categories: Category[] = await getCategoriesBase(user_id)
@@ -55,7 +47,7 @@ export const getCategoryById = async (auth_req: AuthRequest, category_id: number
 export const getCategoryByName = async (auth_req: AuthRequest, name: string): Promise<Category | null> => {
     const user_id = auth_req.user.id
     const categories = await getCategoriesBase(user_id)
-    const category = categories.find(category => category.name === name)
+    const category = categories.find(category => category.name.toLowerCase() === name.toLowerCase())
     return category || null
 }
 

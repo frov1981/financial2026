@@ -2,35 +2,35 @@ import { LoanFormMatrix, } from "../types/form-view-params";
 
 export const loanFormMatrix: LoanFormMatrix = {
     insert: {
-        name: 'edit',
-        total_amount: 'edit',
-        start_date: 'edit',
-        loan_group_id: 'edit',
-        disbursement_account_id: 'edit',
-        category_id: 'edit',
-        note: 'edit',
-        is_active: 'hidden'
+        name: 'editable',
+        total_amount: 'editable',
+        start_date: 'editable',
+        loan_group_id: 'editable',
+        disbursement_account_id: 'editable',
+        category_id: 'editable',
+        note: 'editable',
+        is_active: 'readonly'
     },
 
     update: {
-        name: 'edit',
-        total_amount: 'edit',
-        start_date: 'edit',
-        loan_group_id: 'edit',
-        disbursement_account_id: 'edit',
-        category_id: 'edit',
-        note: 'edit',
-        is_active: 'hidden'
+        name: 'editable',
+        total_amount: 'editable',
+        start_date: 'editable',
+        loan_group_id: 'editable',
+        disbursement_account_id: 'editable',
+        category_id: 'editable',
+        note: 'editable',
+        is_active: 'readonly'
     },
 
     delete: {
-        name: 'read',
-        total_amount: 'read',
-        start_date: 'read',
-        loan_group_id: 'read',
-        disbursement_account_id: 'read',
-        category_id: 'read',
-        note: 'read',
-        is_active: 'read'
+        name: 'readonly',
+        total_amount: 'readonly',
+        start_date: 'readonly',
+        loan_group_id: 'readonly',
+        disbursement_account_id: 'readonly',
+        category_id: 'readonly',
+        note: 'readonly',
+        is_active: 'readonly'
     }
 }

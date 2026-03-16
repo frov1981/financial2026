@@ -1,14 +1,15 @@
 import { Request, RequestHandler, Response } from 'express'
+import { getAccountById } from '../../cache/cache-accounts.service'
+import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { AccountFormMode } from '../../types/form-view-params'
 import { parseBoolean } from '../../utils/bool.util'
-import { logger } from '../../utils/logger.util'
-import { deleteAccountsCache, getAccountById } from '../../cache/cache-accounts.service'
-import { validateDeleteAccount, validateSaveAccount } from './account.validator'
 import { parseError } from '../../utils/error.util'
+import { logger } from '../../utils/logger.util'
+import { validateDeleteAccount, validateSaveAccount } from './account.validator'
 
 /* ============================
    Título según modo
@@ -74,7 +75,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       const errors = await validateDeleteAccount(auth_req, existing)
       if (errors) throw { validationErrors: errors }
       await repo_account.delete(existing.id)
-      deleteAccountsCache(auth_req)
+      deleteAll(auth_req)
       logger.info('Account deleted from database.')
       return res.redirect('/accounts')
     }
@@ -108,7 +109,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     =================================*/
     await repo_account.save(account)
     logger.info('Account saved to database.')
-    deleteAccountsCache(auth_req)
+    deleteAll(auth_req)
     return res.redirect('/accounts')
   } catch (err: any) {
     /* ============================

@@ -1,6 +1,7 @@
 import { Request, RequestHandler, Response } from 'express'
-import { deleteCategoriesCache, getCategoryById } from '../../cache/cache-categories.service'
+import { getCategoryById } from '../../cache/cache-categories.service'
 import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-group.service'
+import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
@@ -57,9 +58,9 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
   logger.debug(`${saveCategory.name}-Start`)
   logger.info('saveCategory called', { body: req.body, param: req.params })
   const auth_req = req as AuthRequest
+  const mode: CategoryFormMode = req.body.mode || 'insert'
   const category_id = Number(req.body.id)
   const category_group_id = Number(req.body.category_group_id)
-  const mode: CategoryFormMode = req.body.mode || 'insert'
   const repo_category = AppDataSource.getRepository(Category)
 
   const form_state = {
@@ -83,7 +84,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       const errors = await validateDeleteCategory(auth_req, existing)
       if (errors) throw { validationErrors: errors }
       await repo_category.delete(existing.id)
-      deleteCategoriesCache(auth_req)
+      deleteAll(auth_req)
       return res.redirect('/categories')
     }
     /* =========================
@@ -121,7 +122,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     =================================*/
     await repo_category.save(category)
     logger.info('Category saved to database.')
-    deleteCategoriesCache(auth_req)
+    deleteAll(auth_req)
     return res.redirect('/categories')
   } catch (err: any) {
     /* ============================

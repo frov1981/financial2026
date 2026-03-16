@@ -1,21 +1,28 @@
 import { Request, RequestHandler, Response } from 'express'
 import { DateTime } from 'luxon'
+import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/cache-accounts.service'
+import { getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
+import { deleteAll } from '../../cache/cache-key.service'
+import { getLoanGroup, getLoanGroupById } from '../../cache/cache-loan-group.service'
+import { getLoanById } from '../../cache/cache-loans.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Category } from '../../entities/Category.entity'
 import { Loan } from '../../entities/Loan.entity'
-import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { loanFormMatrix } from '../../policies/loan-form.policy'
 import { KpiCacheService } from '../../services/kpi-cache.service'
-import { getActiveCategoriesForLoansByUser, getActiveParentLoansByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { LoanFormMode } from '../../types/form-view-params'
+import { parseBoolean } from '../../utils/bool.util'
 import { parseLocalDateToUTC } from '../../utils/date.util'
+import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeleteLoan, validateLoan } from './loan.validator'
-import { getActiveAccounts } from '../../cache/cache-accounts.service'
 
+/* ============================
+   Obtener título según el modo del formulario
+============================ */
 const getTitle = (mode: string) => {
   switch (mode) {
     case 'insert': return 'Insertar Préstamo'
@@ -31,9 +38,8 @@ const getTitle = (mode: string) => {
 const sanitizeByPolicy = (mode: LoanFormMode, body: any) => {
   const policy = loanFormMatrix[mode]
   const clean: any = {}
-
   for (const field in policy) {
-    if ((policy[field] === 'edit' || policy[field] === 'read') && body[field] !== undefined) {
+    if ((policy[field] === 'editable' || policy[field] === 'readonly') && body[field] !== undefined) {
       clean[field] = body[field]
     }
   }
@@ -43,53 +49,20 @@ const sanitizeByPolicy = (mode: LoanFormMode, body: any) => {
 /* ============================
    Construir objeto para la vista
 ============================ */
-const buildLoanView = (body: any, loan_group_list: LoanGroup[], disbursement_account_list: Account[], category_list: Category[]) => {
-  const loan_group_id = body.loan_group_id ? Number(body.loan_group_id) : null
-  const group = loan_group_id ? loan_group_list.find(p => p.id === loan_group_id) || null : null
-
-  const disbursement_id = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
-  const disbursement = disbursement_id ? disbursement_account_list.find(a => a.id === disbursement_id) || null : null
-
-  const category_id = body.category_id ? Number(body.category_id) : null
-  const category = category_id ? category_list.find(c => c.id === category_id) || null : null
-
+const buildLoanView = async (auth_req: AuthRequest, body: any) => {
+  const loan_group_id = Number(body.loan_group_id)
+  const loan_group = await getLoanGroupById(auth_req, loan_group_id)
+  const disbursement_id = Number(body.disbursement_account_id)
+  const disbursement = await getAccountById(auth_req, disbursement_id)
+  const category_id = Number(body.category_id)
+  const category = await getCategoryById(auth_req, category_id)
   return {
     ...body,
-    loan_group: group ? { id: group.id, name: group.name } : null,
-    disbursement_account: disbursement ? { id: disbursement.id, name: disbursement.name } : null,
-    category: category ? { id: category.id, name: category.name } : null
+    is_active: parseBoolean(body.is_active),
+    loan_group,
+    disbursement,
+    category
   }
-}
-
-/* ============================
-    Obtener grupo de préstamo desde el body y la lista de grupos del usuario  
-============================ */
-const findLoanGroupByBody = (body: any, loan_group_list: LoanGroup[]): LoanGroup | null => {
-  const loan_group_id = body.loan_group_id ? Number(body.loan_group_id) : null
-
-  if (!loan_group_id) return null
-
-  return loan_group_list.find(p => p.id === loan_group_id) || null
-}
-
-/* ============================
-   Obtener cuenta de desembolso desde el body y la lista de cuentas del usuario  
-============================ */
-const findDisbursementAccountByBody = (body: any, disbursement_account_list: Account[]): Account | null => {
-  const disbursement_account_id = body.disbursement_account_id ? Number(body.disbursement_account_id) : null
-
-  if (!disbursement_account_id) return null
-
-  return disbursement_account_list.find(a => a.id === disbursement_account_id) || null
-}
-
-/* Obtiene una categoría activa por id desde el arreglo ya cargado */
-function findCategorybyBody(body: any, active_category_list: Category[]): Category | null {
-  const category_id = body.category_id ? Number(body.category_id) : null
-
-  if (!category_id) return null
-
-  return active_category_list.find(c => c.id === category_id) || null
 }
 
 /* ============================
@@ -98,104 +71,74 @@ function findCategorybyBody(body: any, active_category_list: Category[]): Catego
 export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   logger.debug(`${saveLoan.name}-Start`)
   logger.info('saveLoan called', { body: req.body, param: req.params })
-
   const auth_req = req as AuthRequest
-  const user_id = auth_req.user.id
-  const loan_id = req.body.id ? Number(req.body.id) : undefined
   const mode: LoanFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
+  const user_id = auth_req.user.id
+  const loan_id = Number(req.body.id)
+  const loan_group_id = Number(req.body.loan_group_id)
+  const disbursement_id = Number(req.body.disbursement_account_id)
+  const category_id = Number(req.body.category_id)
   const return_from = req.body.return_from
   const return_category_id = Number(req.body.return_category_id) || null
 
-  logger.debug(`${saveLoan.name}-Timezone for saving loan: [${timezone}]`)
-
-  const loan_group_list = await getActiveParentLoansByUser(auth_req)
-  /*const disbursement_account_list = await getActiveAccountsByUser(auth_req)*/
-  const disbursement_account_list = await getActiveAccounts(auth_req)
-  const active_income_category_list = await getActiveCategoriesForLoansByUser(auth_req)
-
-  const loan_view = buildLoanView(req.body, loan_group_list, disbursement_account_list, active_income_category_list)
-
   const form_state = {
-    loan: loan_view,
-    loan_group_list,
-    disbursement_account_list,
-    active_income_category_list,
+    loan: await buildLoanView(auth_req, req.body),
+    loan_group_list: await getLoanGroup(auth_req),
+    disbursement_account_list: await getActiveAccountsForDisbursement(auth_req),
+    active_income_category_list: await getActiveIncomeCategories(auth_req),
     loan_form_policy: loanFormMatrix[mode],
     mode,
-    context: {
-      from: return_from || null,
-      category_id: return_category_id || null
-    }
+    context: { from: return_from, category_id: return_category_id }
   }
 
   const queryRunner = AppDataSource.createQueryRunner()
   const loanRepo = queryRunner.manager.getRepository(Loan)
-
   await queryRunner.connect()
   await queryRunner.startTransaction()
-
   try {
     let existing: Loan | null = null
-
     if (loan_id) {
-      existing = await loanRepo.findOne({
-        where: { id: loan_id, user: { id: auth_req.user.id } },
-        relations: { disbursement_account: true, transaction: true, loan_group: true, category: true }
-      })
+      existing = await getLoanById(auth_req, loan_id)
       if (!existing) throw new Error('Préstamo no encontrado')
     }
-
     /* =========================
        DELETE
     ============================ */
     if (mode === 'delete') {
       if (!existing) throw new Error('Préstamo no encontrado')
-
-      const errors = await validateDeleteLoan(existing, auth_req)
+      const errors = await validateDeleteLoan(auth_req, existing)
       if (errors) throw { validationErrors: errors }
-
       const local_date = DateTime.fromJSDate(existing.transaction.date, { zone: 'utc' }).setZone(timezone)
       const period_year = local_date.year
       const period_month = local_date.month
-
       if (existing.disbursement_account) {
-        const account = await queryRunner.manager.findOneByOrFail(Account, {
-          id: existing.disbursement_account.id,
-          user: { id: auth_req.user.id }
-        })
-
+        const account = await getAccountById(auth_req, disbursement_id)
+        if (!account) throw new Error('Cuenta de desembolso no encontrado')
         account.balance -= existing.total_amount
         await queryRunner.manager.save(account)
       }
-
       const transaction_id = existing.transaction?.id || null
-
       await queryRunner.manager.delete(Loan, existing.id)
       if (transaction_id) {
         await queryRunner.manager.delete(Transaction, transaction_id)
       }
-
       await queryRunner.commitTransaction()
       KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
-
+      deleteAll(auth_req)
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
       }
-
       return res.redirect('/loans')
     }
-
     /* =========================
        INSERT / UPDATE
     ============================ */
     let loan: Loan
-
     if (mode === 'insert') {
-      const selected_group = findLoanGroupByBody(req.body, loan_group_list)
-      const selected_disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account_list)
-      const selected_category = findCategorybyBody(req.body, active_income_category_list)
-
+      const loan_group = await getLoanGroupById(auth_req, loan_group_id)
+      const disbursement = await getAccountById(auth_req, disbursement_id)
+      const category = await getCategoryById(auth_req, category_id)
       loan = queryRunner.manager.create(Loan, {
         user: { id: auth_req.user.id } as any,
         name: req.body.name,
@@ -203,25 +146,26 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         interest_paid: 0,
         balance: 0,
         start_date: parseLocalDateToUTC(req.body.start_date, timezone),
-        loan_group: selected_group,
-        disbursement_account: selected_disbursement_account,
-        category: selected_category,
+        loan_group: loan_group,
+        disbursement_account: disbursement,
+        category: category,
         is_active: true
       })
     } else {
       if (!existing) throw new Error('Préstamo no encontrado')
       loan = existing
     }
-
+    /*=================================
+      Aplicar sanitización por policy
+    =================================*/
     const clean = sanitizeByPolicy(mode, req.body)
-
     if (clean.name !== undefined) loan.name = clean.name
     if (clean.start_date !== undefined) loan.start_date = parseLocalDateToUTC(clean.start_date, timezone)
-    if (clean.is_active !== undefined) loan.is_active = clean.is_active === 'true' || clean.is_active === '1'
+    if (clean.is_active !== undefined) loan.is_active = parseBoolean(clean.is_active)
     if (clean.note !== undefined) loan.note = clean.note
-    if (clean.loan_group_id !== undefined) { loan.loan_group = findLoanGroupByBody(req.body, loan_group_list) }
-    if (clean.disbursement_account_id !== undefined) { loan.disbursement_account = findDisbursementAccountByBody(req.body, disbursement_account_list) }
-    if (clean.category_id !== undefined) { loan.category = findCategorybyBody(req.body, active_income_category_list) }
+    if (clean.loan_group_id !== undefined) { loan.loan_group = await getLoanGroupById(auth_req, loan_group_id) }
+    if (clean.disbursement_account_id !== undefined) { loan.disbursement_account = await getAccountById(auth_req, disbursement_id) }
+    if (clean.category_id !== undefined) { loan.category = await getCategoryById(auth_req, category_id) }
 
     let new_account: Account | null = loan.disbursement_account || null
     let new_category: Category | null = loan.category || null
@@ -294,9 +238,13 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       }
     }
 
-    const errors = await validateLoan(loan, auth_req)
+    const errors = await validateLoan(auth_req, loan)
     if (errors) throw { validationErrors: errors }
 
+
+    /*=================================
+      Guardar en base de datos y limpiar cache
+    =================================*/
     await queryRunner.manager.save(loan)
     await queryRunner.commitTransaction()
 
@@ -307,25 +255,24 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
     }
 
+    deleteAll(auth_req)
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
     }
-
     return res.redirect('/loans')
-
   } catch (err: any) {
+    /* ============================
+       Manejo de errores
+    ============================ */
     await queryRunner.rollbackTransaction()
-
     logger.error(`${saveLoan.name}-Error. `, {
       user_id: auth_req.user.id,
       loan_id,
       mode,
-      error: err,
-      stack: err?.stack
+      error: parseError(err),
     })
 
     let validationErrors: Record<string, string> | null = null
-
     switch (err?.code) {
       case 'DISBURSEMENT_REQUIRED':
         validationErrors = { disbursement_account: 'Cuenta de desembolso requerida' }
@@ -337,7 +284,6 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         validationErrors = { category: 'Categoría seleccionada no encontrada' }
         break
       default:
-        // errores que vengan de validateLoan
         validationErrors = err?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     }
     return res.render('layouts/main', {

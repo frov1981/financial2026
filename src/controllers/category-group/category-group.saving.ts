@@ -7,8 +7,9 @@ import { validateCategoryGroup, validateDeleteCategoryGroup } from './category-g
 import { CategoryGroupFormMode } from '../../types/form-view-params'
 import { categoryGroupFormMatrix } from '../../policies/category-group-form.policy'
 import { parseBoolean } from '../../utils/bool.util'
-import { deleteCategoryGroupCache, getCategoryGroupById } from '../../cache/cache-category-group.service'
+import { getCategoryGroupById } from '../../cache/cache-category-group.service'
 import { parseError } from '../../utils/error.util'
+import { deleteAll } from '../../cache/cache-key.service'
 
 /* ============================
    Obtener título según el modo del formulario
@@ -78,7 +79,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
       const errors = await validateDeleteCategoryGroup(existing, auth_req)
       if (errors) throw { validationErrors: errors }
       await repo_category_group.delete(existing.id)
-      deleteCategoryGroupCache(auth_req)
+      deleteAll(auth_req)
       return res.redirect('/categories')
     }
     /* =========================
@@ -107,7 +108,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
       Guardar en base de datos y limpiar cache
     =================================*/
     await repo_category_group.save(category_group)
-    deleteCategoryGroupCache(auth_req)
+    deleteAll(auth_req)
     return res.redirect('/categories')
   } catch (err: any) {
     /* ============================
