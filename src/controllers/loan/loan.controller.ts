@@ -37,22 +37,6 @@ const renderLoanForm = async (res: Response, params: LoanFormViewParams) => {
   })
 }
 
-export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${apiForGettingLoans.name}-Start`)
-  const auth_req = req as AuthRequest
-  try {
-    const result = await getLoansForApi(auth_req)
-    logger.debug(`${apiForGettingLoans.name}-Loans found: [${result.loans.length}]`)
-    logger.debug(`${apiForGettingLoans.name}-Loan groups with totals calculated: [${result.group_totals.length}]`)
-    res.json(result)
-  } catch (error) {
-    logger.error(`${apiForGettingLoans.name}-Error. `, error)
-    res.status(500).json({ error: 'Error al listar préstamos' })
-  } finally {
-    logger.debug(`${apiForGettingLoans.name}-End`)
-  }
-}
-
 export const routeToPageLoan: RequestHandler = (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
   res.render(
@@ -155,3 +139,21 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
   })
 }
 
+/*=================================================
+Api para devolver el DTO Loan en JSON
+==================================================*/
+export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
+  logger.debug(`${apiForGettingLoans.name}-Start`)
+  const auth_req = req as AuthRequest
+  try {
+    const result = await getLoansForApi(auth_req)
+    logger.debug(`${apiForGettingLoans.name}-Loans found: [${result.loans.length}]`)
+    logger.debug(`${apiForGettingLoans.name}-Loan groups with totals calculated: [${result.group_totals.length}]`)
+    res.json(result)
+  } catch (error) {
+    logger.error(`${apiForGettingLoans.name}-Error. `, error)
+    res.status(500).json({ error: 'Error al listar préstamos' })
+  } finally {
+    logger.debug(`${apiForGettingLoans.name}-End`)
+  }
+}

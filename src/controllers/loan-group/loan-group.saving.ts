@@ -1,9 +1,14 @@
 import { Request, RequestHandler, Response } from 'express'
+import { deleteAll } from '../../cache/cache-key.service'
+import { getLoanGroupById } from '../../cache/cache-loan-group.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import { AuthRequest } from '../../types/auth-request'
-import { logger } from '../../utils/logger.util'
-import { loanGroupFormMatrix, LoanGroupFormMode } from '../../policies/loan-group-form.policy'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
+import { loanGroupFormMatrix } from '../../policies/loan-group-form.policy'
+import { AuthRequest } from '../../types/auth-request'
+import { LoanGroupFormMode } from '../../types/form-view-params'
+import { parseBoolean } from '../../utils/bool.util'
+import { parseError } from '../../utils/error.util'
+import { logger } from '../../utils/logger.util'
 import { validateDeleteLoanGroup, validateLoanGroup } from './loan-group.validator'
 
 /* ============================
@@ -24,13 +29,11 @@ const getTitle = (mode: string) => {
 const sanitizeByPolicy = (mode: LoanGroupFormMode, body: any) => {
     const policy = loanGroupFormMatrix[mode]
     const clean: any = {}
-
     for (const field in policy) {
-        if (policy[field] === 'edit' && body[field] !== undefined) {
+        if ((policy[field] === 'editable' || policy[field] === 'readonly') && body[field] !== undefined) {
             clean[field] = body[field]
         }
     }
-
     return clean
 }
 
@@ -40,6 +43,7 @@ const sanitizeByPolicy = (mode: LoanGroupFormMode, body: any) => {
 const buildLoanGroupView = (body: any, mode: LoanGroupFormMode) => {
     return {
         ...body,
+        is_active: parseBoolean(body.is_active),
     }
 }
 
@@ -49,48 +53,37 @@ const buildLoanGroupView = (body: any, mode: LoanGroupFormMode) => {
 export const saveLoanGroup: RequestHandler = async (req: Request, res: Response) => {
     logger.debug(`${saveLoanGroup.name}-Start`)
     logger.info('saveLoanGroup called', { body: req.body, param: req.params })
-
     const auth_req = req as AuthRequest
-    const loan_group_id = req.body.id ? Number(req.body.id) : undefined
+    const loan_group_id = Number(req.body.id)
     const mode: LoanGroupFormMode = req.body.mode || 'insert'
-
     const repo_loan_group = AppDataSource.getRepository(LoanGroup)
     const loan_group_view = buildLoanGroupView(req.body, mode)
-
     const form_state = {
         loan_group: loan_group_view,
         loan_group_form_policy: loanGroupFormMatrix[mode],
         mode
     }
-
     try {
         let existing: LoanGroup | null = null
-
         if (loan_group_id) {
-            existing = await repo_loan_group.findOne({
-                where: { id: loan_group_id, user: { id: auth_req.user.id } },
-            })
+            existing = await getLoanGroupById(auth_req, loan_group_id)
             if (!existing) throw new Error('Grupo de Préstamos no encontrada')
         }
-
         /* =========================
            DELETE
         ============================ */
         if (mode === 'delete') {
             if (!existing) throw new Error('Grupo de Préstamos no encontrada')
-
-            const errors = await validateDeleteLoanGroup(existing, auth_req)
+            const errors = await validateDeleteLoanGroup(auth_req, existing)
             if (errors) throw { validationErrors: errors }
-
             await repo_loan_group.delete(existing.id)
+            deleteAll(auth_req, 'loan_group')
             return res.redirect('/loans')
         }
-
         /* =========================
-           INSERT / UPDATE / STATUS
+           INSERT / UPDATE
         ============================ */
         let loan_group: LoanGroup
-
         if (mode === 'insert') {
             loan_group = repo_loan_group.create({
                 user: { id: auth_req.user.id } as any,
@@ -101,29 +94,32 @@ export const saveLoanGroup: RequestHandler = async (req: Request, res: Response)
             if (!existing) throw new Error('Grupo de Préstamos no encontrada')
             loan_group = existing
         }
-
+        /*=================================
+          Aplicar sanitización por policy
+        =================================*/
         const clean = sanitizeByPolicy(mode, req.body)
 
         if (clean.name !== undefined) loan_group.name = clean.name
-        if (clean.is_active !== undefined) { loan_group.is_active = clean.is_active === 'true' || clean.is_active === '1' }
-
-        const errors = await validateLoanGroup(loan_group, auth_req)
+        if (clean.is_active !== undefined) { loan_group.is_active = parseBoolean(clean.is_active) }
+        const errors = await validateLoanGroup(auth_req, loan_group)
         if (errors) throw { validationErrors: errors }
-
+        /*=================================
+        Guardar en base de datos y limpiar cache
+        =================================*/
         await repo_loan_group.save(loan_group)
+        deleteAll(auth_req, 'loan_group')
         return res.redirect('/loans')
-
     } catch (err: any) {
+        /* ============================
+           Manejo de errores
+        ============================ */
         logger.error(`${saveLoanGroup.name}-Error. `, {
             user_id: auth_req.user.id,
             loan_group_id: loan_group_id,
             mode,
-            error: err,
-            stack: err?.stack
+            error: parseError(err),
         })
-
         const validationErrors = err?.validationErrors || null
-
         return res.render('layouts/main', {
             title: getTitle(mode),
             view: 'pages/loan-groups/form',

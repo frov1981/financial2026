@@ -8,6 +8,10 @@ import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
+import { getLoanById, getLoanByName } from '../../cache/cache-loans.service'
+import { getAccountById, getActiveAccountById } from '../../cache/cache-accounts.service'
+import { getActiveCategoryById } from '../../cache/cache-categories.service'
+import { getActiveLoanGroupById } from '../../cache/cache-loan-group.service'
 
 export const validateLoan = async (auth_req: AuthRequest, loan: Loan): Promise<Record<string, string> | null> => {
   const user_id = auth_req.user.id
@@ -15,14 +19,10 @@ export const validateLoan = async (auth_req: AuthRequest, loan: Loan): Promise<R
   const errors = await validate(loan_instance)
   const field_errors = errors.length > 0 ? mapValidationErrors(errors) : {}
   // Validaciones class-validator
-  const loan_repo = AppDataSource.getRepository(Loan)
   const payment_repo = AppDataSource.getRepository(LoanPayment)
-  const account_repo = AppDataSource.getRepository(Account)
-  const category_repo = AppDataSource.getRepository(Category)
-  const loan_group_repo = AppDataSource.getRepository(LoanGroup)
   // Nombre único por usuario
   if (loan.name && user_id) {
-    const existing_by_name = await loan_repo.findOne({ where: { name: loan.name, user: { id: user_id } } })
+    const existing_by_name = await getLoanByName(auth_req, loan.name)
     if (existing_by_name && existing_by_name.id !== loan.id) field_errors.name = 'Ya existe un préstamo con este nombre'
   }
   // Monto total obligatorio y > 0
@@ -33,44 +33,30 @@ export const validateLoan = async (auth_req: AuthRequest, loan: Loan): Promise<R
   if (!loan.disbursement_account || !loan.disbursement_account.id) {
     field_errors.disbursement_account = 'Debe seleccionar una cuenta de desembolso'
   } else {
-    const account = await account_repo.findOne({
-      where: { id: loan.disbursement_account.id, user: { id: user_id }, is_active: true }
-    })
+    const account = await getActiveAccountById(auth_req, loan.disbursement_account.id)
     if (!account) field_errors.disbursement_account = 'La cuenta de desembolso no es válida o no pertenece al usuario'
   }
   // Validación categoría
   if (loan.category && loan.category.id) {
-    const category = await category_repo.findOne({
-      where: { id: loan.category.id, user: { id: user_id }, is_active: true }
-    })
+    const category = await getActiveCategoryById(auth_req, loan.category.id)
     if (!category) field_errors.category = 'La categoría no es válida o no pertenece al usuario'
   }
   // Grupo de préstamo obligatorio
   if (!loan.loan_group || !loan.loan_group.id) {
     field_errors.loan_group = 'Debe seleccionar un grupo de préstamo'
   } else {
-    const loan_group = await loan_group_repo.findOne({
-      where: { id: loan.loan_group.id, user: { id: user_id }, is_active: true }
-    })
+    const loan_group = await getActiveLoanGroupById(auth_req, loan.loan_group.id)
     if (!loan_group) field_errors.loan_group = 'El grupo de préstamo no es válido o no pertenece al usuario'
   }
   // Validaciones solo en edición
   if (loan.id) {
-    const existing_loan = await loan_repo.findOne({
-      where: { id: loan.id, user: { id: user_id } },
-      relations: { disbursement_account: true }
-    })
+    const existing_loan = await getLoanById(auth_req, loan.id)
     if (!existing_loan) {
       field_errors.general = 'Préstamo no encontrado o no pertenece al usuario'
     } else {
       const payments = await payment_repo.find({ where: { loan: { id: loan.id } } })
-      const totalPrincipalPaidCents = payments.reduce(
-        (sum, p) => sum + Math.round(Number(p.principal_paid) * 100),
-        0
-      )
-      const totalAmountCents = loan.total_amount !== undefined
-        ? Math.round(Number(loan.total_amount) * 100)
-        : 0
+      const totalPrincipalPaidCents = payments.reduce((sum, p) => sum + Math.round(Number(p.principal_paid) * 100), 0)
+      const totalAmountCents = loan.total_amount !== undefined ? Math.round(Number(loan.total_amount) * 100) : 0
       // Validación modificación monto
       if (loan.total_amount !== undefined && Number(existing_loan.total_amount) !== Number(loan.total_amount)) {
         if (payments.length > 0) {

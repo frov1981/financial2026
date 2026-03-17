@@ -62,14 +62,12 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
   const category_id = Number(req.body.id)
   const category_group_id = Number(req.body.category_group_id)
   const repo_category = AppDataSource.getRepository(Category)
-
   const form_state = {
     category: await buildCategoryView(auth_req, req.body),
     category_group_list: await getActiveCategoryGroup(auth_req),
     category_form_policy: categoryFormMatrix[mode],
     mode
   }
-
   try {
     let existing: Category | null = null
     if (category_id) {
@@ -84,14 +82,13 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       const errors = await validateDeleteCategory(auth_req, existing)
       if (errors) throw { validationErrors: errors }
       await repo_category.delete(existing.id)
-      deleteAll(auth_req)
+      deleteAll(auth_req, 'category')
       return res.redirect('/categories')
     }
     /* =========================
        INSERT / UPDATE
     ============================ */
     let category: Category
-
     if (mode === 'insert') {
       const selected_group = await getCategoryGroupById(auth_req, category_group_id)
       category = repo_category.create({
@@ -122,7 +119,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     =================================*/
     await repo_category.save(category)
     logger.info('Category saved to database.')
-    deleteAll(auth_req)
+    deleteAll(auth_req, 'category')
     return res.redirect('/categories')
   } catch (err: any) {
     /* ============================

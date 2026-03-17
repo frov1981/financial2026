@@ -3,7 +3,7 @@ import { DateTime } from 'luxon'
 import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/cache-accounts.service'
 import { getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
 import { deleteAll } from '../../cache/cache-key.service'
-import { getLoanGroup, getLoanGroupById } from '../../cache/cache-loan-group.service'
+import { getActiveLoanGroup, getLoanGroupById } from '../../cache/cache-loan-group.service'
 import { getLoanById } from '../../cache/cache-loans.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
@@ -51,10 +51,10 @@ const sanitizeByPolicy = (mode: LoanFormMode, body: any) => {
 ============================ */
 const buildLoanView = async (auth_req: AuthRequest, body: any) => {
   const loan_group_id = Number(body.loan_group_id)
-  const loan_group = await getLoanGroupById(auth_req, loan_group_id)
   const disbursement_id = Number(body.disbursement_account_id)
-  const disbursement = await getAccountById(auth_req, disbursement_id)
   const category_id = Number(body.category_id)
+  const loan_group = await getLoanGroupById(auth_req, loan_group_id)
+  const disbursement = await getAccountById(auth_req, disbursement_id)
   const category = await getCategoryById(auth_req, category_id)
   return {
     ...body,
@@ -84,7 +84,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
   const form_state = {
     loan: await buildLoanView(auth_req, req.body),
-    loan_group_list: await getLoanGroup(auth_req),
+    loan_group_list: await getActiveLoanGroup(auth_req),
     disbursement_account_list: await getActiveAccountsForDisbursement(auth_req),
     active_income_category_list: await getActiveIncomeCategories(auth_req),
     loan_form_policy: loanFormMatrix[mode],
@@ -93,7 +93,6 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   }
 
   const queryRunner = AppDataSource.createQueryRunner()
-  const loanRepo = queryRunner.manager.getRepository(Loan)
   await queryRunner.connect()
   await queryRunner.startTransaction()
   try {
@@ -125,7 +124,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       }
       await queryRunner.commitTransaction()
       KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
-      deleteAll(auth_req)
+      deleteAll(auth_req, 'loan')
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
       }
@@ -166,12 +165,10 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     if (clean.loan_group_id !== undefined) { loan.loan_group = await getLoanGroupById(auth_req, loan_group_id) }
     if (clean.disbursement_account_id !== undefined) { loan.disbursement_account = await getAccountById(auth_req, disbursement_id) }
     if (clean.category_id !== undefined) { loan.category = await getCategoryById(auth_req, category_id) }
-
     let new_account: Account | null = loan.disbursement_account || null
     let new_category: Category | null = loan.category || null
     let previous_amount = loan.total_amount
     let previous_balance = loan.balance
-
     if (clean.total_amount !== undefined) {
       const new_amount = Number(clean.total_amount)
       if (mode === 'insert') {
@@ -183,16 +180,13 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         loan.balance = new_amount - paidAmount
       }
     }
-
     if (mode === 'insert') {
       if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
       if (!new_category) { throw { code: 'CATEGORY_NOT_FOUND' } }
       new_account.balance += loan.total_amount
       await queryRunner.manager.save(new_account)
-
       loan.disbursement_account = new_account
       loan.category = new_category
-
       const transaction = queryRunner.manager.create(Transaction, {
         user: { id: auth_req.user.id } as any,
         type: 'income',
@@ -202,20 +196,14 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         date: loan.start_date,
         description: loan.name
       })
-
       await queryRunner.manager.save(transaction)
       loan.transaction = transaction
-
     } else {
       if (!loan.disbursement_account) { throw { code: 'DISBURSEMENT_NOT_FOUND' } }
       if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
       if (!new_category) { throw { code: 'CATEGORY_NOT_FOUND' } }
-
-      const old_account = await queryRunner.manager.findOneByOrFail(Account, {
-        id: loan.disbursement_account.id,
-        user: { id: auth_req.user.id }
-      })
-
+      const old_account = await getAccountById(auth_req, loan.disbursement_account.id)
+      if (!old_account) throw { code: 'DISBURSEMENT_REQUIRED' }
       if (old_account.id === new_account.id) {
         const delta = loan.total_amount - previous_amount
         old_account.balance += delta
@@ -225,9 +213,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         new_account.balance += loan.total_amount
         await queryRunner.manager.save([old_account, new_account])
       }
-
       loan.disbursement_account = new_account
-
       if (loan.transaction?.id) {
         loan.transaction.amount = loan.total_amount
         loan.transaction.date = loan.start_date
@@ -237,25 +223,20 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         await queryRunner.manager.save(loan.transaction)
       }
     }
-
     const errors = await validateLoan(auth_req, loan)
     if (errors) throw { validationErrors: errors }
-
-
     /*=================================
       Guardar en base de datos y limpiar cache
     =================================*/
     await queryRunner.manager.save(loan)
     await queryRunner.commitTransaction()
-
     if (loan.transaction) {
       const local_date = DateTime.fromJSDate(loan.transaction.date, { zone: 'utc' }).setZone(timezone)
       const period_year = local_date.year
       const period_month = local_date.month
       KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
     }
-
-    deleteAll(auth_req)
+    deleteAll(auth_req, 'loan')
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
     }
@@ -271,7 +252,6 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       mode,
       error: parseError(err),
     })
-
     let validationErrors: Record<string, string> | null = null
     switch (err?.code) {
       case 'DISBURSEMENT_REQUIRED':

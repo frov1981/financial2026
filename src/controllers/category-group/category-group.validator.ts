@@ -1,12 +1,11 @@
+import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
+import { getCategoryGroupByName } from '../../cache/cache-category-group.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { CategoryGroup } from '../../entities/CategoryGroups.entity'
 import { AuthRequest } from '../../types/auth-request'
-import { logger } from '../../utils/logger.util'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
-import { plainToInstance } from 'class-transformer'
-import { getCategoryGroupByName } from '../../cache/cache-category-group.service'
 
 export const validateCategoryGroup = async (category_group: CategoryGroup, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
   const category_group_instance = plainToInstance(CategoryGroup, category_group)

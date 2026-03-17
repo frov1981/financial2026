@@ -19,9 +19,9 @@ type DTOLoan = {
     is_active: boolean
     created_at: Date
     note: string | null
-    disbursement_account: Account | null
-    category: Category | null
-    loan_group: LoanGroup | null
+    disbursement_account: { id: number, name: string } | null
+    category: { id: number, name: string } | null
+    loan_group: { id: number, name: string } | null
 }
 
 type DTOLoanGroupTotal = {
@@ -118,15 +118,17 @@ export const getLoansForApi = async (auth_req: AuthRequest): Promise<{ loans: DT
         is_active: loan.is_active,
         created_at: loan.created_at,
         note: loan.note,
-        disbursement_account: loan.disbursement_account,
-        category: loan.category,
-        loan_group: loan.loan_group
+        disbursement_account: loan.disbursement_account ? { id: loan.disbursement_account.id, name: loan.disbursement_account.name } : null,
+        category: loan.category ? { id: loan.category.id, name: loan.category.name } : null,
+        loan_group: loan.loan_group ? { id: loan.loan_group.id, name: loan.loan_group.name } : null
     }))
 
     const group_totals_map: Record<number, DTOLoanGroupTotal> = {}
+
     for (const loan of result) {
         if (!loan.loan_group) continue
         const group_id = loan.loan_group.id
+
         if (!group_totals_map[group_id]) {
             group_totals_map[group_id] = {
                 loan_group_id: group_id,
@@ -134,6 +136,7 @@ export const getLoansForApi = async (auth_req: AuthRequest): Promise<{ loans: DT
                 total_balance: 0
             }
         }
+
         group_totals_map[group_id].total_balance += Number(loan.balance)
     }
 

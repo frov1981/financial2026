@@ -5,13 +5,13 @@ import { AuthRequest } from "../types/auth-request"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
 
-type DTOCategory = {
+export type DTOCategory = {
     id: number
     name: string
     type: 'income' | 'expense'
     type_for_loan: 'loan' | 'payment' | null
     is_active: boolean
-    category_group: CategoryGroup | null
+    category_group: { id: number, name: string } | null
     transactions_count: number
 }
 
@@ -94,40 +94,39 @@ export const getActivePaymentCategories = async (auth_req: AuthRequest): Promise
 }
 
 export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCategory[]> => {
-    const user_id = auth_req.user.id
-    const cache_key = cacheKeys.categoriesByUserForApi(user_id)
-    const cached_categories = cache.get<DTOCategory[]>(cache_key)
-    if (cached_categories !== undefined) {
-        return cached_categories
-    }
+  const user_id = auth_req.user.id
+  const cache_key = cacheKeys.categoriesByUserForApi(user_id)
+  const cached_categories = cache.get<DTOCategory[]>(cache_key)
+  if (cached_categories !== undefined) {
+    return cached_categories
+  }
+  const repository = AppDataSource.getRepository(Category)
+  const result = await repository
+    .createQueryBuilder('category')
+    .innerJoin('category.user', 'user')
+    .innerJoinAndSelect('category.category_group', 'group')
+    .where('user.id = :user_id', { user_id })
+    .addSelect(subQuery =>
+      subQuery
+        .select('COUNT(t.id)')
+        .from('transactions', 't')
+        .where('t.category_id = category.id'),
+      'transactions_count'
+    )
+    .orderBy('group.name', 'ASC')
+    .addOrderBy('category.name', 'ASC')
+    .getRawAndEntities()
 
-    const repository = AppDataSource.getRepository(Category)
-    const result = await repository
-        .createQueryBuilder('category')
-        .innerJoin('category.user', 'user')
-        .innerJoinAndSelect('category.category_group', 'group')
-        .where('user.id = :user_id', { user_id })
-        .addSelect(subQuery =>
-            subQuery
-                .select('COUNT(t.id)')
-                .from('transactions', 't')
-                .where('t.category_id = category.id'),
-            'transactions_count'
-        )
-        .orderBy('group.name', 'ASC')
-        .addOrderBy('category.name', 'ASC')
-        .getRawAndEntities()
+  const categories: DTOCategory[] = result.entities.map((category, index) => ({
+    id: category.id,
+    name: category.name,
+    type: category.type,
+    type_for_loan: category.type_for_loan,
+    is_active: category.is_active,
+    category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
+    transactions_count: Number(result.raw[index].transactions_count)
+  }))
 
-    const categories: DTOCategory[] = result.entities.map((category, index) => ({
-        id: category.id,
-        name: category.name,
-        type: category.type,
-        type_for_loan: category.type_for_loan,
-        is_active: category.is_active,
-        category_group: category.category_group || null,
-        transactions_count: Number(result.raw[index].transactions_count)
-    }))
-
-    cache.set(cache_key, categories)
-    return categories
+  cache.set(cache_key, categories)
+  return categories
 }

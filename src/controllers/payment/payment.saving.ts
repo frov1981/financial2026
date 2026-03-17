@@ -16,6 +16,7 @@ import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
+import { deleteAll } from '../../cache/cache-key.service'
 
 /* ============================
    Helpers
@@ -203,6 +204,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             }
 
             await queryRunner.commitTransaction()
+            deleteAll(auth_req, 'payment')
 
             KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone)
                 .catch(err => logger.error(`${savePayment.name}-Error recalculando KPI`, { err }))
@@ -357,6 +359,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         const period_year = local_date.year
         const period_month = local_date.month
 
+        deleteAll(auth_req, 'payment')
         KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone)
             .catch(err => logger.error(`${savePayment.name}-Error recalculando KPI`, { err }))
 

@@ -1,5 +1,5 @@
 import { Request, RequestHandler, Response } from 'express'
-import { getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
+import { DTOCategory, getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
 import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
@@ -26,21 +26,6 @@ const renderCategoryForm = async (res: Response, params: CategoryFormViewParams)
     category_form_policy,
     category_group_list,
   })
-}
-
-export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${apiForGettingCategories.name}-Start`)
-  const auth_req = req as AuthRequest
-  try {
-    const categories = await getCategoriesForApi(auth_req)
-    logger.debug(`${apiForGettingCategories.name}-CategoriesRetrieved. Count: ${categories.length}`)
-    res.json(categories)
-  } catch (error) {
-    logger.error(`${apiForGettingCategories.name}-Error. `, parseError(error))
-    res.status(500).json({ error: 'Error al listar categorías' })
-  } finally {
-    logger.debug(`${apiForGettingCategories.name}-End`)
-  }
 }
 
 export const routeToPageCategory: RequestHandler = (req: Request, res: Response) => {
@@ -104,4 +89,22 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
     auth_req,
     category,
   })
+}
+
+/*=================================================
+Api para devolver el DTO Category en JSON
+==================================================*/
+export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
+  logger.debug(`${apiForGettingCategories.name}-Start`)
+  const auth_req = req as AuthRequest
+  try {
+    const categories: DTOCategory[] = await getCategoriesForApi(auth_req)
+    logger.debug(`${apiForGettingCategories.name}-DTOCategory. Count: ${categories.length}`)
+    res.json(categories)
+  } catch (error) {
+    logger.error(`${apiForGettingCategories.name}-Error. `, parseError(error))
+    res.status(500).json({ error: 'Error al listar categorías' })
+  } finally {
+    logger.debug(`${apiForGettingCategories.name}-End`)
+  }
 }

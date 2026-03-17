@@ -4,7 +4,7 @@ import { AuthRequest } from "../types/auth-request";
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
-type DTOAccount = {
+export type DTOAccount = {
     id: number
     name: string
     type: string

@@ -4,7 +4,6 @@ import { AuthRequest } from "../types/auth-request"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
 
-
 const getLoanGroupBase = async (user_id: number): Promise<LoanGroup[]> => {
     const cache_key = cacheKeys.loanGroupByUser(user_id)
     const cached_loan_group = cache.get<LoanGroup[]>(cache_key)
@@ -40,7 +39,7 @@ export const getLoanGroupByName = async (auth_req: AuthRequest, name: string): P
     return loan_group || null
 }
 
-export const getActiveLoanGroupById = async (loan_group_id: number, auth_req: AuthRequest): Promise<LoanGroup | null> => {
+export const getActiveLoanGroupById = async (auth_req: AuthRequest, loan_group_id: number): Promise<LoanGroup | null> => {
     const user_id = auth_req.user.id
     const loan_groups = await getLoanGroupBase(user_id)
     const loan_group = loan_groups.find(loan_group => loan_group.id === loan_group_id && loan_group.is_active)

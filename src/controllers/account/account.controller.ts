@@ -1,5 +1,5 @@
 import { Request, RequestHandler, Response } from 'express'
-import { getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
+import { DTOAccount, getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
 import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
@@ -23,21 +23,6 @@ const renderAccountForm = async (res: Response, params: AccountFormViewParams) =
     account,
     account_form_policy,
   })
-}
-
-export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${apiForGettingAccounts.name}-Start`)
-  const auth_req = req as AuthRequest
-  try {
-    const accounts = await getAccountsForApi(auth_req)
-    logger.debug(`${apiForGettingAccounts.name}-AccountsRetrieved. Count: ${accounts.length}`)
-    res.json(accounts)
-  } catch (error) {
-    logger.error(`${apiForGettingAccounts.name}-Error. `, parseError(error))
-    res.status(500).json({ error: 'Error al listar cuentas' })
-  } finally {
-    logger.debug(`${apiForGettingAccounts.name}-End`)
-  }
 }
 
 export const routeToPageAccount: RequestHandler = (req: Request, res: Response) => {
@@ -101,3 +86,20 @@ export const routeToFormDeleteAccount: RequestHandler = async (req: Request, res
   })
 }
 
+/*=================================================
+Api para devolver el DTO Account en JSON
+==================================================*/
+export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
+  logger.debug(`${apiForGettingAccounts.name}-Start`)
+  const auth_req = req as AuthRequest
+  try {
+    const accounts: DTOAccount[] = await getAccountsForApi(auth_req)
+    logger.debug(`${apiForGettingAccounts.name}-DTOAccount. Count: ${accounts.length}`)
+    res.json(accounts)
+  } catch (error) {
+    logger.error(`${apiForGettingAccounts.name}-Error. `, parseError(error))
+    res.status(500).json({ error: 'Error al listar cuentas' })
+  } finally {
+    logger.debug(`${apiForGettingAccounts.name}-End`)
+  }
+}

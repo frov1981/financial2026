@@ -1,19 +1,16 @@
-export type LoanGroupFieldMode = 'hidden' | 'read' | 'edit'
-export type LoanGroupFormMode = 'insert' | 'update' | 'delete'
+import { LoanGroupFormMatrix } from "../types/form-view-params"
 
-export const loanGroupFormMatrix: Record<LoanGroupFormMode, Record<string, LoanGroupFieldMode>> = {
+export const loanGroupFormMatrix: LoanGroupFormMatrix = {
     insert: {
-        name: 'edit',
-        is_active: 'hidden'
+        name: 'editable',
+        is_active: 'readonly'
     },
-
     update: {
-        name: 'edit',
-        is_active: 'read'
+        name: 'editable',
+        is_active: 'readonly'
     },
-
     delete: {
-        name: 'read',
-        is_active: 'read'
+        name: 'readonly',
+        is_active: 'readonly'
     },
 }

@@ -60,7 +60,6 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     account_form_policy: accountFormMatrix[mode],
     mode
   }
-
   try {
     let existing: Account | null = null
     if (account_id) {
@@ -75,7 +74,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       const errors = await validateDeleteAccount(auth_req, existing)
       if (errors) throw { validationErrors: errors }
       await repo_account.delete(existing.id)
-      deleteAll(auth_req)
+      deleteAll(auth_req, 'account')
       logger.info('Account deleted from database.')
       return res.redirect('/accounts')
     }
@@ -109,7 +108,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     =================================*/
     await repo_account.save(account)
     logger.info('Account saved to database.')
-    deleteAll(auth_req)
+    deleteAll(auth_req, 'account')
     return res.redirect('/accounts')
   } catch (err: any) {
     /* ============================

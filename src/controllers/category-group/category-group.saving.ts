@@ -58,13 +58,11 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
   const mode: CategoryGroupFormMode = req.body.mode || 'insert'
   const repo_category_group = AppDataSource.getRepository(CategoryGroup)
   const category_group_view = buildCategoryGroupView(req.body, mode)
-
   const form_state = {
     category_group: category_group_view,
     category_group_form_policy: categoryGroupFormMatrix[mode],
     mode
   }
-
   try {
     let existing: CategoryGroup | null = null
     if (category_group_id) {
@@ -79,7 +77,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
       const errors = await validateDeleteCategoryGroup(existing, auth_req)
       if (errors) throw { validationErrors: errors }
       await repo_category_group.delete(existing.id)
-      deleteAll(auth_req)
+      deleteAll(auth_req, 'category_group')
       return res.redirect('/categories')
     }
     /* =========================
@@ -108,7 +106,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
       Guardar en base de datos y limpiar cache
     =================================*/
     await repo_category_group.save(category_group)
-    deleteAll(auth_req)
+    deleteAll(auth_req, 'category_group')
     return res.redirect('/categories')
   } catch (err: any) {
     /* ============================
