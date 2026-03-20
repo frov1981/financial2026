@@ -6,6 +6,7 @@ import { LoanPayment } from "../../entities/LoanPayment.entity"
 import { Transaction } from "../../entities/Transaction.entity"
 import { AuthRequest } from "../../types/auth-request"
 import { CacheKpiBalance } from '../../entities/CacheKpiBalance.entity'
+import { getHomeAvailableKpiYears } from '../../cache/cache-home.service'
 
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)
@@ -539,16 +540,8 @@ export const getKpisCachelBalance = async (auth_req: AuthRequest) => {
 /* ============================================================================
    Obtener todos los años disponibles
 ============================================================================ */
-export const getAvailableKpiYears = async (auth_req: AuthRequest) => {
-  const user_id = auth_req.user.id
-  const repo = AppDataSource.getRepository(CacheKpiBalance)
-  const rows = await repo.createQueryBuilder('k')
-    .select('DISTINCT k.period_year', 'year')
-    .where('k.user_id = :user_id', { user_id })
-    .orderBy('k.period_year', 'DESC')
-    .getRawMany()
-  const years = rows.map(r => Number(r.year))
-  // Agregamos 0 al inicio (representa "Todos")
-  return [0, ...years]
+export const getAvailableKpiYears = async (auth_req: AuthRequest): Promise<number[]> => {
+  const years = await getHomeAvailableKpiYears(auth_req)
+  return years
 }
 

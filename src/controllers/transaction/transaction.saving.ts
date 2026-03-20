@@ -1,7 +1,8 @@
 import { Request, RequestHandler, Response } from 'express'
 import { DateTime } from 'luxon'
-import { getAccountById, getActiveAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
+import { getAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
 import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service'
+import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Transaction } from '../../entities/Transaction.entity'
@@ -9,11 +10,11 @@ import { transactionFormMatrix, TransactionFormMode } from '../../policies/trans
 import { KpiCacheService } from '../../services/kpi-cache.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
+import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
 import { getSqlErrorMessage } from '../../utils/sql-err.util'
 import { calculateTransactionDeltas } from '../transaction/transaction.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator'
-import { deleteAll } from '../../cache/cache-key.service'
 
 /* ============================
    Título según modo
@@ -72,13 +73,9 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const return_from = req.body.return_from
   const return_category_id = Number(req.body.return_category_id) || null
 
-  /*const active_accounts = await getActiveAccountsByUser(auth_req)
-  const active_accounts_for_transfer = await getActiveAccountsForTransferByUser(auth_req)*/
   const active_accounts = await getActiveAccounts(auth_req)
   const active_accounts_for_transfer = await getActiveAccountsForTransfer(auth_req)
 
-  /*const active_categories = await getActiveCategoriesByUser(auth_req)
-  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)*/
   const active_categories = await getActiveCategories(auth_req)
   const active_income_categories = await getActiveIncomeCategories(auth_req)
   const active_expense_categories = await getActiveExpenseCategories(auth_req)
@@ -133,7 +130,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       await query_runner.commitTransaction()
 
       deleteAll(auth_req, 'transaction')
-      KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
+      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${saveTransaction.name}-Error. `, parseError(err)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -234,8 +231,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     await query_runner.commitTransaction()
 
     deleteAll(auth_req, 'transaction')
-    KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
-
+    KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${saveTransaction.name}-Error. `, parseError(err)))
 
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)

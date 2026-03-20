@@ -1,7 +1,7 @@
 import { AuthRequest } from "../types/auth-request"
 import { cache } from "./cache.service"
 
-export type TypeSource = 'account' | 'category' | 'category_group' | 'loan' | 'loan_group' | 'payment' | 'transaction'
+export type TypeSource = 'account' | 'category' | 'category_group' | 'loan' | 'loan_group' | 'payment' | 'transaction' | 'home'
 
 export const cacheKeys = {
   accountsByUser: (user_id: number) => `accounts_user_${user_id}`,
@@ -13,7 +13,9 @@ export const cacheKeys = {
   loansByUser: (user_id: number) => `loans_user_${user_id}`,
   loansByUserForApi: (user_id: number) => `loans_api_user_${user_id}`,
   loanGroupByUser: (user_id: number) => `loan_group_user_${user_id}`,
-  loanGroupByUserForApi: (user_id: number) => `loans_api_user_${user_id}`,
+  loanGroupByUserForApi: (user_id: number) => `loan_group_api_user_${user_id}`,
+  homeAvailableKpiYears: (user_id: number) => `home_available_kpi_years_${user_id}`,
+
 
   allByUser: (user_id: number) => [
     `accounts_user_${user_id}`,
@@ -25,7 +27,8 @@ export const cacheKeys = {
     `loans_user_${user_id}`,
     `loans_api_user_${user_id}`,
     `loan_group_user_${user_id}`,
-    `loans_api_user_${user_id}`,
+    `loan_group_api_user_${user_id}`,
+    `home_available_kpi_years_${user_id}`,
   ]
 }
 

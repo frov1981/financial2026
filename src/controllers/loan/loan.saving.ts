@@ -123,8 +123,10 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         await queryRunner.manager.delete(Transaction, transaction_id)
       }
       await queryRunner.commitTransaction()
-      KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
+
       deleteAll(auth_req, 'loan')
+      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(err)))
+
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
       }
@@ -190,7 +192,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       const transaction = queryRunner.manager.create(Transaction, {
         user: { id: auth_req.user.id } as any,
         type: 'income',
-         flow_type: 'loans',
+        flow_type: 'loans',
         amount: loan.total_amount,
         account: new_account,
         category: new_category,
@@ -231,13 +233,15 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     =================================*/
     await queryRunner.manager.save(loan)
     await queryRunner.commitTransaction()
+
+    deleteAll(auth_req, 'loan')
     if (loan.transaction) {
       const local_date = DateTime.fromJSDate(loan.transaction.date, { zone: 'utc' }).setZone(timezone)
       const period_year = local_date.year
       const period_month = local_date.month
-      KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, { err }))
+      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(err)))
     }
-    deleteAll(auth_req, 'loan')
+
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
     }

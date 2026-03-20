@@ -1,5 +1,7 @@
 import { Request, RequestHandler, Response } from 'express'
 import { DateTime } from 'luxon'
+import { getActiveAccounts } from '../../cache/cache-accounts.service'
+import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
 import { Category } from '../../entities/Category.entity'
@@ -13,10 +15,9 @@ import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-it
 import { AuthRequest } from '../../types/auth-request'
 import { PaymentFormMode } from '../../types/form-view-params'
 import { parseLocalDateToUTC } from '../../utils/date.util'
+import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
 import { validateDeletePayment, validateSavePayment } from './payment.validator'
-import { getActiveAccounts } from '../../cache/cache-accounts.service'
-import { deleteAll } from '../../cache/cache-key.service'
 
 /* ============================
    Helpers
@@ -204,10 +205,9 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             }
 
             await queryRunner.commitTransaction()
-            deleteAll(auth_req, 'payment')
 
-            KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone)
-                .catch(err => logger.error(`${savePayment.name}-Error recalculando KPI`, { err }))
+            deleteAll(auth_req, 'payment')
+            KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(err)))
 
             if (return_from === 'categories' && return_category_id) {
                 return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -361,8 +361,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         const period_month = local_date.month
 
         deleteAll(auth_req, 'payment')
-        KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone)
-            .catch(err => logger.error(`${savePayment.name}-Error recalculando KPI`, { err }))
+        KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(err)))
 
         if (return_from === 'categories' && return_category_id) {
             return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
