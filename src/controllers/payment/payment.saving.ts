@@ -339,6 +339,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             trx = transactionRepo.create({
                 user: { id: auth_req.user.id } as any,
                 type: 'expense',
+                flow_type: 'payments',
                 amount: new_total,
                 account,
                 category: payment.category,

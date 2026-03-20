@@ -1,7 +1,7 @@
 import { AuthRequest } from "../types/auth-request"
 import { cache } from "./cache.service"
 
-export type TypeSource = 'account' | 'category' | 'category_group' | 'loan' | 'loan_group' | 'payment'
+export type TypeSource = 'account' | 'category' | 'category_group' | 'loan' | 'loan_group' | 'payment' | 'transaction'
 
 export const cacheKeys = {
   accountsByUser: (user_id: number) => `accounts_user_${user_id}`,
@@ -29,7 +29,7 @@ export const cacheKeys = {
   ]
 }
 
-export const deleteAll = (auth_req: AuthRequest, source: TypeSource ): void => {
+export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const user_id = auth_req.user.id
   cache.del(cacheKeys.allByUser(user_id))
 }

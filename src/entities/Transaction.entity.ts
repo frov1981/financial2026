@@ -1,6 +1,6 @@
 import { Transform } from 'class-transformer'
 import { IsIn, IsNotEmpty, IsNumber, IsPositive, MaxLength, ValidateIf } from 'class-validator'
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Account } from './Account.entity'
 import { Category } from './Category.entity'
@@ -23,6 +23,11 @@ export class Transaction {
     message: 'Tipo de transacción inválido'
   })
   type!: 'income' | 'expense' | 'transfer'
+
+  @Index('idx_transactions_flow_type')
+  @Index('idx_transactions_user_flow_type', ['user', 'flow_type'])
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  flow_type!: 'incomes' | 'expenses' | 'savings' | 'withdrawals' | 'loans' | 'payments' | null
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_transactions_account' })

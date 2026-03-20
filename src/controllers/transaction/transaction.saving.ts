@@ -1,8 +1,9 @@
 import { Request, RequestHandler, Response } from 'express'
 import { DateTime } from 'luxon'
+import { getAccountById, getActiveAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
+import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
-import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix, TransactionFormMode } from '../../policies/transaction-form.policy'
 import { KpiCacheService } from '../../services/kpi-cache.service'
@@ -10,10 +11,9 @@ import { AuthRequest } from '../../types/auth-request'
 import { parseLocalDateToUTC } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { getSqlErrorMessage } from '../../utils/sql-err.util'
-import { getActiveAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
-import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service'
-import { calculateTransactionDeltas, splitCategoriesByType } from '../transaction/transaction.auxiliar'
+import { calculateTransactionDeltas } from '../transaction/transaction.auxiliar'
 import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator'
+import { deleteAll } from '../../cache/cache-key.service'
 
 /* ============================
    Título según modo
@@ -53,19 +53,9 @@ const buildTransactionView = (body: any) => {
   }
 }
 
-/* Obtiene una cuenta activa por id desde el arreglo ya cargado */
-/*function getAccountFromActiveList(active_accounts: Account[], account_id: number | null): Account | null {
-  if (!account_id) return null
-  const account = active_accounts.find(a => a.id === account_id) || null
-  return account
-}*/
-
-/* Obtiene una categoría activa por id desde el arreglo ya cargado */
-/*function getCategoryFromActiveList(active_categories: Category[], category_id: number | null): Category | null {
-  if (!category_id) return null
-  const category = active_categories.find(c => c.id === category_id) || null
-  return category
-}*/
+const isSavingAccount = (acc: Account | null | undefined): acc is Account & { type: 'saving' } => {
+  return acc?.type === 'saving'
+}
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
   logger.debug(`${saveTransaction.name}-Start`)
@@ -141,6 +131,8 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
       await query_runner.manager.remove(Transaction, existing)
       await query_runner.commitTransaction()
+
+      deleteAll(auth_req, 'transaction')
       KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
 
       if (return_from === 'categories' && return_category_id) {
@@ -175,43 +167,38 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
     const clean = sanitizeByPolicy(mode, req.body)
 
-    if (clean.type !== undefined) {
-      transaction.type = clean.type
+    if (clean.type !== undefined) { transaction.type = clean.type }
+    if (clean.account !== undefined) { transaction.account = await getAccountById(auth_req, Number(clean.account)) }
+    if (clean.to_account !== undefined) { transaction.to_account = await getAccountById(auth_req, Number(clean.to_account)) }
+    if (clean.category !== undefined) { transaction.category = await getActiveCategoryById(auth_req, Number(clean.category)) }
+    if (clean.date) { transaction.date = parseLocalDateToUTC(clean.date, timezone) }
+    if (clean.amount !== undefined) { transaction.amount = Number(clean.amount) }
+    if (clean.description !== undefined) { transaction.description = clean.description }
+    if (transaction.type === 'transfer') { transaction.category = null }
+    if (transaction.type !== 'transfer') { transaction.to_account = null }
+
+    // Clasificación KPI (flow_type)
+    if (transaction.type === 'income') {
+      transaction.flow_type = 'incomes'
     }
 
-    if (clean.account !== undefined) {
-      /*transaction.account = getAccountFromActiveList(active_accounts, clean.account ? Number(clean.account) : null)*/
-      transaction.account = await getActiveAccountById(auth_req, Number(clean.account))
-    }
-
-    if (clean.to_account !== undefined) {
-      /*transaction.to_account = getAccountFromActiveList(active_accounts_for_transfer, clean.to_account ? Number(clean.to_account) : null)*/
-      transaction.to_account = await getActiveAccountById(auth_req, Number(clean.to_account))
-    }
-
-    if (clean.category !== undefined) {
-      /*transaction.category = getCategoryFromActiveList(active_categories, clean.category ? Number(clean.category) : null)*/
-      transaction.category = await getActiveCategoryById(auth_req, Number(clean.category))
-    }
-
-    if (clean.date) {
-      transaction.date = parseLocalDateToUTC(clean.date, timezone)
-    }
-
-    if (clean.amount !== undefined) {
-      transaction.amount = Number(clean.amount)
-    }
-
-    if (clean.description !== undefined) {
-      transaction.description = clean.description
+    if (transaction.type === 'expense') {
+      transaction.flow_type = 'expenses'
     }
 
     if (transaction.type === 'transfer') {
-      transaction.category = null
-    }
+      const from = transaction.account
+      const to = transaction.to_account
 
-    if (transaction.type !== 'transfer') {
-      transaction.to_account = null
+      if (!from || !to) {
+        transaction.flow_type = null
+      } else if (isSavingAccount(to)) {
+        transaction.flow_type = 'savings'
+      } else if (isSavingAccount(from) && !isSavingAccount(to)) {
+        transaction.flow_type = 'withdrawals'
+      } else {
+        transaction.flow_type = null
+      }
     }
 
     const errors = await validateSaveTransaction(transaction, auth_req)
@@ -245,7 +232,10 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     const period_month = local_date.month
 
     await query_runner.commitTransaction()
+
+    deleteAll(auth_req, 'transaction')
     KpiCacheService.recalcMonthlyKPIs(user_id, period_year, period_month, timezone).catch(err => logger.error(`${saveTransaction.name}-Error. `, { err }))
+
 
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
