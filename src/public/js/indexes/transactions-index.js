@@ -443,6 +443,7 @@ function goToRouteDelete(action_name, action_id) {
   }
 }
 
+/*
 function goToTransactionUpdate(id) {
   const params = new URLSearchParams()
   if (CATEGORY_ID) {
@@ -450,8 +451,9 @@ function goToTransactionUpdate(id) {
     params.set('from', 'categories')
   }
   location.href = `/transactions/update/${id}?${params.toString()}`
-}
+}*/
 
+/*
 function goToTransactionClone(id) {
   const params = new URLSearchParams()
   if (CATEGORY_ID) {
@@ -459,8 +461,9 @@ function goToTransactionClone(id) {
     params.set('from', 'categories')
   }
   location.href = `/transactions/clone/${id}?${params.toString()}`
-}
+}*/
 
+/*
 function goToTransactionDelete(id) {
   const params = new URLSearchParams()
   if (CATEGORY_ID) {
@@ -468,7 +471,7 @@ function goToTransactionDelete(id) {
     params.set('from', 'categories')
   }
   location.href = `/transactions/delete/${id}?${params.toString()}`
-}
+}*/
 
 function goBackToCategories() {
   location.href = '/categories'

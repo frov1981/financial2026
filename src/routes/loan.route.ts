@@ -2,6 +2,7 @@ import { Router } from "express"
 import {
     apiForGettingLoans,
     apiForSavingLoan,
+    routeToFormCloneLoan,
     routeToFormDeleteLoan,
     routeToFormInsertLoan,
     routeToFormUpdateLoan,
@@ -19,6 +20,7 @@ router.post('/', apiForSavingLoan)
 router.get('/', routeToPageLoan)
 router.get('/insert', routeToFormInsertLoan)
 router.get('/update/:id', routeToFormUpdateLoan)
+router.get('/clone/:id', routeToFormCloneLoan)
 router.get('/delete/:id', routeToFormDeleteLoan)
 router.get('/:id/loan', routeToPagePayment)
 

@@ -74,7 +74,6 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
   const mode: LoanFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
-  const user_id = auth_req.user.id
   const loan_id = Number(req.body.id)
   const loan_group_id = Number(req.body.loan_group_id)
   const disbursement_id = Number(req.body.disbursement_account_id)
@@ -143,6 +142,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       loan = queryRunner.manager.create(Loan, {
         user: { id: auth_req.user.id } as any,
         name: req.body.name,
+        note: req.body.note,
         total_amount: 0,
         interest_paid: 0,
         balance: 0,
@@ -197,7 +197,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         account: new_account,
         category: new_category,
         date: loan.start_date,
-        description: loan.name
+        description: loan.note || loan.name
       })
       await queryRunner.manager.save(transaction)
       loan.transaction = transaction
@@ -220,7 +220,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       if (loan.transaction?.id) {
         loan.transaction.amount = loan.total_amount
         loan.transaction.date = loan.start_date
-        loan.transaction.description = loan.name
+        loan.transaction.description = loan.note || loan.name
         loan.transaction.account = new_account
         loan.transaction.category = new_category
         await queryRunner.manager.save(loan.transaction)
