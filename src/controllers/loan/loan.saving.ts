@@ -182,6 +182,11 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         loan.balance = new_amount - paidAmount
       }
     }
+    if (loan.balance === 0) {
+      loan.is_active = false
+    } else {
+      loan.is_active = true
+    }
     if (mode === 'insert') {
       if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
       if (!new_category) { throw { code: 'CATEGORY_NOT_FOUND' } }
