@@ -5,7 +5,6 @@ type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
 
 const LEVELS: Record<LogLevel, number> = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 }
 
-// Colores ANSI
 const COLORS: Record<LogLevel, string> = {
   DEBUG: '\x1b[34m', // azul
   INFO: '\x1b[32m',  // verde 
@@ -13,7 +12,6 @@ const COLORS: Record<LogLevel, string> = {
   ERROR: '\x1b[31m'  // rojo
 }
 const RESET_COLOR = '\x1b[0m'
-
 class Logger {
   private currentLevel: number
 

@@ -4,7 +4,6 @@ import { AuthRequest } from "../types/auth-request";
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
-
 export const getHomeAvailableKpiYears = async (auth_req: AuthRequest): Promise<number[]> => {
     const user_id = auth_req.user.id
     const cache_key = cacheKeys.homeAvailableKpiYears(user_id)
