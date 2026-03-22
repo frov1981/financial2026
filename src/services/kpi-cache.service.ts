@@ -156,9 +156,7 @@ export class KpiCacheService {
     static async rebuildAllUserKPIs(user_id: number, timezone: string) {
         try {
             const repo = AppDataSource.getRepository(CacheKpiBalance)
-            /* 1. borrar cache solo del usuario */
             await repo.delete({ user: { id: user_id } })
-            /* 2. recalcular todo */
             await AppDataSource.manager.query(query_all_periods, [user_id])
             logger.info(`KPI FULL REBUILD user=${user_id}`)
         } catch (err) {

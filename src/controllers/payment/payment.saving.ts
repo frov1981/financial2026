@@ -121,10 +121,6 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     const timezone = auth_req.timezone || 'UTC'
     const return_from = req.body.return_from
     const return_category_id = Number(req.body.return_category_id) || null
-
-    logger.debug(`${savePayment.name}-Timezone for saving payment: [${timezone}]`)
-
-    /*const account_list = await getActiveAccountsByUser(auth_req)*/
     const account_list = await getActiveAccounts(auth_req)
     const active_expense_category_list = await getActiveCategoriesForPaymentsByUser(auth_req)
 

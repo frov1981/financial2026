@@ -7,6 +7,7 @@ import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { getAvailableKpiYears, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisCachelBalance, getKpisGlobalBalance, getKpisLast6MonthsBalance } from './home.auxiliar'
 import { deleteAll } from '../../cache/cache-key.service'
+import { parseError } from '../../utils/error.util'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.user_id) {
@@ -25,13 +26,11 @@ export const routeToPageHome = async (req: Request, res: Response) => {
   if (!user_id) {
     return res.redirect('/login')
   }
-
   const user_repo = AppDataSource.getRepository(User)
   const user = await user_repo.findOneBy({ id: user_id })
   if (!user) {
     return res.redirect('/login')
   }
-
   res.render(
     'layouts/main',
     {
@@ -42,18 +41,9 @@ export const routeToPageHome = async (req: Request, res: Response) => {
     })
 }
 
-/*==============================================
-  APIs para acciones desde el frontend
-  Recibe los datos del usuario
-  Recibe la zona horaria del cliente para guardarla en sesión
-  Valida si NODE_SKIP_LOGIN=true para saltar login (desarrollo)
-  Si no, valida usuario y contraseña
-  Si es correcto, envía código 2FA y guarda usuario pendiente en sesión
-  Redirige a página de 2FA
-==============================================*/
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
+  logger.debug(`${apiForValidatingLogin.name}-Start`)
   try {
-    logger.debug(`${apiForValidatingLogin.name}-Start`)
     const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
     const timezone = String(req.body.timezone || 'UTC')
     /* ============================
@@ -68,14 +58,13 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
         where: { id: Number(process.env.DEV_USER_ID) || 1 },
         select: selected_fields
       })
-
       if (dev_user) {
         (req.session as any).user_id = dev_user.id;
         (req.session as any).timezone = timezone
+        logger.debug(`${apiForValidatingLogin.name}-Skipping development user: [${dev_user.id}]`)
         return res.redirect('/home')
       }
     }
-
     /* ============================
        Login Produccion
     ============================ */
@@ -85,31 +74,25 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
       where: { name: username },
       select: selected_fields
     })
-    logger.debug('user lookup result', { username, found: !!user })
-
     if (!user) {
       return res.render('pages/login', { error: 'Usuario no encontrado' })
     }
-
+    logger.debug(`${apiForValidatingLogin.name}-User found in production: [${user?.id}]`)
     const valid_password = await bcrypt.compare(password, user.password_hash)
-    logger.debug('password validation', { username, valid: valid_password })
-
+    logger.debug(`${apiForValidatingLogin.name}-Passwor validation: [${valid_password}]`)
     if (!valid_password) {
       return res.render('pages/login', { error: 'Contraseña incorrecta' })
     }
-
     /* ============================
        Guardar timezone en sesión
     ============================ */
     (req.session as any).timezone = timezone
     logger.debug(`${apiForValidatingLogin.name}-Timezone from request: [${timezone}]`)
-
     /* ============================
        Enviar código 2FA y guardar usuario pendiente
     ============================ */
     await send2FACode(user);
     (req.session as any).pending2FAUserId = user.id
-
     /* ============================
        Persistir sesión
     ============================ */
@@ -119,21 +102,10 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
         else resolve()
       })
     })
-
     return res.redirect('/2fa')
   } catch (error: any) {
-    // el logger usa JSON.stringify, no imprime message/stack de los errores.
-    logger.error(`${apiForValidatingLogin.name}-Error.`, {
-      message: error?.message,
-      stack: error?.stack,
-      orig: error
-    })
-    return res.render(
-      'pages/login',
-      {
-        error: 'Error interno, intenta de nuevo'
-      }
-    )
+    logger.error(`${apiForValidatingLogin.name}-Error.`, parseError(error))
+    return res.render('pages/login', { error: 'Error interno, intenta de nuevo' })
   } finally {
     logger.debug(`${apiForValidatingLogin.name}-End`)
   }
