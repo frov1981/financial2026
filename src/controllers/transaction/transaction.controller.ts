@@ -113,7 +113,6 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .getManyAndCount()
 
     logger.debug(`${apiForGettingTransactions.name}-Transactions found: [${items.length}], Total: [${total}], Page: [${page}], Limit: [${limit}], Search: [${search}], Category ID: [${category_id}]`)
-    logger.debug('items transaction. ', items)
     res.json({ items, total, page, limit, category_id: category_id })
   } catch (error) {
     logger.error(`${apiForGettingTransactions.name}-Error. `, error)
