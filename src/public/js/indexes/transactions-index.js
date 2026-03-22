@@ -158,7 +158,7 @@ function renderRow(transaction) {
         </div>
       `
           : '-'
-    }
+      }
       </td>
       <td class="ui-td col-left col-nowrap">
       ${transaction.category?.name
@@ -168,7 +168,15 @@ function renderRow(transaction) {
           <span>${transaction.category?.name || '-'}</span>
         </div>
         ` : ''
-    }
+      }
+      ${transaction.loan_payment?.loan?.name
+      ? `
+        <div class="grouped-icon-line">
+          <span class="grouped-icon">${iconGrouped()}</span>
+          <span>${transaction.loan_payment?.loan?.name || '-'}</span>
+        </div>
+        ` : ''
+      }
       ${transaction.loan_payment?.loan?.category?.name
       ? `
         <div class="grouped-icon-line">
@@ -176,9 +184,11 @@ function renderRow(transaction) {
           <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
         </div>
         ` : ''
-    }
+      }
       </td>
-      <td class="ui-td col-left col-description">${transaction.description}</td>
+      <td class="ui-td col-left col-description">
+        <div class="card-description">${transaction.description || ''}</div>
+      </td>
       <td class="ui-td col-center col-nowrap">
         <div class="icon-actions">
 
@@ -278,7 +288,7 @@ function renderCard(transaction) {
         <div class="card-info">
           <div class="card-account">
             ${transaction.type === 'transfer'
-      ? `
+            ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
@@ -288,41 +298,50 @@ function renderCard(transaction) {
                   <span>${transaction.to_account?.name || '-'}</span>
                 </div>
               `
-      : transaction.type === 'income'
-        ? `
+              : transaction.type === 'income'
+              ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferIn()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
-              `
-        : transaction.type === 'expense'
-          ? `
+                `
+              : transaction.type === 'expense'
+              ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
-              `
-          : '-'
-    }
+                `
+              : '-'
+          }
           </div>
           ${transaction.category?.name
-      ? `<div class="card-category">
-                  <div class="grouped-icon-line">
-                    <span class="grouped-icon">${iconGrouped()}</span>
-                    <span>${transaction.category?.name || '-'}</span>
-                  </div>
+          ? `<div class="card-category">
+              <div class="grouped-icon-line">
+                <span class="grouped-icon">${iconGrouped()}</span>
+                <span>${transaction.category?.name || '-'}</span>
+              </div>
+            </div>
+          ` : ''
+          }
+          ${transaction.loan_payment?.loan?.name
+          ? `<div class="card-category">
+                <div class="grouped-icon-line">
+                  <span class="grouped-icon">${iconGrouped()}</span>
+                  <span>${transaction.loan_payment?.loan?.name || '-'}</span>
                 </div>
+              </div>
             ` : ''
-    }
+          }
           ${transaction.loan_payment?.loan?.category?.name
-      ? `<div class="card-category">
-                  <div class="grouped-icon-line">
-                    <span class="grouped-icon">${iconGrouped()}</span>
-                    <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
-                  </div>
+          ? `<div class="card-category">
+                <div class="grouped-icon-line">
+                  <span class="grouped-icon">${iconGrouped()}</span>
+                  <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
                 </div>
+              </div>
             ` : ''
-    }
+          }
           ${transaction.description ? `<div class="card-description">${transaction.description}</div>` : ''}
         </div>
 
