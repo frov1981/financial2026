@@ -1,11 +1,10 @@
-import { AppDataSource } from "../config/typeorm.datasource"
-import { Account } from "../entities/Account.entity"
-import { Category } from "../entities/Category.entity"
-import { Loan } from "../entities/Loan.entity"
-import { LoanGroup } from "../entities/LoanGroup.entity"
-import { AuthRequest } from "../types/auth-request"
-import { cacheKeys } from "./cache-key.service"
-import { cache } from "./cache.service"
+import { performance } from 'perf_hooks';
+import { AppDataSource } from "../config/typeorm.datasource";
+import { Loan } from "../entities/Loan.entity";
+import { AuthRequest } from "../types/auth-request";
+import { logger } from '../utils/logger.util';
+import { cacheKeys } from "./cache-key.service";
+import { cache } from "./cache.service";
 
 type DTOLoan = {
     id: number
@@ -96,6 +95,7 @@ export const getLoansForApi = async (auth_req: AuthRequest): Promise<{ loans: DT
     }
 
     const repository = AppDataSource.getRepository(Loan)
+    const start = performance.now()
     const result = await repository
         .createQueryBuilder('loan')
         .leftJoinAndSelect('loan.loan_group', 'loan_group')
@@ -142,6 +142,10 @@ export const getLoansForApi = async (auth_req: AuthRequest): Promise<{ loans: DT
 
     const group_totals = Object.values(group_totals_map)
     const response = { loans, group_totals }
+    
+    const end = performance.now()
+    const duration_sec = (end - start) / 1000
+    logger.debug(`Query. user=[${user_id}], entity=[loan], count=[${loans.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, response)
     return response
 }

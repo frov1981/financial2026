@@ -23,13 +23,15 @@ export function formatDateForSystemLocal(date: Date, timeZone: string = 'America
   }).formatToParts(date);
 
   const pad = (n: number) => n.toString().padStart(2, '0');
+  const pad3 = (n: number) => n.toString().padStart(3, '0');
+
   const year = parts.find(p => p.type === 'year')?.value;
   const month = parts.find(p => p.type === 'month')?.value;
   const day = parts.find(p => p.type === 'day')?.value;
   const hour = parts.find(p => p.type === 'hour')?.value;
   const minute = parts.find(p => p.type === 'minute')?.value;
   const second = parts.find(p => p.type === 'second')?.value;
-  const milliseconds = pad(date.getMilliseconds());
+  const milliseconds = pad3(date.getMilliseconds());
+
   return `${year}-${month}-${day} ${hour}:${minute}:${second}.${milliseconds}`;
 }
-

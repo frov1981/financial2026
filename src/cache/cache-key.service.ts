@@ -1,4 +1,5 @@
 import { AuthRequest } from "../types/auth-request"
+import { logger } from "../utils/logger.util"
 import { cache } from "./cache.service"
 
 export type TypeSource = 'account' | 'category' | 'category_group' | 'loan' | 'loan_group' | 'payment' | 'transaction' | 'home'
@@ -34,5 +35,6 @@ export const cacheKeys = {
 
 export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const user_id = auth_req.user.id
-  cache.del(cacheKeys.allByUser(user_id))
+  const deleted = cache.del(cacheKeys.allByUser(user_id))
+  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}]`)
 }

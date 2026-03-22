@@ -1,8 +1,8 @@
-import { AppDataSource } from "../config/typeorm.datasource"
-import { CategoryGroup } from "../entities/CategoryGroups.entity"
-import { AuthRequest } from "../types/auth-request"
-import { cacheKeys } from "./cache-key.service"
-import { cache } from "./cache.service"
+import { AppDataSource } from "../config/typeorm.datasource";
+import { CategoryGroup } from "../entities/CategoryGroups.entity";
+import { AuthRequest } from "../types/auth-request";
+import { cacheKeys } from "./cache-key.service";
+import { cache } from "./cache.service";
 
 
 const getCategoryGroupBase = async (user_id: number): Promise<CategoryGroup[]> => {

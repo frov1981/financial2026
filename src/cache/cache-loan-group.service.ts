@@ -1,8 +1,8 @@
-import { AppDataSource } from "../config/typeorm.datasource"
-import { LoanGroup } from "../entities/LoanGroup.entity"
-import { AuthRequest } from "../types/auth-request"
-import { cacheKeys } from "./cache-key.service"
-import { cache } from "./cache.service"
+import { AppDataSource } from "../config/typeorm.datasource";
+import { LoanGroup } from "../entities/LoanGroup.entity";
+import { AuthRequest } from "../types/auth-request";
+import { cacheKeys } from "./cache-key.service";
+import { cache } from "./cache.service";
 
 const getLoanGroupBase = async (user_id: number): Promise<LoanGroup[]> => {
     const cache_key = cacheKeys.loanGroupByUser(user_id)

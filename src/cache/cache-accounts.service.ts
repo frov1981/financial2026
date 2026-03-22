@@ -1,8 +1,10 @@
+import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Account } from "../entities/Account.entity";
 import { AuthRequest } from "../types/auth-request";
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
+import { logger } from '../utils/logger.util';
 
 export type DTOAccount = {
     id: number
@@ -91,6 +93,7 @@ export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccou
         return cached_accounts
     }
     const repository = AppDataSource.getRepository(Account)
+    const start = performance.now()
     const result = await repository
         .createQueryBuilder('account')
         .where('account.user_id = :user_id', { user_id })
@@ -112,6 +115,10 @@ export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccou
         is_active: account.is_active,
         transaction_count: Number(result.raw[index].transaction_count)
     }))
+    
+    const end = performance.now()
+    const duration_sec = (end - start) / 1000
+    logger.debug(`Query. user=[${user_id}], entity=[account], count=[${accounts.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, accounts)
     return accounts
 }
