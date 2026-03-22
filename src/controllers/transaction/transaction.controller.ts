@@ -1,4 +1,6 @@
 import { Request, RequestHandler, Response } from 'express'
+import { getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
+import { getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
@@ -6,10 +8,7 @@ import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.
 import { AuthRequest } from '../../types/auth-request'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
-import { splitCategoriesByType } from './transaction.auxiliar'
 import { validateActiveCategoryTransaction } from './transaction.validator'
-import { getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
-import { getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
 
