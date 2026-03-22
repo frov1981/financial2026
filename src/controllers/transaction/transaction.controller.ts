@@ -11,7 +11,6 @@ import { logger } from '../../utils/logger.util'
 import { validateActiveCategoryTransaction } from './transaction.validator'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
-
 /* =========================================================
    Helper de render para formulario (igual patrón que loans)
 ========================================================= */

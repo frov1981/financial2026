@@ -12,64 +12,75 @@ function money(n: number) {
 
 const query_curr_period = `
 SELECT
-  COALESCE(SUM(CASE WHEN t.flow_type = 'incomes' THEN t.amount END), 0) AS incomes,
-  COALESCE(SUM(CASE WHEN t.flow_type = 'expenses' THEN t.amount END), 0) AS expenses,
-  COALESCE(SUM(CASE WHEN t.flow_type = 'savings' THEN t.amount END), 0) AS savings,
-  COALESCE(SUM(CASE WHEN t.flow_type = 'withdrawals' THEN t.amount END), 0) AS withdrawals,
-  COALESCE(SUM(CASE WHEN t.flow_type = 'loans' THEN t.amount END), 0) AS loans,
-  COALESCE(SUM(CASE WHEN t.flow_type = 'payments' THEN t.amount END), 0) AS payments,
+COALESCE(SUM(CASE WHEN t.type='income' AND l.id IS NULL THEN t.amount END),0) incomes,
+COALESCE(SUM(CASE WHEN t.type='expense' AND lp.id IS NULL THEN t.amount END),0) expenses,
+COALESCE(SUM(CASE WHEN t.type='transfer' AND a_to.type='saving' THEN t.amount END),0) savings,
+COALESCE(SUM(CASE WHEN t.type='transfer' AND a_from.type='saving' AND a_to.type<>'saving' THEN t.amount END),0) withdrawals,
+COALESCE(SUM(CASE WHEN l.id IS NOT NULL THEN t.amount END),0) loans,
+COALESCE(SUM(CASE WHEN lp.id IS NOT NULL THEN t.amount END),0) payments,
 
-  COALESCE((
-    SELECT SUM(lp.principal_paid)
-    FROM loan_payments lp
-    JOIN loans l ON l.id = lp.loan_id
-    WHERE l.user_id = ?
-    AND lp.payment_date >= ?
-    AND lp.payment_date < ?
-  ), 0) AS principal_breakdown,
+COALESCE((
+SELECT SUM(lp2.principal_paid)
+FROM loan_payments lp2
+JOIN loans l2 ON l2.id=lp2.loan_id
+WHERE l2.user_id=? AND lp2.payment_date>=? AND lp2.payment_date<?
+),0) principal_breakdown,
 
-  COALESCE((
-    SELECT SUM(lp.interest_paid)
-    FROM loan_payments lp
-    JOIN loans l ON l.id = lp.loan_id
-    WHERE l.user_id = ?
-    AND lp.payment_date >= ?
-    AND lp.payment_date < ?
-  ), 0) AS interest_breakdown
+COALESCE((
+SELECT SUM(lp2.interest_paid)
+FROM loan_payments lp2
+JOIN loans l2 ON l2.id=lp2.loan_id
+WHERE l2.user_id=? AND lp2.payment_date>=? AND lp2.payment_date<?
+),0) interest_breakdown
 
 FROM transactions t
-WHERE t.user_id = ?
-AND t.date >= ?
-AND t.date < ?
-`
+LEFT JOIN loans l ON l.transaction_id=t.id
+LEFT JOIN loan_payments lp ON lp.transaction_id=t.id
+LEFT JOIN accounts a_from ON a_from.id=t.account_id
+LEFT JOIN accounts a_to ON a_to.id=t.to_account_id
 
+WHERE t.user_id=? AND t.date>=? AND t.date<?
+`
 const query_all_periods = `
-INSERT INTO cache_kpi_balances (
-    user_id, period_year, period_month, incomes, expenses, savings, withdrawals, loans, payments, total_inflows, total_outflows, net_cash_flow, net_savings, available_balance, principal_breakdown, interest_breakdown
-)
+INSERT INTO cache_kpi_balances (user_id,period_year,period_month,incomes,expenses,savings,withdrawals,loans,payments,total_inflows,total_outflows,net_cash_flow,net_savings,available_balance,principal_breakdown,interest_breakdown)
 SELECT
 t.user_id,
 YEAR(t.date),
 MONTH(t.date),
-COALESCE(SUM(CASE WHEN t.flow_type = 'incomes' THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type = 'expenses' THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type = 'savings' THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type = 'withdrawals' THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type = 'loans' THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type = 'payments' THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type IN ('incomes','loans') THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type IN ('expenses','payments') THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type IN ('incomes','loans') THEN t.amount END), 0)-COALESCE(SUM(CASE WHEN t.flow_type IN ('expenses','payments') THEN t.amount END), 0),
-COALESCE(SUM(CASE WHEN t.flow_type = 'savings' THEN t.amount END), 0)-COALESCE(SUM(CASE WHEN t.flow_type = 'withdrawals' THEN t.amount END), 0),
-(COALESCE(SUM(CASE WHEN t.flow_type IN ('incomes','loans') THEN t.amount END), 0)-COALESCE(SUM(CASE WHEN t.flow_type IN ('expenses','payments') THEN t.amount END), 0))
--
-(COALESCE(SUM(CASE WHEN t.flow_type = 'savings' THEN t.amount END), 0)-COALESCE(SUM(CASE WHEN t.flow_type = 'withdrawals' THEN t.amount END), 0)),
-0,
-0
+COALESCE(SUM(CASE WHEN t.type='income' AND l.id IS NULL THEN t.amount END),0),
+COALESCE(SUM(CASE WHEN t.type='expense' AND lp.id IS NULL THEN t.amount END),0),
+COALESCE(SUM(CASE WHEN t.type='transfer' AND a_to.type='saving' THEN t.amount END),0),
+COALESCE(SUM(CASE WHEN t.type='transfer' AND a_from.type='saving' AND a_to.type<>'saving' THEN t.amount END),0),
+COALESCE(SUM(CASE WHEN l.id IS NOT NULL THEN t.amount END),0),
+COALESCE(SUM(CASE WHEN lp.id IS NOT NULL THEN t.amount END),0),
+COALESCE(SUM(CASE WHEN t.type='income' AND l.id IS NULL THEN t.amount END),0)+COALESCE(SUM(CASE WHEN l.id IS NOT NULL THEN t.amount END),0),
+COALESCE(SUM(CASE WHEN t.type='expense' AND lp.id IS NULL THEN t.amount END),0)+COALESCE(SUM(CASE WHEN lp.id IS NOT NULL THEN t.amount END),0),
+(COALESCE(SUM(CASE WHEN t.type='income' AND l.id IS NULL THEN t.amount END),0)+COALESCE(SUM(CASE WHEN l.id IS NOT NULL THEN t.amount END),0))-(COALESCE(SUM(CASE WHEN t.type='expense' AND lp.id IS NULL THEN t.amount END),0)+COALESCE(SUM(CASE WHEN lp.id IS NOT NULL THEN t.amount END),0)),
+COALESCE(SUM(CASE WHEN t.type='transfer' AND a_to.type='saving' THEN t.amount END),0)-COALESCE(SUM(CASE WHEN t.type='transfer' AND a_from.type='saving' AND a_to.type<>'saving' THEN t.amount END),0),
+((COALESCE(SUM(CASE WHEN t.type='income' AND l.id IS NULL THEN t.amount END),0)+COALESCE(SUM(CASE WHEN l.id IS NOT NULL THEN t.amount END),0))-(COALESCE(SUM(CASE WHEN t.type='expense' AND lp.id IS NULL THEN t.amount END),0)+COALESCE(SUM(CASE WHEN lp.id IS NOT NULL THEN t.amount END),0)))-(COALESCE(SUM(CASE WHEN t.type='transfer' AND a_to.type='saving' THEN t.amount END),0)-COALESCE(SUM(CASE WHEN t.type='transfer' AND a_from.type='saving' AND a_to.type<>'saving' THEN t.amount END),0)),
+
+COALESCE((
+SELECT SUM(lp2.principal_paid)
+FROM loan_payments lp2
+JOIN loans l2 ON l2.id=lp2.loan_id
+WHERE l2.user_id=t.user_id AND YEAR(lp2.payment_date)=YEAR(t.date) AND MONTH(lp2.payment_date)=MONTH(t.date)
+),0),
+
+COALESCE((
+SELECT SUM(lp2.interest_paid)
+FROM loan_payments lp2
+JOIN loans l2 ON l2.id=lp2.loan_id
+WHERE l2.user_id=t.user_id AND YEAR(lp2.payment_date)=YEAR(t.date) AND MONTH(lp2.payment_date)=MONTH(t.date)
+),0)
 
 FROM transactions t
-WHERE t.user_id = ?
-GROUP BY t.user_id, YEAR(t.date), MONTH(t.date)
+LEFT JOIN loans l ON l.transaction_id=t.id
+LEFT JOIN loan_payments lp ON lp.transaction_id=t.id
+LEFT JOIN accounts a_from ON a_from.id=t.account_id
+LEFT JOIN accounts a_to ON a_to.id=t.to_account_id
+
+WHERE t.user_id=?
+GROUP BY t.user_id,YEAR(t.date),MONTH(t.date)
 `
 
 export class KpiCacheService {
