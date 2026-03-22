@@ -95,16 +95,13 @@ export const routeToFormDeleteCategory: RequestHandler = async (req: Request, re
 Api para devolver el DTO Category en JSON
 ==================================================*/
 export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${apiForGettingCategories.name}-Start`)
   const auth_req = req as AuthRequest
   try {
     const categories: DTOCategory[] = await getCategoriesForApi(auth_req)
-    logger.debug(`${apiForGettingCategories.name}-DTOCategory. Count: ${categories.length}`)
     res.json(categories)
   } catch (error) {
     logger.error(`${apiForGettingCategories.name}-Error. `, parseError(error))
     res.status(500).json({ error: 'Error al listar categorías' })
   } finally {
-    logger.debug(`${apiForGettingCategories.name}-End`)
   }
 }

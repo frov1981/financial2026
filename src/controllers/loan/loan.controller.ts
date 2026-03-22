@@ -53,7 +53,6 @@ export const routeToFormInsertLoan: RequestHandler = async (req, res) => {
   const auth_req = req as AuthRequest
   const timezone = auth_req.timezone || 'UTC'
   const default_date = await getNextValidTransactionDate(auth_req)
-  logger.debug(`${routeToFormInsertLoan.name}-Routing for inserting loan form with timezone: [${timezone}]`)
   return renderLoanForm(res, {
     title: 'Insertar Préstamo',
     view: 'pages/loans/form',
@@ -143,17 +142,13 @@ export const routeToFormDeleteLoan: RequestHandler = async (req, res) => {
 Api para devolver el DTO Loan en JSON
 ==================================================*/
 export const apiForGettingLoans: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${apiForGettingLoans.name}-Start`)
   const auth_req = req as AuthRequest
   try {
     const result = await getLoansForApi(auth_req)
-    logger.debug(`${apiForGettingLoans.name}-Loans found: [${result.loans.length}]`)
-    logger.debug(`${apiForGettingLoans.name}-Loan groups with totals calculated: [${result.group_totals.length}]`)
     res.json(result)
   } catch (error) {
     logger.error(`${apiForGettingLoans.name}-Error. `, error)
     res.status(500).json({ error: 'Error al listar préstamos' })
   } finally {
-    logger.debug(`${apiForGettingLoans.name}-End`)
   }
 }

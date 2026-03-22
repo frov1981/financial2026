@@ -90,16 +90,13 @@ export const routeToFormDeleteAccount: RequestHandler = async (req: Request, res
 Api para devolver el DTO Account en JSON
 ==================================================*/
 export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${apiForGettingAccounts.name}-Start`)
   const auth_req = req as AuthRequest
   try {
     const accounts: DTOAccount[] = await getAccountsForApi(auth_req)
-    logger.debug(`${apiForGettingAccounts.name}-DTOAccount. Count: ${accounts.length}`)
     res.json(accounts)
   } catch (error) {
     logger.error(`${apiForGettingAccounts.name}-Error. `, parseError(error))
     res.status(500).json({ error: 'Error al listar cuentas' })
   } finally {
-    logger.debug(`${apiForGettingAccounts.name}-End`)
   }
 }

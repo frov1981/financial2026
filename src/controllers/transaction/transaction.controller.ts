@@ -64,7 +64,6 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
 }
 
 export const apiForGettingTransactions: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${apiForGettingTransactions.name}-Start`)
   try {
     const auth_req = req as AuthRequest
     const page = Number(auth_req.query.page) || 1
@@ -110,13 +109,11 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .take(limit)
       .getManyAndCount()
 
-    logger.debug(`${apiForGettingTransactions.name}-Transactions found: [${items.length}], Total: [${total}], Page: [${page}], Limit: [${limit}], Search: [${search}], Category ID: [${category_id}]`)
     res.json({ items, total, page, limit, category_id: category_id })
   } catch (error) {
     logger.error(`${apiForGettingTransactions.name}-Error. `, error)
     res.status(500).json({ error: 'Error al listar transacciones' })
   } finally {
-    logger.debug(`${apiForGettingTransactions.name}-End`)
   }
 }
 
@@ -126,7 +123,6 @@ export const routeToPageTransaction: RequestHandler = (req: Request, res: Respon
   const from = req.query.from || null
   const saved_batch = req.query.saved_batch === 'true'
   const timezone = auth_req.timezone || 'UTC'
-  logger.debug(`${routeToPageTransaction.name}-Routing to transactions page with timezone: ${timezone}`)
   res.render(
     'layouts/main',
     {
@@ -152,7 +148,6 @@ export const routeToFormInsertTransaction: RequestHandler = async (req: Request,
   const timezone = auth_req.timezone || 'UTC'
 
   const default_date = await getNextValidTransactionDate(auth_req)
-  logger.debug(`${routeToFormInsertTransaction.name}-Routing for inserting transaction form with timezone: [${timezone}]`)
   return renderTransactionForm(res, {
     title: 'Insertar Transacción',
     view: 'pages/transactions/form',
@@ -189,7 +184,6 @@ export const routeToFormUpdateTransaction: RequestHandler = async (req: Request,
   if (!transaction) {
     return res.redirect('/transactions')
   }
-  logger.debug(`${routeToFormUpdateTransaction.name}-Routing for updating transaction form with timezone: [${timezone}]`)
   return renderTransactionForm(res, {
     title: 'Editar Transacción',
     view: 'pages/transactions/form',
@@ -234,7 +228,6 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
   const default_date = await getNextValidTransactionDate(auth_req)
   const category_errors = await validateActiveCategoryTransaction(transaction, auth_req)
   const errors = category_errors ? category_errors : {}
-  logger.debug(`${routeToFormCloneTransaction.name}-Routing for cloning transaction form with timezone: [${timezone}]`)
   return renderTransactionForm(res, {
     title: 'Clonar Transacción',
     view: 'pages/transactions/form',
@@ -275,7 +268,6 @@ export const routeToFormDeleteTransaction: RequestHandler = async (req: Request,
   if (!transaction) {
     return res.redirect('/transactions')
   }
-  logger.debug(`${routeToFormDeleteTransaction.name}-Routing for deleting transaction form with timezone: [${timezone}]`)
   return renderTransactionForm(res, {
     title: 'Eliminar Transacción',
     view: 'pages/transactions/form',

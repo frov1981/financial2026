@@ -1,4 +1,5 @@
 import { Request, RequestHandler, Response } from 'express'
+import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Loan } from "../../entities/Loan.entity"
 import { LoanPayment } from '../../entities/LoanPayment.entity'
@@ -9,7 +10,6 @@ import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
-import { getActiveAccounts } from '../../cache/cache-accounts.service'
 export { savePayment as apiForSavingAccount } from './payment.saving'
 
 type PaymentFormViewParams = BaseFormViewParams & {
@@ -20,7 +20,6 @@ const renderPaymentForm = async (res: Response, params: PaymentFormViewParams) =
     const { title, view, payment, errors, mode, auth_req } = params
     const payment_form_policy = paymentFormMatrix[mode]
     const active_expense_category_list = await getActiveCategoriesForPaymentsByUser(auth_req)
-    /*const account_list = await getActiveAccountsByUser(auth_req)*/
     const account_list = await getActiveAccounts(auth_req)
     const loan_id = auth_req.params.loan_id || payment.loan?.id || null
     const category_id = auth_req.query.category_id || null
@@ -41,7 +40,6 @@ const renderPaymentForm = async (res: Response, params: PaymentFormViewParams) =
 }
 
 export const apiForGettingPayments: RequestHandler = async (req: Request, res: Response) => {
-    logger.debug(`${apiForGettingPayments.name}-Start`)
     const loan_id = Number(req.params.loan_id)
     try {
         const payments = await AppDataSource.getRepository(LoanPayment).find({
@@ -49,13 +47,11 @@ export const apiForGettingPayments: RequestHandler = async (req: Request, res: R
             relations: { account: true, category: true },
             order: { payment_date: 'DESC' }
         })
-        logger.debug(`${apiForGettingPayments.name}-Payments found: [${payments.length}]`)
         res.json(payments)
     } catch (error) {
         logger.error(`${apiForGettingPayments.name}-Error. `, error)
         res.status(500).json({ error: 'Error al listar pagos' })
     } finally {
-        logger.debug(`${apiForGettingPayments.name}-End`)
     }
 }
 
@@ -82,7 +78,6 @@ export const routeToFormInsertPayment: RequestHandler = async (req, res) => {
     const auth_req = req as AuthRequest
     const timezone = auth_req.timezone || 'UTC'
     const default_date = await getNextValidTransactionDate(auth_req)
-    logger.debug(`${routeToFormInsertPayment.name}-Routing for inserting payment form with timezone: [${timezone}]`)
     return renderPaymentForm(res, {
         title: 'Insertar Pago',
         view: 'pages/payments/form',
@@ -116,7 +111,6 @@ export const routeToFormUpdatePayment: RequestHandler = async (req, res) => {
     if (!payment) {
         return res.redirect('/payments')
     }
-    logger.debug(`${routeToFormUpdatePayment.name}-Routing for updating payment form with timezone: [${timezone}]`)
     return renderPaymentForm(res, {
         title: 'Editar Pago',
         view: 'pages/payments/form',
@@ -152,7 +146,6 @@ export const routeToFormClonePayment: RequestHandler = async (req, res) => {
         return res.redirect('/loans')
     }
     const default_date = await getNextValidTransactionDate(auth_req)
-    logger.debug(`${routeToFormClonePayment.name}-Routing for cloning payment form with timezone: [${timezone}]`)
     return renderPaymentForm(res, {
         title: 'Clonar Pago',
         view: 'pages/payments/form',
@@ -187,7 +180,6 @@ export const routeToFormDeletePayment: RequestHandler = async (req, res) => {
     if (!payment) {
         return res.redirect('/payments')
     }
-    logger.debug(`${routeToFormDeletePayment.name}-Routing for deleting payment form with timezone: [${timezone}]`)
     return renderPaymentForm(res, {
         title: 'Eliminar Pago',
         view: 'pages/payments/form',
