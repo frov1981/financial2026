@@ -370,31 +370,18 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         return res.redirect(`/payments/${loan_id}/loan`)
 
     } catch (err: any) {
-
         await queryRunner.rollbackTransaction()
-
-        logger.error(`${savePayment.name}-Error.`, {
-            user_id: auth_req.user.id,
-            payment_id,
-            loan_id,
-            mode,
-            error: err,
-            stack: err?.stack
-        })
+        logger.error(`${savePayment.name}-Error.`, { user_id: auth_req.user.id, payment_id, loan_id, mode, error: parseError(err), })
 
         const validationErrors = err?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
-
         return res.render('layouts/main', {
             title: getTitle(mode),
             view: 'pages/payments/form',
             ...form_state,
             errors: validationErrors
         })
-
     } finally {
-
         await queryRunner.release()
         logger.debug(`${savePayment.name}-End`)
-
     }
 }

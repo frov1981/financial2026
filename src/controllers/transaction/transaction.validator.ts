@@ -44,7 +44,9 @@ export const validateSaveTransaction = async (transaction: Transaction, auth_req
         const now = new Date()
         const start_of_current_month = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
         if (transaction.date < start_of_current_month) {
-            field_errors.date = 'La fecha debe ser del mes en curso o posterior'
+            if (!auth_req.role?.can_update_date_transaction) {
+                field_errors.date = 'La fecha debe ser del mes en curso o posterior'
+            }
         }
     }
 
@@ -119,9 +121,10 @@ export const validateDeleteTransaction = async (transaction: Transaction, auth_r
         const transaction_date = new Date(transaction.date)
         const now = new Date()
 
-        if (transaction_date.getFullYear() < now.getFullYear() ||
-            (transaction_date.getFullYear() === now.getFullYear() && transaction_date.getMonth() < now.getMonth())) {
-            field_errors.general = 'No se puede eliminar transacciones de meses anteriores'
+        if (transaction_date.getFullYear() < now.getFullYear() || (transaction_date.getFullYear() === now.getFullYear() && transaction_date.getMonth() < now.getMonth())) {
+            if (!auth_req.role?.can_delete_transaction) {
+                field_errors.general = 'No se puede eliminar transacciones de meses anteriores'
+            }
         }
     }
 

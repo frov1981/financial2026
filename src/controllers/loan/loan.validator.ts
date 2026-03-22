@@ -1,17 +1,14 @@
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
+import { getActiveAccountById } from '../../cache/cache-accounts.service'
+import { getActiveCategoryById } from '../../cache/cache-categories.service'
+import { getActiveLoanGroupById } from '../../cache/cache-loan-group.service'
+import { getLoanById, getLoanByName } from '../../cache/cache-loans.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import { Account } from '../../entities/Account.entity'
-import { Category } from '../../entities/Category.entity'
 import { Loan } from '../../entities/Loan.entity'
-import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { LoanPayment } from '../../entities/LoanPayment.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { mapValidationErrors } from '../../validators/map-errors.validator'
-import { getLoanById, getLoanByName } from '../../cache/cache-loans.service'
-import { getAccountById, getActiveAccountById } from '../../cache/cache-accounts.service'
-import { getActiveCategoryById } from '../../cache/cache-categories.service'
-import { getActiveLoanGroupById } from '../../cache/cache-loan-group.service'
 
 export const validateLoan = async (auth_req: AuthRequest, loan: Loan): Promise<Record<string, string> | null> => {
   const user_id = auth_req.user.id
@@ -60,15 +57,17 @@ export const validateLoan = async (auth_req: AuthRequest, loan: Loan): Promise<R
       // Validación modificación monto
       if (loan.total_amount !== undefined && Number(existing_loan.total_amount) !== Number(loan.total_amount)) {
         if (payments.length > 0) {
-          field_errors.total_amount = 'No se puede modificar el monto total de un préstamo con pagos registrados'
+          if (!auth_req.role?.can_update_amount_loan) {
+            field_errors.total_amount = 'No se puede modificar el monto total de un préstamo con pagos registrados'
+          }
         } else {
-          const loan_date = new Date(existing_loan.start_date)
           const now = new Date()
-          const same_month =
-            loan_date.getFullYear() === now.getFullYear() &&
-            loan_date.getMonth() === now.getMonth()
+          const loan_date = new Date(existing_loan.start_date)
+          const same_month = loan_date.getFullYear() === now.getFullYear() && loan_date.getMonth() === now.getMonth()
           if (!same_month) {
-            field_errors.total_amount = 'No se puede modificar el monto de un préstamo de meses anteriores'
+            if (!auth_req.role?.can_update_amount_loan) {
+              field_errors.total_amount = 'No se puede modificar el monto de un préstamo de meses anteriores'
+            }
           }
         }
       }
@@ -82,7 +81,9 @@ export const validateLoan = async (auth_req: AuthRequest, loan: Loan): Promise<R
         const existing_time = normalizeToMinute(existing_loan.start_date)
         const new_time = normalizeToMinute(loan.start_date)
         if (existing_time !== new_time) {
-          field_errors.start_date = 'No se puede modificar la fecha de inicio de un préstamo con pagos registrados'
+          if (!auth_req.role?.can_update_start_date_loan) {
+            field_errors.start_date = 'No se puede modificar la fecha de inicio de un préstamo con pagos registrados'
+          }
         }
       }
       // Validación capital pagado

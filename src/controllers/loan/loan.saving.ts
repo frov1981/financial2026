@@ -256,12 +256,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
        Manejo de errores
     ============================ */
     await queryRunner.rollbackTransaction()
-    logger.error(`${saveLoan.name}-Error. `, {
-      user_id: auth_req.user.id,
-      loan_id,
-      mode,
-      error: parseError(err),
-    })
+    logger.error(`${saveLoan.name}-Error. `, { user_id: auth_req.user.id, loan_id, mode, error: parseError(err), })
     let validationErrors: Record<string, string> | null = null
     switch (err?.code) {
       case 'DISBURSEMENT_REQUIRED':

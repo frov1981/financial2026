@@ -77,15 +77,12 @@ export const validateSavePayment = async (auth_req: AuthRequest, payment: LoanPa
     ============================ */
 
     if (payment.category && payment.category.id) {
-
         const category = await category_repo.findOne({
             where: { id: payment.category.id, user: { id: user_id }, is_active: true }
         })
-
         if (!category) {
             fields_errors.category = 'La categoría seleccionada no es válida'
         }
-
     }
 
     /* =========================
@@ -97,12 +94,10 @@ export const validateSavePayment = async (auth_req: AuthRequest, payment: LoanPa
         order: { payment_date: 'DESC', id: 'DESC' }
     })
 
-    if (
-        last_payment &&
-        (!old_payment || last_payment.id !== old_payment.id) &&
-        payment.payment_date.getTime() < last_payment.payment_date.getTime()
-    ) {
-        fields_errors.payment_date = 'La fecha del pago no puede ser anterior al último pago registrado'
+    if (last_payment && (!old_payment || last_payment.id !== old_payment.id) && payment.payment_date.getTime() < last_payment.payment_date.getTime()) {
+        if (!auth_req.role?.can_update_date_payment) {
+            fields_errors.payment_date = 'La fecha del pago no puede ser anterior al último pago registrado'
+        }
     }
 
     return Object.keys(fields_errors).length > 0 ? fields_errors : null

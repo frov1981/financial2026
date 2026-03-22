@@ -3,6 +3,7 @@ import { AppDataSource } from '../config/typeorm.datasource'
 import { User } from '../entities/User.entity'
 import { AuthRequest } from '../types/auth-request'
 import { logger } from '../utils/logger.util'
+import { role_permissions } from '../policies/roles-user.policy'
 
 
 export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
@@ -17,9 +18,13 @@ export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: R
     auth_req.user = user
     auth_req.timezone = (req.session as any)?.timezone || 'UTC'
 
+    const role =  user.role
+    auth_req.role = role_permissions[role]
+
     next()
   } catch (err) {
     logger.error(`${sessionAuthMiddleware.name}-Error. `, err)
     return res.redirect('/login')
   }
 }
+

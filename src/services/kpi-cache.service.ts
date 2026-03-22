@@ -10,7 +10,7 @@ function money(n: number) {
     return Number(n.toFixed(2))
 }
 
-const query = `
+const query_curr_period = `
 SELECT
   COALESCE(SUM(CASE WHEN t.flow_type = 'incomes' THEN t.amount END), 0) AS incomes,
   COALESCE(SUM(CASE WHEN t.flow_type = 'expenses' THEN t.amount END), 0) AS expenses,
@@ -42,6 +42,36 @@ WHERE t.user_id = ?
 AND t.date >= ?
 AND t.date < ?
 `
+
+const query_all_periods = `
+INSERT INTO cache_kpi_balances (
+    user_id, period_year, period_month, incomes, expenses, savings, withdrawals, loans, payments, total_inflows, total_outflows, net_cash_flow, net_savings, available_balance, principal_breakdown, interest_breakdown
+)
+SELECT
+t.user_id,
+YEAR(t.date),
+MONTH(t.date),
+COALESCE(SUM(CASE WHEN t.flow_type = 'incomes' THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type = 'expenses' THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type = 'savings' THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type = 'withdrawals' THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type = 'loans' THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type = 'payments' THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type IN ('incomes','loans') THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type IN ('expenses','payments') THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type IN ('incomes','loans') THEN t.amount END), 0)-COALESCE(SUM(CASE WHEN t.flow_type IN ('expenses','payments') THEN t.amount END), 0),
+COALESCE(SUM(CASE WHEN t.flow_type = 'savings' THEN t.amount END), 0)-COALESCE(SUM(CASE WHEN t.flow_type = 'withdrawals' THEN t.amount END), 0),
+(COALESCE(SUM(CASE WHEN t.flow_type IN ('incomes','loans') THEN t.amount END), 0)-COALESCE(SUM(CASE WHEN t.flow_type IN ('expenses','payments') THEN t.amount END), 0))
+-
+(COALESCE(SUM(CASE WHEN t.flow_type = 'savings' THEN t.amount END), 0)-COALESCE(SUM(CASE WHEN t.flow_type = 'withdrawals' THEN t.amount END), 0)),
+0,
+0
+
+FROM transactions t
+WHERE t.user_id = ?
+GROUP BY t.user_id, YEAR(t.date), MONTH(t.date)
+`
+
 export class KpiCacheService {
 
     static async recalcMonthlyKPIs(auth_req: AuthRequest, period_year: number, period_month: number) {
@@ -49,6 +79,13 @@ export class KpiCacheService {
         const timezone = auth_req.timezone || 'UTC'
 
         try {
+            const now = DateTime.now().setZone(timezone)
+            const is_current_period = now.year === period_year && now.month === period_month
+
+            if (!is_current_period) {
+                await this.rebuildAllUserKPIs(user_id, timezone)
+                return
+            }
 
             const local_start = DateTime.fromObject({ year: period_year, month: period_month, day: 1 }, { zone: timezone })
             const start_of_month_utc = local_start.toUTC()
@@ -57,7 +94,7 @@ export class KpiCacheService {
             const end_date = start_of_next_month_utc.toJSDate()
             logger.debug(`recalcMonthlyKPIs.KPI_RANGE_DEBUG`, { timezone, period_year, period_month, start: start_of_month_utc.toISO(), end: start_of_next_month_utc.toISO() })
 
-            const kpi_data = await AppDataSource.manager.query(query, [user_id, start_date, end_date, user_id, start_date, end_date, user_id, start_date, end_date])
+            const kpi_data = await AppDataSource.manager.query(query_curr_period, [user_id, start_date, end_date, user_id, start_date, end_date, user_id, start_date, end_date])
             if (!kpi_data?.length) return
 
             const record = kpi_data[0]
@@ -111,11 +148,22 @@ export class KpiCacheService {
                 })
             }
             logger.info(`KPIs recalculados user=${user_id} periodo=${period_month}/${period_year}`)
-
         } catch (err: any) {
             logger.error('Error recalculando KPIs', parseError(err))
         }
+    }
 
+    static async rebuildAllUserKPIs(user_id: number, timezone: string) {
+        try {
+            const repo = AppDataSource.getRepository(CacheKpiBalance)
+            /* 1. borrar cache solo del usuario */
+            await repo.delete({ user: { id: user_id } })
+            /* 2. recalcular todo */
+            await AppDataSource.manager.query(query_all_periods, [user_id])
+            logger.info(`KPI FULL REBUILD user=${user_id}`)
+        } catch (err) {
+            logger.error('Error en rebuildAllUserKPIs', parseError(err))
+        }
     }
 
 }

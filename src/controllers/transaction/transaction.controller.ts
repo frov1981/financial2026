@@ -8,7 +8,7 @@ import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { splitCategoriesByType } from './transaction.auxiliar'
 import { validateActiveCategoryTransaction } from './transaction.validator'
-import { getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service'
+import { getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
 import { getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
@@ -28,17 +28,24 @@ type TransactionFormViewParams = {
 
 const renderTransactionForm = async (res: Response, params: TransactionFormViewParams) => {
   const { title, view, transaction, errors, mode, auth_req, context } = params
+  const transaction_form_policy = transactionFormMatrix[mode]
 
-  /*const active_accounts = await getActiveAccountsByUser(auth_req)
-  const active_accounts_for_transfer = await getActiveAccountsForTransferByUser(auth_req)*/
   const active_accounts = await getActiveAccounts(auth_req)
   const active_accounts_for_transfer = await getActiveAccountsForTransfer(auth_req)
 
-  const transaction_form_policy = transactionFormMatrix[mode]
-  /*const active_categories = await getActiveCategoriesByUser(auth_req)
-  const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)*/
-  const active_income_categories = await getActiveIncomeCategories(auth_req)
-  const active_expense_categories = await getActiveExpenseCategories(auth_req)
+  let active_income_categories = await getActiveIncomeCategories(auth_req)
+  let active_expense_categories = await getActiveExpenseCategories(auth_req)
+  const check_active_category = await getActiveCategoryById(auth_req, transaction.category.id)
+  if (!check_active_category) {
+    const curr_inactive_category = await getCategoryById(auth_req, transaction.category.id)
+    if (curr_inactive_category?.type === 'income') {
+      active_income_categories.push(curr_inactive_category)
+      active_income_categories.sort((a, b) => a.name.localeCompare(b.name))
+    } else if (curr_inactive_category?.type === 'expense') {
+      active_expense_categories.push(curr_inactive_category)
+      active_expense_categories.sort((a, b) => a.name.localeCompare(b.name))
+    }
+  }
 
   return res.render(
     'layouts/main',

@@ -1,7 +1,7 @@
 import { Request, RequestHandler, Response } from 'express'
 import { DateTime } from 'luxon'
 import { getAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
-import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service'
+import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
 import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
@@ -63,20 +63,16 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   logger.info('saveTransaction called', { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
-  const user_id = auth_req.user.id
   const repo_transaction = AppDataSource.getRepository(Transaction)
 
   const transaction_id = req.body.id ? Number(req.body.id) : undefined
   const mode: TransactionFormMode = req.body.mode || 'insert'
   const timezone = req.body.timezone || 'UTC'
-  logger.debug(`${saveTransaction.name}-Timezone for saving transaction: [${timezone}]`)
   const return_from = req.body.return_from
   const return_category_id = Number(req.body.return_category_id) || null
 
   const active_accounts = await getActiveAccounts(auth_req)
   const active_accounts_for_transfer = await getActiveAccountsForTransfer(auth_req)
-
-  const active_categories = await getActiveCategories(auth_req)
   const active_income_categories = await getActiveIncomeCategories(auth_req)
   const active_expense_categories = await getActiveExpenseCategories(auth_req)
 
@@ -108,12 +104,9 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     ============================ */
     if (mode === 'delete') {
       if (!existing) throw new Error('Transacción no encontrada')
-
       const errors = await validateDeleteTransaction(existing, auth_req)
       if (errors) throw { validationErrors: errors }
-
       const deltas = calculateTransactionDeltas(existing, -1)
-
       for (const [acc_id, delta] of deltas) {
         const acc = await query_runner.manager.findOne(Account, { where: { id: acc_id } })
         if (!acc) continue
@@ -121,11 +114,9 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
           balance: Number(acc.balance) + delta
         })
       }
-
       const local_date = DateTime.fromJSDate(existing.date, { zone: 'utc' }).setZone(timezone)
       const period_year = local_date.year
       const period_month = local_date.month
-
       await query_runner.manager.remove(Transaction, existing)
       await query_runner.commitTransaction()
 
@@ -156,7 +147,8 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
         type: existing.type,
         amount: existing.amount,
         account: existing.account,
-        to_account: existing.to_account
+        to_account: existing.to_account,
+        category: existing.category
       })
 
       transaction = existing
@@ -167,7 +159,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     if (clean.type !== undefined) { transaction.type = clean.type }
     if (clean.account !== undefined) { transaction.account = await getAccountById(auth_req, Number(clean.account)) }
     if (clean.to_account !== undefined) { transaction.to_account = await getAccountById(auth_req, Number(clean.to_account)) }
-    if (clean.category !== undefined) { transaction.category = await getActiveCategoryById(auth_req, Number(clean.category)) }
+    if (clean.category !== undefined) { transaction.category = await getCategoryById(auth_req, Number(clean.category)) }
     if (clean.date) { transaction.date = parseLocalDateToUTC(clean.date, timezone) }
     if (clean.amount !== undefined) { transaction.amount = Number(clean.amount) }
     if (clean.description !== undefined) { transaction.description = clean.description }
@@ -241,17 +233,9 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
   } catch (err: any) {
     await query_runner.rollbackTransaction()
-
-    logger.error(`${saveTransaction.name}-Error. `, {
-      user_id: auth_req.user.id,
-      transaction_id,
-      mode,
-      error: err,
-      stack: err?.stack
-    })
+    logger.error(`${saveTransaction.name}-Error. `, { user_id: auth_req.user.id, transaction_id, mode, error: parseError(err), })
 
     const validation_errors = err?.validationErrors || null
-
     return res.status(500).render('layouts/main', {
       title: getTitle(mode),
       view: 'pages/transactions/form',

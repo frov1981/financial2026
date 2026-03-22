@@ -23,8 +23,8 @@ export class User {
   @Column()
   name!: string
 
-  @Column({ default: '' })
-  roles!: string
+  @Column({ type: 'varchar', default: 'USER' })
+  role!: 'ADMIN' | 'USER'
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date

@@ -6,6 +6,7 @@ import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 import { getAvailableKpiYears, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisCachelBalance, getKpisGlobalBalance, getKpisLast6MonthsBalance } from './home.auxiliar'
+import { deleteAll } from '../../cache/cache-key.service'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.user_id) {
@@ -171,6 +172,7 @@ export const apiForLogout: RequestHandler = async (req: Request, res: Response) 
         return res.redirect('/home')
       }
 
+      deleteAll(req as AuthRequest, 'home')
       res.clearCookie('connect.sid')
       return res.redirect('/login')
     })
