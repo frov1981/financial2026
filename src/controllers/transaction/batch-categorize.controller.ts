@@ -1,12 +1,11 @@
 import { Request, RequestHandler, Response } from 'express';
 import { In } from 'typeorm';
+import { getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Category } from '../../entities/Category.entity';
 import { Transaction } from '../../entities/Transaction.entity';
 import { AuthRequest } from '../../types/auth-request';
 import { logger } from '../../utils/logger.util';
-import { splitCategoriesByType } from './transaction.auxiliar';
-import { getActiveCategories, getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service';
 
 export const apiForGettingCategorizeTransactions: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest;
@@ -14,7 +13,6 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
     const ids = ids_raw.split(',').map(id => Number(id)).filter(id => Number.isInteger(id) && id > 0);
     const return_from = req.query.from as string | undefined
     const return_category_id = req.query.category_id ? Number(req.query.category_id) : null
-
 
     if (!ids.length) { return res.redirect('/transactions') }
 
@@ -38,8 +36,7 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
             }
         }
     })
-
-    logger.info(`Data for batch`, transactions)
+    
     const has_income = transactions.some(t => t.type === 'income')
     const has_expense = transactions.some(t => t.type === 'expense')
 
@@ -76,8 +73,6 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
         const expense_ids_arr = typeof expense_ids === 'string' ? JSON.parse(expense_ids) : expense_ids
 
         const all_ids = [...income_ids_arr, ...expense_ids_arr]
-        logger.debug(`${apiForBatchCategorize.name} - Start with data: [${all_ids}], income_category_id: [${income_category_id}], expense_category_id: [${expense_category_id}]`)
-
         if (!all_ids.length) {
             throw new Error('No se proporcionaron transacciones para categorizar')
         }
@@ -145,9 +140,6 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
         5. Procesar actualización (SOLO category)
         ============================================================ */
         await AppDataSource.transaction(async manager => {
-
-            logger.debug(`${apiForBatchCategorize.name} - Updating transactions`, { income_ids: income_ids_arr, expense_ids: expense_ids_arr, income_category_id, expense_category_id })
-
             if (income_ids_arr.length) {
                 await manager
                     .createQueryBuilder()
@@ -186,9 +178,6 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
 
     } catch (error) {
         logger.error(`${apiForBatchCategorize.name} - Error`, error)
-
-        /* const active_categories = await getActiveCategoriesByUser(auth_req)
-         const { active_income_categories, active_expense_categories } = splitCategoriesByType(active_categories)*/
 
         const active_income_categories = await getActiveIncomeCategories(auth_req)
         const active_expense_categories = await getActiveExpenseCategories(auth_req)
