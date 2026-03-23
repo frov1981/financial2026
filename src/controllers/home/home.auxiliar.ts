@@ -1,12 +1,11 @@
 import { DateTime } from 'luxon'
+import { getHomeAvailableKpiYears, getHomeKpisCacheBalance } from '../../cache/cache-home.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
 import { Loan } from "../../entities/Loan.entity"
 import { LoanPayment } from "../../entities/LoanPayment.entity"
 import { Transaction } from "../../entities/Transaction.entity"
 import { AuthRequest } from "../../types/auth-request"
-import { CacheKpiBalance } from '../../entities/CacheKpiBalance.entity'
-import { getHomeAvailableKpiYears } from '../../cache/cache-home.service'
 
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)
@@ -494,27 +493,26 @@ export const getKpisLastYearBalance = async (auth_req: AuthRequest) => {
 /* ============================================================================
    KPIs globales desde la Cache
 ============================================================================ */
-export const getKpisCachelBalance = async (auth_req: AuthRequest) => {
+export const getKpisCacheBalance = async (auth_req: AuthRequest) => {
+  const rows = await getHomeKpisCacheBalance(auth_req)
+  return rows
+}
 
+/*
+export const getKpisCachelBalance = async (auth_req: AuthRequest) => {
   const user_id = auth_req.user.id
   const year_period = Number(auth_req.query.year_period || 0)
   const month_period = Number(auth_req.query.month_period || 0)
-
   const repo = AppDataSource.getRepository(CacheKpiBalance)
-
   const qb = repo.createQueryBuilder('k').where('k.user_id = :user_id', { user_id })
-
   if (year_period > 0) qb.andWhere('k.period_year = :year', { year: year_period })
   if (year_period > 0 && month_period > 0) qb.andWhere('k.period_month = :month', { month: month_period })
-
   const rows = await qb.getMany()
-
   if (!rows.length) {
     return {
       incomes: 0, expenses: 0, savings: 0, withdrawals: 0, loans: 0, payments: 0, total_inflows: 0, total_outflows: 0, net_cash_flow: 0, net_savings: 0, available_balance: 0, principal_breakdown: 0, interest_breakdown: 0
     }
   }
-
   const result = rows.reduce((acc, row) => {
     acc.incomes += Number(row.incomes)
     acc.expenses += Number(row.expenses)
@@ -533,9 +531,11 @@ export const getKpisCachelBalance = async (auth_req: AuthRequest) => {
   }, {
     incomes: 0, expenses: 0, savings: 0, withdrawals: 0, loans: 0, payments: 0, total_inflows: 0, total_outflows: 0, net_cash_flow: 0, net_savings: 0, available_balance: 0, principal_breakdown: 0, interest_breakdown: 0
   })
-
   return result
 }
+*/
+
+
 
 /* ============================================================================
    Obtener todos los años disponibles

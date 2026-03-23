@@ -145,7 +145,7 @@ export const getLoansForApi = async (auth_req: AuthRequest): Promise<{ loans: DT
     
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`Query. user=[${user_id}], entity=[loan], count=[${loans.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    logger.debug(`method=[${getLoansForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[loan], count=[${loans.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, response)
     return response
 }

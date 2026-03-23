@@ -15,7 +15,9 @@ export const cacheKeys = {
   loansByUserForApi: (user_id: number) => `loans_api_user_${user_id}`,
   loanGroupByUser: (user_id: number) => `loan_group_user_${user_id}`,
   loanGroupByUserForApi: (user_id: number) => `loan_group_api_user_${user_id}`,
-  homeAvailableKpiYears: (user_id: number) => `home_available_kpi_years_${user_id}`,
+  homeAvailableKpiYears: (user_id: number) => `home_available_kpis_years_${user_id}`,
+  homeKpiBalance: (user_id: number, year: number, month: number) => `home_kpis_balance_${user_id}_${year}_${month}`,
+  homeKpiBalancePrefix: (user_id: number) => `home_kpis_balance_${user_id}_`,
 
 
   allByUser: (user_id: number) => [
@@ -29,12 +31,22 @@ export const cacheKeys = {
     `loans_api_user_${user_id}`,
     `loan_group_user_${user_id}`,
     `loan_group_api_user_${user_id}`,
-    `home_available_kpi_years_${user_id}`,
+    `home_available_kpis_years_${user_id}`,
+    `home_kpis_balance_${user_id}_*`,
   ]
+}
+
+const delByPrefix = (prefix: string) => {
+  const keys = cache.keys()
+  const keys_to_delete = keys.filter(k => k.startsWith(prefix))
+  return cache.del(keys_to_delete)
 }
 
 export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const user_id = auth_req.user.id
+
   const deleted = cache.del(cacheKeys.allByUser(user_id))
-  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}]`)
+  const deleted_kpis = delByPrefix(cacheKeys.homeKpiBalancePrefix(user_id))
+
+  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}]`)
 }
