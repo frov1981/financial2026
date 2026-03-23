@@ -1,24 +1,25 @@
-import { Request, RequestHandler, Response } from 'express'
-import { DateTime } from 'luxon'
-import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/cache-accounts.service'
-import { getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
-import { deleteAll } from '../../cache/cache-key.service'
-import { getActiveLoanGroup, getLoanGroupById } from '../../cache/cache-loan-group.service'
-import { getLoanById } from '../../cache/cache-loans.service'
-import { AppDataSource } from '../../config/typeorm.datasource'
-import { Account } from '../../entities/Account.entity'
-import { Category } from '../../entities/Category.entity'
-import { Loan } from '../../entities/Loan.entity'
-import { Transaction } from '../../entities/Transaction.entity'
-import { loanFormMatrix } from '../../policies/loan-form.policy'
-import { KpiCacheService } from '../../services/kpi-cache.service'
-import { AuthRequest } from '../../types/auth-request'
-import { LoanFormMode } from '../../types/form-view-params'
-import { parseBoolean } from '../../utils/bool.util'
-import { parseLocalDateToUTC } from '../../utils/date.util'
-import { parseError } from '../../utils/error.util'
-import { logger } from '../../utils/logger.util'
-import { validateDeleteLoan, validateLoan } from './loan.validator'
+import { Request, RequestHandler, Response } from 'express';
+import { DateTime } from 'luxon';
+import { performance } from 'perf_hooks';
+import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/cache-accounts.service';
+import { getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
+import { deleteAll } from '../../cache/cache-key.service';
+import { getActiveLoanGroup, getLoanGroupById } from '../../cache/cache-loan-group.service';
+import { getLoanById } from '../../cache/cache-loans.service';
+import { AppDataSource } from '../../config/typeorm.datasource';
+import { Account } from '../../entities/Account.entity';
+import { Category } from '../../entities/Category.entity';
+import { Loan } from '../../entities/Loan.entity';
+import { Transaction } from '../../entities/Transaction.entity';
+import { loanFormMatrix } from '../../policies/loan-form.policy';
+import { KpiCacheService } from '../../services/kpi-cache.service';
+import { AuthRequest } from '../../types/auth-request';
+import { LoanFormMode } from '../../types/form-view-params';
+import { parseBoolean } from '../../utils/bool.util';
+import { parseLocalDateToUTC } from '../../utils/date.util';
+import { parseError } from '../../utils/error.util';
+import { logger } from '../../utils/logger.util';
+import { validateDeleteLoan, validateLoan } from './loan.validator';
 
 /* ============================
    Obtener título según el modo del formulario
@@ -69,9 +70,10 @@ const buildLoanView = async (auth_req: AuthRequest, body: any) => {
     Obtener cuentas activas del usuario para mostrar en el formulario 
 ============================ */
 export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${saveLoan.name}-Start`)
-  logger.info('saveLoan called', { body: req.body, param: req.params })
+  const start = performance.now()
+  logger.info(`${saveLoan.name} called`, { body: req.body, param: req.params })
   const auth_req = req as AuthRequest
+  const user_id = auth_req.user.id
   const mode: LoanFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
   const loan_id = Number(req.body.id)
@@ -257,6 +259,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     ============================ */
     await queryRunner.rollbackTransaction()
     logger.error(`${saveLoan.name}-Error. `, { user_id: auth_req.user.id, loan_id, mode, error: parseError(err), })
+
     let validationErrors: Record<string, string> | null = null
     switch (err?.code) {
       case 'DISBURSEMENT_REQUIRED':
@@ -279,6 +282,8 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     })
   } finally {
     await queryRunner.release()
-    logger.debug(`${saveLoan.name}-End`)
+    const end = performance.now()
+    const duration_sec = (end - start) / 1000
+    logger.debug(`${saveLoan.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   }
 }

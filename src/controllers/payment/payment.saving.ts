@@ -1,5 +1,6 @@
 import { Request, RequestHandler, Response } from 'express'
 import { DateTime } from 'luxon'
+import { performance } from 'perf_hooks';
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
@@ -110,8 +111,8 @@ function findAccountbyBody(body: any, account_list: Account[]): Account | null {
 ============================ */
 
 export const savePayment: RequestHandler = async (req: Request, res: Response) => {
-    logger.debug(`${savePayment.name}-Start`)
-    logger.info('savePayment called', { body: req.body, param: req.params })
+    const start = performance.now()
+    logger.info(`${savePayment.name} called`, { body: req.body, param: req.params })
 
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
@@ -378,6 +379,8 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         })
     } finally {
         await queryRunner.release()
-        logger.debug(`${savePayment.name}-End`)
+        const end = performance.now()
+        const duration_sec = (end - start) / 1000
+        logger.debug(`${savePayment.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     }
 }

@@ -1,20 +1,21 @@
-import { Request, RequestHandler, Response } from 'express'
-import { DateTime } from 'luxon'
-import { getAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
-import { getActiveCategories, getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
-import { deleteAll } from '../../cache/cache-key.service'
-import { AppDataSource } from '../../config/typeorm.datasource'
-import { Account } from '../../entities/Account.entity'
-import { Transaction } from '../../entities/Transaction.entity'
-import { transactionFormMatrix, TransactionFormMode } from '../../policies/transaction-form.policy'
-import { KpiCacheService } from '../../services/kpi-cache.service'
-import { AuthRequest } from '../../types/auth-request'
-import { parseLocalDateToUTC } from '../../utils/date.util'
-import { parseError } from '../../utils/error.util'
-import { logger } from '../../utils/logger.util'
-import { getSqlErrorMessage } from '../../utils/sql-err.util'
-import { calculateTransactionDeltas } from '../transaction/transaction.auxiliar'
-import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator'
+import { Request, RequestHandler, Response } from 'express';
+import { DateTime } from 'luxon';
+import { performance } from 'perf_hooks';
+import { getAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service';
+import { getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
+import { deleteAll } from '../../cache/cache-key.service';
+import { AppDataSource } from '../../config/typeorm.datasource';
+import { Account } from '../../entities/Account.entity';
+import { Transaction } from '../../entities/Transaction.entity';
+import { transactionFormMatrix, TransactionFormMode } from '../../policies/transaction-form.policy';
+import { KpiCacheService } from '../../services/kpi-cache.service';
+import { AuthRequest } from '../../types/auth-request';
+import { parseLocalDateToUTC } from '../../utils/date.util';
+import { parseError } from '../../utils/error.util';
+import { logger } from '../../utils/logger.util';
+import { getSqlErrorMessage } from '../../utils/sql-err.util';
+import { calculateTransactionDeltas } from '../transaction/transaction.auxiliar';
+import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator';
 
 /* ============================
    Título según modo
@@ -59,10 +60,11 @@ const isSavingAccount = (acc: Account | null | undefined): acc is Account & { ty
 }
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${saveTransaction.name}-Start`)
-  logger.info('saveTransaction called', { body: req.body, param: req.params })
+  const start = performance.now()
+  logger.info(`${saveTransaction.name} called`, { body: req.body, param: req.params })
 
   const auth_req = req as AuthRequest
+  const user_id = auth_req.user.id
   const repo_transaction = AppDataSource.getRepository(Transaction)
 
   const transaction_id = req.body.id ? Number(req.body.id) : undefined
@@ -252,6 +254,8 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     })
   } finally {
     await query_runner.release()
-    logger.debug(`${saveTransaction.name}-End`)
+    const end = performance.now()
+    const duration_sec = (end - start) / 1000
+    logger.debug(`${saveTransaction.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   }
 }

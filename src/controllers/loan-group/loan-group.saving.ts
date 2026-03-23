@@ -1,4 +1,5 @@
 import { Request, RequestHandler, Response } from 'express'
+import { performance } from 'perf_hooks';
 import { deleteAll } from '../../cache/cache-key.service'
 import { getLoanGroupById } from '../../cache/cache-loan-group.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
@@ -51,9 +52,10 @@ const buildLoanGroupView = (body: any, mode: LoanGroupFormMode) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveLoanGroup: RequestHandler = async (req: Request, res: Response) => {
-    logger.debug(`${saveLoanGroup.name}-Start`)
-    logger.info('saveLoanGroup called', { body: req.body, param: req.params })
+    const start = performance.now()
+    logger.info(`${saveLoanGroup.name} called`, { body: req.body, param: req.params })
     const auth_req = req as AuthRequest
+    const user_id = auth_req.user.id
     const loan_group_id = Number(req.body.id)
     const mode: LoanGroupFormMode = req.body.mode || 'insert'
     const repo_loan_group = AppDataSource.getRepository(LoanGroup)
@@ -113,12 +115,7 @@ export const saveLoanGroup: RequestHandler = async (req: Request, res: Response)
         /* ============================
            Manejo de errores
         ============================ */
-        logger.error(`${saveLoanGroup.name}-Error. `, {
-            user_id: auth_req.user.id,
-            loan_group_id: loan_group_id,
-            mode,
-            error: parseError(err),
-        })
+        logger.error(`${saveLoanGroup.name}-Error. `, { user_id: auth_req.user.id, loan_group_id: loan_group_id, mode, error: parseError(err), })
         const validationErrors = err?.validationErrors || null
         return res.render('layouts/main', {
             title: getTitle(mode),
@@ -127,6 +124,8 @@ export const saveLoanGroup: RequestHandler = async (req: Request, res: Response)
             errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         })
     } finally {
-        logger.debug(`${saveLoanGroup.name}-End`)
+        const end = performance.now()
+        const duration_sec = (end - start) / 1000
+        logger.debug(`${saveLoanGroup.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     }
 }

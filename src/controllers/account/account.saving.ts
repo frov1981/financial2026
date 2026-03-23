@@ -1,15 +1,16 @@
-import { Request, RequestHandler, Response } from 'express'
-import { getAccountById } from '../../cache/cache-accounts.service'
-import { deleteAll } from '../../cache/cache-key.service'
-import { AppDataSource } from '../../config/typeorm.datasource'
-import { Account } from '../../entities/Account.entity'
-import { accountFormMatrix } from '../../policies/account-form.policy'
-import { AuthRequest } from '../../types/auth-request'
-import { AccountFormMode } from '../../types/form-view-params'
-import { parseBoolean } from '../../utils/bool.util'
-import { parseError } from '../../utils/error.util'
-import { logger } from '../../utils/logger.util'
-import { validateDeleteAccount, validateSaveAccount } from './account.validator'
+import { Request, RequestHandler, Response } from 'express';
+import { performance } from 'perf_hooks';
+import { getAccountById } from '../../cache/cache-accounts.service';
+import { deleteAll } from '../../cache/cache-key.service';
+import { AppDataSource } from '../../config/typeorm.datasource';
+import { Account } from '../../entities/Account.entity';
+import { accountFormMatrix } from '../../policies/account-form.policy';
+import { AuthRequest } from '../../types/auth-request';
+import { AccountFormMode } from '../../types/form-view-params';
+import { parseBoolean } from '../../utils/bool.util';
+import { parseError } from '../../utils/error.util';
+import { logger } from '../../utils/logger.util';
+import { validateDeleteAccount, validateSaveAccount } from './account.validator';
 
 /* ============================
    Título según modo
@@ -48,9 +49,10 @@ const buildAccountView = (body: any) => {
 }
 
 export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${saveAccount.name}-Start`)
-  logger.info('saveAccount called', { body: req.body, param: req.params })
+  const start = performance.now()
+  logger.info(`${saveAccount.name} called`, { body: req.body, param: req.params })
   const auth_req = req as AuthRequest
+  const user_id = auth_req.user.id
   const account_id = req.body.id ? Number(req.body.id) : undefined
   const mode: AccountFormMode = req.body.mode || 'insert'
   const repo_account = AppDataSource.getRepository(Account)
@@ -75,7 +77,6 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       if (errors) throw { validationErrors: errors }
       await repo_account.delete(existing.id)
       deleteAll(auth_req, 'account')
-      logger.info('Account deleted from database.')
       return res.redirect('/accounts')
     }
     /* ============================
@@ -107,19 +108,13 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       Guardar en base de datos y limpiar cache
     =================================*/
     await repo_account.save(account)
-    logger.info('Account saved to database.')
     deleteAll(auth_req, 'account')
     return res.redirect('/accounts')
   } catch (err: any) {
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error('Error saving account', {
-      user_id: auth_req.user.id,
-      account_id,
-      mode,
-      error: parseError(err)
-    })
+    logger.error('Error saving account', { user_id: auth_req.user.id, account_id, mode, error: parseError(err) })
     const validation_errors = err?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -128,6 +123,8 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
   } finally {
-    logger.debug(`${saveAccount.name}-End`)
+    const end = performance.now()
+    const duration_sec = (end - start) / 1000
+    logger.debug(`${saveAccount.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   }
 }

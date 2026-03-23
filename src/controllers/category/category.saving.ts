@@ -1,16 +1,17 @@
-import { Request, RequestHandler, Response } from 'express'
-import { getCategoryById } from '../../cache/cache-categories.service'
-import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-group.service'
-import { deleteAll } from '../../cache/cache-key.service'
-import { AppDataSource } from '../../config/typeorm.datasource'
-import { Category } from '../../entities/Category.entity'
-import { categoryFormMatrix } from '../../policies/category-form.policy'
-import { AuthRequest } from '../../types/auth-request'
-import { CategoryFormMode } from '../../types/form-view-params'
-import { parseBoolean } from '../../utils/bool.util'
-import { parseError } from '../../utils/error.util'
-import { logger } from '../../utils/logger.util'
-import { validateCategory, validateDeleteCategory } from './category.validator'
+import { Request, RequestHandler, Response } from 'express';
+import { performance } from 'perf_hooks';
+import { getCategoryById } from '../../cache/cache-categories.service';
+import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-group.service';
+import { deleteAll } from '../../cache/cache-key.service';
+import { AppDataSource } from '../../config/typeorm.datasource';
+import { Category } from '../../entities/Category.entity';
+import { categoryFormMatrix } from '../../policies/category-form.policy';
+import { AuthRequest } from '../../types/auth-request';
+import { CategoryFormMode } from '../../types/form-view-params';
+import { parseBoolean } from '../../utils/bool.util';
+import { parseError } from '../../utils/error.util';
+import { logger } from '../../utils/logger.util';
+import { validateCategory, validateDeleteCategory } from './category.validator';
 
 /* ============================
    Obtener título según el modo del formulario
@@ -55,9 +56,10 @@ const buildCategoryView = async (auth_req: AuthRequest, body: any) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveCategory: RequestHandler = async (req: Request, res: Response) => {
-  logger.debug(`${saveCategory.name}-Start`)
-  logger.info('saveCategory called', { body: req.body, param: req.params })
+  const start = performance.now()
+  logger.info(`${saveCategory.name} called`, { body: req.body, param: req.params })
   const auth_req = req as AuthRequest
+  const user_id = auth_req.user.id
   const mode: CategoryFormMode = req.body.mode || 'insert'
   const category_id = Number(req.body.id)
   const category_group_id = Number(req.body.category_group_id)
@@ -118,19 +120,13 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       Guardar en base de datos y limpiar cache
     =================================*/
     await repo_category.save(category)
-    logger.info('Category saved to database.')
     deleteAll(auth_req, 'category')
     return res.redirect('/categories')
   } catch (err: any) {
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error(`${saveCategory.name}-Error. `, {
-      user_id: auth_req.user.id,
-      category_id,
-      mode,
-      error: parseError(err),
-    })
+    logger.error(`${saveCategory.name}-Error. `, { user_id: auth_req.user.id, category_id, mode, error: parseError(err), })
     const validationErrors = err?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -139,6 +135,8 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
   } finally {
-    logger.debug(`${saveCategory.name}-End`)
+    const end = performance.now()
+    const duration_sec = (end - start) / 1000
+    logger.debug(`${saveCategory.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   }
 }
