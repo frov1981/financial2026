@@ -9,6 +9,7 @@ import { AuthRequest } from '../../types/auth-request'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from '../../utils/logger.util'
 import { validateActiveCategoryTransaction } from './transaction.validator'
+import { parseError } from '../../utils/error.util'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
 /* =========================================================
@@ -111,7 +112,7 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
 
     res.json({ items, total, page, limit, category_id: category_id })
   } catch (error) {
-    logger.error(`${apiForGettingTransactions.name}-Error. `, error)
+    logger.error(`${apiForGettingTransactions.name}-Error. `, parseError(error))
     res.status(500).json({ error: 'Error al listar transacciones' })
   } finally {
   }

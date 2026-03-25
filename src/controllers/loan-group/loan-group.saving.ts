@@ -111,12 +111,12 @@ export const saveLoanGroup: RequestHandler = async (req: Request, res: Response)
         await repo_loan_group.save(loan_group)
         deleteAll(auth_req, 'loan_group')
         return res.redirect('/loans')
-    } catch (err: any) {
+    } catch (error: any) {
         /* ============================
            Manejo de errores
         ============================ */
-        logger.error(`${saveLoanGroup.name}-Error. `, { user_id: auth_req.user.id, loan_group_id: loan_group_id, mode, error: parseError(err), })
-        const validationErrors = err?.validationErrors || null
+        logger.error(`${saveLoanGroup.name}-Error. `, { user_id: auth_req.user.id, loan_group_id: loan_group_id, mode, error: parseError(error), })
+        const validationErrors = error?.validationErrors || null
         return res.render('layouts/main', {
             title: getTitle(mode),
             view: 'pages/loan-groups/form',

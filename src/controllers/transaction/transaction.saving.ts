@@ -123,7 +123,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       await query_runner.commitTransaction()
 
       deleteAll(auth_req, 'transaction')
-      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${saveTransaction.name}-Error. `, parseError(err)))
+      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -225,7 +225,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     await query_runner.commitTransaction()
 
     deleteAll(auth_req, 'transaction')
-    KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${saveTransaction.name}-Error. `, parseError(err)))
+    KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
 
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -233,11 +233,11 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
     return res.redirect('/transactions')
 
-  } catch (err: any) {
+  } catch (error: any) {
     await query_runner.rollbackTransaction()
-    logger.error(`${saveTransaction.name}-Error. `, { user_id: auth_req.user.id, transaction_id, mode, error: parseError(err), })
+    logger.error(`${saveTransaction.name}-Error. `, { user_id: auth_req.user.id, transaction_id, mode, error: parseError(error), })
 
-    const validation_errors = err?.validationErrors || null
+    const validation_errors = error?.validationErrors || null
     return res.status(500).render('layouts/main', {
       title: getTitle(mode),
       view: 'pages/transactions/form',
@@ -250,7 +250,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
         from: return_from || null,
         category_id: return_category_id || null
       },
-      errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.\n' + getSqlErrorMessage(err) }
+      errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.\n' + getSqlErrorMessage(error) }
     })
   } finally {
     await query_runner.release()

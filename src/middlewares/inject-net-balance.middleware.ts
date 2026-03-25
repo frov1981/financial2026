@@ -2,6 +2,7 @@ import { NextFunction, Request, RequestHandler, Response } from 'express'
 import { AccountBalanceService } from '../services/account-balance.service'
 import { AuthRequest } from '../types/auth-request'
 import { logger } from '../utils/logger.util'
+import { parseError } from '../utils/error.util'
 
 export const injectNetBalance: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -15,7 +16,7 @@ export const injectNetBalance: RequestHandler = async (req: Request, res: Respon
         //logger.debug(`${injectNetBalance.name}-Balance inyectado para usuario [${user.id}]=[${net_balance}]`)
         next()
     } catch (error) {
-        logger.error(`${injectNetBalance.name}-Error. `, error)
+        logger.error(`${injectNetBalance.name}-Error. `, parseError(error))
         next(error)
     }
 }

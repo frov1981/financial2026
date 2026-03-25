@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { AuthRequest } from '../types/auth-request'
 import { LoanBalanceService } from '../services/loan-balance.service'
 import { logger } from '../utils/logger.util'
+import { parseError } from '../utils/error.util'
 
 export const injectLoanBalance = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -13,7 +14,7 @@ export const injectLoanBalance = async (req: Request, res: Response, next: NextF
         //logger.debug(`${injectLoanBalance.name}-Balance inyectado para usuario [${auth_req.user.id}]=[${loan_balance}]`)
         next()
     } catch (error) {
-        logger.error(`${injectLoanBalance.name}-Error. `, error)
+        logger.error(`${injectLoanBalance.name}-Error. `, parseError(error))
         next(error)
     }
 }

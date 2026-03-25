@@ -6,6 +6,7 @@ import { Category } from '../../entities/Category.entity';
 import { Transaction } from '../../entities/Transaction.entity';
 import { AuthRequest } from '../../types/auth-request';
 import { logger } from '../../utils/logger.util';
+import { parseError } from '../../utils/error.util';
 
 export const apiForGettingCategorizeTransactions: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest;
@@ -177,7 +178,7 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
         return res.redirect('/transactions?saved_batch=true')
 
     } catch (error) {
-        logger.error(`${apiForBatchCategorize.name} - Error`, error)
+        logger.error(`${apiForBatchCategorize.name} - Error`, parseError(error))
 
         const active_income_categories = await getActiveIncomeCategories(auth_req)
         const active_expense_categories = await getActiveExpenseCategories(auth_req)

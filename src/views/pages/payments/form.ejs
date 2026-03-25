@@ -1,8 +1,8 @@
 <%
   const rules = payment_form_policy
   const isHidden = field => rules[field] === 'hidden'
-  const isReadOnly = field => rules[field] === 'read'
-  const isEditable = field => rules[field] === 'edit'
+  const isReadOnly = field => rules[field] === 'readonly'
+  const isEditable = field => rules[field] === 'editable'
 %>
 
 <%

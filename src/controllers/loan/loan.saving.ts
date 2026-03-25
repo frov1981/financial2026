@@ -57,6 +57,7 @@ const buildLoanView = async (auth_req: AuthRequest, body: any) => {
   const loan_group = await getLoanGroupById(auth_req, loan_group_id)
   const disbursement = await getAccountById(auth_req, disbursement_id)
   const category = await getCategoryById(auth_req, category_id)
+
   return {
     ...body,
     is_active: parseBoolean(body.is_active),
@@ -96,6 +97,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner()
   await queryRunner.connect()
   await queryRunner.startTransaction()
+  
   try {
     let existing: Loan | null = null
     if (loan_id) {
@@ -126,7 +128,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       await queryRunner.commitTransaction()
 
       deleteAll(auth_req, 'loan')
-      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(err)))
+      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -246,22 +248,22 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       const local_date = DateTime.fromJSDate(loan.transaction.date, { zone: 'utc' }).setZone(timezone)
       const period_year = local_date.year
       const period_month = local_date.month
-      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(err => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(err)))
+      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
     }
 
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
     }
     return res.redirect('/loans')
-  } catch (err: any) {
+  } catch (error: any) {
     /* ============================
        Manejo de errores
     ============================ */
     await queryRunner.rollbackTransaction()
-    logger.error(`${saveLoan.name}-Error. `, { user_id: auth_req.user.id, loan_id, mode, error: parseError(err), })
+    logger.error(`${saveLoan.name}-Error. `, { user_id: auth_req.user.id, loan_id, mode, error: parseError(error), })
 
     let validationErrors: Record<string, string> | null = null
-    switch (err?.code) {
+    switch (error?.code) {
       case 'DISBURSEMENT_REQUIRED':
         validationErrors = { disbursement_account: 'Cuenta de desembolso requerida' }
         break
@@ -272,7 +274,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         validationErrors = { category: 'Categoría seleccionada no encontrada' }
         break
       default:
-        validationErrors = err?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
+        validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     }
     return res.render('layouts/main', {
       title: getTitle(mode),

@@ -4,6 +4,7 @@ import { User } from '../entities/User.entity'
 import { AuthRequest } from '../types/auth-request'
 import { logger } from '../utils/logger.util'
 import { role_permissions } from '../policies/roles-user.policy'
+import { parseError } from '../utils/error.util'
 
 
 export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
@@ -22,8 +23,8 @@ export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: R
     auth_req.role = role_permissions[role]
 
     next()
-  } catch (err) {
-    logger.error(`${sessionAuthMiddleware.name}-Error. `, err)
+  } catch (error) {
+    logger.error(`${sessionAuthMiddleware.name}-Error. `, parseError(error))
     return res.redirect('/login')
   }
 }

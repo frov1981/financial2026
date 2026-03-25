@@ -8,6 +8,7 @@ import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { logger } from "../../utils/logger.util"
+import { parseError } from '../../utils/error.util'
 export { saveLoan as apiForSavingLoan } from './loan.saving'
 
 type LoanFormViewParams = BaseFormViewParams & {
@@ -147,7 +148,7 @@ export const apiForGettingLoans: RequestHandler = async (req: Request, res: Resp
     const result = await getLoansForApi(auth_req)
     res.json(result)
   } catch (error) {
-    logger.error(`${apiForGettingLoans.name}-Error. `, error)
+    logger.error(`${apiForGettingLoans.name}-Error. `, parseError(error))
     res.status(500).json({ error: 'Error al listar préstamos' })
   } finally {
   }

@@ -124,7 +124,7 @@ export const apiForGettingKpis: RequestHandler = async (req: Request, res: Respo
     })
 
   } catch (error) {
-    logger.error('Error en apiForGettingKpis:', error)
+    logger.error('Error en apiForGettingKpis:', parseError(error))
     res.json({ message: 'Error' })
   }
 
@@ -143,7 +143,7 @@ export const apiForLogout: RequestHandler = async (req: Request, res: Response) 
       return res.redirect('/login')
     })
   } catch (error) {
-    logger.error('Logout error:', error)
+    logger.error('Logout error:', parseError(error))
     return res.redirect('/login')
   }
 }

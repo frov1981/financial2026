@@ -110,12 +110,12 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     await repo_account.save(account)
     deleteAll(auth_req, 'account')
     return res.redirect('/accounts')
-  } catch (err: any) {
+  } catch (error: any) {
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error('Error saving account', { user_id: auth_req.user.id, account_id, mode, error: parseError(err) })
-    const validation_errors = err?.validationErrors || null
+    logger.error('Error saving account', { user_id: auth_req.user.id, account_id, mode, error: parseError(error) })
+    const validation_errors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
       view: 'pages/accounts/form',

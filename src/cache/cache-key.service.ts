@@ -15,6 +15,8 @@ export const cacheKeys = {
   loansByUserForApi: (user_id: number) => `loans_api_user_${user_id}`,
   loanGroupByUser: (user_id: number) => `loan_group_user_${user_id}`,
   loanGroupByUserForApi: (user_id: number) => `loan_group_api_user_${user_id}`,
+  paymentsByUser: (user_id:number) => `payment_user_${user_id}`,
+  paymentsByUserForApi: (user_id:number) => `payment_api_user_${user_id}`,
   homeAvailableKpiYears: (user_id: number) => `home_available_kpis_years_${user_id}`,
   homeKpiBalance: (user_id: number, year: number, month: number) => `home_kpis_balance_${user_id}_${year}_${month}`,
   homeKpiBalancePrefix: (user_id: number) => `home_kpis_balance_${user_id}_`,
@@ -31,6 +33,8 @@ export const cacheKeys = {
     `loans_api_user_${user_id}`,
     `loan_group_user_${user_id}`,
     `loan_group_api_user_${user_id}`,
+    `payment_user_${user_id}`,
+    `payment_api_user_${user_id}`,
     `home_available_kpis_years_${user_id}`,
     `home_kpis_balance_${user_id}_*`,
   ]

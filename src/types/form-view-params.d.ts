@@ -25,7 +25,7 @@ export type LoanGroupFormMode = 'insert' | 'update' | 'delete'
 type LoanGroupFieldMatrix = Record<string, LoanGroupFieldMode>
 type LoanGroupFormMatrix = Record<LoanGroupFormMode, LoanGroupFieldMatrix>
 
-export type PaymentFieldMode = 'hidden' | 'read' | 'edit'
+export type PaymentFieldMode =  'hidden' | 'readonly' | 'editable'
 export type PaymentFormMode = 'insert' | 'update' | 'delete'
 type PaymentFieldMatrix = Record<string, PaymentFieldMode>
 type PaymentFormMatrix = Record<PaymentFormMode, PaymentFieldMatrix>

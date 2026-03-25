@@ -110,12 +110,12 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
     await repo_category_group.save(category_group)
     deleteAll(auth_req, 'category_group')
     return res.redirect('/categories')
-  } catch (err: any) {
+  } catch (error: any) {
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error(`${saveCategoryGroup.name}-Error. `, { user_id: auth_req.user.id, category_group_id, mode, error: parseError(err), })
-    const validationErrors = err?.validationErrors || null
+    logger.error(`${saveCategoryGroup.name}-Error. `, { user_id: auth_req.user.id, category_group_id, mode, error: parseError(error), })
+    const validationErrors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
       view: 'pages/category-groups/form',

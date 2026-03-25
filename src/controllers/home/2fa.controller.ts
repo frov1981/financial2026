@@ -4,6 +4,7 @@ import { AppDataSource } from '../../config/typeorm.datasource'
 import { AuthCode } from '../../entities/AuthCode.entity'
 import { compareCode } from '../../utils/auth-code.util'
 import { logger } from '../../utils/logger.util'
+import { parseError } from '../../utils/error.util'
 
 export const show2FA = (req: Request, res: Response) => {
   if (!(req.session as any)?.pending2FAUserId) {
@@ -82,11 +83,7 @@ export const verify2FA = async (req: Request, res: Response) => {
     })
 
   } catch (error: any) {
-    logger.error('verify2FA error', {
-      message: error?.message,
-      stack: error?.stack,
-      orig: error
-    })
+    logger.error('verify2FA error', parseError(error))
     res.render(
       'pages/2fa',
       {
