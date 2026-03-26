@@ -25,11 +25,15 @@ export type LoanGroupFormMode = 'insert' | 'update' | 'delete'
 type LoanGroupFieldMatrix = Record<string, LoanGroupFieldMode>
 type LoanGroupFormMatrix = Record<LoanGroupFormMode, LoanGroupFieldMatrix>
 
-export type PaymentFieldMode =  'hidden' | 'readonly' | 'editable'
+export type PaymentFieldMode = 'hidden' | 'readonly' | 'editable'
 export type PaymentFormMode = 'insert' | 'update' | 'delete'
 type PaymentFieldMatrix = Record<string, PaymentFieldMode>
 type PaymentFormMatrix = Record<PaymentFormMode, PaymentFieldMatrix>
 
+export type TransactionFieldMode = 'hidden' | 'readonly' | 'editable'
+export type TransactionFormMode = 'insert' | 'update' | 'delete'
+type TransactionFieldMatrix = Record<string, TransactionFieldMode>
+type TransactionFormMatrix = Record<TransactionFormMode, TransactionFieldMatrix>
 
 export type BaseFormViewParams = {
     title: string

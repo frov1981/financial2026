@@ -6,29 +6,21 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
 import { AuthRequest } from '../../types/auth-request'
+import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
+import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
 import { validateActiveCategoryTransaction } from './transaction.validator'
-import { parseError } from '../../utils/error.util'
 export { saveTransaction as apiForSavingTransaction } from './transaction.saving'
 
-/* =========================================================
-   Helper de render para formulario (igual patrón que loans)
-========================================================= */
-type TransactionFormViewParams = {
-  title: string
-  view: string
+type TransactionFormViewParams = BaseFormViewParams & {
   transaction: any
-  errors: any
-  mode: 'insert' | 'update' | 'delete'
-  auth_req: AuthRequest
-  context: { category_id: any; from: any }
 }
 
 const renderTransactionForm = async (res: Response, params: TransactionFormViewParams) => {
-  const { title, view, transaction, errors, mode, auth_req, context } = params
-  const transaction_form_policy = transactionFormMatrix[mode]
+  const { title, view, transaction, errors, mode, auth_req } = params
 
+  const transaction_form_policy = transactionFormMatrix[mode]
   const active_accounts = await getActiveAccounts(auth_req)
   const active_accounts_for_transfer = await getActiveAccountsForTransfer(auth_req)
 
@@ -46,20 +38,24 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
     }
   }
 
+  const category_id = auth_req.query.category_id || null
+  const from = auth_req.query.from || null
+
   return res.render(
     'layouts/main',
     {
       title,
       view,
+      errors,
+      mode,
+      auth_req,
       transaction,
+      transaction_form_policy,
       active_accounts,
       active_accounts_for_transfer,
       active_income_categories,
       active_expense_categories,
-      transaction_form_policy,
-      errors,
-      mode,
-      context,
+      context: { category_id, from },
     }
   )
 }
@@ -84,7 +80,6 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .leftJoinAndSelect('t.loan_payment', 'loan_payment')
       .leftJoinAndSelect('loan_payment.loan', 'paymentLoan')
       .leftJoinAndSelect('paymentLoan.category', 'paymentLoanCategory')
-
       .where('t.user_id = :user_id', { user_id })
 
     if (category_id) {
@@ -144,25 +139,19 @@ export const routeToPageTransaction: RequestHandler = (req: Request, res: Respon
 export const routeToFormInsertTransaction: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
   const auth_req = req as AuthRequest
-  const category_id = req.query.category_id || null
-  const from = req.query.from || null
   const timezone = auth_req.timezone || 'UTC'
 
   const default_date = await getNextValidTransactionDate(auth_req)
   return renderTransactionForm(res, {
     title: 'Insertar Transacción',
     view: 'pages/transactions/form',
+    errors: {},
+    mode,
+    auth_req,
     transaction: {
       date: formatDateForInputLocal(default_date, timezone),
       amount: '0.00',
     },
-    errors: {},
-    mode,
-    auth_req,
-    context: {
-      category_id: category_id,
-      from
-    }
   })
 }
 
@@ -170,13 +159,7 @@ export const routeToFormUpdateTransaction: RequestHandler = async (req: Request,
   const mode = 'update'
   const auth_req = req as AuthRequest
   const transaction_id = Number(req.params.id)
-  const category_id = req.query.category_id || null
-  const from = req.query.from || null
   const timezone = auth_req.timezone || 'UTC'
-
-  if (!Number.isInteger(transaction_id) || transaction_id <= 0) {
-    return res.redirect('/transactions')
-  }
   const repo_transaction = AppDataSource.getRepository(Transaction)
   const transaction = await repo_transaction.findOne({
     where: { id: transaction_id, user: { id: auth_req.user.id } },
@@ -188,23 +171,13 @@ export const routeToFormUpdateTransaction: RequestHandler = async (req: Request,
   return renderTransactionForm(res, {
     title: 'Editar Transacción',
     view: 'pages/transactions/form',
-    transaction: {
-      id: transaction.id,
-      type: transaction.type,
-      account: transaction.account,
-      to_account: transaction.to_account,
-      category: transaction.category,
-      amount: Number(transaction.amount),
-      date: formatDateForInputLocal(transaction.date, timezone),
-      description: transaction.description ?? ''
-    },
     errors: {},
     mode,
     auth_req,
-    context: {
-      category_id,
-      from
-    }
+    transaction: {
+      ...transaction,
+      date: formatDateForInputLocal(transaction.date, timezone),
+    },
   })
 }
 
@@ -212,12 +185,7 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
   const mode = 'insert'
   const auth_req = req as AuthRequest
   const transaction_id = Number(req.params.id)
-  const category_id = req.query.category_id || null
-  const from = req.query.from || null
   const timezone = auth_req.timezone || 'UTC'
-  if (!Number.isInteger(transaction_id) || transaction_id <= 0) {
-    return res.redirect('/transactions')
-  }
   const repo_transaction = AppDataSource.getRepository(Transaction)
   const transaction = await repo_transaction.findOne({
     where: { id: transaction_id, user: { id: auth_req.user.id } },
@@ -230,24 +198,16 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
   const category_errors = await validateActiveCategoryTransaction(transaction, auth_req)
   const errors = category_errors ? category_errors : {}
   return renderTransactionForm(res, {
-    title: 'Clonar Transacción',
+    title: 'Insertar Transacción',
     view: 'pages/transactions/form',
+    errors,
+    mode,
+    auth_req,
     transaction: {
-      type: transaction.type,
-      account: transaction.account,
-      to_account: transaction.to_account,
-      category: transaction.category,
-      amount: Number(transaction.amount),
+      ...transaction,
       date: formatDateForInputLocal(default_date, timezone),
       description: transaction.description ?? ''
     },
-    errors: errors,
-    mode,
-    auth_req: auth_req,
-    context: {
-      category_id: category_id,
-      from
-    }
   })
 }
 
@@ -255,12 +215,7 @@ export const routeToFormDeleteTransaction: RequestHandler = async (req: Request,
   const mode = 'delete'
   const auth_req = req as AuthRequest
   const transaction_id = Number(req.params.id)
-  const category_id = req.query.category_id || null
-  const from = req.query.from || null
   const timezone = auth_req.timezone || 'UTC'
-  if (!Number.isInteger(transaction_id) || transaction_id <= 0) {
-    return res.redirect('/transactions')
-  }
   const repo_transaction = AppDataSource.getRepository(Transaction)
   const transaction = await repo_transaction.findOne({
     where: { id: transaction_id, user: { id: auth_req.user.id } },
@@ -272,22 +227,12 @@ export const routeToFormDeleteTransaction: RequestHandler = async (req: Request,
   return renderTransactionForm(res, {
     title: 'Eliminar Transacción',
     view: 'pages/transactions/form',
-    transaction: {
-      id: transaction.id,
-      type: transaction.type,
-      account: transaction.account,
-      to_account: transaction.to_account,
-      category: transaction.category,
-      amount: Number(transaction.amount),
-      date: formatDateForInputLocal(transaction.date, timezone),
-      description: transaction.description ?? ''
-    },
     errors: {},
     mode,
     auth_req: auth_req,
-    context: {
-      category_id: category_id,
-      from
-    }
+    transaction: {
+      ...transaction,
+      date: formatDateForInputLocal(transaction.date, timezone),
+    },
   })
 }

@@ -13,22 +13,22 @@ export type DTOLoanPayment = {
     payment_date: Date
     note: string | null
     created_at: Date
-    account: { id: number, name: string }
+    account: { id: number, name: string } | null
     category: { id: number, name: string } | null
+    loan: { id: number, name: string } | null
 }
 
 const getPaymentsBase = async (user_id: number): Promise<LoanPayment[]> => {
     const cache_key = cacheKeys.paymentsByUser(user_id)
     const cached_payments = cache.get<LoanPayment[]>(cache_key)
-    if (cached_payments !== undefined) {
-        return cached_payments
-    }
+    if (cached_payments !== undefined) return cached_payments
+
     const repo = AppDataSource.getRepository(LoanPayment)
     const payments: LoanPayment[] = await repo.find({
         where: { loan: { user: { id: user_id } } },
         relations: { loan: true, category: true, account: true },
-        /*order: { loan: 'ASC' }*/
     })
+
     cache.set(cache_key, payments)
     return payments
 }
@@ -48,17 +48,17 @@ export const getPaymentById = async (auth_req: AuthRequest, payment_id: number):
 
 export const getPaymentsForApi = async (auth_req: AuthRequest, loan_id: number): Promise<DTOLoanPayment[]> => {
     const user_id = auth_req.user.id
-    const cache_key = cacheKeys.paymentsByUserForApi(loan_id)
+    const cache_key = cacheKeys.paymentsByLoanForApi(user_id, loan_id)
+
     const cached = cache.get<DTOLoanPayment[]>(cache_key)
-    if (cached !== undefined) {
-        return cached
-    }
+    if (cached !== undefined) return cached
 
     const repo = AppDataSource.getRepository(LoanPayment)
     const start = performance.now()
+
     const result = await repo.find({
         where: { loan: { id: loan_id } },
-        relations: { account: true, category: true },
+        relations: { loan: true, account: true, category: true },
         order: { payment_date: 'DESC' }
     })
 
@@ -70,8 +70,9 @@ export const getPaymentsForApi = async (auth_req: AuthRequest, loan_id: number):
         payment_date: p.payment_date,
         note: p.note,
         created_at: p.created_at,
-        account: { id: p.account.id, name: p.account.name },
-        category: p.category ? { id: p.category.id, name: p.category.name } : null
+        account: p.account ? { id: p.account.id, name: p.account.name } : null,
+        category: p.category ? { id: p.category.id, name: p.category.name } : null,
+        loan: p.loan ? { id: p.loan.id, name: p.loan.name } : null
     }))
 
     const end = performance.now()

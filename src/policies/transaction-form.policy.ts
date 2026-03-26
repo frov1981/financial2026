@@ -1,45 +1,31 @@
-export type TransactionFormMode = 'insert' | 'update' | 'delete' | 'clone'
+import { TransactionFormMatrix } from "../types/form-view-params";
 
-export type TransactionFieldPolicy = 'edit' | 'read' | 'hidden'
-
-export const transactionFormMatrix: Record<TransactionFormMode, Record<string, TransactionFieldPolicy>> = {
+export const transactionFormMatrix: TransactionFormMatrix = {
     insert: {
-        type: 'edit',
-        account: 'edit',
-        to_account: 'edit',
-        category: 'edit',
-        amount: 'edit',
-        date: 'edit',
-        description: 'edit'
+        type: 'editable',
+        account: 'editable',
+        to_account: 'editable',
+        category: 'editable',
+        amount: 'editable',
+        date: 'editable',
+        description: 'editable'
     },
-
     update: {
-        type: 'read',
-        account: 'edit',
-        to_account: 'edit',
-        category: 'edit',
-        amount: 'edit',
-        date: 'edit',
-        description: 'edit'
+        type: 'readonly',
+        account: 'editable',
+        to_account: 'editable',
+        category: 'editable',
+        amount: 'editable',
+        date: 'editable',
+        description: 'editable'
     },
-
     delete: {
-        type: 'read',
-        account: 'read',
-        to_account: 'read',
-        category: 'read',
-        amount: 'read',
-        date: 'read',
-        description: 'read'
+        type: 'readonly',
+        account: 'readonly',
+        to_account: 'readonly',
+        category: 'readonly',
+        amount: 'readonly',
+        date: 'readonly',
+        description: 'readonly'
     },
-
-    clone: {
-        type: 'edit',
-        account: 'edit',
-        to_account: 'edit',
-        category: 'edit',
-        amount: 'edit',
-        date: 'edit',
-        description: 'edit'
-    }
 }
