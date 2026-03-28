@@ -1,11 +1,12 @@
 import { DateTime } from 'luxon'
-import { getHomeAvailableKpiYears, getHomeKpisCacheBalance } from '../../cache/cache-home.service'
+import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeTrendKpiCache } from '../../cache/cache-home.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
 import { Loan } from "../../entities/Loan.entity"
 import { LoanPayment } from "../../entities/LoanPayment.entity"
 import { Transaction } from "../../entities/Transaction.entity"
 import { AuthRequest } from "../../types/auth-request"
+import { logger } from '../../utils/logger.util'
 
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)
@@ -490,58 +491,25 @@ export const getKpisLastYearBalance = async (auth_req: AuthRequest) => {
   }
 }
 
-/* ============================================================================
-   KPIs globales desde la Cache
-============================================================================ */
-export const getKpisCacheBalance = async (auth_req: AuthRequest) => {
-  const rows = await getHomeKpisCacheBalance(auth_req)
-  return rows
-}
 
-/*
-export const getKpisCachelBalance = async (auth_req: AuthRequest) => {
-  const user_id = auth_req.user.id
-  const year_period = Number(auth_req.query.year_period || 0)
-  const month_period = Number(auth_req.query.month_period || 0)
-  const repo = AppDataSource.getRepository(CacheKpiBalance)
-  const qb = repo.createQueryBuilder('k').where('k.user_id = :user_id', { user_id })
-  if (year_period > 0) qb.andWhere('k.period_year = :year', { year: year_period })
-  if (year_period > 0 && month_period > 0) qb.andWhere('k.period_month = :month', { month: month_period })
-  const rows = await qb.getMany()
-  if (!rows.length) {
-    return {
-      incomes: 0, expenses: 0, savings: 0, withdrawals: 0, loans: 0, payments: 0, total_inflows: 0, total_outflows: 0, net_cash_flow: 0, net_savings: 0, available_balance: 0, principal_breakdown: 0, interest_breakdown: 0
-    }
-  }
-  const result = rows.reduce((acc, row) => {
-    acc.incomes += Number(row.incomes)
-    acc.expenses += Number(row.expenses)
-    acc.savings += Number(row.savings)
-    acc.withdrawals += Number(row.withdrawals)
-    acc.loans += Number(row.loans)
-    acc.payments += Number(row.payments)
-    acc.total_inflows += Number(row.total_inflows)
-    acc.total_outflows += Number(row.total_outflows)
-    acc.net_cash_flow += Number(row.net_cash_flow)
-    acc.net_savings += Number(row.net_savings)
-    acc.available_balance += Number(row.available_balance)
-    acc.principal_breakdown += Number(row.principal_breakdown)
-    acc.interest_breakdown += Number(row.interest_breakdown)
-    return acc
-  }, {
-    incomes: 0, expenses: 0, savings: 0, withdrawals: 0, loans: 0, payments: 0, total_inflows: 0, total_outflows: 0, net_cash_flow: 0, net_savings: 0, available_balance: 0, principal_breakdown: 0, interest_breakdown: 0
-  })
-  return result
-}
-*/
-
-
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* ============================================================================
    Obtener todos los años disponibles
 ============================================================================ */
-export const getAvailableKpiYears = async (auth_req: AuthRequest): Promise<number[]> => {
-  const years = await getHomeAvailableKpiYears(auth_req)
+export const getAvailableYearsKpi = async (auth_req: AuthRequest): Promise<number[]> => {
+  const years = await getHomeAvailableYearsKpiCache(auth_req)
   return years
 }
+
+export const getBalanceKpi = async (auth_req: AuthRequest) => {
+  const rows = await getHomeBalanceKpiCache(auth_req)
+  return rows
+}
+
+export const getTrendKpi = async (auth_req: AuthRequest) => {
+  const rows = await getHomeTrendKpiCache(auth_req)
+  return rows
+}
+
 

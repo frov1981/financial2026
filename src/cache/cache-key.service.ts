@@ -25,12 +25,16 @@ export const cacheKeys = {
 
   paymentsByLoan: (user_id: number, loan_id: number) => `payment_user_${user_id}_loan_${loan_id}`,
   paymentsByLoanForApi: (user_id: number, loan_id: number) => `payment_api_user_${user_id}_loan_${loan_id}`,
-
   paymentsByLoanPrefix: (user_id: number) => `payment_api_user_${user_id}_loan_`,
 
-  homeAvailableKpiYears: (user_id: number) => `home_available_kpis_years_${user_id}`,
-  homeKpiBalance: (user_id: number, year: number, month: number) => `home_kpis_balance_${user_id}_${year}_${month}`,
-  homeKpiBalancePrefix: (user_id: number) => `home_kpis_balance_${user_id}_`,
+  homeAvailableYearsKpi: (user_id: number) => `home_available_years_kpi_user_${user_id}`,
+  homeBalanceKpi: (user_id: number, year: number, month: number) => `home_balance_kpi_user_${user_id}_year_${year}_month_${month}`,
+  hhomeBalanceKpiPrefix: (user_id: number) => `home_balance_kpi_user_${user_id}_`,
+
+  homeTrendKpi: (user_id: number, year: number, month: number) => `home_kpis_trend_user_${user_id}_year_${year}_month_${month}`,
+  homeTrendKpiPrefix: (user_id: number) => `home_kpis_trend_user_${user_id}_`,
+  homeBalanceKpiAccum: (user_id: number, year: number, month: number) => `home_kpis_balance_accum_user_${user_id}_year_${year}_month_${month}`,
+  homeBalanceKpiAccumPrefix: (user_id: number) => `home_kpis_balance_accum_user_${user_id}_`,
 
   allByUser: (user_id: number) => [
     `accounts_user_${user_id}`,
@@ -45,8 +49,8 @@ export const cacheKeys = {
     `loan_group_api_user_${user_id}`,
     `payment_user_${user_id}`,
     `payment_api_user_${user_id}`,
-    `home_available_kpis_years_${user_id}`,
-    `home_kpis_balance_${user_id}_*`,
+    `home_available_years_kpi_user_${user_id}`,
+    `home_balance_kpi_user_${user_id}_*`,
   ]
 }
 
@@ -59,7 +63,9 @@ const delByPrefix = (prefix: string) => {
 export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const user_id = auth_req.user.id
   const deleted = cache.del(cacheKeys.allByUser(user_id))
-  const deleted_kpis = delByPrefix(cacheKeys.homeKpiBalancePrefix(user_id))
+  const deleted_kpis = delByPrefix(cacheKeys.hhomeBalanceKpiPrefix(user_id))
   const deleted_payments = delByPrefix(cacheKeys.paymentsByLoanPrefix(user_id))
-  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], paymentsDeleted=[${deleted_payments}]`)
+  const deleted_kpis_accum = delByPrefix(cacheKeys.homeBalanceKpiAccumPrefix(user_id))
+  const deleted_trend = delByPrefix(cacheKeys.homeTrendKpiPrefix(user_id))
+  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}]`)
 }

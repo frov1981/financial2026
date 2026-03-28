@@ -65,7 +65,7 @@
     color: var(--ui-orange-700);
 }
 
-.kpis-cache-balance-header-nav {
+.html-balance-kpi-header-nav {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -74,14 +74,14 @@
     user-select: none;
 }
 
-.kpis-cache-balance-year-label {
+.html-balance-kpi-year-label {
     font-size: 1rem;
     font-weight: 600;
     margin: 0;
     white-space: nowrap;
 }
 
-.kpis-cache-balance-year-btn {
+.html-balance-kpi-year-btn {
     width: 32px;
     height: 32px;
     border: none;
@@ -97,16 +97,16 @@
     transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
-.kpis-cache-balance-year-btn:hover:not(:disabled) {
+.html-balance-kpi-year-btn:hover:not(:disabled) {
     background: var(--ui-gray-200);
 }
 
-.kpis-cache-balance-year-btn:disabled {
+.html-balance-kpi-year-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
-.kpis-cache-balance-year-btn svg {
+.html-balance-kpi-year-btn svg {
     width: 18px;
     height: 18px;
 }

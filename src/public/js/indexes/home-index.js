@@ -2,7 +2,7 @@
    Constantes globales
 ============================ */
 const CARD_IDS = [
-    'kpis-cache-balance',
+    'html-balance-kpi',
     'chart-data-last-6months-balance',
     'chart-data-last-6years-balance',
     'chart-data-last-6years-loan'
@@ -15,7 +15,6 @@ const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 let varChartDataLast6MonthsBalance = null
 let varChartDataLast6YearsBalance = null
 let varChartDataLast6YearsLoan = null
-
 let kpi_years = []
 let kpi_year_index = 0
 
@@ -23,14 +22,11 @@ let kpi_year_index = 0
    DOM Ready
 ============================ */
 document.addEventListener('DOMContentLoaded', async () => {
-
     const savedState = loadFilters(CARD_STATE_KEY) || {}
-
     CARD_IDS.forEach(id => {
         const body = document.getElementById(id)
         const icon = document.getElementById(`icon-${id}`)
         if (!body || !icon) return
-
         const isOpen = savedState[id] ?? true
         body.classList.toggle('collapsed', !isOpen)
         icon.innerHTML = isOpen ? iconChevronClose() : iconChevronOpen()
@@ -41,45 +37,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (carousel_prev) carousel_prev.innerHTML = iconCarouselPrev()
     if (carousel_next) carousel_next.innerHTML = iconCarouselNext()
 
-    const kpi_prev = document.getElementById('kpis-cache-balance-prev')
-    const kpi_next = document.getElementById('kpis-cache-balance-next')
+    const kpi_prev = document.getElementById('html-balance-kpi-prev')
+    const kpi_next = document.getElementById('html-balance-kpi-next')
     if (kpi_prev) kpi_prev.innerHTML = iconCarouselPrev()
     if (kpi_next) kpi_next.innerHTML = iconCarouselNext()
 
     try {
-
         const res = await fetch('/kpis', { credentials: 'same-origin' })
         if (!res.ok) throw new Error('No autorizado')
 
         const {
-            kpisCacheBalance,
+            availableYearsKpi,
+            balanceKpi,
+            trendKpi,
             chartDataLast6MonthsBalance,
             chartDataLast6YearsBalance,
             chartDataLast6YearsLoan,
-            availableYears
         } = await res.json()
 
         /* ============================
            Inicializar navegación año
         ============================ */
-
-        kpi_years = availableYears || [0]
-
+        kpi_years = availableYearsKpi || [0]
         const savedYear = loadFilters(KPI_YEAR_STATE_KEY)
         kpi_year_index = kpi_years.indexOf(savedYear)
         if (kpi_year_index < 0) kpi_year_index = 0
-
         updateKpiYearLabel(kpi_years[kpi_year_index])
-        renderKpis(kpisCacheBalance)
-
+        renderKpis(balanceKpi)
         initYearNavigation()
-
         /* ============================
            Charts
         ============================ */
-
         if (typeof Chart !== 'undefined') {
-
             const ctxMonths = document.getElementById('varChartDataLast6MonthsBalance').getContext('2d')
             varChartDataLast6MonthsBalance = new Chart(ctxMonths, {
                 type: 'line',
@@ -123,9 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 options: { responsive: true, maintainAspectRatio: false }
             })
         }
-
         initHomeCarousel()
-
     } catch (err) {
         console.error('Error cargando dashboard', err)
     }
@@ -135,19 +122,19 @@ document.addEventListener('DOMContentLoaded', async () => {
    Render KPIs
 ============================ */
 function renderKpis(data) {
-    document.getElementById('kpis-cache-balance-incomes').textContent = data.incomes.toFixed(2)
-    document.getElementById('kpis-cache-balance-expenses').textContent = data.expenses.toFixed(2)
-    document.getElementById('kpis-cache-balance-loans').textContent = data.loans.toFixed(2)
-    document.getElementById('kpis-cache-balance-payments').textContent = data.payments.toFixed(2)
-    document.getElementById('kpis-cache-balance-savings').textContent = data.savings.toFixed(2)
-    document.getElementById('kpis-cache-balance-withdrawals').textContent = data.withdrawals.toFixed(2)
-    document.getElementById('kpis-cache-balance-total-inflows').textContent = data.total_inflows.toFixed(2)
-    document.getElementById('kpis-cache-balance-total-outflows').textContent = data.total_outflows.toFixed(2)
-    document.getElementById('kpis-cache-balance-net-cash-flow').textContent = data.net_cash_flow.toFixed(2)
-    document.getElementById('kpis-cache-balance-net-savings').textContent = data.net_savings.toFixed(2)
-    document.getElementById('kpis-cache-balance-available-balance').textContent = data.available_balance.toFixed(2)
-    document.getElementById('kpis-cache-balance-principal-breakdown').textContent = data.principal_breakdown.toFixed(2)
-    document.getElementById('kpis-cache-balance-interest-breakdown').textContent = data.interest_breakdown.toFixed(2)
+    document.getElementById('html-balance-kpi-incomes').textContent = data.incomes.toFixed(2)
+    document.getElementById('html-balance-kpi-expenses').textContent = data.expenses.toFixed(2)
+    document.getElementById('html-balance-kpi-loans').textContent = data.loans.toFixed(2)
+    document.getElementById('html-balance-kpi-payments').textContent = data.payments.toFixed(2)
+    document.getElementById('html-balance-kpi-savings').textContent = data.savings.toFixed(2)
+    document.getElementById('html-balance-kpi-withdrawals').textContent = data.withdrawals.toFixed(2)
+    document.getElementById('html-balance-kpi-total-inflows').textContent = data.total_inflows.toFixed(2)
+    document.getElementById('html-balance-kpi-total-outflows').textContent = data.total_outflows.toFixed(2)
+    document.getElementById('html-balance-kpi-net-cash-flow').textContent = data.net_cash_flow.toFixed(2)
+    document.getElementById('html-balance-kpi-net-savings').textContent = data.net_savings.toFixed(2)
+    document.getElementById('html-balance-kpi-available-balance').textContent = data.available_balance.toFixed(2)
+    document.getElementById('html-balance-kpi-principal-breakdown').textContent = data.principal_breakdown.toFixed(2)
+    document.getElementById('html-balance-kpi-interest-breakdown').textContent = data.interest_breakdown.toFixed(2)
 }
 
 /* ============================
@@ -155,8 +142,8 @@ function renderKpis(data) {
 ============================ */
 function initYearNavigation() {
 
-    const prevBtn = document.getElementById('kpis-cache-balance-prev')
-    const nextBtn = document.getElementById('kpis-cache-balance-next')
+    const prevBtn = document.getElementById('html-balance-kpi-prev')
+    const nextBtn = document.getElementById('html-balance-kpi-next')
 
     if (!prevBtn || !nextBtn) return
 
@@ -188,19 +175,19 @@ async function changeYear() {
     const res = await fetch(`/kpis?year_period=${year}&month_period=0`, { credentials: 'same-origin' })
     if (!res.ok) return
 
-    const { kpisCacheBalance } = await res.json()
-    renderKpis(kpisCacheBalance)
+    const { balanceKpi } = await res.json()
+    renderKpis(balanceKpi)
 }
 
 function updateKpiYearLabel(year) {
-    const label = document.getElementById('kpis-cache-balance-year-label')
+    const label = document.getElementById('html-balance-kpi-year-label')
     if (!label) return
     label.textContent = year === 0 ? 'KPIs Balances - Todos' : `KPIs Balances - ${year}`
 }
 
 function updateYearButtons() {
-    const prevBtn = document.getElementById('kpis-cache-balance-prev')
-    const nextBtn = document.getElementById('kpis-cache-balance-next')
+    const prevBtn = document.getElementById('html-balance-kpi-prev')
+    const nextBtn = document.getElementById('html-balance-kpi-next')
     if (!prevBtn || !nextBtn) return
 
     prevBtn.disabled = kpi_year_index >= kpi_years.length - 1

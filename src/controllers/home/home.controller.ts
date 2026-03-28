@@ -7,7 +7,7 @@ import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
-import { getAvailableKpiYears, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisCacheBalance, getKpisGlobalBalance, getKpisLast6MonthsBalance } from './home.auxiliar'
+import { getAvailableYearsKpi, getBalanceKpi, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisGlobalBalance, getKpisLast6MonthsBalance, getTrendKpi } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.user_id) {
@@ -109,15 +109,17 @@ export const apiForGettingKpis: RequestHandler = async (req: Request, res: Respo
   const auth_req = req as AuthRequest
 
   try {
-    const availableYears = await getAvailableKpiYears(auth_req)
-    const kpisCacheBalance = await getKpisCacheBalance(auth_req)
+    const availableYearsKpi = await getAvailableYearsKpi(auth_req)
+    const balanceKpi = await getBalanceKpi(auth_req)
+    const trendKpi = await getTrendKpi(auth_req)
     const chartDataLast6MonthsBalance = await getChartDataLast6MonthsBalance(auth_req)
     const chartDataLast6YearsBalance = await getChartDataLast6YearsBalance(auth_req)
     const chartDataLast6YearsLoan = await getChartDataLast6YearsLoan(auth_req)
 
     res.json({
-      availableYears,
-      kpisCacheBalance,
+      availableYearsKpi,
+      balanceKpi,
+      trendKpi,
       chartDataLast6MonthsBalance,
       chartDataLast6YearsBalance,
       chartDataLast6YearsLoan,
