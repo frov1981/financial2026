@@ -253,7 +253,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
            TRANSACTION
         ============================ */
         let trx: Transaction
-        if (old_payment && old_payment.transaction) {
+        if (old_payment?.transaction?.id) {
             trx = old_payment.transaction
             trx.amount = new_total
             trx.account = account

@@ -26,7 +26,7 @@ const getPaymentsBase = async (user_id: number): Promise<LoanPayment[]> => {
     const repo = AppDataSource.getRepository(LoanPayment)
     const payments: LoanPayment[] = await repo.find({
         where: { loan: { user: { id: user_id } } },
-        relations: { loan: true, category: true, account: true },
+        relations: { loan: true, category: true, account: true, transaction: true },
     })
 
     cache.set(cache_key, payments)
