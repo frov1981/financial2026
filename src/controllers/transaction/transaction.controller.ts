@@ -1,6 +1,6 @@
 import { Request, RequestHandler, Response } from 'express'
-import { getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service'
-import { getActiveCategoryById, getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service'
+import { getActiveAccounts, getActiveAccountsForTransfer, getActiveAccountsForTransferIncludeCurrentAccount, getActiveAccountsIncludeCurrentAccount } from '../../cache/cache-accounts.service'
+import { getActiveCategoryById, getActiveExpenseCategories, getActiveExpenseCategoriesIncludeCurrentCategory, getActiveIncomeCategories, getActiveIncomeCategoriesIncludeCurrentCategory, getCategoryById } from '../../cache/cache-categories.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
@@ -21,22 +21,10 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
   const { title, view, transaction, errors, mode, auth_req } = params
 
   const transaction_form_policy = transactionFormMatrix[mode]
-  const active_accounts = await getActiveAccounts(auth_req)
-  const active_accounts_for_transfer = await getActiveAccountsForTransfer(auth_req)
-
-  let active_income_categories = await getActiveIncomeCategories(auth_req)
-  let active_expense_categories = await getActiveExpenseCategories(auth_req)
-  const check_active_category = await getActiveCategoryById(auth_req, transaction.category.id)
-  if (!check_active_category) {
-    const curr_inactive_category = await getCategoryById(auth_req, transaction.category.id)
-    if (curr_inactive_category?.type === 'income') {
-      active_income_categories.push(curr_inactive_category)
-      active_income_categories.sort((a, b) => a.name.localeCompare(b.name))
-    } else if (curr_inactive_category?.type === 'expense') {
-      active_expense_categories.push(curr_inactive_category)
-      active_expense_categories.sort((a, b) => a.name.localeCompare(b.name))
-    }
-  }
+  const active_accounts = await getActiveAccountsIncludeCurrentAccount(auth_req, transaction?.account?.id)
+  const active_accounts_for_transfer = await getActiveAccountsForTransferIncludeCurrentAccount(auth_req, transaction?.account?.id)
+  const active_income_categories = await getActiveIncomeCategoriesIncludeCurrentCategory(auth_req, transaction?.category?.id)
+  const active_expense_categories = await getActiveExpenseCategoriesIncludeCurrentCategory(auth_req, transaction?.category?.id)
 
   const category_id = auth_req.query.category_id || null
   const from = auth_req.query.from || null

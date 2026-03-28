@@ -71,10 +71,34 @@ export const getActiveAccounts = async (auth_req: AuthRequest): Promise<Account[
     return active_accounts
 }
 
+export const getActiveAccountsIncludeCurrentAccount = async (auth_req: AuthRequest, account_id?: number): Promise<Account[]> => {
+    const user_id = auth_req.user.id
+    const accounts: Account[] = await getAccountsBase(user_id)
+    let active_accounts: Account[]
+    if (account_id) {
+        active_accounts = accounts.filter(account => (account.is_active && account.balance >= 0 && ['cash', 'bank', 'card'].includes(account.type)) || account.id === account_id)
+    } else {
+        active_accounts = accounts.filter(account => (account.is_active && account.balance >= 0 && ['cash', 'bank', 'card'].includes(account.type)))
+    }
+    return active_accounts
+}
+
 export const getActiveAccountsForTransfer = async (auth_req: AuthRequest): Promise<Account[]> => {
     const user_id = auth_req.user.id
     const accounts: Account[] = await getAccountsBase(user_id)
     const active_accounts_for_transfer: Account[] = accounts.filter(account => account.is_active && ['cash', 'bank', 'card', 'saving'].includes(account.type))
+    return active_accounts_for_transfer
+}
+
+export const getActiveAccountsForTransferIncludeCurrentAccount = async (auth_req: AuthRequest, account_id?: number): Promise<Account[]> => {
+    const user_id = auth_req.user.id
+    const accounts: Account[] = await getAccountsBase(user_id)
+    let active_accounts_for_transfer: Account[]
+    if (account_id) {
+        active_accounts_for_transfer = accounts.filter(account => (account.is_active && ['cash', 'bank', 'card', 'saving'].includes(account.type)) || account.id === account_id)
+    } else {
+        active_accounts_for_transfer = accounts.filter(account => account.is_active && ['cash', 'bank', 'card', 'saving'].includes(account.type))
+    }
     return active_accounts_for_transfer
 }
 
@@ -115,7 +139,7 @@ export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccou
         is_active: account.is_active,
         transaction_count: Number(result.raw[index].transaction_count)
     }))
-    
+
     const end = performance.now()
     const duration_sec = (end - start) / 1000
     logger.debug(`method=[${getAccountsForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[account], count=[${accounts.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)

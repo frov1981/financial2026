@@ -73,10 +73,34 @@ export const getActiveIncomeCategories = async (auth_req: AuthRequest): Promise<
     return active_income_categories
 }
 
+export const getActiveIncomeCategoriesIncludeCurrentCategory = async (auth_req: AuthRequest, category_id?: number): Promise<Category[]> => {
+    const user_id = auth_req.user.id
+    const categories: Category[] = await getCategoriesBase(user_id)
+    let active_income_categories: Category[]
+    if (category_id) {
+        active_income_categories = categories.filter(category => (category.is_active && category.type === 'income') || category.id === category_id)
+    } else {
+        active_income_categories = categories.filter(category => (category.is_active && category.type === 'income'))
+    }
+    return active_income_categories
+}
+
 export const getActiveExpenseCategories = async (auth_req: AuthRequest): Promise<Category[]> => {
     const user_id = auth_req.user.id
     const categories: Category[] = await getCategoriesBase(user_id)
     const active_expense_categories: Category[] = categories.filter(category => category.is_active && category.type === 'expense')
+    return active_expense_categories
+}
+
+export const getActiveExpenseCategoriesIncludeCurrentCategory = async (auth_req: AuthRequest, category_id?: number): Promise<Category[]> => {
+    const user_id = auth_req.user.id
+    const categories: Category[] = await getCategoriesBase(user_id)
+    let active_expense_categories: Category[]
+    if (category_id) {
+        active_expense_categories = categories.filter(category => (category.is_active && category.type === 'expense') || category.id === category_id)
+    } else {
+        active_expense_categories = categories.filter(category => (category.is_active && category.type === 'expense'))
+    }
     return active_expense_categories
 }
 
