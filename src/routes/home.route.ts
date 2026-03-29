@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+    apiForGettingCashSummary,
     apiForGettingKpis,
     apiForLogout,
     apiForValidatingLogin,
@@ -24,6 +25,7 @@ protectedSubRouter.use(injectNetBalance)
 
 protectedSubRouter.get('/logout', apiForLogout)
 protectedSubRouter.get('/kpis', apiForGettingKpis)
+protectedSubRouter.get('/cash-summary', apiForGettingCashSummary)
 protectedSubRouter.get('/home', routeToPageHome)
 
 router.use(protectedSubRouter)

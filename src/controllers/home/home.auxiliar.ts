@@ -1,12 +1,11 @@
 import { DateTime } from 'luxon'
-import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeTrendKpiCache } from '../../cache/cache-home.service'
+import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomeTrendKpiCache } from '../../cache/cache-home.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
 import { Loan } from "../../entities/Loan.entity"
 import { LoanPayment } from "../../entities/LoanPayment.entity"
 import { Transaction } from "../../entities/Transaction.entity"
 import { AuthRequest } from "../../types/auth-request"
-import { logger } from '../../utils/logger.util'
 
 /* ============================================================================
    Servicio: Resumen últimos 6 meses (ingresos / egresos / balance)
@@ -512,4 +511,8 @@ export const getTrendKpi = async (auth_req: AuthRequest) => {
   return rows
 }
 
+export const getCashSummary = async (auth_req: AuthRequest) => {
+  const rows = await getHomeCashFlowSummaryCache(auth_req)
+  return rows
+}
 

@@ -18,7 +18,7 @@
 
 
     <!-- ============================
-     CACHE BALANCE
+    KPI BALANCES
     ============================= -->
     <div class="ui-card home-slide">
 
@@ -35,66 +35,29 @@
     </div>
 
     <!-- ============================
-     CARD: GRÁFICO 6 MESES
+    CASH FLOW SUMMARY
     ============================= -->
     <div class="ui-card home-slide">
 
-      <div class="ui-card-header">
-        <h2 class="ui-card-title">
-          Tendencia de Ingresos y Egresos
-          <span class="subtitle">Últimos 6 meses</span>
+      <div class="ui-card-header html-cash-flow-summary-header-nav">
+        <button id="html-cash-flow-summary-prev" class="html-cash-flow-summary-year-btn"></button>
+        <h2 id="html-cash-flow-summary-year-label" class="html-cash-flow-summary-year-label">
+          Tendencia Saldos
         </h2>
+        <button id="html-cash-flow-summary-next" class="html-cash-flow-summary-year-btn"></button>
       </div>
 
-      <div id="chart-data-last-6months-balance" class="ui-card-body">
-        <div class="relative" style="height: 280px;">
-          <canvas id="varChartDataLast6MonthsBalance"></canvas>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ============================
-     CARD: GRÁFICO 6 AÑOS
-============================= -->
-    <div class="ui-card home-slide">
-
-      <div class="ui-card-header">
-        <h2 class="ui-card-title">
-          Tendencia de Ingresos y Egresos
-          <span class="subtitle">Últimos 6 años</span>
-        </h2>
-      </div>
-
-      <div id="chart-data-last-6years-balance" class="ui-card-body">
-        <div class="relative" style="height: 280px;">
-          <canvas id="varChartDataLast6YearsBalance"></canvas>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ============================
-     CARD: GRÁFICO 6 AÑOS DE PRÉSTAMOS
-============================= -->
-    <div class="ui-card home-slide">
-      <div class="ui-card-header">
-        <h2 class="ui-card-title">
-          Tendencia de Préstamos
-          <span class="subtitle">Últimos 6 años</span>
-        </h2>
-      </div>
-      <div id="chart-data-last-6years-loan" class="ui-card-body">
-        <div class="relative" style="height: 280px;">
-          <canvas id="loansAnnualChart"></canvas>
+      <div id="html-cash-flow-summary" class="ui-card-body">
+        <div style="height: 280px;">
+          <canvas id="cashFlowChart"></canvas>
         </div>
       </div>
     </div>
 
   </div>
 
-  <button id="carousel-next" class="carousel-nav carousel-nav-next" onclick="scrollCarouselNext()"
-    title="Siguiente"></button>
+  <button id="carousel-next" class="carousel-nav carousel-nav-next" onclick="scrollCarouselNext()" title="Siguiente">
+  </button>
 
 </div>
 

@@ -7,7 +7,7 @@ import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
-import { getAvailableYearsKpi, getBalanceKpi, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisGlobalBalance, getKpisLast6MonthsBalance, getTrendKpi } from './home.auxiliar'
+import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisGlobalBalance, getKpisLast6MonthsBalance, getTrendKpi } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.user_id) {
@@ -107,7 +107,6 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
 
 export const apiForGettingKpis: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const balanceKpi = await getBalanceKpi(auth_req)
@@ -115,21 +114,34 @@ export const apiForGettingKpis: RequestHandler = async (req: Request, res: Respo
     const chartDataLast6MonthsBalance = await getChartDataLast6MonthsBalance(auth_req)
     const chartDataLast6YearsBalance = await getChartDataLast6YearsBalance(auth_req)
     const chartDataLast6YearsLoan = await getChartDataLast6YearsLoan(auth_req)
-
     res.json({
       availableYearsKpi,
       balanceKpi,
       trendKpi,
+      /*Deprecated*/
       chartDataLast6MonthsBalance,
       chartDataLast6YearsBalance,
       chartDataLast6YearsLoan,
     })
-
   } catch (error) {
     logger.error('Error en apiForGettingKpis:', parseError(error))
     res.json({ message: 'Error' })
   }
+}
 
+export const apiForGettingCashSummary: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  try {
+    const availableYearsKpi = await getAvailableYearsKpi(auth_req)
+    const cashSummary = await getCashSummary(auth_req)
+    res.json({
+      availableYearsKpi,
+      cashSummary,
+    })
+  } catch (error) {
+    logger.error('Error en apiForGettingCashSummary:', parseError(error))
+    res.json({ message: 'Error' })
+  }
 }
 
 export const apiForLogout: RequestHandler = async (req: Request, res: Response) => {

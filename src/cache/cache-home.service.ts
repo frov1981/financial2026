@@ -6,7 +6,14 @@ import { logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
-const base = {
+type CashFlowSummary = {
+  labels: string[]
+  total_inflows: number[]
+  total_outflows: number[]
+  net_cash_flow: number[]
+}
+
+const base_kpi = {
   incomes: 0,
   expenses: 0,
   loans: 0,
@@ -23,7 +30,7 @@ const base = {
   is_populate: 0
 }
 
-type KpiBalance = typeof base
+type KpiBalance = typeof base_kpi
 
 type TrendValue = {
   diff: number
@@ -40,24 +47,24 @@ const buildAuthReq = (auth_req: AuthRequest, year: number, month: number): AuthR
     ...auth_req,
     query: {
       ...auth_req.query,
-      year_period: year,
-      month_period: month
+      year_period_for_kpi: year,
+      month_period_for_kpi: month
     }
   } as unknown as AuthRequest
 }
 
 export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promise<KpiBalance> => {
   const user_id = auth_req.user.id
-  const year = Number(auth_req.query.year_period || 0)
-  const month = Number(auth_req.query.month_period || 0)
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  const month = Number(auth_req.query.month_period_for_kpi || 0)
   const cache_key = cacheKeys.homeBalanceKpiAccum(user_id, year, month)
   const cached = cache.get<KpiBalance>(cache_key)
   if (cached !== undefined) return cached
   const years = await getHomeAvailableYearsKpiCache(auth_req)
   const real_years = years.filter(y => y !== 0)
   if (!real_years.length) {
-    cache.set(cache_key, base)
-    return base
+    cache.set(cache_key, base_kpi)
+    return base_kpi
   }
   const base_year = Math.min(...real_years)
   const current = await getHomeBalanceKpiCache(auth_req)
@@ -135,21 +142,21 @@ export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Prom
 
 export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<KpiBalance> => {
   const user_id = auth_req.user.id
-  const year_period = Number(auth_req.query.year_period || 0)
-  const month_period = Number(auth_req.query.month_period || 0)
-  const cache_key = cacheKeys.homeBalanceKpi(user_id, year_period, month_period)
+  const year_period_for_kpi = Number(auth_req.query.year_period_for_kpi || 0)
+  const month_period_for_kpi = Number(auth_req.query.month_period_for_kpi || 0)
+  const cache_key = cacheKeys.homeBalanceKpi(user_id, year_period_for_kpi, month_period_for_kpi)
   const cached = cache.get<KpiBalance>(cache_key)
   if (cached !== undefined) return cached
   const repo = AppDataSource.getRepository(CacheKpiBalance)
   const start = performance.now()
   const qb = repo.createQueryBuilder('k').where('k.user_id = :user_id', { user_id })
-  if (year_period > 0) qb.andWhere('k.period_year = :year', { year: year_period })
-  if (year_period > 0 && month_period > 0) qb.andWhere('k.period_month = :month', { month: month_period })
+  if (year_period_for_kpi > 0) qb.andWhere('k.period_year = :year', { year: year_period_for_kpi })
+  if (year_period_for_kpi > 0 && month_period_for_kpi > 0) qb.andWhere('k.period_month = :month', { month: month_period_for_kpi })
   const rows = await qb.getMany()
   const end = performance.now()
   const duration_sec = (end - start) / 1000
   logger.debug(`method=[${getHomeBalanceKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
-  if (!rows.length) return base
+  if (!rows.length) return base_kpi
   const result: KpiBalance = rows.reduce((acc, row) => {
     acc.incomes += Number(row.incomes)
     acc.expenses += Number(row.expenses)
@@ -166,28 +173,26 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
     acc.interest_breakdown += Number(row.interest_breakdown)
     acc.is_populate = 1
     return acc
-  }, { ...base })
-  logger.info(`${getHomeBalanceKpiCache.name}. `, { year_period })
+  }, { ...base_kpi })
+  logger.info(`${getHomeBalanceKpiCache.name}. `, { year_period_for_kpi })
   cache.set(cache_key, result)
   return result
 }
 
 export const getHomeTrendKpiCache = async (auth_req: AuthRequest) => {
   const user_id = auth_req.user.id
-  const year = Number(auth_req.query.year_period || 0)
-  const month = Number(auth_req.query.month_period || 0)
-
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  const month = Number(auth_req.query.month_period_for_kpi || 0)
   if (year === 0) {
-    return { current: base, previous: null, trend: null }
+    return { current: base_kpi, previous: null, trend: null }
   }
-
   const cache_key = cacheKeys.homeTrendKpi(user_id, year, month)
   const cached = cache.get(cache_key)
   if (cached !== undefined) return cached
   const years = await getHomeAvailableYearsKpiCache(auth_req)
   const real_years = years.filter(y => y !== 0)
   if (!real_years.length) {
-    const result = { current: base, previous: null, trend: null }
+    const result = { current: base_kpi, previous: null, trend: null }
     cache.set(cache_key, result)
     return result
   }
@@ -200,13 +205,76 @@ export const getHomeTrendKpiCache = async (auth_req: AuthRequest) => {
   }
   const prev_req = buildAuthReq(auth_req, year - 1, 0)
   const previous: KpiBalance = await getHomeBalanceKpiCache(prev_req)
-
   const trend = calcTrendObject(current, previous)
-
   const result = { current, previous, trend }
-
   cache.set(cache_key, result)
   return result
 }
 
+export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promise<CashFlowSummary> => {
+  const user_id = auth_req.user.id
+  const year = Number(auth_req.query.year_period_for_cash_summ || 0)
 
+  const cache_key = cacheKeys.homeCashFlowSummary(user_id, year)
+  const cached = cache.get<CashFlowSummary>(cache_key)
+  if (cached !== undefined) return cached
+
+  const labels: string[] = []
+  const total_inflows: number[] = []
+  const total_outflows: number[] = []
+  const net_cash_flow: number[] = []
+
+  let available_years = cache.get<number[]>(cacheKeys.homeAvailableYearsKpi(user_id)) || []
+  available_years.sort((a, b) => a - b)
+
+  if (year === 0) {
+    for (const y of available_years) {
+      if (y === 0) continue
+      let inflows = 0
+      let outflows = 0
+      let net = 0
+
+      for (let month = 1; month <= 12; month++) {
+        const kpi_key = cacheKeys.homeBalanceKpi(user_id, y, month)
+        let kpi = cache.get<KpiBalance>(kpi_key)
+
+        if (!kpi) {
+          const req = buildAuthReq(auth_req, y, month)
+          kpi = await getHomeBalanceKpiCache(req)
+          cache.set(kpi_key, kpi)
+        }
+
+        inflows += kpi?.total_inflows ?? 0
+        outflows += kpi?.total_outflows ?? 0
+        net += kpi?.net_cash_flow ?? 0
+      }
+
+      labels.push(String(y))
+      total_inflows.push(inflows)
+      total_outflows.push(outflows)
+      net_cash_flow.push(net)
+    }
+  } else {
+    const month_labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+    for (let month = 1; month <= 12; month++) {
+      const kpi_key = cacheKeys.homeBalanceKpi(user_id, year, month)
+      const kpi = cache.get<KpiBalance>(kpi_key)
+
+      labels.push(month_labels[month - 1])
+      total_inflows.push(kpi?.total_inflows ?? 0)
+      total_outflows.push(kpi?.total_outflows ?? 0)
+      net_cash_flow.push(kpi?.net_cash_flow ?? 0)
+    }
+  }
+
+  const result: CashFlowSummary = {
+    labels,
+    total_inflows,
+    total_outflows,
+    net_cash_flow
+  }
+
+  cache.set(cache_key, result)
+  return result
+}

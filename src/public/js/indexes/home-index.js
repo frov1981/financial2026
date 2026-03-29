@@ -3,14 +3,11 @@
 ============================ */
 const CARD_IDS = [
     'html-balance-kpi',
+    'html-cash-flow-summary',
     'chart-data-last-6months-balance',
     'chart-data-last-6years-balance',
     'chart-data-last-6years-loan'
 ]
-
-const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
-const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
-const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 
 const KPI_CONFIG = [
     { key: 'incomes', label: 'Ingresos', color: 'green', trend: true },
@@ -28,11 +25,15 @@ const KPI_CONFIG = [
     { key: 'interest_breakdown', label: 'Desglose Interes', color: 'red', trend: true }
 ]
 
-let varChartDataLast6MonthsBalance = null
-let varChartDataLast6YearsBalance = null
-let varChartDataLast6YearsLoan = null
+const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
+const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
+const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
+const CASH_FLOW_YEAR_STATE_KEY = `home.cash.flow.year.${window.USER_ID}`
+
 let kpi_years = []
 let kpi_year_index = 0
+let cash_flow_year_index = 0
+let cashFlowChart = null
 
 /* ============================
    DOM Ready
@@ -56,76 +57,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     const kpi_next = document.getElementById('html-balance-kpi-next')
     if (kpi_prev) kpi_prev.innerHTML = iconCarouselPrev()
     if (kpi_next) kpi_next.innerHTML = iconCarouselNext()
+    const cash_prev = document.getElementById('html-cash-flow-summary-prev')
+    const cash_next = document.getElementById('html-cash-flow-summary-next')
+    if (cash_prev) cash_prev.innerHTML = iconCarouselPrev()
+    if (cash_next) cash_next.innerHTML = iconCarouselNext()
+
     // Inicializar el Html para KPIs
-    renderKpiHtml()
+    renderBalanceKpiHtml()
     // Invocar desde el backend
     try {
-        const res = await fetch('/kpis', { credentials: 'same-origin' })
-        if (!res.ok) throw new Error('No autorizado')
-        const { availableYearsKpi, balanceKpi, trendKpi, chartDataLast6MonthsBalance, chartDataLast6YearsBalance, chartDataLast6YearsLoan, } = await res.json()
+        const res_kpi = await fetch('/kpis', { credentials: 'same-origin' })
+        if (!res_kpi.ok) throw new Error('No autorizado')
+        const { availableYearsKpi, } = await res_kpi.json()
+
+        const res_cash = await fetch('/cash-summary', { credentials: 'same-origin' })
+        if (!res_cash.ok) throw new Error('No autorizado')
+        const { cashSummary } = await res_cash.json()
+
         // Inicializar navegación año
         kpi_years = availableYearsKpi || [0]
-        const savedYearRaw = loadFilters(KPI_YEAR_STATE_KEY)
-        const savedYear = savedYearRaw !== null ? Number(savedYearRaw) : null
-        kpi_year_index = kpi_years.includes(savedYear) ? kpi_years.indexOf(savedYear) : 0
-        const current_year = kpi_years[kpi_year_index]
+        const savedYearRawKpi = loadFilters(KPI_YEAR_STATE_KEY)
+        const savedYearRawCashFlow = loadFilters(CASH_FLOW_YEAR_STATE_KEY)
+        const savedYearKpi = savedYearRawKpi !== null ? Number(savedYearRawKpi) : null
+        const savedYearCashFlow = savedYearRawCashFlow !== null ? Number(savedYearRawCashFlow) : null
+        kpi_year_index = kpi_years.includes(savedYearKpi) ? kpi_years.indexOf(savedYearKpi) : 0
+        cash_flow_year_index = kpi_years.includes(savedYearCashFlow) ? kpi_years.indexOf(savedYearCashFlow) : 0
+        const current_year_kpi = kpi_years[kpi_year_index]
+        const current_year_cash_flow = kpi_years[cash_flow_year_index]
 
-        updateKpiYearLabel(current_year)
-        initYearNavigation()
-        await changeYear()
-        // Charts
-        if (typeof Chart !== 'undefined') {
-            const ctxMonths = document.getElementById('varChartDataLast6MonthsBalance').getContext('2d')
-            varChartDataLast6MonthsBalance = new Chart(ctxMonths, {
-                type: 'line',
-                data: {
-                    labels: chartDataLast6MonthsBalance.labels,
-                    datasets: [
-                        { label: 'Ingresos', data: chartDataLast6MonthsBalance.income, tension: 0.35 },
-                        { label: 'Egresos', data: chartDataLast6MonthsBalance.expense, tension: 0.35 },
-                        { label: 'Balance', data: chartDataLast6MonthsBalance.balance, borderDash: [6, 4], tension: 0.35 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            })
+        updateLabelForBalanceKpi(current_year_kpi)
+        initYearNavForBalanceKpi()
+        await changeYearForBalanceKpi()
 
-            const ctxYears = document.getElementById('varChartDataLast6YearsBalance').getContext('2d')
-            varChartDataLast6YearsBalance = new Chart(ctxYears, {
-                type: 'line',
-                data: {
-                    labels: chartDataLast6YearsBalance.labels,
-                    datasets: [
-                        { label: 'Ingresos', data: chartDataLast6YearsBalance.income, tension: 0.35 },
-                        { label: 'Egresos', data: chartDataLast6YearsBalance.expense, tension: 0.35 },
-                        { label: 'Balance', data: chartDataLast6YearsBalance.balance, borderDash: [6, 4], tension: 0.35 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            })
+        updateLabelForCashFlowSumm(current_year_cash_flow)
+        await changeYearForCashFlowSumm()
+        initYearNavForCashFlowSumm()
 
-            const ctxLoans = document.getElementById('loansAnnualChart').getContext('2d')
-            varChartDataLast6YearsLoan = new Chart(ctxLoans, {
-                type: 'line',
-                data: {
-                    labels: chartDataLast6YearsLoan.labels,
-                    datasets: [
-                        { label: 'Total Prestado', data: chartDataLast6YearsLoan.total_loan, tension: 0.35 },
-                        { label: 'Total Pagado', data: chartDataLast6YearsLoan.total_paid, tension: 0.35 },
-                        { label: 'Intereses', data: chartDataLast6YearsLoan.total_interest, tension: 0.35 },
-                        { label: 'Saldo', data: chartDataLast6YearsLoan.balance, borderDash: [6, 4], tension: 0.35 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            })
-        }
         initHomeCarousel()
     } catch (err) {
         console.error('Error cargando dashboard', err)
     }
 })
 
-// Render KPIs HTML
-function renderKpiHtml() {
+/* ============================
+   KPI Balance Section
+============================ */
+function renderBalanceKpiHtml() {
     const container = document.getElementById('html-balance-kpi')
     let html = ''
     let chunk = []
@@ -162,7 +139,6 @@ function renderKpiHtml() {
     container.innerHTML = html
 }
 
-// Render KPIs
 function renderKpis(year, balanceKpi, trendKpi) {
     const fields = ['incomes', 'expenses', 'loans', 'payments', 'savings', 'withdrawals', 'total_inflows', 'total_outflows', 'net_cash_flow', 'net_savings', 'available_balance', 'principal_breakdown', 'interest_breakdown']
     fields.forEach(field => {
@@ -186,44 +162,43 @@ function renderKpis(year, balanceKpi, trendKpi) {
     })
 }
 
-// Year Navigation
-function initYearNavigation() {
+function initYearNavForBalanceKpi() {
     const prevBtn = document.getElementById('html-balance-kpi-prev')
     const nextBtn = document.getElementById('html-balance-kpi-next')
     if (!prevBtn || !nextBtn) return
     prevBtn.addEventListener('click', async () => {
         if (kpi_year_index < kpi_years.length - 1) {
             kpi_year_index++
-            await changeYear()
+            await changeYearForBalanceKpi()
         }
     })
     nextBtn.addEventListener('click', async () => {
         if (kpi_year_index > 0) {
             kpi_year_index--
-            await changeYear()
+            await changeYearForBalanceKpi()
         }
     })
-    updateYearButtons()
+    updateYearNavForBalanceKpi()
 }
 
-async function changeYear() {
+async function changeYearForBalanceKpi() {
     const year = kpi_years[kpi_year_index]
     saveFilters(KPI_YEAR_STATE_KEY, year)
-    updateKpiYearLabel(year)
-    updateYearButtons()
-    const res = await fetch(`/kpis?year_period=${year}&month_period=0`, { credentials: 'same-origin' })
+    updateLabelForBalanceKpi(year)
+    updateYearNavForBalanceKpi()
+    const res = await fetch(`/kpis?year_period_for_kpi=${year}&month_period_for_kpi=0`, { credentials: 'same-origin' })
     if (!res.ok) return
     const { balanceKpi, trendKpi } = await res.json()
     renderKpis(year, balanceKpi, trendKpi)
 }
 
-function updateKpiYearLabel(year) {
+function updateLabelForBalanceKpi(year) {
     const label = document.getElementById('html-balance-kpi-year-label')
     if (!label) return
     label.textContent = year === 0 ? 'KPIs Balances - Todos' : `KPIs Balances - ${year}`
 }
 
-function updateYearButtons() {
+function updateYearNavForBalanceKpi() {
     const prevBtn = document.getElementById('html-balance-kpi-prev')
     const nextBtn = document.getElementById('html-balance-kpi-next')
     if (!prevBtn || !nextBtn) return
@@ -231,7 +206,89 @@ function updateYearButtons() {
     nextBtn.disabled = kpi_year_index <= 0
 }
 
-// Toggle Cards
+/* ============================
+   Cash Flow Summary Section
+============================ */
+function renderCashFlowSummChart(data) {
+    const ctx = document.getElementById('cashFlowChart').getContext('2d')
+
+    if (cashFlowChart) cashFlowChart.destroy()
+
+    cashFlowChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [
+                { label: 'Ingresos', data: data.total_inflows, tension: 0.35 },
+                { label: 'Egresos', data: data.total_outflows, tension: 0.35 },
+                { label: 'Neto', data: data.net_cash_flow, borderDash: [6, 4], tension: 0.35 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    })
+}
+
+async function changeYearForCashFlowSumm() {
+    const year = kpi_years[cash_flow_year_index]
+
+    saveFilters(CASH_FLOW_YEAR_STATE_KEY, year)
+    updateLabelForCashFlowSumm(year)
+    updateYearNavForCashFlowSumm()
+
+    const res = await fetch(`/cash-summary?year_period_for_cash_summ=${year}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+
+    const { cashSummary } = await res.json()
+
+    renderCashFlowSummChart(cashSummary)
+}
+
+function initYearNavForCashFlowSumm() {
+    const prevBtn = document.getElementById('html-cash-flow-summary-prev')
+    const nextBtn = document.getElementById('html-cash-flow-summary-next')
+
+    if (!prevBtn || !nextBtn) return
+
+    prevBtn.addEventListener('click', async () => {
+        if (cash_flow_year_index < kpi_years.length - 1) {
+            cash_flow_year_index++
+            await changeYearForCashFlowSumm()
+        }
+    })
+
+    nextBtn.addEventListener('click', async () => {
+        if (cash_flow_year_index > 0) {
+            cash_flow_year_index--
+            await changeYearForCashFlowSumm()
+        }
+    })
+
+    updateYearNavForCashFlowSumm()
+}
+
+function updateLabelForCashFlowSumm(year) {
+    const label = document.getElementById('html-cash-flow-summary-year-label')
+    if (!label) return
+
+    label.textContent =
+        year === 0
+            ? 'Tendencia Balances - Todos'
+            : `Tendencia Balances - ${year}`
+}
+
+function updateYearNavForCashFlowSumm() {
+    const prevBtn = document.getElementById('html-cash-flow-summary-prev')
+    const nextBtn = document.getElementById('html-cash-flow-summary-next')
+
+    if (!prevBtn || !nextBtn) return
+
+    prevBtn.disabled = cash_flow_year_index >= kpi_years.length - 1
+    nextBtn.disabled = cash_flow_year_index <= 0
+}
+
+/* ============================
+   Carousel Event Section
+============================ */
 function toggleCard(id) {
     const body = document.getElementById(id)
     const icon = document.getElementById(`icon-${id}`)
@@ -241,14 +298,8 @@ function toggleCard(id) {
     const state = loadFilters(CARD_STATE_KEY) || {}
     state[id] = !isOpen
     saveFilters(CARD_STATE_KEY, state)
-    if (!isOpen) {
-        if (id === 'chart-data-last-6months-balance' && varChartDataLast6MonthsBalance) varChartDataLast6MonthsBalance.resize()
-        if (id === 'chart-data-last-6years-balance' && varChartDataLast6YearsBalance) varChartDataLast6YearsBalance.resize()
-        if (id === 'chart-data-last-6years-loan' && varChartDataLast6YearsLoan) varChartDataLast6YearsLoan.resize()
-    }
 }
 
-// Carousel
 function initHomeCarousel() {
     const carousel = document.querySelector('.home-carousel')
     if (!carousel) return
