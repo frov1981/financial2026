@@ -65,12 +65,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { availableYearsKpi, balanceKpi, trendKpi, chartDataLast6MonthsBalance, chartDataLast6YearsBalance, chartDataLast6YearsLoan, } = await res.json()
         // Inicializar navegación año
         kpi_years = availableYearsKpi || [0]
-        const savedYear = loadFilters(KPI_YEAR_STATE_KEY)
-        kpi_year_index = kpi_years.indexOf(savedYear)
-        if (kpi_year_index < 0) kpi_year_index = 0
-        updateKpiYearLabel(kpi_years[kpi_year_index])
-        renderKpis(savedYear, balanceKpi, trendKpi)
+        const savedYearRaw = loadFilters(KPI_YEAR_STATE_KEY)
+        const savedYear = savedYearRaw !== null ? Number(savedYearRaw) : null
+        kpi_year_index = kpi_years.includes(savedYear) ? kpi_years.indexOf(savedYear) : 0
+        const current_year = kpi_years[kpi_year_index]
+
+        updateKpiYearLabel(current_year)
         initYearNavigation()
+        await changeYear()
         // Charts
         if (typeof Chart !== 'undefined') {
             const ctxMonths = document.getElementById('varChartDataLast6MonthsBalance').getContext('2d')
