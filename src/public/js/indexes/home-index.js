@@ -272,8 +272,8 @@ function updateLabelForCashFlowSumm(year) {
 
     label.textContent =
         year === 0
-            ? 'Tendencia Balances - Todos'
-            : `Tendencia Balances - ${year}`
+            ? 'Trend Balances - Todos'
+            : `Trend Balances - ${year}`
 }
 
 function updateYearNavForCashFlowSumm() {
