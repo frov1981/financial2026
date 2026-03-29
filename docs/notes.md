@@ -6,6 +6,10 @@ node -e "const fs=require('fs');const dir='src/entities';const out='docs/_entiti
 --==============================================================
 node -e "const fs=require('fs');const path=require('path');const bases=['src/controllers','src/cache'];const out='docs/_controllers.txt';const getFiles=(dir)=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(d=>d.isDirectory()?getFiles(path.join(dir,d.name)):path.join(dir,d.name));const allFiles=bases.flatMap(b=>getFiles(b));const files=allFiles.filter(f=>f.endsWith('.ts')).sort((a,b)=>a.localeCompare(b));if(files.length===0){console.log('No hay archivos .ts');process.exit(0)};fs.mkdirSync('docs',{recursive:true});fs.writeFileSync(out,'');files.forEach((f,i)=>{const name=f.replace(/^src[\\/]/,'');fs.appendFileSync(out,'---------------- '+name+' ----------------\n'+fs.readFileSync(f,'utf8')+(i<files.length-1?'\n\n':''))})"
 
+-- Para escribir todos los ejs+js+html en un archivo final
+--==============================================================
+node -e "const fs=require('fs');const path=require('path');const bases=['src/views','src/public/js'];const excludeDirs=['src/public/js/vendor'].map(p=>path.resolve(p));const out='docs/_ejs.txt';const getFiles=(dir)=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(d=>{const full=path.join(dir,d.name);const fullResolved=path.resolve(full);if(excludeDirs.some(ex=>fullResolved.startsWith(ex)))return[];if(d.isDirectory())return getFiles(full);return full});const files=bases.flatMap(b=>getFiles(b)).sort((a,b)=>a.localeCompare(b));if(files.length===0){console.log('No hay archivos');process.exit(0)};fs.mkdirSync('docs',{recursive:true});fs.writeFileSync(out,'');files.forEach((f,i)=>{const name=f.replace(/^src[\\/]/,'');fs.appendFileSync(out,'---------------- '+name+' ----------------\n'+fs.readFileSync(f,'utf8')+(i<files.length-1?'\n\n':''))})"
+
 -- Criterios del aplicativo contable
 1.  incomes.            todas las transacciones de tipo "income" sin prestamos (sin relacion a "loan")
 2.  expenses.           todas las transacciones de tipo "expense" sin pagos (sin relacion a "loan_payment")

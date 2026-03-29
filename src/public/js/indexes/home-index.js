@@ -12,6 +12,22 @@ const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
 const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
 const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 
+const KPI_CONFIG = [
+    { key: 'incomes', label: 'Ingresos', color: 'green', trend: true },
+    { key: 'expenses', label: 'Egresos', color: 'red', trend: true },
+    { key: 'loans', label: 'Prestamos', color: 'green', trend: true },
+    { key: 'payments', label: 'Pagos', color: 'red', trend: true },
+    { key: 'savings', label: 'Ahorros', color: 'green', trend: true },
+    { key: 'withdrawals', label: 'Retiros', color: 'red', trend: true },
+    { key: 'total_inflows', label: 'Total Ingresos', color: 'green', trend: true },
+    { key: 'total_outflows', label: 'Total Egresos', color: 'red', trend: true },
+    { key: 'net_cash_flow', label: 'Neto', color: 'blue', trend: true },
+    { key: 'net_savings', label: 'Ahorrado', color: 'blue', trend: true },
+    { key: 'available_balance', label: 'Disponible', color: 'green', trend: true },
+    { key: 'principal_breakdown', label: 'Desglose Capital', color: 'green', trend: true },
+    { key: 'interest_breakdown', label: 'Desglose Interes', color: 'red', trend: true }
+]
+
 let varChartDataLast6MonthsBalance = null
 let varChartDataLast6YearsBalance = null
 let varChartDataLast6YearsLoan = null
@@ -22,6 +38,7 @@ let kpi_year_index = 0
    DOM Ready
 ============================ */
 document.addEventListener('DOMContentLoaded', async () => {
+    // Inicializar los Cards
     const savedState = loadFilters(CARD_STATE_KEY) || {}
     CARD_IDS.forEach(id => {
         const body = document.getElementById(id)
@@ -31,43 +48,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         body.classList.toggle('collapsed', !isOpen)
         icon.innerHTML = isOpen ? iconChevronClose() : iconChevronOpen()
     })
-
     const carousel_prev = document.getElementById('carousel-prev')
     const carousel_next = document.getElementById('carousel-next')
     if (carousel_prev) carousel_prev.innerHTML = iconCarouselPrev()
     if (carousel_next) carousel_next.innerHTML = iconCarouselNext()
-
     const kpi_prev = document.getElementById('html-balance-kpi-prev')
     const kpi_next = document.getElementById('html-balance-kpi-next')
     if (kpi_prev) kpi_prev.innerHTML = iconCarouselPrev()
     if (kpi_next) kpi_next.innerHTML = iconCarouselNext()
-
+    // Inicializar el Html para KPIs
+    renderKpiHtml()
+    // Invocar desde el backend
     try {
         const res = await fetch('/kpis', { credentials: 'same-origin' })
         if (!res.ok) throw new Error('No autorizado')
-
-        const {
-            availableYearsKpi,
-            balanceKpi,
-            trendKpi,
-            chartDataLast6MonthsBalance,
-            chartDataLast6YearsBalance,
-            chartDataLast6YearsLoan,
-        } = await res.json()
-
-        /* ============================
-           Inicializar navegación año
-        ============================ */
+        const { availableYearsKpi, balanceKpi, trendKpi, chartDataLast6MonthsBalance, chartDataLast6YearsBalance, chartDataLast6YearsLoan, } = await res.json()
+        // Inicializar navegación año
         kpi_years = availableYearsKpi || [0]
         const savedYear = loadFilters(KPI_YEAR_STATE_KEY)
         kpi_year_index = kpi_years.indexOf(savedYear)
         if (kpi_year_index < 0) kpi_year_index = 0
         updateKpiYearLabel(kpi_years[kpi_year_index])
-        renderKpis(balanceKpi)
+        renderKpis(savedYear, balanceKpi, trendKpi)
         initYearNavigation()
-        /* ============================
-           Charts
-        ============================ */
+        // Charts
         if (typeof Chart !== 'undefined') {
             const ctxMonths = document.getElementById('varChartDataLast6MonthsBalance').getContext('2d')
             varChartDataLast6MonthsBalance = new Chart(ctxMonths, {
@@ -118,65 +122,97 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 })
 
-/* ============================
-   Render KPIs
-============================ */
-function renderKpis(data) {
-    document.getElementById('html-balance-kpi-incomes').textContent = data.incomes.toFixed(2)
-    document.getElementById('html-balance-kpi-expenses').textContent = data.expenses.toFixed(2)
-    document.getElementById('html-balance-kpi-loans').textContent = data.loans.toFixed(2)
-    document.getElementById('html-balance-kpi-payments').textContent = data.payments.toFixed(2)
-    document.getElementById('html-balance-kpi-savings').textContent = data.savings.toFixed(2)
-    document.getElementById('html-balance-kpi-withdrawals').textContent = data.withdrawals.toFixed(2)
-    document.getElementById('html-balance-kpi-total-inflows').textContent = data.total_inflows.toFixed(2)
-    document.getElementById('html-balance-kpi-total-outflows').textContent = data.total_outflows.toFixed(2)
-    document.getElementById('html-balance-kpi-net-cash-flow').textContent = data.net_cash_flow.toFixed(2)
-    document.getElementById('html-balance-kpi-net-savings').textContent = data.net_savings.toFixed(2)
-    document.getElementById('html-balance-kpi-available-balance').textContent = data.available_balance.toFixed(2)
-    document.getElementById('html-balance-kpi-principal-breakdown').textContent = data.principal_breakdown.toFixed(2)
-    document.getElementById('html-balance-kpi-interest-breakdown').textContent = data.interest_breakdown.toFixed(2)
+// Render KPIs HTML
+function renderKpiHtml() {
+    const container = document.getElementById('html-balance-kpi')
+    let html = ''
+    let chunk = []
+    KPI_CONFIG.forEach((kpi, index) => {
+        chunk.push(kpi)
+        if (chunk.length === 6 || index === KPI_CONFIG.length - 1) {
+            html += `<div class="ui-kpi-grid cols-6">`
+            chunk.forEach(item => {
+                const id = item.key.replace(/_/g, '-')
+                html += `
+                    <div class="ui-kpi-item">
+                        <p class="ui-kpi-label">${item.label}</p>
+                        ${item.trend
+                        ? `
+                        <div class="ui-kpi-row">
+                            <div class="ui-kpi-values">
+                                <p class="ui-kpi-value ui-kpi-${item.color}" id="html-balance-kpi-${id}">–</p>
+                                <p class="ui-kpi-value ui-kpi-trend-${item.color}" id="html-trend-kpi-${item.key}">–</p>
+                            </div>
+                            <div class="ui-kpi-arrow" id="html-trend-kpi-arrow-${item.key}"></div>
+                        </div>
+                        `
+                        : `
+                        <p class="ui-kpi-value ui-kpi-${item.color}" id="html-balance-kpi-${id}">–</p>
+                        `
+                    }
+                    </div>
+                `
+            })
+            html += `</div>`
+            chunk = []
+        }
+    })
+    container.innerHTML = html
 }
 
-/* ============================
-   Year Navigation
-============================ */
-function initYearNavigation() {
+// Render KPIs
+function renderKpis(year, balanceKpi, trendKpi) {
+    const fields = ['incomes', 'expenses', 'loans', 'payments', 'savings', 'withdrawals', 'total_inflows', 'total_outflows', 'net_cash_flow', 'net_savings', 'available_balance', 'principal_breakdown', 'interest_breakdown']
+    fields.forEach(field => {
+        const el = document.getElementById(`html-balance-kpi-${field.replace(/_/g, '-')}`)
+        if (el) el.textContent = (balanceKpi[field] ?? 0).toFixed(2)
+    })
+    KPI_CONFIG.forEach(({ key, trend }) => {
+        if (!trend) return
+        const el_trend = document.getElementById(`html-trend-kpi-${key}`)
+        const el_arrow = document.getElementById(`html-trend-kpi-arrow-${key}`)
+        if (!el_trend || !el_arrow) return
+        if (year !== 0 && trendKpi?.trend?.[key]) {
+            el_trend.style.display = 'block'
+            el_arrow.style.display = 'block'
+            el_trend.textContent = (trendKpi.previous?.[key] ?? 0).toFixed(2)
+            el_arrow.innerHTML = trendKpi.trend[key].direction === 'up' ? iconTrendUp() : iconTrendDown()
+        } else {
+            el_trend.style.display = 'none'
+            el_arrow.style.display = 'none'
+        }
+    })
+}
 
+// Year Navigation
+function initYearNavigation() {
     const prevBtn = document.getElementById('html-balance-kpi-prev')
     const nextBtn = document.getElementById('html-balance-kpi-next')
-
     if (!prevBtn || !nextBtn) return
-
     prevBtn.addEventListener('click', async () => {
         if (kpi_year_index < kpi_years.length - 1) {
             kpi_year_index++
             await changeYear()
         }
     })
-
     nextBtn.addEventListener('click', async () => {
         if (kpi_year_index > 0) {
             kpi_year_index--
             await changeYear()
         }
     })
-
     updateYearButtons()
 }
 
 async function changeYear() {
-
     const year = kpi_years[kpi_year_index]
-
     saveFilters(KPI_YEAR_STATE_KEY, year)
     updateKpiYearLabel(year)
     updateYearButtons()
-
     const res = await fetch(`/kpis?year_period=${year}&month_period=0`, { credentials: 'same-origin' })
     if (!res.ok) return
-
-    const { balanceKpi } = await res.json()
-    renderKpis(balanceKpi)
+    const { balanceKpi, trendKpi } = await res.json()
+    renderKpis(year, balanceKpi, trendKpi)
 }
 
 function updateKpiYearLabel(year) {
@@ -189,25 +225,20 @@ function updateYearButtons() {
     const prevBtn = document.getElementById('html-balance-kpi-prev')
     const nextBtn = document.getElementById('html-balance-kpi-next')
     if (!prevBtn || !nextBtn) return
-
     prevBtn.disabled = kpi_year_index >= kpi_years.length - 1
     nextBtn.disabled = kpi_year_index <= 0
 }
 
-/* ============================
-   Toggle Cards
-============================ */
+// Toggle Cards
 function toggleCard(id) {
     const body = document.getElementById(id)
     const icon = document.getElementById(`icon-${id}`)
     const isOpen = !body.classList.contains('collapsed')
     body.classList.toggle('collapsed', isOpen)
     icon.innerHTML = isOpen ? iconChevronOpen() : iconChevronClose()
-
     const state = loadFilters(CARD_STATE_KEY) || {}
     state[id] = !isOpen
     saveFilters(CARD_STATE_KEY, state)
-
     if (!isOpen) {
         if (id === 'chart-data-last-6months-balance' && varChartDataLast6MonthsBalance) varChartDataLast6MonthsBalance.resize()
         if (id === 'chart-data-last-6years-balance' && varChartDataLast6YearsBalance) varChartDataLast6YearsBalance.resize()
@@ -215,25 +246,18 @@ function toggleCard(id) {
     }
 }
 
-/* ============================
-   Carousel
-============================ */
+// Carousel
 function initHomeCarousel() {
-
     const carousel = document.querySelector('.home-carousel')
     if (!carousel) return
-
     const prevBtn = document.getElementById('carousel-prev')
     const nextBtn = document.getElementById('carousel-next')
-
     const savedPosition = loadFilters(CAROUSEL_POSITION_KEY)
-
     if (savedPosition && typeof savedPosition.scrollLeft === 'number') {
         requestAnimationFrame(() => {
             carousel.scrollLeft = savedPosition.scrollLeft
         })
     }
-
     carousel.addEventListener('scroll', () => {
         saveFilters(CAROUSEL_POSITION_KEY, {
             scrollLeft: carousel.scrollLeft

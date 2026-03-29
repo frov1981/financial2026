@@ -1,7 +1,7 @@
 .ui-kpi-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
+    gap: 0.4rem;
     align-items: stretch;
 }
 
@@ -12,7 +12,6 @@
 .ui-kpi-grid.cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-
 
 .ui-kpi-grid.cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -25,31 +24,39 @@
 .ui-kpi-item {
     background: var(--ui-gray-50);
     border-radius: 0.75rem;
-    padding: 1rem;
+    padding: 0.3rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 70px;
+    min-height: 60px;
 }
 
 .ui-kpi-label {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: var(--ui-gray-500);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .ui-kpi-value {
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--ui-gray-900);
     text-align: right;
     font-variant-numeric: tabular-nums;
+    flex: 1;
 }
 
 .ui-kpi-green {
+    color: var(--ui-green-600);
+}
+
+.ui-kpi-trend-green {
+    font-size: 0.75rem;
+    font-weight: 400;
+    text-align: right;
     color: var(--ui-green-600);
 }
 
@@ -57,11 +64,32 @@
     color: var(--ui-red-700);
 }
 
+.ui-kpi-trend-red {
+    font-size: 0.75rem;
+    font-weight: 400;
+    text-align: right;
+    color: var(--ui-red-700);
+}
+
 .ui-kpi-blue {
     color: var(--ui-blue-700);
 }
 
+.ui-kpi-trend-blue {
+    font-size: 0.75rem;
+    font-weight: 400;
+    text-align: right;
+    color: var(--ui-blue-700);
+}
+
 .ui-kpi-orange {
+    color: var(--ui-orange-700);
+}
+
+.ui-kpi-trend-orange {
+    font-size: 0.75rem;
+    font-weight: 400;
+    text-align: right;
     color: var(--ui-orange-700);
 }
 
@@ -109,4 +137,24 @@
 .html-balance-kpi-year-btn svg {
     width: 18px;
     height: 18px;
+}
+
+.ui-kpi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.ui-kpi-values {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ui-kpi-arrow {
+  flex: 0 0 auto;
+  text-align: right;
+  min-width: 20px;
 }

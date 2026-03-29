@@ -19,7 +19,8 @@ const base = {
   net_savings: 0,
   available_balance: 0,
   principal_breakdown: 0,
-  interest_breakdown: 0
+  interest_breakdown: 0,
+  is_populate: 0
 }
 
 type KpiBalance = typeof base
@@ -79,7 +80,8 @@ export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promis
     net_savings: prev.net_savings + current.net_savings,
     available_balance: prev.available_balance + current.available_balance,
     principal_breakdown: prev.principal_breakdown + current.principal_breakdown,
-    interest_breakdown: prev.interest_breakdown + current.interest_breakdown
+    interest_breakdown: prev.interest_breakdown + current.interest_breakdown,
+    is_populate: 1
   }
   cache.set(cache_key, result)
   return result
@@ -98,6 +100,7 @@ const calcTrend = (current: number, previous: number): TrendValue => {
 const calcTrendObject = (current: KpiBalance, previous: KpiBalance): KpiTrend => {
   const result = {} as KpiTrend
   for (const key in current) {
+    if (key === 'is_populate') continue
     const curr = current[key as keyof KpiBalance]
     const prev = previous[key as keyof KpiBalance]
     result[key as keyof KpiBalance] = calcTrend(curr, prev)
@@ -125,6 +128,7 @@ export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Prom
   logger.debug(`method=[${getHomeAvailableYearsKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   const years = rows.map(r => Number(r.year))
   const f_year = [0, ...years]
+  logger.info(`${getHomeAvailableYearsKpiCache.name}. Años disponibles: `, { f_year })
   cache.set(cache_key, f_year)
   return f_year
 }
@@ -160,8 +164,10 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
     acc.available_balance += Number(row.available_balance)
     acc.principal_breakdown += Number(row.principal_breakdown)
     acc.interest_breakdown += Number(row.interest_breakdown)
+    acc.is_populate = 1
     return acc
   }, { ...base })
+  logger.info(`${getHomeBalanceKpiCache.name}. `, { year_period })
   cache.set(cache_key, result)
   return result
 }
@@ -170,6 +176,11 @@ export const getHomeTrendKpiCache = async (auth_req: AuthRequest) => {
   const user_id = auth_req.user.id
   const year = Number(auth_req.query.year_period || 0)
   const month = Number(auth_req.query.month_period || 0)
+
+  if (year === 0) {
+    return { current: base, previous: null, trend: null }
+  }
+
   const cache_key = cacheKeys.homeTrendKpi(user_id, year, month)
   const cached = cache.get(cache_key)
   if (cached !== undefined) return cached
@@ -181,16 +192,19 @@ export const getHomeTrendKpiCache = async (auth_req: AuthRequest) => {
     return result
   }
   const base_year = Math.min(...real_years)
-  const current = await getHomeKpisCacheAccumulated(auth_req)
+  const current = await getHomeBalanceKpiCache(auth_req)
   if (year <= base_year) {
     const result = { current, previous: null, trend: null }
     cache.set(cache_key, result)
     return result
   }
   const prev_req = buildAuthReq(auth_req, year - 1, 0)
-  const previous: KpiBalance = await getHomeKpisCacheAccumulated(prev_req)
+  const previous: KpiBalance = await getHomeBalanceKpiCache(prev_req)
+
   const trend = calcTrendObject(current, previous)
+
   const result = { current, previous, trend }
+
   cache.set(cache_key, result)
   return result
 }

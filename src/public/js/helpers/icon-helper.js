@@ -206,3 +206,25 @@ function iconGroup({ size = 4, color = 'currentColor' } = {}) {
 function iconGrouped() {
   return iconGroup({ size: 3, color: '#1c1fdb' })
 }
+
+function iconTrendUp() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="#16a34a" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="3 17 9 11 13 15 21 7"/>
+      <polyline points="14 7 21 7 21 14"/>
+    </svg>
+  `
+}
+
+function iconTrendDown() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="#dc2626" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="3 7 9 13 13 9 21 17"/>
+      <polyline points="14 17 21 17 21 10"/>
+    </svg>
+  `
+}
