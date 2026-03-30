@@ -167,6 +167,7 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
 
         })
 
+        deleteAll(auth_req, 'transaction')
         /* ============================================================
         6. Redirigir si todo correcto
         ============================================================ */
@@ -175,8 +176,6 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
                 `/transactions?category_id=${return_category_id}&from=categories&saved_batch=true`
             )
         }
-
-        deleteAll(auth_req, 'transaction')
         return res.redirect('/transactions?saved_batch=true')
 
     } catch (error) {
