@@ -7,6 +7,7 @@ import { Transaction } from '../../entities/Transaction.entity';
 import { AuthRequest } from '../../types/auth-request';
 import { logger } from '../../utils/logger.util';
 import { parseError } from '../../utils/error.util';
+import { deleteAll } from '../../cache/cache-key.service';
 
 export const apiForGettingCategorizeTransactions: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest;
@@ -37,7 +38,7 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
             }
         }
     })
-    
+
     const has_income = transactions.some(t => t.type === 'income')
     const has_expense = transactions.some(t => t.type === 'expense')
 
@@ -175,6 +176,7 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
             )
         }
 
+        deleteAll(auth_req, 'transaction')
         return res.redirect('/transactions?saved_batch=true')
 
     } catch (error) {
