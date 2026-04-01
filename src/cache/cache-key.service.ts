@@ -54,8 +54,7 @@ export const cacheKeys = {
     `loan_group_api_user_${user_id}`,
     `payment_user_${user_id}`,
     `payment_api_user_${user_id}`,
-    /*`home_available_years_kpi_user_${user_id}`,
-    `home_balance_kpi_user_${user_id}_*`,*/
+    `home_available_years_kpi_user_${user_id}`,
   ]
 }
 

@@ -4,12 +4,11 @@
 const CARD_IDS = [
     'html-balance-kpi',
     'html-cash-flow-summary',
-    'chart-data-last-6months-balance',
-    'chart-data-last-6years-balance',
-    'chart-data-last-6years-loan'
 ]
 
 const KPI_CONFIG = [
+    { key: 'available_balance', label: 'Disponible', color: 'green', trend: true },
+    { key: 'net_savings', label: 'Ahorrado', color: 'blue', trend: true },
     { key: 'incomes', label: 'Ingresos', color: 'green', trend: true },
     { key: 'expenses', label: 'Egresos', color: 'red', trend: true },
     { key: 'loans', label: 'Prestamos', color: 'green', trend: true },
@@ -18,11 +17,9 @@ const KPI_CONFIG = [
     { key: 'withdrawals', label: 'Retiros', color: 'red', trend: true },
     { key: 'total_inflows', label: 'Total Ingresos', color: 'green', trend: true },
     { key: 'total_outflows', label: 'Total Egresos', color: 'red', trend: true },
-    { key: 'net_cash_flow', label: 'Neto', color: 'blue', trend: true },
-    { key: 'net_savings', label: 'Ahorrado', color: 'blue', trend: true },
-    { key: 'available_balance', label: 'Disponible', color: 'green', trend: true },
     { key: 'principal_breakdown', label: 'Desglose Capital', color: 'green', trend: true },
-    { key: 'interest_breakdown', label: 'Desglose Interes', color: 'red', trend: true }
+    { key: 'interest_breakdown', label: 'Desglose Interes', color: 'red', trend: true },
+    { key: 'net_cash_flow', label: 'Neto', color: 'blue', trend: true },
 ]
 
 const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
