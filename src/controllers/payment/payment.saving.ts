@@ -149,9 +149,6 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             loan.balance += existing.principal_paid
             loan.principal_paid -= existing.principal_paid
             loan.interest_paid -= existing.interest_paid
-            const local_date = DateTime.fromJSDate(existing.transaction.date, { zone: 'utc' }).setZone(timezone)
-            const period_year = local_date.year
-            const period_month = local_date.month
             if (loan.balance > 0) loan.is_active = true
             await loanRepo.save(loan)
             existing.account.balance += total
@@ -162,9 +159,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
                 await transactionRepo.delete(existing.transaction.id)
             }
             await queryRunner.commitTransaction()
-
             deleteAll(auth_req, 'payment')
-            KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(error)))
+
+            KpiCacheService
+                .recalcKPIsByTransaction(auth_req, existing.transaction)
+                .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(error)))
 
             if (return_from === 'categories' && return_category_id) {
                 return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -277,12 +276,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         payment.transaction = trx
         await paymentRepo.save(payment)
         await queryRunner.commitTransaction()
-
         deleteAll(auth_req, 'payment')
-        const local_date = DateTime.fromJSDate(trx.date, { zone: 'utc' }).setZone(timezone)
-        const period_year = local_date.year
-        const period_month = local_date.month
-        KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(error)))
+
+        KpiCacheService
+            .recalcKPIsByTransaction(auth_req, trx)
+            .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(error)))
 
         if (return_from === 'categories' && return_category_id) {
             return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)

@@ -116,14 +116,13 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
         })
       }
 
-      const local_date = DateTime.fromJSDate(existing.date, { zone: 'utc' }).setZone(timezone)
-      const period_year = local_date.year
-      const period_month = local_date.month
       await query_runner.manager.remove(Transaction, existing)
       await query_runner.commitTransaction()
-
       deleteAll(auth_req, 'transaction')
-      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
+
+      KpiCacheService
+        .recalcKPIsByTransaction(auth_req, existing)
+        .catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -206,16 +205,16 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
         balance: Number(acc.balance) + delta
       })
     }
-    const local_date = DateTime.fromJSDate(saved_transaction.date, { zone: 'utc' }).setZone(timezone)
-    const period_year = local_date.year
-    const period_month = local_date.month
+
     /*=================================
       Guardar en base de datos y limpiar cache
     =================================*/
     await query_runner.commitTransaction()
-
     deleteAll(auth_req, 'transaction')
-    KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
+
+    KpiCacheService
+      .recalcKPIsByTransaction(auth_req, saved_transaction)
+      .catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
 
     if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)

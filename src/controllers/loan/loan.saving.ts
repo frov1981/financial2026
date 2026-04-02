@@ -97,7 +97,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner()
   await queryRunner.connect()
   await queryRunner.startTransaction()
-  
+
   try {
     let existing: Loan | null = null
     if (loan_id) {
@@ -111,9 +111,6 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       if (!existing) throw new Error('Préstamo no encontrado')
       const errors = await validateDeleteLoan(auth_req, existing)
       if (errors) throw { validationErrors: errors }
-      const local_date = DateTime.fromJSDate(existing.transaction.date, { zone: 'utc' }).setZone(timezone)
-      const period_year = local_date.year
-      const period_month = local_date.month
       if (existing.disbursement_account) {
         const account = await getAccountById(auth_req, disbursement_id)
         if (!account) throw new Error('Cuenta de desembolso no encontrado')
@@ -126,9 +123,11 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
         await queryRunner.manager.delete(Transaction, transaction_id)
       }
       await queryRunner.commitTransaction()
-
       deleteAll(auth_req, 'loan')
-      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
+
+      KpiCacheService
+        .recalcKPIsByTransaction(auth_req, existing)
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -245,10 +244,9 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
     deleteAll(auth_req, 'loan')
     if (loan.transaction) {
-      const local_date = DateTime.fromJSDate(loan.transaction.date, { zone: 'utc' }).setZone(timezone)
-      const period_year = local_date.year
-      const period_month = local_date.month
-      KpiCacheService.recalcMonthlyKPIs(auth_req, period_year, period_month).catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
+      KpiCacheService
+        .recalcKPIsByTransaction(auth_req, loan.transaction)
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
     }
 
     if (return_from === 'categories' && return_category_id) {
