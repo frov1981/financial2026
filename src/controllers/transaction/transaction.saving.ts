@@ -184,7 +184,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       }
     }
 
-    const errors = await validateSaveTransaction(transaction, auth_req)
+    const errors = await validateSaveTransaction(transaction, auth_req, previous_transaction)
     if (errors) throw { validationErrors: errors }
     const deltas = new Map<number, number>()
     const mergeDeltas = (map: Map<number, number>) => {

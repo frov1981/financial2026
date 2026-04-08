@@ -6,7 +6,7 @@ import { Transaction } from '../../entities/Transaction.entity'
 import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 
-export const validateSaveTransaction = async (transaction: Transaction, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
+export const validateSaveTransaction = async (transaction: Transaction, auth_req: AuthRequest, old_transaction?: Transaction): Promise<Record<string, string> | null> => {
     const errors = await validate(transaction)
     const field_errors: Record<string, string> = {}
 
@@ -76,10 +76,17 @@ export const validateSaveTransaction = async (transaction: Transaction, auth_req
             const acc = await accRepo.findOne({ where: { id: transaction.account.id, user: { id: auth_req.user.id } } })
             const acc_balance = acc ? Number(acc.balance) : 0
 
-            if (acc_balance <= 0) {
-                field_errors.amount = 'No hay saldo disponible en la cuenta para realizar el egreso'
-            } else if (Number(transaction.amount) > acc_balance) {
-                field_errors.amount = 'Saldo insuficiente en la cuenta para este egreso'
+            const new_amount = Number(transaction.amount)
+            const old_amount = old_transaction ? Number(old_transaction.amount) : 0
+
+            const is_same_amount = old_transaction && new_amount === old_amount
+            if (!is_same_amount) {
+                const effective_balance = acc_balance + old_amount
+                if (effective_balance <= 0) {
+                    field_errors.amount = 'No hay saldo disponible en la cuenta para realizar el egreso'
+                } else if (new_amount > effective_balance) {
+                    field_errors.amount = 'Saldo insuficiente en la cuenta para este egreso'
+                }
             }
         }
     }
@@ -101,10 +108,17 @@ export const validateSaveTransaction = async (transaction: Transaction, auth_req
             const acc = await accRepo.findOne({ where: { id: transaction.account.id, user: { id: auth_req.user.id } } })
             const acc_balance = acc ? Number(acc.balance) : 0
 
-            if (acc_balance <= 0) {
-                field_errors.amount = 'No hay saldo disponible en la cuenta origen para realizar la transferencia'
-            } else if (Number(transaction.amount) > acc_balance) {
-                field_errors.amount = 'Saldo insuficiente en la cuenta origen para esta transferencia'
+            const new_amount = Number(transaction.amount)
+            const old_amount = old_transaction ? Number(old_transaction.amount) : 0
+            const is_same_amount = old_transaction && new_amount === old_amount
+
+            if (!is_same_amount) {
+                const effective_balance = acc_balance + old_amount
+                if (effective_balance <= 0) {
+                    field_errors.amount = 'No hay saldo disponible en la cuenta origen para realizar la transferencia'
+                } else if (new_amount > effective_balance) {
+                    field_errors.amount = 'Saldo insuficiente en la cuenta origen para esta transferencia'
+                }
             }
         }
     }
