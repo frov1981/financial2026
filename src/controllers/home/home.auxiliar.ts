@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomeTrendKpiCache } from '../../cache/cache-home.service'
+import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomeLoanFlowSummaryCache, getHomeTrendKpiCache } from '../../cache/cache-home.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
 import { Loan } from "../../entities/Loan.entity"
@@ -515,4 +515,10 @@ export const getCashSummary = async (auth_req: AuthRequest) => {
   const rows = await getHomeCashFlowSummaryCache(auth_req)
   return rows
 }
+
+export const getLoanSummary = async (auth_req: AuthRequest) => {
+  const rows = await getHomeLoanFlowSummaryCache(auth_req)
+  return rows
+}
+
 

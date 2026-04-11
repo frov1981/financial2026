@@ -13,6 +13,13 @@ type CashFlowSummary = {
   net_cash_flow: number[]
 }
 
+type LoanFlowSummary = {
+  labels: string[]
+  total_loans: number[]
+  total_payments: number[]
+  net_balance: number[]
+}
+
 const base_kpi = {
   incomes: 0,
   expenses: 0,
@@ -273,6 +280,75 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
     total_inflows,
     total_outflows,
     net_cash_flow
+  }
+
+  cache.set(cache_key, result)
+  return result
+}
+
+export const getHomeLoanFlowSummaryCache = async (auth_req: AuthRequest): Promise<LoanFlowSummary> => {
+  const user_id = auth_req.user.id
+  const year = Number(auth_req.query.year_period_for_loan_summ || 0)
+
+  const cache_key = cacheKeys.homeLoanFlowSummary(user_id, year)
+  const cached = cache.get<LoanFlowSummary>(cache_key)
+  if (cached !== undefined) return cached
+
+  const labels: string[] = []
+  const total_loans: number[] = []
+  const total_payments: number[] = []
+  const net_balance: number[] = []
+
+  let available_years = cache.get<number[]>(cacheKeys.homeAvailableYearsKpi(user_id)) || []
+  available_years.sort((a, b) => a - b)
+
+  if (year === 0) {
+    for (const y of available_years) {
+      if (y === 0) continue
+
+      let loans = 0
+      let payments = 0
+      let net = 0
+
+      for (let month = 1; month <= 12; month++) {
+        const kpi_key = cacheKeys.homeBalanceKpi(user_id, y, month)
+        let kpi = cache.get<KpiBalance>(kpi_key)
+
+        if (!kpi) {
+          const req = buildAuthReq(auth_req, y, month)
+          kpi = await getHomeBalanceKpiCache(req)
+          cache.set(kpi_key, kpi)
+        }
+
+        loans += kpi?.loans ?? 0
+        payments += kpi?.payments ?? 0
+        net += (kpi?.loans ?? 0) - (kpi?.payments ?? 0)
+      }
+
+      labels.push(String(y))
+      total_loans.push(loans)
+      total_payments.push(payments)
+      net_balance.push(net)
+    }
+  } else {
+    const month_labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+    for (let month = 1; month <= 12; month++) {
+      const kpi_key = cacheKeys.homeBalanceKpi(user_id, year, month)
+      const kpi = cache.get<KpiBalance>(kpi_key)
+
+      labels.push(month_labels[month - 1])
+      total_loans.push(kpi?.loans ?? 0)
+      total_payments.push(kpi?.payments ?? 0)
+      net_balance.push((kpi?.loans ?? 0) - (kpi?.payments ?? 0))
+    }
+  }
+
+  const result: LoanFlowSummary = {
+    labels,
+    total_loans,
+    total_payments,
+    net_balance
   }
 
   cache.set(cache_key, result)

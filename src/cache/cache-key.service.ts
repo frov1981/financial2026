@@ -35,6 +35,9 @@ export const cacheKeys = {
   homeCashFlowSummary: (user_id: number, year: number) => `home_cash_flow_summary_user_${user_id}_year_${year}`,
   homeCashFlowSummaryPrefix: (user_id: number) => `home_cash_flow_summary_user_${user_id}_year_`,
 
+  homeLoanFlowSummary: (user_id: number, year: number) => `home_loan_flow_summary_user_${user_id}_year_${year}`,
+  homeLoanFlowSummaryPrefix: (user_id: number) => `home_loan_flow_summary_user_${user_id}_year_`,
+
   homeTrendKpi: (user_id: number, year: number, month: number) => `home_kpis_trend_user_${user_id}_year_${year}_month_${month}`,
   homeTrendKpiPrefix: (user_id: number) => `home_kpis_trend_user_${user_id}_`,
 
@@ -72,5 +75,6 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const deleted_kpis_accum = delByPrefix(cacheKeys.homeBalanceKpiAccumPrefix(user_id))
   const deleted_trend = delByPrefix(cacheKeys.homeTrendKpiPrefix(user_id))
   const deleted_cash_flow_summary = delByPrefix(cacheKeys.homeCashFlowSummaryPrefix(user_id))
-  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], cashFlowSummary=[${deleted_cash_flow_summary}]`)
+  const deleted_loan_flow_summary = delByPrefix(cacheKeys.homeLoanFlowSummaryPrefix(user_id))
+  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], cashFlowSummary=[${deleted_cash_flow_summary}], loanFlowSummary=[${deleted_loan_flow_summary}]`)
 }

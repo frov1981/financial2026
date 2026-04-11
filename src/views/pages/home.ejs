@@ -54,6 +54,26 @@
       </div>
     </div>
 
+    <!-- ============================
+    LOAN FLOW SUMMARY
+    ============================= -->
+    <div class="ui-card home-slide">
+
+      <div class="ui-card-header html-loan-flow-summary-header-nav">
+        <button id="html-loan-flow-summary-prev" class="html-loan-flow-summary-year-btn"></button>
+        <h2 id="html-loan-flow-summary-year-label" class="html-loan-flow-summary-year-label">
+          Tendencia Préstamos
+        </h2>
+        <button id="html-loan-flow-summary-next" class="html-loan-flow-summary-year-btn"></button>
+      </div>
+
+      <div id="html-loan-flow-summary" class="ui-card-body">
+        <div style="height: 280px;">
+          <canvas id="loanFlowChart"></canvas>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <button id="carousel-next" class="carousel-nav carousel-nav-next" onclick="scrollCarouselNext()" title="Siguiente">
