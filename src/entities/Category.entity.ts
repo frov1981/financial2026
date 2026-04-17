@@ -46,11 +46,4 @@ export class Category {
   @JoinColumn({ name: 'category_group_id', foreignKeyConstraintName: 'fk_categories_group' })
   category_group!: CategoryGroup | null
 
-  @ManyToOne(() => Category, category => category.children, { nullable: true })
-  @JoinColumn({ name: 'parent_id', foreignKeyConstraintName: 'fk_categories_parent' })
-  parent!: Category | null
-
-  @OneToMany(() => Category, category => category.parent)
-  children!: Category[]
-
 }

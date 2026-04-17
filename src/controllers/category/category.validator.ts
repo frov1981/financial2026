@@ -50,15 +50,5 @@ export const validateDeleteCategory = async (auth_req: AuthRequest, category: Ca
   if (tx_count > 0) {
     field_errors.general = `No se puede eliminar la categoría porque tiene ${tx_count} transacción(es) asociada(s)`
   }
-  // Validación: categorías hijas (estructura)
-  const children_count = await category_repo.count({
-    where: {
-      parent: { id: category.id },
-      user: { id: user_id }
-    }
-  })
-  if (children_count > 0) {
-    field_errors.general = `No se puede eliminar la categoría porque tiene ${children_count} subcategoría(s) asociada(s)`
-  }
   return Object.keys(field_errors).length > 0 ? field_errors : null
 }

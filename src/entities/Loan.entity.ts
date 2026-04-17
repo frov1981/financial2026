@@ -69,11 +69,4 @@ export class Loan {
   @JoinColumn({ name: 'transaction_id', foreignKeyConstraintName: 'fk_loans_transaction' })
   transaction!: Transaction
 
-  @ManyToOne(() => Loan, loan => loan.children, { nullable: true })
-  @JoinColumn({ name: 'parent_id', foreignKeyConstraintName: 'fk_loans_parent' })
-  parent!: Loan | null
-
-  @OneToMany(() => Loan, loan => loan.parent)
-  children!: Loan[]
-
 }
