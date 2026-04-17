@@ -164,26 +164,6 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     if (transaction.type === 'transfer') { transaction.category = null }
     if (transaction.type !== 'transfer') { transaction.to_account = null }
 
-    if (transaction.type === 'income') {
-      transaction.flow_type = 'incomes'
-    }
-    if (transaction.type === 'expense') {
-      transaction.flow_type = 'expenses'
-    }
-    if (transaction.type === 'transfer') {
-      const from = transaction.account
-      const to = transaction.to_account
-      if (!from || !to) {
-        transaction.flow_type = null
-      } else if (isSavingAccount(to)) {
-        transaction.flow_type = 'savings'
-      } else if (isSavingAccount(from) && !isSavingAccount(to)) {
-        transaction.flow_type = 'withdrawals'
-      } else {
-        transaction.flow_type = null
-      }
-    }
-
     const errors = await validateSaveTransaction(transaction, auth_req, previous_transaction)
     if (errors) throw { validationErrors: errors }
     const deltas = new Map<number, number>()

@@ -24,11 +24,6 @@ export class Transaction {
   })
   type!: 'income' | 'expense' | 'transfer'
 
-  @Index('idx_transactions_flow_type')
-  @Index('idx_transactions_user_flow_type', ['user', 'flow_type'])
-  @Column({ type: 'varchar', length: 20, nullable: true })
-  flow_type!: 'incomes' | 'expenses' | 'savings' | 'withdrawals' | 'loans' | 'payments' | null
-
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_transactions_account' })
   @IsNotEmpty({ message: 'La cuenta es obligatoria' })
