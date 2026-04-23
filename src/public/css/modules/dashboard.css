@@ -102,7 +102,8 @@
     user-select: none;
 }
 
-.html-cash-flow-summary-header-nav {
+.html-cash-flow-summary-header-nav,
+.html-loan-flow-summary-header-nav {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -119,7 +120,8 @@
 }
 
 .html-balance-kpi-year-btn,
-.html-cash-flow-summary-year-btn {
+.html-cash-flow-summary-year-btn,
+.html-loan-flow-summary-year-btn  {
     width: 32px;
     height: 32px;
     border: none;
@@ -136,18 +138,21 @@
 }
 
 .html-balance-kpi-year-btn:hover:not(:disabled),
-.html-cash-flow-summary-year-btn:hover:not(:disabled) {
+.html-cash-flow-summary-year-btn:hover:not(:disabled),
+.html-loan-flow-summary-year-btn:hover:not(:disabled)  {
     background: var(--ui-gray-200);
 }
 
 .html-balance-kpi-year-btn:disabled,
-.html-cash-flow-summary-year-btn:disabled {
+.html-cash-flow-summary-year-btn:disabled,
+.html-loan-flow-summary-year-btn:disabled  {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
 .html-balance-kpi-year-btn svg,
-.html-cash-flow-summary-year-btn svg {
+.html-cash-flow-summary-year-btn svg,
+.html-loan-flow-summary-year-btn svg {
     width: 18px;
     height: 18px;
 }
