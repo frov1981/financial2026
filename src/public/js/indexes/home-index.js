@@ -282,7 +282,6 @@ async function changeYearForLoanFlowSumm() {
     if (!res.ok) return
 
     const { loanSummary } = await res.json()
-    console.log('loanSummary', loanSummary)
 
     renderLoanFlowSummChart(loanSummary)
 }
