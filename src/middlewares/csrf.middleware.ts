@@ -55,6 +55,15 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
  */
 export function csrfTokenMiddleware(req: Request, res: Response, next: NextFunction) {
   const session = req.session as any
+
+  // Generar token si no existe en la sesión
+  if (!session.csrfToken) {
+    session.csrfToken = generateCSRFToken()
+  }
+
+  // Agregar token a res.locals para que esté disponible en las vistas
+  res.locals.csrfToken = session.csrfToken
+
   // Agregar helper para obtener token en respuestas JSON
   res.locals.getCSRFToken = () => session.csrfToken
   next()
