@@ -369,27 +369,45 @@ function updatePaginationInfo() {
 }
 
 async function loadTransactions(page = 1) {
-  const params = new URLSearchParams({ page, limit: PAGE_SIZE })
-  if (currentSearch) params.append('search', currentSearch)
-  if (CATEGORY_ID) params.append('category_id', CATEGORY_ID)
+  try {
+    const params = new URLSearchParams({ page, limit: PAGE_SIZE })
+    if (currentSearch) params.append('search', currentSearch)
+    if (CATEGORY_ID) params.append('category_id', CATEGORY_ID)
 
-  const res = await fetch(`${API_BASE}?${params}`)
-  const data = await res.json()
+    const res = await fetch(`${API_BASE}?${params}`)
+    
+    // Manejar errores de rate limiting
+    if (res.status === 429) {
+      const errorData = await res.json().catch(() => ({}))
+      const retryAfter = errorData.retryAfter || 60
+      alert(`⏱️ Límite de solicitudes excedido.\n\nEspera ${retryAfter} segundos antes de intentar nuevamente.`)
+      return
+    }
 
-  allItems = data.items
-  totalPages = Math.ceil(data.total / PAGE_SIZE)
-  currentPage = page
+    if (!res.ok) {
+      throw new Error(`Error ${res.status}: ${res.statusText}`)
+    }
 
-  // 🔹 Guardar filtros incluyendo página
-  saveFilters(FILTER_KEY, { term: currentSearch, page: currentPage })
+    const data = await res.json()
 
-  render(allItems)
-  updatePaginationInfo()
+    allItems = data.items
+    totalPages = Math.ceil(data.total / PAGE_SIZE)
+    currentPage = page
 
-  if (isBatchActive()) {
-    if (typeof batchApplyUi === 'function') batchApplyUi(true)
-    if (typeof batchToggleActionButtons === 'function') batchToggleActionButtons(true)
-    if (typeof batchRestoreSelection === 'function') batchRestoreSelection()
+    // 🔹 Guardar filtros incluyendo página
+    saveFilters(FILTER_KEY, { term: currentSearch, page: currentPage })
+
+    render(allItems)
+    updatePaginationInfo()
+
+    if (isBatchActive()) {
+      if (typeof batchApplyUi === 'function') batchApplyUi(true)
+      if (typeof batchToggleActionButtons === 'function') batchToggleActionButtons(true)
+      if (typeof batchRestoreSelection === 'function') batchRestoreSelection()
+    }
+  } catch (error) {
+    console.error('Error cargando transacciones:', error)
+    alert('Error al cargar transacciones. Intenta nuevamente.')
   }
 }
 

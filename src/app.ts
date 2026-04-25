@@ -1,7 +1,10 @@
 import express, { NextFunction, Request, Response } from 'express'
+import helmet from 'helmet'
 import session from 'express-session'
 import path from 'path'
 import { sessionStore } from './config/session-store'
+import { apiLimiter } from './config/rate-limiter'
+import { csrfProtection, csrfTokenMiddleware } from './middlewares/csrf.middleware'
 import { injectLoanBalance } from './middlewares/inject-loan-balance.middleware'
 import { injectNetBalance } from './middlewares/inject-net-balance.middleware'
 import { httpLogger } from './middlewares/logger.middleware'
@@ -25,6 +28,23 @@ const isProd = process.env.NODE_ENV === 'production'
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(httpLogger)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrcAttr: ["'unsafe-inline'"], // Permite event handlers inline (onclick, etc)
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      childSrc: ["'none'"],
+    },
+  },
+}))
 
 /* =======================
    Sesiones (MySQL Store)
@@ -61,6 +81,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 })
 
 /* =======================
+   Protección CSRF
+======================= */
+app.use(csrfTokenMiddleware)
+
+/* =======================
    Routes
 ======================= */
 app.use('/', authRoutes)
@@ -68,6 +93,8 @@ app.use('/', homeRoutes)
 const protectedRouter = express.Router()
 protectedRouter.use(sessionAuthMiddleware)
 protectedRouter.use(injectNetBalance)
+protectedRouter.use(apiLimiter)
+protectedRouter.use(csrfProtection) // Aplicar CSRF a rutas protegidas
 protectedRouter.use('/accounts', accountRoutes)
 protectedRouter.use('/categories', categoryRoutes)
 protectedRouter.use('/category-groups', categoryGroupRoutes)

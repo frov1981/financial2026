@@ -24,6 +24,8 @@
   </h1>
 
   <form method="post" action="/transactions">
+    <!-- Token CSRF -->
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <% if (errors?.general) { %>
       <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
