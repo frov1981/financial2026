@@ -16,6 +16,8 @@
   </h1>
 
   <form method="post" action="/loan-groups/">
+    <!-- Token CSRF -->
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <!-- Error general -->
     <% if (errors?.general) { %>
