@@ -112,7 +112,9 @@
     user-select: none;
 }
 
-.html-balance-kpi-year-label {
+.html-balance-kpi-year-label,
+.html-cash-flow-summary-year-label,
+.html-loan-flow-summary-year-label {
     font-size: 1rem;
     font-weight: 600;
     margin: 0;
