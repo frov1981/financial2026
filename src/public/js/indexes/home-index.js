@@ -28,6 +28,10 @@ const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 const CASH_FLOW_YEAR_STATE_KEY = `home.cash.flow.year.${window.USER_ID}`
 const LOAN_FLOW_YEAR_STATE_KEY = `home.loan.flow.year.${window.USER_ID}`
 
+const labelForKpi = 'KPIs'
+const labelForTrendBalance = 'Balances'
+const labelForTrendLoan = 'Préstamos'
+
 let kpi_years = []
 let kpi_year_index = 0
 let cash_flow_year_index = 0
@@ -204,7 +208,7 @@ async function changeYearForBalanceKpi() {
 function updateLabelForBalanceKpi(year) {
     const label = document.getElementById('html-balance-kpi-year-label')
     if (!label) return
-    label.textContent = year === 0 ? 'KPIs Balances - Todos' : `KPIs Balances - ${year}`
+    label.textContent = year === 0 ? `${labelForKpi} - Todos` : `${labelForKpi} - ${year}`
 }
 
 function updateYearNavForBalanceKpi() {
@@ -336,17 +340,14 @@ function updateLabelForCashFlowSumm(year) {
     const label = document.getElementById('html-cash-flow-summary-year-label')
     if (!label) return
 
-    label.textContent = year === 0 ? 'Trend Balances - Todos' : `Trend Balances - ${year}`
+    label.textContent = year === 0 ? `${labelForTrendBalance} - Todos` : `${labelForTrendBalance} - ${year}`
 }
 
 function updateLabelForLoanFlowSumm(year) {
     const label = document.getElementById('html-loan-flow-summary-year-label')
     if (!label) return
 
-    label.textContent =
-        year === 0
-            ? 'Trend Préstamos - Todos'
-            : `Trend Préstamos - ${year}`
+    label.textContent = year === 0 ? `${labelForTrendLoan} - Todos` : `${labelForTrendLoan} - ${year}`
 }
 
 function updateYearNavForCashFlowSumm() {
