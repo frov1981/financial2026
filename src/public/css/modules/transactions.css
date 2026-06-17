@@ -127,11 +127,47 @@
     white-space: nowrap;
 }
 
-.grouped-icon-line + .grouped-icon-line {
+.grouped-icon-line+.grouped-icon-line {
     margin-top: 4px;
 }
 
 .grouped-icon {
     display: flex;
     align-items: center;
+}
+
+.transaction-card-detail.hidden {
+  display: none;
+}
+
+.transaction-card-detail {
+  margin-top: 8px;
+  padding: 8px 10px;
+
+  background: rgba(255, 255, 255, 0.5);
+
+  border: 1px solid var(--ui-gray-200);
+  border-radius: 8px;
+
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ui-gray-700);
+
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.transaction-detail-row.hidden {
+  display: none;
+}
+
+.transaction-detail-row td {
+  padding: 10px 14px;
+  background: var(--ui-gray-50);
+
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ui-gray-700);
+
+  border-top: 1px solid var(--ui-gray-200);
 }

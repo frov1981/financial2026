@@ -67,6 +67,31 @@ function isBatchActive() {
 /* ============================================================================
 5. Render helpers (iconos, tags, cajas)
 ============================================================================ */
+function hideAllTransactionDetails() {
+  document.querySelectorAll('.transaction-detail-row')
+    .forEach(row => row.classList.add('hidden'))
+}
+
+function showTransactionDetail(id) {
+  hideAllTransactionDetails()
+
+  const detail_row = document.getElementById(`transaction-detail-${id}`)
+
+  if (detail_row) {
+    detail_row.classList.remove('hidden')
+  }
+}
+
+function showTransactionCardDetail(id) {
+  document
+    .querySelectorAll('.transaction-card-detail')
+    .forEach(el => el.classList.add('hidden'))
+
+  document
+    .getElementById(`transaction-card-detail-${id}`)
+    ?.classList.remove('hidden')
+}
+
 function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
@@ -84,7 +109,10 @@ function renderTable(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const row = document.getElementById(`transaction-${selected.id}`)
-    if (row) row.classList.add('tr-selected')
+    if (row) {
+      row.classList.add('tr-selected')
+      showTransactionDetail(selected.id)
+    }
   }
 }
 
@@ -99,7 +127,10 @@ function renderCards(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const card = container.querySelector(`[data-id="${selected.id}"]`)
-    if (card) card.classList.add('card-selected')
+    if (card) {
+      card.classList.add('card-selected')
+      showTransactionCardDetail(selected.id)
+    }
   }
 }
 
@@ -158,7 +189,7 @@ function renderRow(transaction) {
         </div>
       `
           : '-'
-      }
+    }
       </td>
       <td class="ui-td col-left col-nowrap">
       ${transaction.category?.name
@@ -168,7 +199,7 @@ function renderRow(transaction) {
           <span>${transaction.category?.name || '-'}</span>
         </div>
         ` : ''
-      }
+    }
       ${transaction.loan_payment?.loan?.name
       ? `
         <div class="grouped-icon-line">
@@ -176,7 +207,7 @@ function renderRow(transaction) {
           <span>${transaction.loan_payment?.loan?.name || '-'}</span>
         </div>
         ` : ''
-      }
+    }
       ${transaction.loan_payment?.loan?.category?.name
       ? `
         <div class="grouped-icon-line">
@@ -184,11 +215,9 @@ function renderRow(transaction) {
           <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
         </div>
         ` : ''
-      }
+    }
       </td>
-      <td class="ui-td col-left col-description">
-        <div class="card-description">${transaction.description || ''}</div>
-      </td>
+      
       <td class="ui-td col-center col-nowrap">
         <div class="icon-actions">
 
@@ -224,6 +253,12 @@ function renderRow(transaction) {
         </div>
       </td>
     </tr> 
+
+    <tr id="transaction-detail-${transaction.id}" class="transaction-detail-row hidden">
+      <td colspan="8">
+        ${transaction.description || '-'}
+      </td>
+    </tr>
   `
 }
 
@@ -288,7 +323,7 @@ function renderCard(transaction) {
         <div class="card-info">
           <div class="card-account">
             ${transaction.type === 'transfer'
-            ? `
+      ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
@@ -298,51 +333,53 @@ function renderCard(transaction) {
                   <span>${transaction.to_account?.name || '-'}</span>
                 </div>
               `
-              : transaction.type === 'income'
-              ? `
+      : transaction.type === 'income'
+        ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferIn()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
                 `
-              : transaction.type === 'expense'
-              ? `
+        : transaction.type === 'expense'
+          ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
                 `
-              : '-'
-          }
+          : '-'
+    }
           </div>
           ${transaction.category?.name
-          ? `<div class="card-category">
+      ? `<div class="card-category">
               <div class="grouped-icon-line">
                 <span class="grouped-icon">${iconGrouped()}</span>
                 <span>${transaction.category?.name || '-'}</span>
               </div>
             </div>
           ` : ''
-          }
+    }
           ${transaction.loan_payment?.loan?.name
-          ? `<div class="card-category">
+      ? `<div class="card-category">
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconGrouped()}</span>
                   <span>${transaction.loan_payment?.loan?.name || '-'}</span>
                 </div>
               </div>
             ` : ''
-          }
+    }
           ${transaction.loan_payment?.loan?.category?.name
-          ? `<div class="card-category">
+      ? `<div class="card-category">
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconGrouped()}</span>
                   <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
                 </div>
               </div>
             ` : ''
-          }
-          ${transaction.description ? `<div class="card-description">${transaction.description}</div>` : ''}
+    }
+          <div id="transaction-card-detail-${transaction.id}" class="transaction-card-detail hidden" >
+            ${transaction.description}
+          </div>
         </div>
 
         <div class="card-amount">
@@ -375,7 +412,7 @@ async function loadTransactions(page = 1) {
     if (CATEGORY_ID) params.append('category_id', CATEGORY_ID)
 
     const res = await fetch(`${API_BASE}?${params}`)
-    
+
     // Manejar errores de rate limiting
     if (res.status === 429) {
       const errorData = await res.json().catch(() => ({}))
@@ -480,36 +517,6 @@ function goToRouteDelete(action_name, action_id) {
   }
 }
 
-/*
-function goToTransactionUpdate(id) {
-  const params = new URLSearchParams()
-  if (CATEGORY_ID) {
-    params.set('category_id', CATEGORY_ID)
-    params.set('from', 'categories')
-  }
-  location.href = `/transactions/update/${id}?${params.toString()}`
-}*/
-
-/*
-function goToTransactionClone(id) {
-  const params = new URLSearchParams()
-  if (CATEGORY_ID) {
-    params.set('category_id', CATEGORY_ID)
-    params.set('from', 'categories')
-  }
-  location.href = `/transactions/clone/${id}?${params.toString()}`
-}*/
-
-/*
-function goToTransactionDelete(id) {
-  const params = new URLSearchParams()
-  if (CATEGORY_ID) {
-    params.set('category_id', CATEGORY_ID)
-    params.set('from', 'categories')
-  }
-  location.href = `/transactions/delete/${id}?${params.toString()}`
-}*/
-
 function goBackToCategories() {
   location.href = '/categories'
 }
@@ -517,10 +524,28 @@ function goBackToCategories() {
 function selectTransactionCard(event, id) {
   if (event.target.closest('button')) return
 
+  const card = event.target.closest('.transaction-card')
+  if (!card) return
+
+  const detail = document.getElementById(`transaction-card-detail-${id}`)
+  const is_open = detail && !detail.classList.contains('hidden')
+
+  if (is_open) {
+    card.classList.remove('card-selected')
+    detail.classList.add('hidden')
+    clearFilters(SELECTED_KEY)
+    return
+  }
+
   document.querySelectorAll('.transaction-card')
     .forEach(c => c.classList.remove('card-selected'))
 
-  event.currentTarget.classList.add('card-selected')
+  document.querySelectorAll('.transaction-card-detail')
+    .forEach(d => d.classList.add('hidden'))
+
+  card.classList.add('card-selected')
+  detail?.classList.remove('hidden')
+
   saveFilters(SELECTED_KEY, { id })
 }
 
@@ -553,11 +578,28 @@ if (table) {
     const row = event.target.closest('tr[id^="transaction-"]')
     if (!row) return
 
+    const id = row.id.replace('transaction-', '')
+    const detail_row = document.getElementById(`transaction-detail-${id}`)
+
+    const is_open = detail_row && !detail_row.classList.contains('hidden')
+
+    if (is_open) {
+      row.classList.remove('tr-selected')
+      detail_row.classList.add('hidden')
+      clearFilters(SELECTED_KEY)
+      return
+    }
+
     document.querySelectorAll('#transactions-table tr')
       .forEach(tr => tr.classList.remove('tr-selected'))
 
+    document.querySelectorAll('.transaction-detail-row')
+      .forEach(tr => tr.classList.add('hidden'))
+
     row.classList.add('tr-selected')
-    saveFilters(SELECTED_KEY, { id: row.id.replace('transaction-', '') })
+    detail_row?.classList.remove('hidden')
+
+    saveFilters(SELECTED_KEY, { id })
   })
 }
 
