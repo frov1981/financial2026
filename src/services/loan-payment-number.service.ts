@@ -11,6 +11,7 @@ export const getNextPaymentNumber = async (loan_id: number): Promise<number> => 
     .getRepository(LoanPayment)
     .createQueryBuilder('p')
     .where('p.loan_id = :loan_id', { loan_id })
+    .andWhere('p.payment_number > 0')
     .orderBy('p.payment_number', 'DESC')
     .getOne()
 

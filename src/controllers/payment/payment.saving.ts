@@ -189,7 +189,9 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         let old_total = 0
 
         if (mode === 'insert') {
-            const payment_number = await getNextPaymentNumber(loan_id)
+            const principal_paid = Number(clean.principal_paid || 0)
+            const payment_number = principal_paid > 0 ? await getNextPaymentNumber(loan_id) : 0
+
             payment = paymentRepo.create({
                 loan,
                 account,

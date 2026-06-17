@@ -73,6 +73,11 @@ const formatAmount = value =>
 /* ============================
    5. Render helpers
 ============================ */
+function paymentLabel(payment_number) {
+  if (payment_number === 0) return 'No Aplica'
+  return `${numberBox(payment_number)}`
+}
+
 function renderRow(payment) {
   const { date, time, weekday } = formatDateTime(payment.payment_date)
 
@@ -87,7 +92,7 @@ function renderRow(payment) {
       <td class="ui-td col-right">${formatAmount(payment.interest_paid)}</td>
       <td class="ui-td col-left">${payment.account?.name || '-'}</td>
       <td class="ui-td col-left">${payment.category?.name || '-'}</td>
-      <td class="ui-td col-right">${numberBox(payment.payment_number)}</td>
+      <td class="ui-td col-right">${paymentLabel(payment.payment_number)}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button
@@ -175,7 +180,7 @@ function renderCard(payment) {
 
         <div class="footer-right">
           <span class="footer-label">Pago No.</span>
-          <span class="footer-number">${payment.payment_number || '-'}</span>
+          <span class="footer-number">${paymentLabel(payment.payment_number)}</span>
         </div>
       </div>
     </div>
