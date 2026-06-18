@@ -25,7 +25,7 @@ import categoryRoutes from './routes/category.route'
 import homeRoutes from './routes/home.route'
 import loanGroupRoutes from './routes/loan-group.route'
 import loanRoutes from './routes/loan.route'
-import paymentRoutes from './routes/payment.route'
+import paymentRoutes from './routes/loan-payment.route'
 import transactionRoutes from './routes/transaction.route'
 
 export const app = express()
@@ -476,7 +476,7 @@ export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCat
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-category-group.service.ts
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-category-groups.service.ts
 ```
  
 ```ts
@@ -995,7 +995,7 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-loan-group.service.ts
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-loan-groups.service.ts
 ```
  
 ```ts
@@ -1052,6 +1052,98 @@ export const getActiveLoanGroup = async (auth_req: AuthRequest): Promise<LoanGro
     const loan_groups = await getLoanGroupBase(user_id)
     const loan_group = loan_groups.filter(loan_group => loan_group.is_active)
     return loan_group
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-loan-payments.service.ts
+```
+ 
+```ts
+import { AppDataSource } from "../config/typeorm.datasource"
+import { LoanPayment } from "../entities/LoanPayment.entity"
+import { AuthRequest } from "../types/auth-request"
+import { logger } from "../utils/logger.util"
+import { cacheKeys } from "./cache-key.service"
+import { cache } from "./cache.service"
+
+export type DTOLoanPayment = {
+    id: number
+    payment_number: number
+    principal_paid: number
+    interest_paid: number
+    payment_date: Date
+    note: string | null
+    created_at: Date
+    account: { id: number, name: string } | null
+    category: { id: number, name: string } | null
+    loan: { id: number, name: string } | null
+}
+
+const getPaymentsBase = async (user_id: number): Promise<LoanPayment[]> => {
+    const cache_key = cacheKeys.paymentsByUser(user_id)
+    const cached_payments = cache.get<LoanPayment[]>(cache_key)
+    if (cached_payments !== undefined) return cached_payments
+
+    const repo = AppDataSource.getRepository(LoanPayment)
+    const payments: LoanPayment[] = await repo.find({
+        where: { loan: { user: { id: user_id } } },
+        relations: { loan: true, category: true, account: true, transaction: true },
+    })
+
+    cache.set(cache_key, payments)
+    return payments
+}
+
+export const getPayments = async (auth_req: AuthRequest): Promise<LoanPayment[]> => {
+    const user_id = auth_req.user.id
+    const payments: LoanPayment[] = await getPaymentsBase(user_id)
+    return payments
+}
+
+export const getPaymentById = async (auth_req: AuthRequest, payment_id: number): Promise<LoanPayment | null> => {
+    const user_id = auth_req.user.id
+    const payments = await getPaymentsBase(user_id)
+    const payment = payments.find(payment => payment.id === payment_id)
+    return payment || null
+}
+
+export const getPaymentsForApi = async (auth_req: AuthRequest, loan_id: number): Promise<DTOLoanPayment[]> => {
+    const user_id = auth_req.user.id
+    const cache_key = cacheKeys.paymentsByLoanForApi(user_id, loan_id)
+
+    const cached = cache.get<DTOLoanPayment[]>(cache_key)
+    if (cached !== undefined) return cached
+
+    const repo = AppDataSource.getRepository(LoanPayment)
+    const start = performance.now()
+
+    const result = await repo.find({
+        where: { loan: { id: loan_id } },
+        relations: { loan: true, account: true, category: true },
+        order: { payment_date: 'DESC' }
+    })
+
+    const payments: DTOLoanPayment[] = result.map(p => ({
+        id: p.id,
+        payment_number: p.payment_number,
+        principal_paid: p.principal_paid,
+        interest_paid: p.interest_paid,
+        payment_date: p.payment_date,
+        note: p.note,
+        created_at: p.created_at,
+        account: p.account ? { id: p.account.id, name: p.account.name } : null,
+        category: p.category ? { id: p.category.id, name: p.category.name } : null,
+        loan: p.loan ? { id: p.loan.id, name: p.loan.name } : null
+    }))
+
+    const end = performance.now()
+    const duration_sec = (end - start) / 1000
+    logger.debug(`method=[${getPaymentsForApi.name}], cacheKey=[${cache_key}], loan=[${loan_id}], user=[${user_id}], entity=[loan_payment], count=[${payments.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache.set(cache_key, payments)
+    return payments
 } 
 ```
  
@@ -1212,98 +1304,6 @@ export const getLoansForApi = async (auth_req: AuthRequest): Promise<{ loans: DT
     logger.debug(`method=[${getLoansForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[loan], count=[${loans.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, response)
     return response
-} 
-```
- 
---- 
- 
-```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-payments.service.ts
-```
- 
-```ts
-import { AppDataSource } from "../config/typeorm.datasource"
-import { LoanPayment } from "../entities/LoanPayment.entity"
-import { AuthRequest } from "../types/auth-request"
-import { logger } from "../utils/logger.util"
-import { cacheKeys } from "./cache-key.service"
-import { cache } from "./cache.service"
-
-export type DTOLoanPayment = {
-    id: number
-    payment_number: number
-    principal_paid: number
-    interest_paid: number
-    payment_date: Date
-    note: string | null
-    created_at: Date
-    account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    loan: { id: number, name: string } | null
-}
-
-const getPaymentsBase = async (user_id: number): Promise<LoanPayment[]> => {
-    const cache_key = cacheKeys.paymentsByUser(user_id)
-    const cached_payments = cache.get<LoanPayment[]>(cache_key)
-    if (cached_payments !== undefined) return cached_payments
-
-    const repo = AppDataSource.getRepository(LoanPayment)
-    const payments: LoanPayment[] = await repo.find({
-        where: { loan: { user: { id: user_id } } },
-        relations: { loan: true, category: true, account: true, transaction: true },
-    })
-
-    cache.set(cache_key, payments)
-    return payments
-}
-
-export const getPayments = async (auth_req: AuthRequest): Promise<LoanPayment[]> => {
-    const user_id = auth_req.user.id
-    const payments: LoanPayment[] = await getPaymentsBase(user_id)
-    return payments
-}
-
-export const getPaymentById = async (auth_req: AuthRequest, payment_id: number): Promise<LoanPayment | null> => {
-    const user_id = auth_req.user.id
-    const payments = await getPaymentsBase(user_id)
-    const payment = payments.find(payment => payment.id === payment_id)
-    return payment || null
-}
-
-export const getPaymentsForApi = async (auth_req: AuthRequest, loan_id: number): Promise<DTOLoanPayment[]> => {
-    const user_id = auth_req.user.id
-    const cache_key = cacheKeys.paymentsByLoanForApi(user_id, loan_id)
-
-    const cached = cache.get<DTOLoanPayment[]>(cache_key)
-    if (cached !== undefined) return cached
-
-    const repo = AppDataSource.getRepository(LoanPayment)
-    const start = performance.now()
-
-    const result = await repo.find({
-        where: { loan: { id: loan_id } },
-        relations: { loan: true, account: true, category: true },
-        order: { payment_date: 'DESC' }
-    })
-
-    const payments: DTOLoanPayment[] = result.map(p => ({
-        id: p.id,
-        payment_number: p.payment_number,
-        principal_paid: p.principal_paid,
-        interest_paid: p.interest_paid,
-        payment_date: p.payment_date,
-        note: p.note,
-        created_at: p.created_at,
-        account: p.account ? { id: p.account.id, name: p.account.name } : null,
-        category: p.category ? { id: p.category.id, name: p.category.name } : null,
-        loan: p.loan ? { id: p.loan.id, name: p.loan.name } : null
-    }))
-
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getPaymentsForApi.name}], cacheKey=[${cache_key}], loan=[${loan_id}], user=[${user_id}], entity=[loan_payment], count=[${payments.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
-    cache.set(cache_key, payments)
-    return payments
 } 
 ```
  
@@ -2020,7 +2020,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\category\catego
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getCategoryById } from '../../cache/cache-categories.service';
-import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-group.service';
+import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-groups.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Category } from '../../entities/Category.entity';
@@ -2172,7 +2172,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\category\catego
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { getCategoryByName } from '../../cache/cache-categories.service'
-import { getCategoryGroupById } from '../../cache/cache-category-group.service'
+import { getCategoryGroupById } from '../../cache/cache-category-groups.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'
@@ -2234,7 +2234,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\category-group\
  
 ```ts
 import { Request, RequestHandler, Response } from 'express'
-import { getCategoryGroupById } from '../../cache/cache-category-group.service'
+import { getCategoryGroupById } from '../../cache/cache-category-groups.service'
 import { categoryGroupFormMatrix } from '../../policies/category-group-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
@@ -2320,7 +2320,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\category-group\
 ```ts
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
-import { getCategoryGroupById } from '../../cache/cache-category-group.service';
+import { getCategoryGroupById } from '../../cache/cache-category-groups.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { CategoryGroup } from '../../entities/CategoryGroups.entity';
@@ -2460,7 +2460,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\category-group\
 ```ts
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
-import { getCategoryGroupByName } from '../../cache/cache-category-group.service'
+import { getCategoryGroupByName } from '../../cache/cache-category-groups.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { CategoryGroup } from '../../entities/CategoryGroups.entity'
@@ -3494,7 +3494,7 @@ import { performance } from 'perf_hooks';
 import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/cache-accounts.service';
 import { getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
 import { deleteAll } from '../../cache/cache-key.service';
-import { getActiveLoanGroup, getLoanGroupById } from '../../cache/cache-loan-group.service';
+import { getActiveLoanGroup, getLoanGroupById } from '../../cache/cache-loan-groups.service';
 import { getLoanById } from '../../cache/cache-loans.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
@@ -3790,7 +3790,7 @@ import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { getActiveAccountById } from '../../cache/cache-accounts.service'
 import { getActiveCategoryById } from '../../cache/cache-categories.service'
-import { getActiveLoanGroupById } from '../../cache/cache-loan-group.service'
+import { getActiveLoanGroupById } from '../../cache/cache-loan-groups.service'
 import { getLoanById, getLoanByName } from '../../cache/cache-loans.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Loan } from '../../entities/Loan.entity'
@@ -3914,7 +3914,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\loan-group\loan
  
 ```ts
 import { Request, RequestHandler, Response } from 'express'
-import { getLoanGroupById } from '../../cache/cache-loan-group.service'
+import { getLoanGroupById } from '../../cache/cache-loan-groups.service'
 import { loanGroupFormMatrix } from '../../policies/loan-group-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
@@ -4001,7 +4001,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\loan-group\loan
 import { Request, RequestHandler, Response } from 'express'
 import { performance } from 'perf_hooks';
 import { deleteAll } from '../../cache/cache-key.service'
-import { getLoanGroupById } from '../../cache/cache-loan-group.service'
+import { getLoanGroupById } from '../../cache/cache-loan-groups.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { loanGroupFormMatrix } from '../../policies/loan-group-form.policy'
@@ -4141,7 +4141,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\loan-group\loan
 ```ts
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
-import { getLoanGroupByName } from '../../cache/cache-loan-group.service'
+import { getLoanGroupByName } from '../../cache/cache-loan-groups.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Loan } from '../../entities/Loan.entity'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
@@ -4183,17 +4183,17 @@ export const validateDeleteLoanGroup = async (auth_req: AuthRequest, loan_group:
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\payment\payment.controller.ts
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\loan-payment\loan-payment.controller.ts
 ```
  
 ```ts
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getLoanById } from '../../cache/cache-loans.service'
-import { getPaymentById, getPaymentsForApi } from '../../cache/cache-payments.service'
+import { getPaymentById, getPaymentsForApi } from '../../cache/cache-loan-payments.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { LoanPayment } from '../../entities/LoanPayment.entity'
-import { paymentFormMatrix } from '../../policies/payment-form.policy'
+import { paymentFormMatrix } from '../../policies/loan-payment-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
 import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
@@ -4201,7 +4201,7 @@ import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { parseError } from '../../utils/error.util'
 import { logger } from "../../utils/logger.util"
-export { savePayment as apiForSavingAccount } from './payment.saving'
+export { savePayment as apiForSavingAccount } from './loan-payment.saving'
 
 type PaymentFormViewParams = BaseFormViewParams & {
     payment: any
@@ -4239,7 +4239,7 @@ export const routeToPagePayment: RequestHandler = async (req, res) => {
     }
     res.render('layouts/main', {
         title: 'Pagos',
-        view: 'pages/payments/index',
+        view: 'pages/loan-payments/index',
         USER_ID: auth_req.user?.id || 'guest',
         LOAN_ID: loan_id,
         loan
@@ -4253,7 +4253,7 @@ export const routeToFormInsertPayment: RequestHandler = async (req, res) => {
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderPaymentForm(res, {
         title: 'Insertar Pago',
-        view: 'pages/payments/form',
+        view: 'pages/loan-payments/form',
         errors: {},
         auth_req,
         mode,
@@ -4279,7 +4279,7 @@ export const routeToFormUpdatePayment: RequestHandler = async (req, res) => {
     }
     return renderPaymentForm(res, {
         title: 'Editar Pago',
-        view: 'pages/payments/form',
+        view: 'pages/loan-payments/form',
         errors: {},
         mode,
         auth_req,
@@ -4302,7 +4302,7 @@ export const routeToFormClonePayment: RequestHandler = async (req, res) => {
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderPaymentForm(res, {
         title: 'Insertar Pago',
-        view: 'pages/payments/form',
+        view: 'pages/loan-payments/form',
         errors: {},
         mode,
         auth_req,
@@ -4324,7 +4324,7 @@ export const routeToFormDeletePayment: RequestHandler = async (req, res) => {
     }
     return renderPaymentForm(res, {
         title: 'Eliminar Pago',
-        view: 'pages/payments/form',
+        view: 'pages/loan-payments/form',
         errors: {},
         mode,
         auth_req,
@@ -4358,7 +4358,7 @@ export const apiForGettingPayments: RequestHandler = async (req: Request, res: R
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\payment\payment.saving.ts
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\loan-payment\loan-payment.saving.ts
 ```
  
 ```ts
@@ -4369,13 +4369,13 @@ import { getAccountById, getActiveAccounts } from '../../cache/cache-accounts.se
 import { getCategoryById } from '../../cache/cache-categories.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { getLoanById } from '../../cache/cache-loans.service';
-import { getPaymentById } from '../../cache/cache-payments.service';
+import { getPaymentById } from '../../cache/cache-loan-payments.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
 import { Loan } from '../../entities/Loan.entity';
 import { LoanPayment } from '../../entities/LoanPayment.entity';
 import { Transaction } from '../../entities/Transaction.entity';
-import { paymentFormMatrix } from '../../policies/payment-form.policy';
+import { paymentFormMatrix } from '../../policies/loan-payment-form.policy';
 import { KpiCacheService } from '../../services/kpi-cache.service';
 import { getNextPaymentNumber } from '../../services/loan-payment-number.service';
 import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service';
@@ -4385,7 +4385,7 @@ import { parseBoolean } from '../../utils/bool.util';
 import { parseLocalDateToUTC } from '../../utils/date.util';
 import { parseError } from '../../utils/error.util';
 import { logger } from '../../utils/logger.util';
-import { validateDeletePayment, validateSavePayment } from './payment.validator';
+import { validateDeletePayment, validateSavePayment } from './loan-payment.validator';
 
 /* ============================
    Helpers
@@ -4661,7 +4661,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {
             title: getTitle(mode),
-            view: 'pages/payments/form',
+            view: 'pages/loan-payments/form',
             ...form_state,
             errors: validationErrors
         })
@@ -4677,7 +4677,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\payment\payment.validator.ts
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\loan-payment\loan-payment.validator.ts
 ```
  
 ```ts
@@ -6117,8 +6117,6 @@ export class LoanPayment {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @IsPositive({ message: 'El número de pago debe ser un número positivo' })
-  @Min(1, { message: 'El número de pago debe ser al menos 1' })
   @Column()
   payment_number!: number
 
@@ -6679,7 +6677,7 @@ export const loanGroupFormMatrix: LoanGroupFormMatrix = {
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\policies\payment-form.policy.ts
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\policies\loan-payment-form.policy.ts
 ```
  
 ```ts
@@ -6825,7 +6823,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\app.css
 @import url('./modules/accounts.css');
 @import url('./modules/categories.css');
 @import url('./modules/loans.css');
-@import url('./modules/payments.css');
+@import url('./modules/loan-payments.css');
 @import url('./modules/transactions.css');
 @import url('./modules/dashboard.css');
 @import url('./modules/navbar.css');
@@ -8299,6 +8297,178 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\dashboar
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\loan-payments.css
+```
+ 
+```css
+.payments-mobile {
+    display: none;
+}
+
+.payment-card {
+    border: 1px solid var(--ui-gray-200);
+    border-radius: 12px;
+    padding: 12px;
+    background: var(--ui-white);
+}
+
+.payment-card+.payment-card {
+    margin-top: 10px;
+}
+
+.payment-card .icon-btn {
+    padding: 0.375rem;
+    min-height: auto;
+}
+
+.payment-card {
+    position: relative;
+}
+
+.payment-card.card-selected::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--ui-blue-600);
+    border-radius: 12px;
+    pointer-events: none;
+}
+
+.payment-card.card-selected {
+    border-color: transparent;
+}
+
+.payment-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.payment-card .card-datetime {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+}
+
+.payment-card .card-date {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.payment-card .card-time {
+    font-size: 11px;
+    color: var(--ui-gray-500);
+}
+
+.payment-card .card-weekday {
+    font-size: 11px;
+    color: var(--ui-gray-900);
+    border: 1px solid var(--ui-primary-500);
+    background-color: var(--ui-primary-50);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.payment-card .card-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.payment-card .card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.payment-card .card-body {
+    margin: 8px 0;
+}
+
+.payment-card .amount-main {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.payment-card .amount-sub {
+    font-size: 12px;
+    color: var(--ui-gray-500);
+}
+
+.payment-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ui-gray-500);
+    margin-top: 6px;
+}
+
+.payment-card .payment-amounts {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.payment-card .amount-item {
+    flex: 1;
+}
+
+.payment-card .amount-label {
+    font-size: 11px;
+    color: var(--ui-gray-500);
+    text-align: left;
+}
+
+.payment-card .amount-value {
+    font-size: 18px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.payment-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ui-gray-500);
+    margin-top: 6px;
+}
+
+.payment-card .footer-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.payment-card .footer-account {
+    font-weight: 600;
+    color: var(--ui-gray-700);
+}
+
+.payment-card .footer-category {
+    font-size: 11px;
+}
+
+.payment-card .footer-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.payment-card .footer-label {
+    font-size: 11px;
+}
+
+.payment-card .footer-number {
+    font-weight: 600;
+    color: var(--ui-gray-800);
+} 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\loans.css
 ```
  
@@ -8588,178 +8758,6 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\navbar.c
 .navbar-loan_balance:hover {
     opacity: 0.9;
     transform: translateY(-1px);
-} 
-```
- 
---- 
- 
-```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\payments.css
-```
- 
-```css
-.payments-mobile {
-    display: none;
-}
-
-.payment-card {
-    border: 1px solid var(--ui-gray-200);
-    border-radius: 12px;
-    padding: 12px;
-    background: var(--ui-white);
-}
-
-.payment-card+.payment-card {
-    margin-top: 10px;
-}
-
-.payment-card .icon-btn {
-    padding: 0.375rem;
-    min-height: auto;
-}
-
-.payment-card {
-    position: relative;
-}
-
-.payment-card.card-selected::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: 2px solid var(--ui-blue-600);
-    border-radius: 12px;
-    pointer-events: none;
-}
-
-.payment-card.card-selected {
-    border-color: transparent;
-}
-
-.payment-card .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.payment-card .card-datetime {
-    display: flex;
-    gap: 6px;
-    align-items: baseline;
-}
-
-.payment-card .card-date {
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.payment-card .card-time {
-    font-size: 11px;
-    color: var(--ui-gray-500);
-}
-
-.payment-card .card-weekday {
-    font-size: 11px;
-    color: var(--ui-gray-900);
-    border: 1px solid var(--ui-primary-500);
-    background-color: var(--ui-primary-50);
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-weight: 600;
-    line-height: 1;
-}
-
-.payment-card .card-title {
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.payment-card .card-actions {
-    display: flex;
-    gap: 4px;
-}
-
-.payment-card .card-body {
-    margin: 8px 0;
-}
-
-.payment-card .amount-main {
-    font-size: 22px;
-    font-weight: 600;
-}
-
-.payment-card .amount-sub {
-    font-size: 12px;
-    color: var(--ui-gray-500);
-}
-
-.payment-card .card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    color: var(--ui-gray-500);
-    margin-top: 6px;
-}
-
-.payment-card .payment-amounts {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-.payment-card .amount-item {
-    flex: 1;
-}
-
-.payment-card .amount-label {
-    font-size: 11px;
-    color: var(--ui-gray-500);
-    text-align: left;
-}
-
-.payment-card .amount-value {
-    font-size: 18px;
-    font-weight: 600;
-    text-align: left;
-}
-
-.payment-card .card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    color: var(--ui-gray-500);
-    margin-top: 6px;
-}
-
-.payment-card .footer-left {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.payment-card .footer-account {
-    font-weight: 600;
-    color: var(--ui-gray-700);
-}
-
-.payment-card .footer-category {
-    font-size: 11px;
-}
-
-.payment-card .footer-right {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.payment-card .footer-label {
-    font-size: 11px;
-}
-
-.payment-card .footer-number {
-    font-weight: 600;
-    color: var(--ui-gray-800);
 } 
 ```
  
@@ -9367,7 +9365,7 @@ document.addEventListener('DOMContentLoaded', () => {
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\payment-form.js
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\loan-payment-form.js
 ```
  
 ```js
@@ -12151,6 +12149,397 @@ function scrollCarouselPrev() {
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\loan-payments-index.js
+```
+ 
+```js
+/* ============================================================================
+1. Constantes globales
+2. Variables de estado
+3. Selectores DOM
+4. Utils generales
+5. Render helpers (formatters)
+6. Render Desktop / Mobile
+7. Render principal
+8. Data (loadPayments)
+9. Filtros (texto)
+10. Status Filter UI (N/A)
+11. Acciones (redirects / selects)
+12. Eventos
+13. Scroll 
+14. Init (DOMContentLoaded + loadPayments)
+============================================================================ */
+
+/* ============================
+   1. Constantes globales
+============================ */
+const API_BASE = `/payments/list/${window.LOAN_ID}/loan`
+const FILTER_KEY = `payments.filters.${window.USER_ID}.${window.LOAN_ID}`
+const SELECTED_KEY = `payments.selected.${window.USER_ID}.${window.LOAN_ID}`
+const SCROLL_KEY = `payments.scroll.${window.USER_ID}.${window.LOAN_ID}`
+
+/* ============================
+   2. Variables de estado
+============================ */
+let allPayments = []
+
+/* ============================
+   Layout detection (AGREGADO)
+============================ */
+function getLayoutMode() {
+  const w = window.innerWidth
+
+  if (w >= 1024) return 'desktop'
+  if (w >= 769) return 'tablet'
+  return 'mobile'
+}
+
+let currentLayout = getLayoutMode()
+
+/* ============================
+   3. Selectores DOM
+============================ */
+const searchInput = document.getElementById('search-input')
+const clearBtn = document.getElementById('clear-search-btn')
+const searchBtn = document.getElementById('search-btn')
+const tableBody = document.getElementById('payments-table')
+const scrollContainer = document.querySelector('.ui-scroll-area')
+
+/* ============================
+   4. Utils generales
+============================ */
+function debounce(fn, delay) {
+  let t
+  return (...args) => {
+    clearTimeout(t)
+    t = setTimeout(() => fn(...args), delay)
+  }
+}
+
+const formatAmount = value =>
+  Number(value).toLocaleString('es-EC', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+
+/*const formatDate = value =>
+  new Date(value).toLocaleDateString('es-EC')*/
+
+/* ============================
+   5. Render helpers
+============================ */
+function paymentLabel(payment_number) {
+  if (payment_number === 0) return 'No Aplica'
+  return `${numberBox(payment_number)}`
+}
+
+function renderRow(payment) {
+  const { date, time, weekday } = formatDateTime(payment.payment_date)
+
+  return `
+    <tr id="payment-${payment.id}">
+      <td class="px-4 py-2 text-center col-nowrap">
+        <div>${date}</div>
+        <div class="text-xs text-gray-600">${time}</div>
+        <div class="text-xs text-gray-600">${weekday}</div>
+      </td>
+      <td class="ui-td col-right">${formatAmount(payment.principal_paid)}</td>
+      <td class="ui-td col-right">${formatAmount(payment.interest_paid)}</td>
+      <td class="ui-td col-left">${payment.account?.name || '-'}</td>
+      <td class="ui-td col-left">${payment.category?.name || '-'}</td>
+      <td class="ui-td col-right">${paymentLabel(payment.payment_number)}</td>
+      <td class="ui-td col-center">
+        <div class="icon-actions">
+          <button
+            class="icon-btn edit"
+            title="Editar"
+            onclick="goToPaymentUpdate(${payment.id})">
+            ${iconEdit()}
+            <span class="ui-btn-text">Editar</span>
+          </button>
+          <button 
+            class="icon-btn clone" 
+            title="Clonar"
+            onclick="goToPaymentClone(${payment.id})">
+            ${iconClone()}
+            <span class="ui-btn-text">Clonar</span>
+          </button>
+          <button
+            class="icon-btn delete"
+            title="Eliminar"
+            onclick="goToPaymentDelete(${payment.id})">
+            ${iconDelete()}
+            <span class="ui-btn-text">Eliminar</span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `
+}
+
+function renderCard(payment) {
+  const { date, time, weekday } = formatDateTime(payment.payment_date)
+
+  return `
+    <div class="payment-card"
+         data-id="${payment.id}"
+         onclick="selectPaymentCard(event, ${payment.id})">
+
+      <div class="card-header">
+        <div class="card-datetime">
+          <span class="card-date">${date}</span>
+          <span class="card-weekday">${weekday}</span>
+        </div>
+
+        <div class="card-actions">
+          <button
+            class="icon-btn edit"
+            onclick="event.stopPropagation(); goToPaymentUpdate(${payment.id})">
+            ${iconEdit()}
+          </button>
+          <button 
+            class="icon-btn clone"
+            onclick="event.stopPropagation(); goToPaymentClone(${payment.id})">
+            ${iconClone()}
+          </button>
+          <button
+            class="icon-btn delete"
+            onclick="event.stopPropagation(); goToPaymentDelete(${payment.id})">
+            ${iconDelete()}
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body payment-amounts">
+        <div class="amount-item">
+          <div class="amount-label">Capital</div>
+          <div class="amount-value">${formatAmount(payment.principal_paid)}</div>
+        </div>
+
+        <div class="amount-item">
+          <div class="amount-label">Interés</div>
+          <div class="amount-value">${formatAmount(payment.interest_paid)}</div>
+        </div>
+
+        <div class="amount-item">
+          <div class="amount-label">Total</div>
+          <div class="amount-value">${formatAmount(payment.principal_paid + payment.interest_paid)}</div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <div class="footer-left">
+          <div class="footer-account">${payment.account?.name || '-'}</div>
+          <div class="footer-category">${payment.category?.name || '-'}</div>
+        </div>
+
+        <div class="footer-right">
+          <span class="footer-label">Pago No.</span>
+          <span class="footer-number">${paymentLabel(payment.payment_number)}</span>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+/* ============================
+   6. Render Desktop / Mobile
+============================ */
+function renderTable(data) {
+  if (!data.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="ui-td col-center text-gray-500">
+          No se encontraron pagos
+        </td>
+      </tr>
+    `
+    restoreScroll()
+    return
+  }
+
+  tableBody.innerHTML = data.map(renderRow).join('')
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`payment-${selected.id}`)
+    if (row) row.classList.add('tr-selected')
+  }
+
+  restoreScroll()
+}
+
+function renderCards(data) {
+  const container = document.getElementById('payments-mobile')
+  if (!container) return
+
+  container.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="ui-empty">No se encontraron pagos</div>`
+
+  const selected = loadFilters(SELECTED_KEY)
+  if (selected?.id) {
+    const card = container.querySelector(`[data-id="${selected.id}"]`)
+    if (card) card.classList.add('card-selected')
+  }
+
+  restoreScroll()
+}
+
+/* ============================
+   7. Render principal
+============================ */
+function render(data) {
+  if (window.innerWidth <= 768) {
+    renderCards(data)
+  } else {
+    renderTable(data)
+  }
+}
+
+/* ============================
+   8. Data (loadPayments)
+============================ */
+async function loadPayments() {
+  const res = await fetch(API_BASE)
+  allPayments = await res.json()
+
+  const cached = loadFilters(FILTER_KEY)
+  if (cached?.term) {
+    searchInput.value = cached.term
+    clearBtn.classList.remove('hidden')
+    filterPayments()
+  } else {
+    render(allPayments)
+  }
+}
+
+/* ============================
+   9. Filtros (texto)
+============================ */
+function filterPayments() {
+  const term = searchInput.value.trim().toLowerCase()
+  saveFilters(FILTER_KEY, { term })
+  saveFilters(SCROLL_KEY, { y: 0 })
+
+  render(
+    !term
+      ? allPayments
+      : allPayments.filter(p =>
+        p.account?.name?.toLowerCase().includes(term)
+      )
+  )
+}
+
+const debouncedFilter = debounce(filterPayments, 300)
+
+/* ============================
+   10. Status Filter UI
+============================ */
+// No aplica para Payments
+
+/* ============================
+   11. Acciones (redirects / selects)
+============================ */
+function goToPaymentUpdate(id) {
+  window.location.href = `/payments/update/${id}`
+}
+
+function goToPaymentClone(id) {
+  location.href = `/payments/clone/${id}`
+}
+
+function goToPaymentDelete(id) {
+  window.location.href = `/payments/delete/${id}`
+}
+
+function selectPaymentCard(event, id) {
+  if (event.target.closest('button')) return
+
+  document
+    .querySelectorAll('.payment-card')
+    .forEach(card => card.classList.remove('card-selected'))
+
+  event.currentTarget.classList.add('card-selected')
+  saveFilters(SELECTED_KEY, { id })
+}
+
+/* ============================
+   12. Eventos
+============================ */
+searchBtn.addEventListener('click', filterPayments)
+
+searchInput.addEventListener('input', () => {
+  clearBtn.classList.toggle('hidden', !searchInput.value)
+  debouncedFilter()
+})
+
+clearBtn.addEventListener('click', () => {
+  searchInput.value = ''
+  clearBtn.classList.add('hidden')
+  clearFilters(FILTER_KEY)
+  clearFilters(SELECTED_KEY)
+  render(allPayments)
+})
+
+document
+  .querySelector('.ui-table')
+  ?.addEventListener('click', event => {
+
+    if (event.target.closest('button') || event.target.closest('a')) return
+
+    const row = event.target.closest('tr[id^="payment-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#payments-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+
+    const id = row.id.replace('payment-', '')
+    saveFilters(SELECTED_KEY, { id })
+  })
+
+/* ============================
+   13. Scroll
+============================ */
+function restoreScroll() {
+  if (!scrollContainer) return
+
+  const saved = loadFilters(SCROLL_KEY)
+  if (!saved?.y) return
+
+  requestAnimationFrame(() => {
+    scrollContainer.scrollTop = saved.y
+  })
+}
+
+scrollContainer?.addEventListener('scroll', () => {
+  saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+})
+
+/* ============================
+   14. Init
+============================ */
+document.addEventListener('DOMContentLoaded', () => {
+  loadPayments()
+
+  window.addEventListener('resize', () => {
+    const nextLayout = getLayoutMode()
+
+    if (nextLayout !== currentLayout) {
+      currentLayout = nextLayout
+      filterPayments()
+    }
+  })
+})
+ 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\loans-index.js
 ```
  
@@ -12798,397 +13187,6 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 })
 
- 
-```
- 
---- 
- 
-```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\payments-index.js
-```
- 
-```js
-/* ============================================================================
-1. Constantes globales
-2. Variables de estado
-3. Selectores DOM
-4. Utils generales
-5. Render helpers (formatters)
-6. Render Desktop / Mobile
-7. Render principal
-8. Data (loadPayments)
-9. Filtros (texto)
-10. Status Filter UI (N/A)
-11. Acciones (redirects / selects)
-12. Eventos
-13. Scroll 
-14. Init (DOMContentLoaded + loadPayments)
-============================================================================ */
-
-/* ============================
-   1. Constantes globales
-============================ */
-const API_BASE = `/payments/list/${window.LOAN_ID}/loan`
-const FILTER_KEY = `payments.filters.${window.USER_ID}.${window.LOAN_ID}`
-const SELECTED_KEY = `payments.selected.${window.USER_ID}.${window.LOAN_ID}`
-const SCROLL_KEY = `payments.scroll.${window.USER_ID}.${window.LOAN_ID}`
-
-/* ============================
-   2. Variables de estado
-============================ */
-let allPayments = []
-
-/* ============================
-   Layout detection (AGREGADO)
-============================ */
-function getLayoutMode() {
-  const w = window.innerWidth
-
-  if (w >= 1024) return 'desktop'
-  if (w >= 769) return 'tablet'
-  return 'mobile'
-}
-
-let currentLayout = getLayoutMode()
-
-/* ============================
-   3. Selectores DOM
-============================ */
-const searchInput = document.getElementById('search-input')
-const clearBtn = document.getElementById('clear-search-btn')
-const searchBtn = document.getElementById('search-btn')
-const tableBody = document.getElementById('payments-table')
-const scrollContainer = document.querySelector('.ui-scroll-area')
-
-/* ============================
-   4. Utils generales
-============================ */
-function debounce(fn, delay) {
-  let t
-  return (...args) => {
-    clearTimeout(t)
-    t = setTimeout(() => fn(...args), delay)
-  }
-}
-
-const formatAmount = value =>
-  Number(value).toLocaleString('es-EC', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-
-/*const formatDate = value =>
-  new Date(value).toLocaleDateString('es-EC')*/
-
-/* ============================
-   5. Render helpers
-============================ */
-function paymentLabel(payment_number) {
-  if (payment_number === 0) return 'No Aplica'
-  return `${numberBox(payment_number)}`
-}
-
-function renderRow(payment) {
-  const { date, time, weekday } = formatDateTime(payment.payment_date)
-
-  return `
-    <tr id="payment-${payment.id}">
-      <td class="px-4 py-2 text-center col-nowrap">
-        <div>${date}</div>
-        <div class="text-xs text-gray-600">${time}</div>
-        <div class="text-xs text-gray-600">${weekday}</div>
-      </td>
-      <td class="ui-td col-right">${formatAmount(payment.principal_paid)}</td>
-      <td class="ui-td col-right">${formatAmount(payment.interest_paid)}</td>
-      <td class="ui-td col-left">${payment.account?.name || '-'}</td>
-      <td class="ui-td col-left">${payment.category?.name || '-'}</td>
-      <td class="ui-td col-right">${paymentLabel(payment.payment_number)}</td>
-      <td class="ui-td col-center">
-        <div class="icon-actions">
-          <button
-            class="icon-btn edit"
-            title="Editar"
-            onclick="goToPaymentUpdate(${payment.id})">
-            ${iconEdit()}
-            <span class="ui-btn-text">Editar</span>
-          </button>
-          <button 
-            class="icon-btn clone" 
-            title="Clonar"
-            onclick="goToPaymentClone(${payment.id})">
-            ${iconClone()}
-            <span class="ui-btn-text">Clonar</span>
-          </button>
-          <button
-            class="icon-btn delete"
-            title="Eliminar"
-            onclick="goToPaymentDelete(${payment.id})">
-            ${iconDelete()}
-            <span class="ui-btn-text">Eliminar</span>
-          </button>
-        </div>
-      </td>
-    </tr>
-  `
-}
-
-function renderCard(payment) {
-  const { date, time, weekday } = formatDateTime(payment.payment_date)
-
-  return `
-    <div class="payment-card"
-         data-id="${payment.id}"
-         onclick="selectPaymentCard(event, ${payment.id})">
-
-      <div class="card-header">
-        <div class="card-datetime">
-          <span class="card-date">${date}</span>
-          <span class="card-weekday">${weekday}</span>
-        </div>
-
-        <div class="card-actions">
-          <button
-            class="icon-btn edit"
-            onclick="event.stopPropagation(); goToPaymentUpdate(${payment.id})">
-            ${iconEdit()}
-          </button>
-          <button 
-            class="icon-btn clone"
-            onclick="event.stopPropagation(); goToPaymentClone(${payment.id})">
-            ${iconClone()}
-          </button>
-          <button
-            class="icon-btn delete"
-            onclick="event.stopPropagation(); goToPaymentDelete(${payment.id})">
-            ${iconDelete()}
-          </button>
-        </div>
-      </div>
-
-      <div class="card-body payment-amounts">
-        <div class="amount-item">
-          <div class="amount-label">Capital</div>
-          <div class="amount-value">${formatAmount(payment.principal_paid)}</div>
-        </div>
-
-        <div class="amount-item">
-          <div class="amount-label">Interés</div>
-          <div class="amount-value">${formatAmount(payment.interest_paid)}</div>
-        </div>
-
-        <div class="amount-item">
-          <div class="amount-label">Total</div>
-          <div class="amount-value">${formatAmount(payment.principal_paid + payment.interest_paid)}</div>
-        </div>
-      </div>
-
-      <div class="card-footer">
-        <div class="footer-left">
-          <div class="footer-account">${payment.account?.name || '-'}</div>
-          <div class="footer-category">${payment.category?.name || '-'}</div>
-        </div>
-
-        <div class="footer-right">
-          <span class="footer-label">Pago No.</span>
-          <span class="footer-number">${paymentLabel(payment.payment_number)}</span>
-        </div>
-      </div>
-    </div>
-  `
-}
-
-/* ============================
-   6. Render Desktop / Mobile
-============================ */
-function renderTable(data) {
-  if (!data.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="ui-td col-center text-gray-500">
-          No se encontraron pagos
-        </td>
-      </tr>
-    `
-    restoreScroll()
-    return
-  }
-
-  tableBody.innerHTML = data.map(renderRow).join('')
-
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    const row = document.getElementById(`payment-${selected.id}`)
-    if (row) row.classList.add('tr-selected')
-  }
-
-  restoreScroll()
-}
-
-function renderCards(data) {
-  const container = document.getElementById('payments-mobile')
-  if (!container) return
-
-  container.innerHTML = data.length
-    ? data.map(renderCard).join('')
-    : `<div class="ui-empty">No se encontraron pagos</div>`
-
-  const selected = loadFilters(SELECTED_KEY)
-  if (selected?.id) {
-    const card = container.querySelector(`[data-id="${selected.id}"]`)
-    if (card) card.classList.add('card-selected')
-  }
-
-  restoreScroll()
-}
-
-/* ============================
-   7. Render principal
-============================ */
-function render(data) {
-  if (window.innerWidth <= 768) {
-    renderCards(data)
-  } else {
-    renderTable(data)
-  }
-}
-
-/* ============================
-   8. Data (loadPayments)
-============================ */
-async function loadPayments() {
-  const res = await fetch(API_BASE)
-  allPayments = await res.json()
-
-  const cached = loadFilters(FILTER_KEY)
-  if (cached?.term) {
-    searchInput.value = cached.term
-    clearBtn.classList.remove('hidden')
-    filterPayments()
-  } else {
-    render(allPayments)
-  }
-}
-
-/* ============================
-   9. Filtros (texto)
-============================ */
-function filterPayments() {
-  const term = searchInput.value.trim().toLowerCase()
-  saveFilters(FILTER_KEY, { term })
-  saveFilters(SCROLL_KEY, { y: 0 })
-
-  render(
-    !term
-      ? allPayments
-      : allPayments.filter(p =>
-        p.account?.name?.toLowerCase().includes(term)
-      )
-  )
-}
-
-const debouncedFilter = debounce(filterPayments, 300)
-
-/* ============================
-   10. Status Filter UI
-============================ */
-// No aplica para Payments
-
-/* ============================
-   11. Acciones (redirects / selects)
-============================ */
-function goToPaymentUpdate(id) {
-  window.location.href = `/payments/update/${id}`
-}
-
-function goToPaymentClone(id) {
-  location.href = `/payments/clone/${id}`
-}
-
-function goToPaymentDelete(id) {
-  window.location.href = `/payments/delete/${id}`
-}
-
-function selectPaymentCard(event, id) {
-  if (event.target.closest('button')) return
-
-  document
-    .querySelectorAll('.payment-card')
-    .forEach(card => card.classList.remove('card-selected'))
-
-  event.currentTarget.classList.add('card-selected')
-  saveFilters(SELECTED_KEY, { id })
-}
-
-/* ============================
-   12. Eventos
-============================ */
-searchBtn.addEventListener('click', filterPayments)
-
-searchInput.addEventListener('input', () => {
-  clearBtn.classList.toggle('hidden', !searchInput.value)
-  debouncedFilter()
-})
-
-clearBtn.addEventListener('click', () => {
-  searchInput.value = ''
-  clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
-  render(allPayments)
-})
-
-document
-  .querySelector('.ui-table')
-  ?.addEventListener('click', event => {
-
-    if (event.target.closest('button') || event.target.closest('a')) return
-
-    const row = event.target.closest('tr[id^="payment-"]')
-    if (!row) return
-
-    document
-      .querySelectorAll('#payments-table tr')
-      .forEach(tr => tr.classList.remove('tr-selected'))
-
-    row.classList.add('tr-selected')
-
-    const id = row.id.replace('payment-', '')
-    saveFilters(SELECTED_KEY, { id })
-  })
-
-/* ============================
-   13. Scroll
-============================ */
-function restoreScroll() {
-  if (!scrollContainer) return
-
-  const saved = loadFilters(SCROLL_KEY)
-  if (!saved?.y) return
-
-  requestAnimationFrame(() => {
-    scrollContainer.scrollTop = saved.y
-  })
-}
-
-scrollContainer?.addEventListener('scroll', () => {
-  saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
-})
-
-/* ============================
-   14. Init
-============================ */
-document.addEventListener('DOMContentLoaded', () => {
-  loadPayments()
-
-  window.addEventListener('resize', () => {
-    const nextLayout = getLayoutMode()
-
-    if (nextLayout !== currentLayout) {
-      currentLayout = nextLayout
-      filterPayments()
-    }
-  })
-})
  
 ```
  
@@ -14253,43 +14251,7 @@ export default router
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\loan.route.ts
-```
- 
-```ts
-import { Router } from "express"
-import {
-    apiForGettingLoans,
-    apiForSavingLoan,
-    routeToFormCloneLoan,
-    routeToFormDeleteLoan,
-    routeToFormInsertLoan,
-    routeToFormUpdateLoan,
-    routeToPageLoan
-} from "../controllers/loan/loan.controller"
-import { routeToPagePayment } from "../controllers/payment/payment.controller"
-
-const router = Router()
-
-/*Eventos de acción */
-router.get('/list', apiForGettingLoans) 
-router.post('/', apiForSavingLoan)
-
-/*Eventos de enrutamiento */
-router.get('/', routeToPageLoan)
-router.get('/insert', routeToFormInsertLoan)
-router.get('/update/:id', routeToFormUpdateLoan)
-router.get('/clone/:id', routeToFormCloneLoan)
-router.get('/delete/:id', routeToFormDeleteLoan)
-router.get('/:id/loan', routeToPagePayment)
-
-export default router 
-```
- 
---- 
- 
-```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\payment.route.ts
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\loan-payment.route.ts
 ```
  
 ```ts
@@ -14302,7 +14264,7 @@ import {
     routeToFormInsertPayment,
     routeToFormUpdatePayment,
     routeToPagePayment
-} from '../controllers/payment/payment.controller'
+} from '../controllers/loan-payment/loan-payment.controller'
 
 const router = Router()
 
@@ -14319,6 +14281,42 @@ router.get('/delete/:id', routeToFormDeletePayment)
 
 export default router
  
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\loan.route.ts
+```
+ 
+```ts
+import { Router } from "express"
+import {
+    apiForGettingLoans,
+    apiForSavingLoan,
+    routeToFormCloneLoan,
+    routeToFormDeleteLoan,
+    routeToFormInsertLoan,
+    routeToFormUpdateLoan,
+    routeToPageLoan
+} from "../controllers/loan/loan.controller"
+import { routeToPagePayment } from "../controllers/loan-payment/loan-payment.controller"
+
+const router = Router()
+
+/*Eventos de acción */
+router.get('/list', apiForGettingLoans) 
+router.post('/', apiForSavingLoan)
+
+/*Eventos de enrutamiento */
+router.get('/', routeToPageLoan)
+router.get('/insert', routeToFormInsertLoan)
+router.get('/update/:id', routeToFormUpdateLoan)
+router.get('/clone/:id', routeToFormCloneLoan)
+router.get('/delete/:id', routeToFormDeleteLoan)
+router.get('/:id/loan', routeToPagePayment)
+
+export default router 
 ```
  
 --- 
@@ -16420,6 +16418,316 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\loan-groups\for
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\loan-payments\form.ejs
+```
+ 
+```ejs
+<%
+  const rules = payment_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'readonly'
+  const isEditable = field => rules[field] === 'editable'
+%>
+
+<%
+const cancel_url =
+  context?.from === 'categories' && context?.category_id
+    ? `/transactions?from=categories&category_id=${context.category_id}`
+    : `/payments/${loan_id}/loan`
+%>
+
+<script>
+  window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
+</script>
+
+<div class="max-w-xl mx-auto">
+
+  <h1 class="text-2xl font-semibold mb-6">
+    <%= 
+      mode === 'insert' ? 'Insertar Pago' :
+      mode === 'update' ? 'Editar Pago' :
+      mode === 'delete' ? 'Eliminar Pago' :
+      ''
+    %>
+  </h1>
+
+  <form method="post" action="/payments">
+    <!-- Token CSRF -->
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <% if (errors?.general) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors.general %>
+      </div>
+    <% } %>
+
+    <!-- IDs -->
+    <input type="hidden" name="id" value="<%= payment?.id || '' %>">
+    <input type="hidden" name="loan_id" value="<%= loan_id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
+    <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
+    <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
+
+    <!-- Cuenta -->
+    <% if (!isHidden('account_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Cuenta</label>
+
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(account_list) %>'
+        data-default-id="<%= payment?.account?.id || '' %>"
+        data-placeholder="-- Escoja una cuenta --"
+      >
+        <input
+          type="text"
+          class="autocomplete-input"
+          autocomplete="off"
+          value="<%= payment?.account?.name || '' %>"
+          <%= isReadOnly('account_id') ? 'readonly' : '' %>
+        >
+
+        <input
+          type="hidden"
+          class="autocomplete-hidden"
+          name="account_id"
+          value="<%= payment?.account?.id || '' %>"
+        >
+
+        <% if (!isReadOnly('account_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+
+      <% if (errors?.account) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.account %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <!-- Categoria -->
+    <% if (!isHidden('category_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Categoría</label>
+
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(active_expense_category_list) %>'
+        data-default-id="<%= payment?.category?.id || '' %>"
+        data-placeholder="-- Escoja una categoría --"
+      >
+        <input
+          type="text"
+          class="autocomplete-input"
+          autocomplete="off"
+          value="<%= payment?.category?.name || '' %>"
+          <%= isReadOnly('category_id') ? 'readonly' : '' %>
+        >
+
+        <input
+          type="hidden"
+          class="autocomplete-hidden"
+          name="category_id"
+          value="<%= payment?.category?.id || '' %>"
+        >
+
+        <% if (!isReadOnly('category_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+
+      <% if (errors?.category) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <!-- Capital -->
+    <% if (!isHidden('principal_paid')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Monto Capital</label>
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        name="principal_paid"
+        class="w-full border rounded px-3 py-2"
+        value="<%= payment?.principal_paid || '0.00' %>"
+        <%= isReadOnly('principal_paid') ? 'readonly' : '' %>
+        required
+      >
+
+      <% if (errors?.principal_paid) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.principal_paid %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <!-- Interes -->
+    <% if (!isHidden('interest_paid')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Interés</label>
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        name="interest_paid"
+        class="w-full border rounded px-3 py-2"
+        value="<%= payment?.interest_paid || '0.00' %>"
+        <%= isReadOnly('interest_paid') ? 'readonly' : '' %>
+      >
+
+      <% if (errors?.interest_paid) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.interest_paid %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <!-- Fecha -->
+    <% if (!isHidden('payment_date')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Fecha de Pago</label>
+      <input
+        type="datetime-local"
+        name="payment_date"
+        class="w-full border rounded px-3 py-2"
+        value="<%= payment?.payment_date || '' %>"
+        <%= isReadOnly('payment_date') ? 'readonly' : '' %>
+        required
+      >
+
+      <% if (errors?.payment_date) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.payment_date %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <!-- Nota -->
+    <% if (!isHidden('note')) { %>
+    <div class="mb-6">
+      <label class="block font-medium mb-1">Nota</label>
+      <textarea
+        name="note"
+        rows="3"
+        class="w-full border rounded px-3 py-2"
+        <%= isReadOnly('note') ? 'readonly' : '' %>
+      ><%= payment?.note || '' %></textarea>
+    </div>
+    <% } %>
+
+    <!-- Acciones -->
+    <div class="flex justify-end gap-2">
+
+      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">
+        Cancelar
+      </a>
+
+      <% if (mode === 'delete') { %>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-red-600 text-white rounded"
+        >
+          Eliminar
+        </button>
+      <% } else { %>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          Guardar
+        </button>
+      <% } %>
+
+    </div>
+  </form>
+</div>
+
+<script src="/js/forms/autocomplete-form.js"></script>
+<script src="/js/forms/loan-payment-form.js"></script> 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\loan-payments\index.ejs
+```
+ 
+```ejs
+<script>
+  window.USER_ID = "<%= USER_ID %>"
+  window.LOAN_ID = "<%= loan.id %>"
+</script>
+
+<div class="max-w-6xl mx-auto ui-page">
+
+  <!-- Header -->
+  <div class="ui-header">
+    <h1 class="ui-title">
+      Pagos – <%= loan.name %>
+    </h1>
+
+    <div class="ui-toolbar">
+
+      <%- include('../../partials/btn-back', {
+        href: '/loans',
+        title: 'Volver a préstamos',
+        text: 'Volver'
+      }) %>
+
+      <%- include('../../partials/btn-new', {
+        href: `/payments/insert/${loan.id}`,
+        title: 'Nuevo pago',
+        text: 'Nuevo',
+        data_btn: 'new'
+      }) %>
+
+      <%- include('../../partials/search-box', {
+        placeholder: 'Buscar pagos...'
+      }) %>
+
+    </div>
+  </div>
+
+  <!-- =========================
+       SCROLL INTERNO
+       ========================= -->
+  <div class="ui-scroll-area">
+
+    <!-- Mobile cards -->
+    <div id="payments-mobile" class="payments-mobile"></div>
+
+    <!-- Desktop table -->
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Fecha</th>
+            <th class="ui-th col-left">Monto</th>
+            <th class="ui-th col-left">Interés</th>
+            <th class="ui-th col-left">Cuenta</th>
+            <th class="ui-th col-left">Categoría</th>
+            <th class="ui-th col-left">No. Pago</th>
+            <th class="ui-th col-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="payments-table"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/indexes/loan-payments-index.js"></script>
+<script src="/js/helpers/icon-helper.js"></script>
+<script src="/js/helpers/amount-helper.js"></script>
+<script src="/js/helpers/type-tags-helper.js"></script>
+<script src="/js/helpers/format-datetime-helper.js"></script>
+ 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\loans\form.ejs
 ```
  
@@ -16754,316 +17062,6 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\loans\index.ejs
 <script src="/js/helpers/amount-helper.js"></script>
 <script src="/js/helpers/type-tags-helper.js"></script>
 <script src="/js/helpers/status-toggle-helper.js"></script>
-<script src="/js/helpers/format-datetime-helper.js"></script>
- 
-```
- 
---- 
- 
-```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\payments\form.ejs
-```
- 
-```ejs
-<%
-  const rules = payment_form_policy
-  const isHidden = field => rules[field] === 'hidden'
-  const isReadOnly = field => rules[field] === 'readonly'
-  const isEditable = field => rules[field] === 'editable'
-%>
-
-<%
-const cancel_url =
-  context?.from === 'categories' && context?.category_id
-    ? `/transactions?from=categories&category_id=${context.category_id}`
-    : `/payments/${loan_id}/loan`
-%>
-
-<script>
-  window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
-</script>
-
-<div class="max-w-xl mx-auto">
-
-  <h1 class="text-2xl font-semibold mb-6">
-    <%= 
-      mode === 'insert' ? 'Insertar Pago' :
-      mode === 'update' ? 'Editar Pago' :
-      mode === 'delete' ? 'Eliminar Pago' :
-      ''
-    %>
-  </h1>
-
-  <form method="post" action="/payments">
-    <!-- Token CSRF -->
-    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-    <% if (errors?.general) { %>
-      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
-        <%= errors.general %>
-      </div>
-    <% } %>
-
-    <!-- IDs -->
-    <input type="hidden" name="id" value="<%= payment?.id || '' %>">
-    <input type="hidden" name="loan_id" value="<%= loan_id || '' %>">
-    <input type="hidden" name="mode" value="<%= mode %>">
-    <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
-    <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
-
-    <!-- Cuenta -->
-    <% if (!isHidden('account_id')) { %>
-    <div class="mb-4">
-      <label class="block font-medium mb-1">Cuenta</label>
-
-      <div
-        class="autocomplete"
-        data-items='<%- JSON.stringify(account_list) %>'
-        data-default-id="<%= payment?.account?.id || '' %>"
-        data-placeholder="-- Escoja una cuenta --"
-      >
-        <input
-          type="text"
-          class="autocomplete-input"
-          autocomplete="off"
-          value="<%= payment?.account?.name || '' %>"
-          <%= isReadOnly('account_id') ? 'readonly' : '' %>
-        >
-
-        <input
-          type="hidden"
-          class="autocomplete-hidden"
-          name="account_id"
-          value="<%= payment?.account?.id || '' %>"
-        >
-
-        <% if (!isReadOnly('account_id')) { %>
-        <div class="autocomplete-panel"></div>
-        <% } %>
-      </div>
-
-      <% if (errors?.account) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.account %></p>
-      <% } %>
-    </div>
-    <% } %>
-
-    <!-- Categoria -->
-    <% if (!isHidden('category_id')) { %>
-    <div class="mb-4">
-      <label class="block font-medium mb-1">Categoría</label>
-
-      <div
-        class="autocomplete"
-        data-items='<%- JSON.stringify(active_expense_category_list) %>'
-        data-default-id="<%= payment?.category?.id || '' %>"
-        data-placeholder="-- Escoja una categoría --"
-      >
-        <input
-          type="text"
-          class="autocomplete-input"
-          autocomplete="off"
-          value="<%= payment?.category?.name || '' %>"
-          <%= isReadOnly('category_id') ? 'readonly' : '' %>
-        >
-
-        <input
-          type="hidden"
-          class="autocomplete-hidden"
-          name="category_id"
-          value="<%= payment?.category?.id || '' %>"
-        >
-
-        <% if (!isReadOnly('category_id')) { %>
-        <div class="autocomplete-panel"></div>
-        <% } %>
-      </div>
-
-      <% if (errors?.category) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
-      <% } %>
-    </div>
-    <% } %>
-
-    <!-- Capital -->
-    <% if (!isHidden('principal_paid')) { %>
-    <div class="mb-4">
-      <label class="block font-medium mb-1">Monto Capital</label>
-      <input
-        type="number"
-        step="0.01"
-        min="0"
-        name="principal_paid"
-        class="w-full border rounded px-3 py-2"
-        value="<%= payment?.principal_paid || '0.00' %>"
-        <%= isReadOnly('principal_paid') ? 'readonly' : '' %>
-        required
-      >
-
-      <% if (errors?.principal_paid) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.principal_paid %></p>
-      <% } %>
-    </div>
-    <% } %>
-
-    <!-- Interes -->
-    <% if (!isHidden('interest_paid')) { %>
-    <div class="mb-4">
-      <label class="block font-medium mb-1">Interés</label>
-      <input
-        type="number"
-        step="0.01"
-        min="0"
-        name="interest_paid"
-        class="w-full border rounded px-3 py-2"
-        value="<%= payment?.interest_paid || '0.00' %>"
-        <%= isReadOnly('interest_paid') ? 'readonly' : '' %>
-      >
-
-      <% if (errors?.interest_paid) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.interest_paid %></p>
-      <% } %>
-    </div>
-    <% } %>
-
-    <!-- Fecha -->
-    <% if (!isHidden('payment_date')) { %>
-    <div class="mb-4">
-      <label class="block font-medium mb-1">Fecha de Pago</label>
-      <input
-        type="datetime-local"
-        name="payment_date"
-        class="w-full border rounded px-3 py-2"
-        value="<%= payment?.payment_date || '' %>"
-        <%= isReadOnly('payment_date') ? 'readonly' : '' %>
-        required
-      >
-
-      <% if (errors?.payment_date) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.payment_date %></p>
-      <% } %>
-    </div>
-    <% } %>
-
-    <!-- Nota -->
-    <% if (!isHidden('note')) { %>
-    <div class="mb-6">
-      <label class="block font-medium mb-1">Nota</label>
-      <textarea
-        name="note"
-        rows="3"
-        class="w-full border rounded px-3 py-2"
-        <%= isReadOnly('note') ? 'readonly' : '' %>
-      ><%= payment?.note || '' %></textarea>
-    </div>
-    <% } %>
-
-    <!-- Acciones -->
-    <div class="flex justify-end gap-2">
-
-      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">
-        Cancelar
-      </a>
-
-      <% if (mode === 'delete') { %>
-        <button
-          type="submit"
-          class="px-4 py-2 bg-red-600 text-white rounded"
-        >
-          Eliminar
-        </button>
-      <% } else { %>
-        <button
-          type="submit"
-          class="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Guardar
-        </button>
-      <% } %>
-
-    </div>
-  </form>
-</div>
-
-<script src="/js/forms/autocomplete-form.js"></script>
-<script src="/js/forms/payment-form.js"></script> 
-```
- 
---- 
- 
-```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\payments\index.ejs
-```
- 
-```ejs
-<script>
-  window.USER_ID = "<%= USER_ID %>"
-  window.LOAN_ID = "<%= loan.id %>"
-</script>
-
-<div class="max-w-6xl mx-auto ui-page">
-
-  <!-- Header -->
-  <div class="ui-header">
-    <h1 class="ui-title">
-      Pagos – <%= loan.name %>
-    </h1>
-
-    <div class="ui-toolbar">
-
-      <%- include('../../partials/btn-back', {
-        href: '/loans',
-        title: 'Volver a préstamos',
-        text: 'Volver'
-      }) %>
-
-      <%- include('../../partials/btn-new', {
-        href: `/payments/insert/${loan.id}`,
-        title: 'Nuevo pago',
-        text: 'Nuevo',
-        data_btn: 'new'
-      }) %>
-
-      <%- include('../../partials/search-box', {
-        placeholder: 'Buscar pagos...'
-      }) %>
-
-    </div>
-  </div>
-
-  <!-- =========================
-       SCROLL INTERNO
-       ========================= -->
-  <div class="ui-scroll-area">
-
-    <!-- Mobile cards -->
-    <div id="payments-mobile" class="payments-mobile"></div>
-
-    <!-- Desktop table -->
-    <div class="ui-table-wrapper">
-      <table class="ui-table">
-        <thead>
-          <tr>
-            <th class="ui-th col-left">Fecha</th>
-            <th class="ui-th col-left">Monto</th>
-            <th class="ui-th col-left">Interés</th>
-            <th class="ui-th col-left">Cuenta</th>
-            <th class="ui-th col-left">Categoría</th>
-            <th class="ui-th col-left">No. Pago</th>
-            <th class="ui-th col-left">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="payments-table"></tbody>
-      </table>
-    </div>
-
-  </div>
-</div>
-
-<script src="/js/indexes/payments-index.js"></script>
-<script src="/js/helpers/icon-helper.js"></script>
-<script src="/js/helpers/amount-helper.js"></script>
-<script src="/js/helpers/type-tags-helper.js"></script>
 <script src="/js/helpers/format-datetime-helper.js"></script>
  
 ```
