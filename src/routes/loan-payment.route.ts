@@ -7,7 +7,7 @@ import {
     routeToFormInsertPayment,
     routeToFormUpdatePayment,
     routeToPagePayment
-} from '../controllers/payment/payment.controller'
+} from '../controllers/loan-payment/loan-payment.controller'
 
 const router = Router()
 

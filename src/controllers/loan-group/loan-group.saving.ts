@@ -1,7 +1,7 @@
 import { Request, RequestHandler, Response } from 'express'
 import { performance } from 'perf_hooks';
 import { deleteAll } from '../../cache/cache-key.service'
-import { getLoanGroupById } from '../../cache/cache-loan-group.service'
+import { getLoanGroupById } from '../../cache/cache-loan-groups.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { LoanGroup } from '../../entities/LoanGroup.entity'
 import { loanGroupFormMatrix } from '../../policies/loan-group-form.policy'

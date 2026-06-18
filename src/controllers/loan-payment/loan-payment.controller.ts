@@ -1,10 +1,10 @@
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getLoanById } from '../../cache/cache-loans.service'
-import { getPaymentById, getPaymentsForApi } from '../../cache/cache-payments.service'
+import { getPaymentById, getPaymentsForApi } from '../../cache/cache-loan-payments.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { LoanPayment } from '../../entities/LoanPayment.entity'
-import { paymentFormMatrix } from '../../policies/payment-form.policy'
+import { paymentFormMatrix } from '../../policies/loan-payment-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
 import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
@@ -12,7 +12,7 @@ import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
 import { parseError } from '../../utils/error.util'
 import { logger } from "../../utils/logger.util"
-export { savePayment as apiForSavingAccount } from './payment.saving'
+export { savePayment as apiForSavingAccount } from './loan-payment.saving'
 
 type PaymentFormViewParams = BaseFormViewParams & {
     payment: any
@@ -50,7 +50,7 @@ export const routeToPagePayment: RequestHandler = async (req, res) => {
     }
     res.render('layouts/main', {
         title: 'Pagos',
-        view: 'pages/payments/index',
+        view: 'pages/loan-payments/index',
         USER_ID: auth_req.user?.id || 'guest',
         LOAN_ID: loan_id,
         loan
@@ -64,7 +64,7 @@ export const routeToFormInsertPayment: RequestHandler = async (req, res) => {
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderPaymentForm(res, {
         title: 'Insertar Pago',
-        view: 'pages/payments/form',
+        view: 'pages/loan-payments/form',
         errors: {},
         auth_req,
         mode,
@@ -90,7 +90,7 @@ export const routeToFormUpdatePayment: RequestHandler = async (req, res) => {
     }
     return renderPaymentForm(res, {
         title: 'Editar Pago',
-        view: 'pages/payments/form',
+        view: 'pages/loan-payments/form',
         errors: {},
         mode,
         auth_req,
@@ -113,7 +113,7 @@ export const routeToFormClonePayment: RequestHandler = async (req, res) => {
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderPaymentForm(res, {
         title: 'Insertar Pago',
-        view: 'pages/payments/form',
+        view: 'pages/loan-payments/form',
         errors: {},
         mode,
         auth_req,
@@ -135,7 +135,7 @@ export const routeToFormDeletePayment: RequestHandler = async (req, res) => {
     }
     return renderPaymentForm(res, {
         title: 'Eliminar Pago',
-        view: 'pages/payments/form',
+        view: 'pages/loan-payments/form',
         errors: {},
         mode,
         auth_req,

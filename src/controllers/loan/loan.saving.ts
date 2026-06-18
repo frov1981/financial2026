@@ -4,7 +4,7 @@ import { performance } from 'perf_hooks';
 import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/cache-accounts.service';
 import { getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
 import { deleteAll } from '../../cache/cache-key.service';
-import { getActiveLoanGroup, getLoanGroupById } from '../../cache/cache-loan-group.service';
+import { getActiveLoanGroup, getLoanGroupById } from '../../cache/cache-loan-groups.service';
 import { getLoanById } from '../../cache/cache-loans.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';

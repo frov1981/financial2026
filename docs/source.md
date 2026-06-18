@@ -4553,7 +4553,9 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         let old_total = 0
 
         if (mode === 'insert') {
-            const payment_number = await getNextPaymentNumber(loan_id)
+            const principal_paid = Number(clean.principal_paid || 0)
+            const payment_number = principal_paid > 0 ? await getNextPaymentNumber(loan_id) : 0
+
             payment = paymentRepo.create({
                 loan,
                 account,
@@ -8897,13 +8899,49 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\transact
     white-space: nowrap;
 }
 
-.grouped-icon-line + .grouped-icon-line {
+.grouped-icon-line+.grouped-icon-line {
     margin-top: 4px;
 }
 
 .grouped-icon {
     display: flex;
     align-items: center;
+}
+
+.transaction-card-detail.hidden {
+  display: none;
+}
+
+.transaction-card-detail {
+  margin-top: 8px;
+  padding: 8px 10px;
+
+  background: rgba(255, 255, 255, 0.5);
+
+  border: 1px solid var(--ui-gray-200);
+  border-radius: 8px;
+
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ui-gray-700);
+
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.transaction-detail-row.hidden {
+  display: none;
+}
+
+.transaction-detail-row td {
+  padding: 10px 14px;
+  background: var(--ui-gray-50);
+
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ui-gray-700);
+
+  border-top: 1px solid var(--ui-gray-200);
 } 
 ```
  
@@ -12845,6 +12883,11 @@ const formatAmount = value =>
 /* ============================
    5. Render helpers
 ============================ */
+function paymentLabel(payment_number) {
+  if (payment_number === 0) return 'No Aplica'
+  return `${numberBox(payment_number)}`
+}
+
 function renderRow(payment) {
   const { date, time, weekday } = formatDateTime(payment.payment_date)
 
@@ -12859,7 +12902,7 @@ function renderRow(payment) {
       <td class="ui-td col-right">${formatAmount(payment.interest_paid)}</td>
       <td class="ui-td col-left">${payment.account?.name || '-'}</td>
       <td class="ui-td col-left">${payment.category?.name || '-'}</td>
-      <td class="ui-td col-right">${numberBox(payment.payment_number)}</td>
+      <td class="ui-td col-right">${paymentLabel(payment.payment_number)}</td>
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button
@@ -12947,7 +12990,7 @@ function renderCard(payment) {
 
         <div class="footer-right">
           <span class="footer-label">Pago No.</span>
-          <span class="footer-number">${payment.payment_number || '-'}</span>
+          <span class="footer-number">${paymentLabel(payment.payment_number)}</span>
         </div>
       </div>
     </div>
@@ -13424,6 +13467,31 @@ function isBatchActive() {
 /* ============================================================================
 5. Render helpers (iconos, tags, cajas)
 ============================================================================ */
+function hideAllTransactionDetails() {
+  document.querySelectorAll('.transaction-detail-row')
+    .forEach(row => row.classList.add('hidden'))
+}
+
+function showTransactionDetail(id) {
+  hideAllTransactionDetails()
+
+  const detail_row = document.getElementById(`transaction-detail-${id}`)
+
+  if (detail_row) {
+    detail_row.classList.remove('hidden')
+  }
+}
+
+function showTransactionCardDetail(id) {
+  document
+    .querySelectorAll('.transaction-card-detail')
+    .forEach(el => el.classList.add('hidden'))
+
+  document
+    .getElementById(`transaction-card-detail-${id}`)
+    ?.classList.remove('hidden')
+}
+
 function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
@@ -13441,7 +13509,10 @@ function renderTable(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const row = document.getElementById(`transaction-${selected.id}`)
-    if (row) row.classList.add('tr-selected')
+    if (row) {
+      row.classList.add('tr-selected')
+      showTransactionDetail(selected.id)
+    }
   }
 }
 
@@ -13456,7 +13527,10 @@ function renderCards(data) {
   const selected = loadFilters(SELECTED_KEY)
   if (selected?.id) {
     const card = container.querySelector(`[data-id="${selected.id}"]`)
-    if (card) card.classList.add('card-selected')
+    if (card) {
+      card.classList.add('card-selected')
+      showTransactionCardDetail(selected.id)
+    }
   }
 }
 
@@ -13515,7 +13589,7 @@ function renderRow(transaction) {
         </div>
       `
           : '-'
-      }
+    }
       </td>
       <td class="ui-td col-left col-nowrap">
       ${transaction.category?.name
@@ -13525,7 +13599,7 @@ function renderRow(transaction) {
           <span>${transaction.category?.name || '-'}</span>
         </div>
         ` : ''
-      }
+    }
       ${transaction.loan_payment?.loan?.name
       ? `
         <div class="grouped-icon-line">
@@ -13533,7 +13607,7 @@ function renderRow(transaction) {
           <span>${transaction.loan_payment?.loan?.name || '-'}</span>
         </div>
         ` : ''
-      }
+    }
       ${transaction.loan_payment?.loan?.category?.name
       ? `
         <div class="grouped-icon-line">
@@ -13541,11 +13615,9 @@ function renderRow(transaction) {
           <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
         </div>
         ` : ''
-      }
+    }
       </td>
-      <td class="ui-td col-left col-description">
-        <div class="card-description">${transaction.description || ''}</div>
-      </td>
+      
       <td class="ui-td col-center col-nowrap">
         <div class="icon-actions">
 
@@ -13581,6 +13653,12 @@ function renderRow(transaction) {
         </div>
       </td>
     </tr> 
+
+    <tr id="transaction-detail-${transaction.id}" class="transaction-detail-row hidden">
+      <td colspan="8">
+        ${transaction.description || '-'}
+      </td>
+    </tr>
   `
 }
 
@@ -13645,7 +13723,7 @@ function renderCard(transaction) {
         <div class="card-info">
           <div class="card-account">
             ${transaction.type === 'transfer'
-            ? `
+      ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
@@ -13655,51 +13733,53 @@ function renderCard(transaction) {
                   <span>${transaction.to_account?.name || '-'}</span>
                 </div>
               `
-              : transaction.type === 'income'
-              ? `
+      : transaction.type === 'income'
+        ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferIn()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
                 `
-              : transaction.type === 'expense'
-              ? `
+        : transaction.type === 'expense'
+          ? `
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconTransferOut()}</span>
                   <span>${transaction.account?.name || '-'}</span>
                 </div>
                 `
-              : '-'
-          }
+          : '-'
+    }
           </div>
           ${transaction.category?.name
-          ? `<div class="card-category">
+      ? `<div class="card-category">
               <div class="grouped-icon-line">
                 <span class="grouped-icon">${iconGrouped()}</span>
                 <span>${transaction.category?.name || '-'}</span>
               </div>
             </div>
           ` : ''
-          }
+    }
           ${transaction.loan_payment?.loan?.name
-          ? `<div class="card-category">
+      ? `<div class="card-category">
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconGrouped()}</span>
                   <span>${transaction.loan_payment?.loan?.name || '-'}</span>
                 </div>
               </div>
             ` : ''
-          }
+    }
           ${transaction.loan_payment?.loan?.category?.name
-          ? `<div class="card-category">
+      ? `<div class="card-category">
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconGrouped()}</span>
                   <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
                 </div>
               </div>
             ` : ''
-          }
-          ${transaction.description ? `<div class="card-description">${transaction.description}</div>` : ''}
+    }
+          <div id="transaction-card-detail-${transaction.id}" class="transaction-card-detail hidden" >
+            ${transaction.description}
+          </div>
         </div>
 
         <div class="card-amount">
@@ -13732,7 +13812,7 @@ async function loadTransactions(page = 1) {
     if (CATEGORY_ID) params.append('category_id', CATEGORY_ID)
 
     const res = await fetch(`${API_BASE}?${params}`)
-    
+
     // Manejar errores de rate limiting
     if (res.status === 429) {
       const errorData = await res.json().catch(() => ({}))
@@ -13837,36 +13917,6 @@ function goToRouteDelete(action_name, action_id) {
   }
 }
 
-/*
-function goToTransactionUpdate(id) {
-  const params = new URLSearchParams()
-  if (CATEGORY_ID) {
-    params.set('category_id', CATEGORY_ID)
-    params.set('from', 'categories')
-  }
-  location.href = `/transactions/update/${id}?${params.toString()}`
-}*/
-
-/*
-function goToTransactionClone(id) {
-  const params = new URLSearchParams()
-  if (CATEGORY_ID) {
-    params.set('category_id', CATEGORY_ID)
-    params.set('from', 'categories')
-  }
-  location.href = `/transactions/clone/${id}?${params.toString()}`
-}*/
-
-/*
-function goToTransactionDelete(id) {
-  const params = new URLSearchParams()
-  if (CATEGORY_ID) {
-    params.set('category_id', CATEGORY_ID)
-    params.set('from', 'categories')
-  }
-  location.href = `/transactions/delete/${id}?${params.toString()}`
-}*/
-
 function goBackToCategories() {
   location.href = '/categories'
 }
@@ -13874,10 +13924,28 @@ function goBackToCategories() {
 function selectTransactionCard(event, id) {
   if (event.target.closest('button')) return
 
+  const card = event.target.closest('.transaction-card')
+  if (!card) return
+
+  const detail = document.getElementById(`transaction-card-detail-${id}`)
+  const is_open = detail && !detail.classList.contains('hidden')
+
+  if (is_open) {
+    card.classList.remove('card-selected')
+    detail.classList.add('hidden')
+    clearFilters(SELECTED_KEY)
+    return
+  }
+
   document.querySelectorAll('.transaction-card')
     .forEach(c => c.classList.remove('card-selected'))
 
-  event.currentTarget.classList.add('card-selected')
+  document.querySelectorAll('.transaction-card-detail')
+    .forEach(d => d.classList.add('hidden'))
+
+  card.classList.add('card-selected')
+  detail?.classList.remove('hidden')
+
   saveFilters(SELECTED_KEY, { id })
 }
 
@@ -13910,11 +13978,28 @@ if (table) {
     const row = event.target.closest('tr[id^="transaction-"]')
     if (!row) return
 
+    const id = row.id.replace('transaction-', '')
+    const detail_row = document.getElementById(`transaction-detail-${id}`)
+
+    const is_open = detail_row && !detail_row.classList.contains('hidden')
+
+    if (is_open) {
+      row.classList.remove('tr-selected')
+      detail_row.classList.add('hidden')
+      clearFilters(SELECTED_KEY)
+      return
+    }
+
     document.querySelectorAll('#transactions-table tr')
       .forEach(tr => tr.classList.remove('tr-selected'))
 
+    document.querySelectorAll('.transaction-detail-row')
+      .forEach(tr => tr.classList.add('hidden'))
+
     row.classList.add('tr-selected')
-    saveFilters(SELECTED_KEY, { id: row.id.replace('transaction-', '') })
+    detail_row?.classList.remove('hidden')
+
+    saveFilters(SELECTED_KEY, { id })
   })
 }
 
@@ -14640,6 +14725,7 @@ export const getNextPaymentNumber = async (loan_id: number): Promise<number> => 
     .getRepository(LoanPayment)
     .createQueryBuilder('p')
     .where('p.loan_id = :loan_id', { loan_id })
+    .andWhere('p.payment_number > 0')
     .orderBy('p.payment_number', 'DESC')
     .getOne()
 
@@ -17532,7 +17618,6 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\transactions\in
             <th class="ui-th col-left">Monto</th>
             <th class="ui-th col-left">Cuenta</th>
             <th class="ui-th col-left">Categoría</th>
-            <th class="ui-th col-left">Descripción</th>
             <th class="ui-th col-left">Acciones</th>
           </tr>
         </thead>

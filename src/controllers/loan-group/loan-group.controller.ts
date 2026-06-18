@@ -1,5 +1,5 @@
 import { Request, RequestHandler, Response } from 'express'
-import { getLoanGroupById } from '../../cache/cache-loan-group.service'
+import { getLoanGroupById } from '../../cache/cache-loan-groups.service'
 import { loanGroupFormMatrix } from '../../policies/loan-group-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'

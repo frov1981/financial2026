@@ -1,7 +1,7 @@
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getCategoryById } from '../../cache/cache-categories.service';
-import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-group.service';
+import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-groups.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Category } from '../../entities/Category.entity';

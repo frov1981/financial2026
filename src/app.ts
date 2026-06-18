@@ -16,7 +16,7 @@ import categoryRoutes from './routes/category.route'
 import homeRoutes from './routes/home.route'
 import loanGroupRoutes from './routes/loan-group.route'
 import loanRoutes from './routes/loan.route'
-import paymentRoutes from './routes/payment.route'
+import paymentRoutes from './routes/loan-payment.route'
 import transactionRoutes from './routes/transaction.route'
 
 export const app = express()

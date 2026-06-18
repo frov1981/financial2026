@@ -1,5 +1,5 @@
 import { Request, RequestHandler, Response } from 'express'
-import { getCategoryGroupById } from '../../cache/cache-category-group.service'
+import { getCategoryGroupById } from '../../cache/cache-category-groups.service'
 import { categoryGroupFormMatrix } from '../../policies/category-group-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'

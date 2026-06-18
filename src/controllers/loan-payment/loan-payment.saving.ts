@@ -5,13 +5,13 @@ import { getAccountById, getActiveAccounts } from '../../cache/cache-accounts.se
 import { getCategoryById } from '../../cache/cache-categories.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { getLoanById } from '../../cache/cache-loans.service';
-import { getPaymentById } from '../../cache/cache-payments.service';
+import { getPaymentById } from '../../cache/cache-loan-payments.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
 import { Loan } from '../../entities/Loan.entity';
 import { LoanPayment } from '../../entities/LoanPayment.entity';
 import { Transaction } from '../../entities/Transaction.entity';
-import { paymentFormMatrix } from '../../policies/payment-form.policy';
+import { paymentFormMatrix } from '../../policies/loan-payment-form.policy';
 import { KpiCacheService } from '../../services/kpi-cache.service';
 import { getNextPaymentNumber } from '../../services/loan-payment-number.service';
 import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service';
@@ -21,7 +21,7 @@ import { parseBoolean } from '../../utils/bool.util';
 import { parseLocalDateToUTC } from '../../utils/date.util';
 import { parseError } from '../../utils/error.util';
 import { logger } from '../../utils/logger.util';
-import { validateDeletePayment, validateSavePayment } from './payment.validator';
+import { validateDeletePayment, validateSavePayment } from './loan-payment.validator';
 
 /* ============================
    Helpers
@@ -297,7 +297,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {
             title: getTitle(mode),
-            view: 'pages/payments/form',
+            view: 'pages/loan-payments/form',
             ...form_state,
             errors: validationErrors
         })

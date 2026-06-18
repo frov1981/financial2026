@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { getCategoryByName } from '../../cache/cache-categories.service'
-import { getCategoryGroupById } from '../../cache/cache-category-group.service'
+import { getCategoryGroupById } from '../../cache/cache-category-groups.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Category } from '../../entities/Category.entity'
 import { Transaction } from '../../entities/Transaction.entity'

@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
-import { getLoanGroupByName } from '../../cache/cache-loan-group.service'
+import { getLoanGroupByName } from '../../cache/cache-loan-groups.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Loan } from '../../entities/Loan.entity'
 import { LoanGroup } from '../../entities/LoanGroup.entity'

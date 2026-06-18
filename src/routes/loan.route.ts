@@ -8,7 +8,7 @@ import {
     routeToFormUpdateLoan,
     routeToPageLoan
 } from "../controllers/loan/loan.controller"
-import { routeToPagePayment } from "../controllers/payment/payment.controller"
+import { routeToPagePayment } from "../controllers/loan-payment/loan-payment.controller"
 
 const router = Router()
 
