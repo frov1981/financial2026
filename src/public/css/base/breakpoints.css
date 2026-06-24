@@ -1,4 +1,8 @@
 @media (max-width: 768px) {
+    
+    html {
+        font-size: 80%;
+    }
 
     .accounts-mobile,
     .categories-mobile,
