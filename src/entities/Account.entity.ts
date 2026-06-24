@@ -5,6 +5,8 @@ import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
+import { ReceivableCollection } from './ReceivableCollection.entity'
+import { Receivable } from './Receivable.entity'
 @Index('idx_accounts_user_active_type', ['user', 'is_active', 'type'])
 @Entity('accounts')
 export class Account {
@@ -39,4 +41,10 @@ export class Account {
 
   @OneToMany(() => Loan, loan => loan.disbursement_account)
   loans!: Loan[]
+
+  @OneToMany(() => ReceivableCollection, collection => collection.account)
+  receivableCollections!: ReceivableCollection[]
+
+  @OneToMany(() => Receivable, receivable => receivable.disbursement_account)
+  receivables!: Receivable[]
 }

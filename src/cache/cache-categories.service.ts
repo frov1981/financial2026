@@ -10,7 +10,7 @@ export type DTOCategory = {
     id: number
     name: string
     type: 'income' | 'expense'
-    type_for_loan: 'loan' | 'payment' | null
+    type_for_loan: 'loan' | 'payment' | 'receivable' | 'collection' | null
     is_active: boolean
     category_group: { id: number, name: string } | null
     transactions_count: number

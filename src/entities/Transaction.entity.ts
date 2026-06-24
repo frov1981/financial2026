@@ -7,6 +7,8 @@ import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { User } from './User.entity'
+import { Receivable } from './Receivable.entity'
+import { ReceivableCollection } from './ReceivableCollection.entity'
 
 @Entity('transactions')
 export class Transaction {
@@ -63,5 +65,11 @@ export class Transaction {
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
+
+  @OneToOne(() => Receivable, receivable => receivable.transaction)
+  receivable!: Receivable | null
+
+  @OneToOne(() => ReceivableCollection, collection => collection.transaction)
+  receivable_collection!: ReceivableCollection | null
 
 }

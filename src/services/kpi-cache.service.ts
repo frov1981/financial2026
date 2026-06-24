@@ -57,8 +57,11 @@ export class KpiCacheService {
       const start_local = new Date(period_year, period_month - 1, 1)
       const end_local = new Date(period_year, period_month, 1)
 
+
       const start_date = new Date(formatDateForInputLocal(start_local, timezone))
       const end_date = new Date(formatDateForInputLocal(end_local, timezone))
+
+      logger.debug('KPI_DATE_RANGE', { user_id, period_year, period_month, timezone, start_local, end_local, start_date, end_date })
 
       const result = await AppDataSource.manager.query(query_base, [
         user_id,
@@ -66,9 +69,13 @@ export class KpiCacheService {
         end_date, end_date
       ])
 
+
+
       if (!result?.length) return
 
       const r = result[0]
+
+      logger.debug('KPI_QUERY_RESULT', { user_id, period_year, period_month, timezone, start_date, end_date, result: r })
 
       const incomes = Number(r.incomes || 0)
       const expenses = Number(r.expenses || 0)
@@ -89,6 +96,7 @@ export class KpiCacheService {
         where: { user: { id: user_id }, period_year, period_month },
         relations: ['user']
       })
+      logger.debug('KPI_COMPARE', { period_year, period_month, old_available_balance: existing?.available_balance, old_incomes: existing?.incomes, old_expenses: existing?.expenses, old_loans: existing?.loans, old_payments: existing?.payments, old_savings: existing?.savings, old_withdrawals: existing?.withdrawals, new_available_balance: available_balance, new_incomes: incomes, new_expenses: expenses, new_loans: loans, new_payments: payments, new_savings: savings, new_withdrawals: withdrawals })
 
       const payload = {
         incomes,
@@ -105,6 +113,7 @@ export class KpiCacheService {
         principal_breakdown: 0,
         interest_breakdown: 0
       }
+      logger.debug('KPI_MONTH_AFTER', { user_id, period_year, period_month, incomes, expenses, loans, payments, savings, withdrawals, available_balance })
 
       if (existing) {
         await repo.update({ id: existing.id }, payload)
@@ -116,7 +125,7 @@ export class KpiCacheService {
           ...payload
         })
       }
-
+      logger.debug('KPI_MONTH_BEFORE', { user_id, period_year, period_month, incomes, expenses, loans, payments, savings, withdrawals, available_balance })
       logger.info(`KPI MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
 
     } catch (error: any) {
@@ -238,6 +247,7 @@ export class KpiCacheService {
    RECALCULAR KPI POR TRANSACCIÓN
   ============================ */
   static async recalcKPIsByTransaction(auth_req: AuthRequest, transaction: any) {
+    logger.debug('recalcKPIsByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
@@ -259,6 +269,7 @@ export class KpiCacheService {
 
       const is_current_period = trx_year === current_year && trx_month === current_month
 
+      logger.debug('KPI_PERIOD_RAW', { trx_id: transaction.id, trx_date: transaction.date })
       if (is_current_period) {
         await this.recalcCurrentMonthKPI(auth_req, trx_year, trx_month)
       } else {

@@ -11,6 +11,9 @@ import { LoanPayment } from '../entities/LoanPayment.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
+import { Receivable } from '../entities/Receivable.entity'
+import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
+import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -30,6 +33,9 @@ export const AppDataSource = new DataSource({
     LoanPayment,
     Transaction,
     CacheKpiBalance,
+    Receivable,
+    ReceivableCollection,
+    ReceivableGroup
   ],
   synchronize: false,
   timezone: 'Z',

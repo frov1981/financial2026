@@ -5,6 +5,8 @@ import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
+import { Receivable } from './Receivable.entity'
+import { ReceivableCollection } from './ReceivableCollection.entity'
 
 @Entity('categories')
 export class Category {
@@ -27,7 +29,7 @@ export class Category {
   @Column({ type: 'varchar' })
   @IsOptional()
   @IsIn(['loan', 'payment'], { message: 'El tipo debe ser loan o payment o vacío' })
-  type_for_loan!: 'loan' | 'payment' | null
+  type_for_loan!: 'loan' | 'payment' | 'receivable' | 'collection' | null
 
   @Column({ default: true })
   @IsBoolean({ message: 'El estado debe ser true o false' })
@@ -45,5 +47,11 @@ export class Category {
   @ManyToOne(() => CategoryGroup, group => group.categories)
   @JoinColumn({ name: 'category_group_id', foreignKeyConstraintName: 'fk_categories_group' })
   category_group!: CategoryGroup | null
+
+  @OneToMany(() => Receivable, receivable => receivable.category)
+  receivables!: Receivable[]
+
+  @OneToMany(() => ReceivableCollection, collection => collection.category)
+  receivable_collections!: ReceivableCollection[]
 
 }

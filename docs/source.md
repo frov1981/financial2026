@@ -322,7 +322,7 @@ export type DTOCategory = {
     id: number
     name: string
     type: 'income' | 'expense'
-    type_for_loan: 'loan' | 'payment' | null
+    type_for_loan: 'loan' | 'payment' | 'receivable' | 'collection' | null
     is_active: boolean
     category_group: { id: number, name: string } | null
     transactions_count: number
@@ -727,7 +727,7 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
     acc.is_populate = 1
     return acc
   }, { ...base_kpi })
-  logger.info(`${getHomeBalanceKpiCache.name}. `, { year_period_for_kpi })
+  logger.info(`${getHomeBalanceKpiCache.name}. `, { year_period_for_kpi, available_balance: result.available_balance })
   cache.set(cache_key, result)
   return result
 }
@@ -1484,6 +1484,9 @@ import { LoanPayment } from '../entities/LoanPayment.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
+import { Receivable } from '../entities/Receivable.entity'
+import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
+import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -1503,6 +1506,9 @@ export const AppDataSource = new DataSource({
     LoanPayment,
     Transaction,
     CacheKpiBalance,
+    Receivable,
+    ReceivableCollection,
+    ReceivableGroup
   ],
   synchronize: false,
   timezone: 'Z',
@@ -5732,6 +5738,8 @@ import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
+import { ReceivableCollection } from './ReceivableCollection.entity'
+import { Receivable } from './Receivable.entity'
 @Index('idx_accounts_user_active_type', ['user', 'is_active', 'type'])
 @Entity('accounts')
 export class Account {
@@ -5766,6 +5774,12 @@ export class Account {
 
   @OneToMany(() => Loan, loan => loan.disbursement_account)
   loans!: Loan[]
+
+  @OneToMany(() => ReceivableCollection, collection => collection.account)
+  receivableCollections!: ReceivableCollection[]
+
+  @OneToMany(() => Receivable, receivable => receivable.disbursement_account)
+  receivables!: Receivable[]
 }
  
 ```
@@ -5898,6 +5912,8 @@ import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
+import { Receivable } from './Receivable.entity'
+import { ReceivableCollection } from './ReceivableCollection.entity'
 
 @Entity('categories')
 export class Category {
@@ -5920,7 +5936,7 @@ export class Category {
   @Column({ type: 'varchar' })
   @IsOptional()
   @IsIn(['loan', 'payment'], { message: 'El tipo debe ser loan o payment o vacío' })
-  type_for_loan!: 'loan' | 'payment' | null
+  type_for_loan!: 'loan' | 'payment' | 'receivable' | 'collection' | null
 
   @Column({ default: true })
   @IsBoolean({ message: 'El estado debe ser true o false' })
@@ -5938,6 +5954,12 @@ export class Category {
   @ManyToOne(() => CategoryGroup, group => group.categories)
   @JoinColumn({ name: 'category_group_id', foreignKeyConstraintName: 'fk_categories_group' })
   category_group!: CategoryGroup | null
+
+  @OneToMany(() => Receivable, receivable => receivable.category)
+  receivables!: Receivable[]
+
+  @OneToMany(() => ReceivableCollection, collection => collection.category)
+  receivable_collections!: ReceivableCollection[]
 
 }
  
@@ -6162,6 +6184,200 @@ export class LoanPayment {
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\Receivable.entity.ts
+```
+ 
+```ts
+import { IsBoolean, IsNotEmpty } from 'class-validator'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn
+} from 'typeorm'
+import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
+import { Account } from './Account.entity'
+import { Category } from './Category.entity'
+import { ReceivableGroup } from './ReceivableGroup.entity'
+import { Transaction } from './Transaction.entity'
+import { User } from './User.entity'
+import { ReceivableCollection } from './ReceivableCollection.entity'
+
+@Entity('receivables')
+export class Receivable {
+
+  @PrimaryGeneratedColumn()
+  id!: number
+
+  @ManyToOne(() => User, user => user.receivables)
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_receivables_user' })
+  user!: User
+
+  @Column()
+  @IsNotEmpty({ message: 'El nombre es obligatorio' })
+  name!: string
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  total_amount!: number
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  principal_received!: number
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  interest_received!: number
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  balance!: number
+
+  @Column({ type: 'timestamp' })
+  start_date!: Date
+
+  @Column({ type: 'timestamp', nullable: true })
+  end_date!: Date | null
+
+  @Column({ default: true })
+  @IsBoolean({ message: 'El estado debe ser true o false' })
+  is_active!: boolean
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at!: Date
+
+  @Column({ nullable: true })
+  note!: string
+
+  @ManyToOne(() => ReceivableGroup, group => group.receivables)
+  @JoinColumn({ name: 'receivable_group_id', foreignKeyConstraintName: 'fk_receivables_group' })
+  receivable_group!: ReceivableGroup | null
+
+  @OneToMany(() => ReceivableCollection, collection => collection.receivable)
+  collections!: ReceivableCollection[]
+
+  @ManyToOne(() => Account)
+  @JoinColumn({ name: 'disbursement_account_id', foreignKeyConstraintName: 'fk_receivables_disbursement_account' })
+  disbursement_account!: Account | null
+
+  @ManyToOne(() => Category)
+  @JoinColumn({ name: 'category_id', foreignKeyConstraintName: 'fk_receivables_category' })
+  category!: Category | null
+
+  @OneToOne(() => Transaction)
+  @JoinColumn({ name: 'transaction_id', foreignKeyConstraintName: 'fk_receivables_transaction' })
+  transaction!: Transaction
+
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\ReceivableCollection.entity.ts
+```
+ 
+```ts
+import { IsDate, IsNotEmpty, IsNumber } from 'class-validator'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn
+} from 'typeorm'
+import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
+import { Account } from './Account.entity'
+import { Category } from './Category.entity'
+import { Transaction } from './Transaction.entity'
+import { Receivable } from './Receivable.entity'
+
+@Entity('receivable_collections')
+export class ReceivableCollection {
+
+  @PrimaryGeneratedColumn()
+  id!: number
+
+  @Column()
+  collection_number!: number
+
+  @ManyToOne(() => Receivable, receivable => receivable.collections)
+  @JoinColumn({ name: 'receivable_id', foreignKeyConstraintName: 'fk_receivable_collections_receivable' })
+  receivable!: Receivable
+
+  @ManyToOne(() => Account, account => account.receivableCollections)
+  @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_receivable_collections_account' })
+  @IsNotEmpty({ message: 'La cuenta es obligatoria' })
+  account!: Account
+
+  @ManyToOne(() => Transaction)
+  @JoinColumn({ name: 'transaction_id', foreignKeyConstraintName: 'fk_receivable_collections_transaction' })
+  transaction!: Transaction
+
+  @IsNumber({}, { message: 'El monto debe ser numérico' })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  principal_collected!: number
+
+  @IsNumber({}, { message: 'El monto debe ser numérico' })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  interest_collected!: number
+
+  @IsDate({ message: 'La fecha del cobro debe ser una fecha válida' })
+  @Column({ type: 'timestamp' })
+  collection_date!: Date
+
+  @Column({ nullable: true })
+  note!: string
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at!: Date
+
+  @ManyToOne(() => Category)
+  @JoinColumn({ name: 'category_id', foreignKeyConstraintName: 'fk_receivable_collections_category' })
+  category!: Category | null
+
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\ReceivableGroup.entity.ts
+```
+ 
+```ts
+import { IsNotEmpty } from 'class-validator'
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { User } from './User.entity'
+import { Receivable } from './Receivable.entity'
+
+@Entity('receivable_groups')
+export class ReceivableGroup {
+
+  @PrimaryGeneratedColumn()
+  id!: number
+
+  @Column()
+  @IsNotEmpty({ message: 'El nombre del grupo es obligatorio' })
+  name!: string
+
+  @Column({ default: true })
+  is_active!: boolean
+
+  @OneToMany(() => Receivable, receivable => receivable.receivable_group)
+  receivables!: Receivable[]
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_receivable_groups_user' })
+  user!: User
+
+} 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\Transaction.entity.ts
 ```
  
@@ -6175,6 +6391,8 @@ import { Category } from './Category.entity'
 import { Loan } from './Loan.entity'
 import { LoanPayment } from './LoanPayment.entity'
 import { User } from './User.entity'
+import { Receivable } from './Receivable.entity'
+import { ReceivableCollection } from './ReceivableCollection.entity'
 
 @Entity('transactions')
 export class Transaction {
@@ -6232,6 +6450,12 @@ export class Transaction {
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date
 
+  @OneToOne(() => Receivable, receivable => receivable.transaction)
+  receivable!: Receivable | null
+
+  @OneToOne(() => ReceivableCollection, collection => collection.transaction)
+  receivable_collection!: ReceivableCollection | null
+
 }
  
 ```
@@ -6251,6 +6475,8 @@ import { Transaction } from './Transaction.entity'
 import { CategoryGroup } from './CategoryGroups.entity'
 import { LoanGroup } from './LoanGroup.entity'
 import { CacheKpiBalance } from './CacheKpiBalance.entity'
+import { ReceivableGroup } from './ReceivableGroup.entity'
+import { Receivable } from './Receivable.entity'
 
 @Entity('users')
 //@Unique('UQ_users_email', ['email'])
@@ -6294,6 +6520,12 @@ export class User {
 
   @OneToMany(() => CacheKpiBalance, cache => cache.user)
   cache_kpi_balances!: CacheKpiBalance[]
+
+  @OneToMany(() => ReceivableGroup, group => group.user)
+  receivable_groups!: ReceivableGroup[]
+
+  @OneToMany(() => Receivable, receivable => receivable.user)
+  receivables!: Receivable[]
 
 }
  
@@ -14369,6 +14601,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\account-balance.se
 ```ts
 import { AppDataSource } from '../config/typeorm.datasource'
 import { Account } from '../entities/Account.entity'
+import { logger } from '../utils/logger.util'
 
 export class AccountBalanceService {
 
@@ -14382,6 +14615,7 @@ export class AccountBalanceService {
             .andWhere('account.type IN (:...types)', { types: ['cash', 'bank'] })
             .getRawOne()
 
+        logger.info(`${AccountBalanceService.getNetAvailableBalance.name}. `, `Net available balance for user ${user_id}: ${result.total}`)
         return Number(result?.total ?? 0)
     }
 

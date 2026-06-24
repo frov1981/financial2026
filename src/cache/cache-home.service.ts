@@ -164,6 +164,8 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
   const duration_sec = (end - start) / 1000
   logger.debug(`method=[${getHomeBalanceKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   if (!rows.length) return base_kpi
+
+  logger.debug('HOME_KPI_ROWS', rows.map(row => ({ year: row.period_year, month: row.period_month, available_balance: row.available_balance })))
   const result: KpiBalance = rows.reduce((acc, row) => {
     acc.incomes += Number(row.incomes)
     acc.expenses += Number(row.expenses)
@@ -181,7 +183,7 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
     acc.is_populate = 1
     return acc
   }, { ...base_kpi })
-  logger.info(`${getHomeBalanceKpiCache.name}. `, { year_period_for_kpi })
+  logger.info(`${getHomeBalanceKpiCache.name}. `, { year_period_for_kpi, available_balance: result.available_balance })
   cache.set(cache_key, result)
   return result
 }

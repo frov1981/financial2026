@@ -1,5 +1,6 @@
 import { AppDataSource } from '../config/typeorm.datasource'
 import { Account } from '../entities/Account.entity'
+import { logger } from '../utils/logger.util'
 
 export class AccountBalanceService {
 
@@ -13,6 +14,7 @@ export class AccountBalanceService {
             .andWhere('account.type IN (:...types)', { types: ['cash', 'bank'] })
             .getRawOne()
 
+        logger.info(`${AccountBalanceService.getNetAvailableBalance.name}. `, `Net available balance for user ${user_id}: ${result.total}`)
         return Number(result?.total ?? 0)
     }
 
