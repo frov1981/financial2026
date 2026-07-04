@@ -200,6 +200,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       const transaction = queryRunner.manager.create(Transaction, {
         user: { id: auth_req.user.id } as any,
         type: 'income',
+        detailed_type: 'income_for_loan',
         amount: loan.total_amount,
         account: new_account,
         category: new_category,

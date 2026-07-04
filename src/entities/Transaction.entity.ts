@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer'
-import { IsIn, IsNotEmpty, IsNumber, IsPositive, MaxLength, ValidateIf } from 'class-validator'
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsPositive, MaxLength, ValidateIf } from 'class-validator'
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Account } from './Account.entity'
@@ -25,6 +25,13 @@ export class Transaction {
     message: 'Tipo de transacción inválido'
   })
   type!: 'income' | 'expense' | 'transfer'
+
+  @Column({ type: 'varchar', nullable: true })
+  @IsOptional()
+  @IsIn(['income', 'expense', 'income_for_loan', 'payment_for_loan', 'saving', 'withdrawal', 'transfer'], {
+    message: 'Tipo de transacción detallado inválido'
+  })
+  detailed_type?: 'income' | 'expense' | 'income_for_loan' | 'payment_for_loan' | 'saving' | 'withdrawal' | 'transfer' | null
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_transactions_account' })

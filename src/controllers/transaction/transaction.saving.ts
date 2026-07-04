@@ -164,6 +164,27 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     if (transaction.type === 'transfer') { transaction.category = null }
     if (transaction.type !== 'transfer') { transaction.to_account = null }
 
+    // Determinar detailed_type basado en el tipo de transacción
+    if (transaction.type === 'income') {
+      transaction.detailed_type = 'income'
+    } else if (transaction.type === 'expense') {
+      transaction.detailed_type = 'expense'
+    } else if (transaction.type === 'transfer') {
+      const from_account = transaction.account
+      const to_account = transaction.to_account
+      const from_is_saving = from_account && isSavingAccount(from_account)
+      const to_is_saving = to_account && isSavingAccount(to_account)
+      if (to_is_saving && !from_is_saving) {
+        transaction.detailed_type = 'saving'
+      }
+      else if (from_is_saving && !to_is_saving) {
+        transaction.detailed_type = 'withdrawal'
+      }
+      else {
+        transaction.detailed_type = 'transfer'
+      }
+    }
+
     const errors = await validateSaveTransaction(transaction, auth_req, previous_transaction)
     if (errors) throw { validationErrors: errors }
     const deltas = new Map<number, number>()

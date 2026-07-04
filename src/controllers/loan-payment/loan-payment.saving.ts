@@ -261,10 +261,12 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             trx.category = payment.category
             trx.date = payment.payment_date
             trx.description = payment.note
+            trx.detailed_type = 'payment_for_loan'
         } else {
             trx = transactionRepo.create({
                 user: { id: auth_req.user.id } as any,
                 type: 'expense',
+                detailed_type: 'payment_for_loan',
                 amount: new_total,
                 account,
                 category: payment.category,
