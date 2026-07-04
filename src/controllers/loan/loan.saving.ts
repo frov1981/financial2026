@@ -126,7 +126,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       deleteAll(auth_req, 'loan')
 
       KpiCacheService
-        .recalcKPIsByTransaction(auth_req, existing)
+        .recalculateBalanceKPIByTransaction(auth_req, existing)
         .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
@@ -245,7 +245,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     deleteAll(auth_req, 'loan')
     if (loan.transaction) {
       KpiCacheService
-        .recalcKPIsByTransaction(auth_req, loan.transaction)
+        .recalculateBalanceKPIByTransaction(auth_req, loan.transaction)
         .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
     }
 

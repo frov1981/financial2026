@@ -162,7 +162,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             deleteAll(auth_req, 'payment')
 
             KpiCacheService
-                .recalcKPIsByTransaction(auth_req, existing.transaction)
+                .recalculateBalanceKPIByTransaction(auth_req, existing.transaction)
                 .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(error)))
 
             if (return_from === 'categories' && return_category_id) {
@@ -282,7 +282,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         deleteAll(auth_req, 'payment')
 
         KpiCacheService
-            .recalcKPIsByTransaction(auth_req, trx)
+            .recalculateBalanceKPIByTransaction(auth_req, trx)
             .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(error)))
 
         if (return_from === 'categories' && return_category_id) {

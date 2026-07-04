@@ -14,40 +14,26 @@ function money(n: number) {
 ============================ */
 const query_base = `
 SELECT
-  SUM(CASE WHEN t.type = 'income' AND l.id IS NULL THEN t.amount ELSE 0 END) AS incomes,
-  SUM(CASE WHEN t.type = 'expense' AND lp.id IS NULL THEN t.amount ELSE 0 END) AS expenses,
-  SUM(CASE WHEN t.type = 'income' AND l.id IS NOT NULL THEN t.amount ELSE 0 END) AS loans,
-  SUM(CASE WHEN t.type = 'expense' AND lp.id IS NOT NULL THEN t.amount ELSE 0 END) AS payments,
-
-  SUM(CASE 
-    WHEN t.type = 'transfer' 
-    AND ta.type = 'saving' 
-    AND (fa.type <> 'saving' OR ta.id <> fa.id)
-  THEN t.amount ELSE 0 END) AS savings,
-
-  SUM(CASE 
-    WHEN t.type = 'transfer' 
-    AND fa.type = 'saving' 
-    AND (ta.type <> 'saving' OR ta.id <> fa.id)
-  THEN t.amount ELSE 0 END) AS withdrawals
-
+  COALESCE(SUM(CASE 
+    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income' THEN t.amount ELSE 0 END), 0) AS incomes,
+  COALESCE(SUM(CASE 
+    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'expense' THEN t.amount ELSE 0 END), 0) AS expenses,
+  COALESCE(SUM(CASE 
+    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income_for_loan' THEN t.amount ELSE 0 END), 0) AS loans,
+  COALESCE(SUM(CASE 
+    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'payment_for_loan' THEN t.amount ELSE 0 END), 0) AS payments,
+  COALESCE(SUM(CASE 
+    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'saving' THEN t.amount ELSE 0 END), 0) AS savings,
+  COALESCE(SUM(CASE 
+    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals
 FROM transactions t
-LEFT JOIN loans l ON l.transaction_id = t.id
-LEFT JOIN loan_payments lp ON lp.transaction_id = t.id
-LEFT JOIN accounts fa ON fa.id = t.account_id
-LEFT JOIN accounts ta ON ta.id = t.to_account_id
-
 WHERE t.user_id = ?
 AND (? IS NULL OR t.date >= ?)
 AND (? IS NULL OR t.date < ?)
 `
-
 export class KpiCacheService {
 
-  /* ============================
-     KPI MES ACTUAL (SOLO UNO)
-  ============================ */
-  static async recalcCurrentMonthKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
+  private static async recalculateCurrMonthBalanceKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
@@ -133,10 +119,7 @@ export class KpiCacheService {
     }
   }
 
-  /* ============================
-     REBUILD COMPLETO
-  ============================ */
-  static async rebuildAllUserKPIs(user_id: number, timezone: string) {
+  private static async recalculateAllBalanceKPI(user_id: number, timezone: string) {
 
     try {
 
@@ -207,47 +190,12 @@ export class KpiCacheService {
       logger.info(`KPI FULL REBUILD user=${user_id}`)
 
     } catch (error) {
-      logger.error('Error en rebuildAllUserKPIs', parseError(error))
+      logger.error('Error en recalculateAllBalanceKPI', parseError(error))
     }
   }
 
-  /* ============================
-   ENTRY POINT (REEMPLAZA recalcMonthlyKPIs)
-  ============================ */
-  static async recalcKPIs(auth_req: AuthRequest, period_year: number, period_month: number) {
-
-    const user_id = auth_req.user.id
-    const timezone = auth_req.timezone || 'UTC'
-
-    try {
-      /* 
-        Se obtiene la fecha actual usando el mismo flujo que usa la app
-        para garantizar consistencia con BD (UTC basado en timezone)
-      */
-      const now_local = new Date()
-      const now_utc = new Date(formatDateForInputLocal(now_local, timezone))
-
-      const current_year = now_utc.getUTCFullYear()
-      const current_month = now_utc.getUTCMonth() + 1
-
-      const is_current_period = current_year === period_year && current_month === period_month
-
-      if (is_current_period) {
-        await this.recalcCurrentMonthKPI(auth_req, period_year, period_month)
-      } else {
-        await this.rebuildAllUserKPIs(user_id, timezone)
-      }
-
-    } catch (error: any) {
-      logger.error('Error en recalcKPIs', parseError(error))
-    }
-  }
-
-  /* ============================
-   RECALCULAR KPI POR TRANSACCIÓN
-  ============================ */
-  static async recalcKPIsByTransaction(auth_req: AuthRequest, transaction: any) {
-    logger.debug('recalcKPIsByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
+  static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
+    logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
@@ -255,7 +203,7 @@ export class KpiCacheService {
     try {
 
       if (!transaction?.date) {
-        logger.warn('recalcKPIsByTransaction sin transaction.date')
+        logger.warn('recalculateBalanceKPIByTransaction sin transaction.date')
         return
       }
 
@@ -271,15 +219,15 @@ export class KpiCacheService {
 
       logger.debug('KPI_PERIOD_RAW', { trx_id: transaction.id, trx_date: transaction.date })
       if (is_current_period) {
-        await this.recalcCurrentMonthKPI(auth_req, trx_year, trx_month)
+        await this.recalculateCurrMonthBalanceKPI(auth_req, trx_year, trx_month)
       } else {
-        await this.rebuildAllUserKPIs(user_id, timezone)
+        await this.recalculateAllBalanceKPI(user_id, timezone)
       }
 
       logger.debug('KPI recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
 
     } catch (error: any) {
-      logger.error('Error en recalcKPIsByTransaction', parseError(error))
+      logger.error('Error en recalculateBalanceKPIByTransaction', parseError(error))
     }
   }
 
