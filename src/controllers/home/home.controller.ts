@@ -7,7 +7,7 @@ import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
-import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsLoan, getKpisGlobalBalance, getKpisLast6MonthsBalance, getLoanSummary, getTrendKpi } from './home.auxiliar'
+import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsPayable, getKpisGlobalBalance, getKpisLast6MonthsBalance, getPayableSummary, getTrendKpi } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.user_id) {
@@ -137,17 +137,17 @@ export const apiForGettingCashSummary: RequestHandler = async (req: Request, res
   }
 }
 
-export const apiForGettingLoanSummary: RequestHandler = async (req: Request, res: Response) => {
+export const apiForGettingPayableSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
-    const loanSummary = await getLoanSummary(auth_req)
+    const payableSummary = await getPayableSummary(auth_req)
     res.json({
       availableYearsKpi,
-      loanSummary,
+      payableSummary,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingLoanSummary:', parseError(error))
+    logger.error('Error en apiForGettingPayableSummary:', parseError(error))
     res.json({ message: 'Error' })
   }
 }

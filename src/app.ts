@@ -5,7 +5,7 @@ import path from 'path'
 import { sessionStore } from './config/session-store'
 import { apiLimiter } from './config/rate-limiter'
 import { csrfProtection, csrfTokenMiddleware } from './middlewares/csrf.middleware'
-import { injectLoanBalance } from './middlewares/inject-loan-balance.middleware'
+import { injectPayableBalance } from './middlewares/inject-payable-balance.middleware'
 import { injectNetBalance } from './middlewares/inject-net-balance.middleware'
 import { httpLogger } from './middlewares/logger.middleware'
 import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
@@ -14,9 +14,9 @@ import authRoutes from './routes/auth.route'
 import categoryGroupRoutes from './routes/category-group.route'
 import categoryRoutes from './routes/category.route'
 import homeRoutes from './routes/home.route'
-import loanGroupRoutes from './routes/loan-group.route'
-import loanRoutes from './routes/loan.route'
-import paymentRoutes from './routes/loan-payment.route'
+import payableGroupRoutes from './routes/payable-group.route'
+import payableRoutes from './routes/payable.route'
+import paymentRoutes from './routes/payable-payment.route'
 import transactionRoutes from './routes/transaction.route'
 
 export const app = express()
@@ -99,7 +99,7 @@ protectedRouter.use('/accounts', accountRoutes)
 protectedRouter.use('/categories', categoryRoutes)
 protectedRouter.use('/category-groups', categoryGroupRoutes)
 protectedRouter.use('/transactions', transactionRoutes)
-protectedRouter.use('/loans', injectLoanBalance, loanRoutes)
-protectedRouter.use('/loan-groups', loanGroupRoutes)
-protectedRouter.use('/payments', injectLoanBalance, paymentRoutes)
+protectedRouter.use('/payables', injectPayableBalance, payableRoutes)
+protectedRouter.use('/payable-groups', payableGroupRoutes)
+protectedRouter.use('/payments', injectPayableBalance, paymentRoutes)
 app.use(protectedRouter)

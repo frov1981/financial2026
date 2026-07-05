@@ -15,20 +15,20 @@ export type CategoryGroupFormMode = 'insert' | 'update' | 'delete'
 type CategoryGroupFieldMatrix = Record<string, CategoryGroupFieldMode>
 type CategoryGroupFormMatrix = Record<CategoryGroupFormMode, CategoryGroupFieldMatrix>
 
-export type LoanFieldMode = 'hidden' | 'readonly' | 'editable'
-export type LoanFormMode = 'insert' | 'update' | 'delete'
-type LoanFieldMatrix = Record<string, LoanFieldMode>
-type LoanFormMatrix = Record<LoanFormMode, LoanFieldMatrix>
+export type PayableFieldMode = 'hidden' | 'readonly' | 'editable'
+export type PayableFormMode = 'insert' | 'update' | 'delete'
+type PayableFieldMatrix = Record<string, PayableFieldMode>
+type PayableFormMatrix = Record<PayableFormMode, PayableFieldMatrix>
 
-export type LoanGroupFieldMode = 'hidden' | 'readonly' | 'editable'
-export type LoanGroupFormMode = 'insert' | 'update' | 'delete'
-type LoanGroupFieldMatrix = Record<string, LoanGroupFieldMode>
-type LoanGroupFormMatrix = Record<LoanGroupFormMode, LoanGroupFieldMatrix>
+export type PayableGroupFieldMode = 'hidden' | 'readonly' | 'editable'
+export type PayableGroupFormMode = 'insert' | 'update' | 'delete'
+type PayableGroupFieldMatrix = Record<string, PayableGroupFieldMode>
+type PayableGroupFormMatrix = Record<PayableGroupFormMode, PayableGroupFieldMatrix>
 
-export type PaymentFieldMode = 'hidden' | 'readonly' | 'editable'
-export type PaymentFormMode = 'insert' | 'update' | 'delete'
-type PaymentFieldMatrix = Record<string, PaymentFieldMode>
-type PaymentFormMatrix = Record<PaymentFormMode, PaymentFieldMatrix>
+export type PayablePaymentFieldMode = 'hidden' | 'readonly' | 'editable'
+export type PayablePaymentFormMode = 'insert' | 'update' | 'delete'
+type PayablePaymentFieldMatrix = Record<string, PayablePaymentFieldMode>
+type PayablePaymentFormMatrix = Record<PayablePaymentFormMode, PayablePaymentFieldMatrix>
 
 export type TransactionFieldMode = 'hidden' | 'readonly' | 'editable'
 export type TransactionFormMode = 'insert' | 'update' | 'delete'

@@ -96,7 +96,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       category = repo_category.create({
         user: { id: auth_req.user.id } as any,
         type: req.body.type,
-        type_for_loan: req.body.type_for_loan,
+        type_for_payable: req.body.type_for_payable,
         name: req.body.name,
         category_group: selected_group,
         is_active: true
@@ -111,7 +111,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     const clean = sanitizeByPolicy(mode, req.body)
     if (clean.name !== undefined) category.name = clean.name
     if (clean.type !== undefined) category.type = clean.type
-    if (clean.type_for_loan !== undefined) { category.type_for_loan = clean.type_for_loan === '' ? null : clean.type_for_loan }
+    if (clean.type_for_payable !== undefined) { category.type_for_payable = clean.type_for_payable === '' ? null : clean.type_for_payable }
     if (clean.category_group_id !== undefined) { category.category_group = await getCategoryGroupById(auth_req, Number(clean.category_group_id)) }
     if (clean.is_active !== undefined) { category.is_active = parseBoolean(clean.is_active) }
     const errors = await validateCategory(auth_req, category)

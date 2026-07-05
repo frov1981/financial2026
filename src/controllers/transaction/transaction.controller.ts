@@ -64,10 +64,10 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .leftJoinAndSelect('t.account', 'account')
       .leftJoinAndSelect('t.to_account', 'to_account')
       .leftJoinAndSelect('t.category', 'category')
-      .leftJoinAndSelect('t.loan', 'loan')
-      .leftJoinAndSelect('t.loan_payment', 'loan_payment')
-      .leftJoinAndSelect('loan_payment.loan', 'paymentLoan')
-      .leftJoinAndSelect('paymentLoan.category', 'paymentLoanCategory')
+      .leftJoinAndSelect('t.payable', 'payable')
+      .leftJoinAndSelect('t.payable_payment', 'payable_payment')
+      .leftJoinAndSelect('payable_payment.payable', 'paymentPayable')
+      .leftJoinAndSelect('paymentPayable.category', 'paymentPayableCategory')
       .where('t.user_id = :user_id', { user_id })
 
     if (category_id) {

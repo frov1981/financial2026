@@ -17,8 +17,8 @@ const query_base = `
 SELECT
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income' THEN t.amount ELSE 0 END), 0) AS incomes,
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'expense' THEN t.amount ELSE 0 END), 0) AS expenses,
-  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income_for_loan' THEN t.amount ELSE 0 END), 0) AS loans,
-  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'payment_for_loan' THEN t.amount ELSE 0 END), 0) AS payments,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income_for_payable' THEN t.amount ELSE 0 END), 0) AS payables,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'payment_for_payable' THEN t.amount ELSE 0 END), 0) AS payable_payments,
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'saving' THEN t.amount ELSE 0 END), 0) AS savings,
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals
  FROM transactions t
@@ -84,13 +84,13 @@ export class KpiCacheService {
 
       const incomes = Number(r.incomes || 0)
       const expenses = Number(r.expenses || 0)
-      const loans = Number(r.loans || 0)
-      const payments = Number(r.payments || 0)
+      const payables = Number(r.payables || 0)
+      const payable_payments = Number(r.payable_payments || 0)
       const savings = Number(r.savings || 0)
       const withdrawals = Number(r.withdrawals || 0)
 
-      const total_inflows = money(incomes + loans)
-      const total_outflows = money(expenses + payments)
+      const total_inflows = money(incomes + payables)
+      const total_outflows = money(expenses + payable_payments)
       const net_cash_flow = money(total_inflows - total_outflows)
       const net_savings = money(savings - withdrawals)
       const available_balance = money(net_cash_flow - net_savings)
@@ -101,15 +101,15 @@ export class KpiCacheService {
         where: { user: { id: user_id }, period_year, period_month },
         relations: ['user']
       })
-      logger.debug('KPI_COMPARE', { period_year, period_month, old_available_balance: existing?.available_balance, old_incomes: existing?.incomes, old_expenses: existing?.expenses, old_loans: existing?.loans, old_payments: existing?.payments, old_savings: existing?.savings, old_withdrawals: existing?.withdrawals, new_available_balance: available_balance, new_incomes: incomes, new_expenses: expenses, new_loans: loans, new_payments: payments, new_savings: savings, new_withdrawals: withdrawals })
+      logger.debug('KPI_COMPARE', { period_year, period_month, old_available_balance: existing?.available_balance, old_incomes: existing?.incomes, old_expenses: existing?.expenses, old_payables: existing?.payables, old_payablePayments: existing?.payable_payments, old_savings: existing?.savings, old_withdrawals: existing?.withdrawals, new_available_balance: available_balance, new_incomes: incomes, new_expenses: expenses, new_payables: payables, new_payablePayments: payable_payments, new_savings: savings, new_withdrawals: withdrawals })
 
       const payload = {
         incomes,
         expenses,
         savings,
         withdrawals,
-        loans,
-        payments,
+        payables,
+        payable_payments,
         total_inflows,
         total_outflows,
         net_cash_flow,
@@ -118,7 +118,7 @@ export class KpiCacheService {
         principal_breakdown: 0,
         interest_breakdown: 0
       }
-      logger.debug('KPI_MONTH_AFTER', { user_id, period_year, period_month, incomes, expenses, loans, payments, savings, withdrawals, available_balance })
+      logger.debug('KPI_MONTH_AFTER', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
 
       if (existing) {
         await repo.update({ id: existing.id }, payload)
@@ -130,7 +130,7 @@ export class KpiCacheService {
           ...payload
         })
       }
-      logger.debug('KPI_MONTH_BEFORE', { user_id, period_year, period_month, incomes, expenses, loans, payments, savings, withdrawals, available_balance })
+      logger.debug('KPI_MONTH_BEFORE', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
       logger.info(`KPI MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
 
     } catch (error: any) {
@@ -175,13 +175,13 @@ export class KpiCacheService {
 
         const incomes = Number(r.incomes || 0)
         const expenses = Number(r.expenses || 0)
-        const loans = Number(r.loans || 0)
-        const payments = Number(r.payments || 0)
+        const payables = Number(r.payables || 0)
+        const payable_payments = Number(r.payable_payments || 0)
         const savings = Number(r.savings || 0)
         const withdrawals = Number(r.withdrawals || 0)
 
-        const total_inflows = money(incomes + loans)
-        const total_outflows = money(expenses + payments)
+        const total_inflows = money(incomes + payables)
+        const total_outflows = money(expenses + payable_payments)
         const net_cash_flow = money(total_inflows - total_outflows)
         const net_savings = money(savings - withdrawals)
         const available_balance = money(net_cash_flow - net_savings)
@@ -194,8 +194,8 @@ export class KpiCacheService {
           expenses,
           savings,
           withdrawals,
-          loans,
-          payments,
+          payables,
+          payable_payments,
           total_inflows,
           total_outflows,
           net_cash_flow,

@@ -1,13 +1,13 @@
-import { In, IsNull, MoreThanOrEqual, Not } from "typeorm"
+import { In, MoreThanOrEqual } from "typeorm"
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Account } from "../entities/Account.entity"
-import { LoanGroup } from "../entities/LoanGroup.entity"
+import { PayableGroup } from "../entities/PayableGroup.entity"
 import { AuthRequest } from "../types/auth-request"
 import { Category } from "../entities/Category.entity"
 import { CategoryGroup } from "../entities/CategoryGroups.entity"
 
-export const getActiveParentLoansByUser = async (auth_req: AuthRequest): Promise<LoanGroup[]> => {
-  const repo = AppDataSource.getRepository(LoanGroup)
+export const getActiveParentPayablesByUser = async (auth_req: AuthRequest): Promise<PayableGroup[]> => {
+  const repo = AppDataSource.getRepository(PayableGroup)
 
   return await repo.find({
     where: {
@@ -17,6 +17,8 @@ export const getActiveParentLoansByUser = async (auth_req: AuthRequest): Promise
     order: { name: 'ASC' }
   })
 }
+
+export const getActiveParentPaymentsByUser = getActiveParentPayablesByUser
 
 export const getActiveParentCategoriesByUser = async (auth_req: AuthRequest): Promise<CategoryGroup[]> => {
   const repo = AppDataSource.getRepository(CategoryGroup)
@@ -70,28 +72,17 @@ export const getActiveCategoriesByUser_Deprecated = async (authReq: AuthRequest)
   return categories
 }
 
-export const getActiveCategoriesForLoansByUser = async (authReq: AuthRequest): Promise<Category[]> => {
+export const getActiveCategoriesForPayablesByUser = async (authReq: AuthRequest): Promise<Category[]> => {
   const repo = AppDataSource.getRepository(Category)
   const categories = await repo.find({
     where: {
       user: { id: authReq.user.id },
       is_active: true,
-      type_for_loan: 'loan'
+      type_for_payable: 'payable_payment'
     },
     order: { name: 'ASC' }
   })
   return categories
 }
 
-export const getActiveCategoriesForPaymentsByUser = async (authReq: AuthRequest): Promise<Category[]> => {
-  const repo = AppDataSource.getRepository(Category)
-  const categories = await repo.find({
-    where: {
-      user: { id: authReq.user.id },
-      is_active: true,
-      type_for_loan: 'payment'
-    },
-    order: { name: 'ASC' }
-  })
-  return categories
-}
+export const getActiveCategoriesForPaymentsByUser = getActiveCategoriesForPayablesByUser

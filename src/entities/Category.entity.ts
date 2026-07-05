@@ -1,8 +1,8 @@
 import { IsBoolean, IsIn, IsNotEmpty, IsOptional } from 'class-validator'
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { CategoryGroup } from './CategoryGroups.entity'
-import { Loan } from './Loan.entity'
-import { LoanPayment } from './LoanPayment.entity'
+import { Payable } from './Payable.entity'
+import { PayablePayment } from './PayablePayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
 import { Receivable } from './Receivable.entity'
@@ -28,8 +28,8 @@ export class Category {
 
   @Column({ type: 'varchar' })
   @IsOptional()
-  @IsIn(['loan', 'payment'], { message: 'El tipo debe ser loan o payment o vacío' })
-  type_for_loan!: 'loan' | 'payment' | 'receivable' | 'collection' | null
+  @IsIn(['payable', 'payable_payment'], { message: 'El tipo debe ser payable o payable_payment o vacío' })
+  type_for_payable!: 'payable' | 'payable_payment' | 'receivable' | 'collection' | null
 
   @Column({ default: true })
   @IsBoolean({ message: 'El estado debe ser true o false' })
@@ -38,11 +38,11 @@ export class Category {
   @OneToMany(() => Transaction, transaction => transaction.category)
   transactions!: Transaction[]
 
-  @OneToMany(() => Loan, loan => loan.category)
-  loans!: Loan[]
+  @OneToMany(() => Payable, payable => payable.category)
+  payables!: Payable[]
 
-  @OneToMany(() => LoanPayment, payment => payment.category)
-  loan_payments!: LoanPayment[]
+  @OneToMany(() => PayablePayment, payment => payment.category)
+  payable_payments!: PayablePayment[]
 
   @ManyToOne(() => CategoryGroup, group => group.categories)
   @JoinColumn({ name: 'category_group_id', foreignKeyConstraintName: 'fk_categories_group' })

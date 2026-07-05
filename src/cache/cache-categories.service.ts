@@ -10,7 +10,7 @@ export type DTOCategory = {
     id: number
     name: string
     type: 'income' | 'expense'
-    type_for_loan: 'loan' | 'payment' | 'receivable' | 'collection' | null
+    type_for_payable: 'payable' | 'payable_payment' | 'receivable' | 'collection' | null
     is_active: boolean
     category_group: { id: number, name: string } | null
     transactions_count: number
@@ -104,17 +104,17 @@ export const getActiveExpenseCategoriesIncludeCurrentCategory = async (auth_req:
     return active_expense_categories
 }
 
-export const getActiveLoanCategories = async (auth_req: AuthRequest): Promise<Category[]> => {
+export const getActivePayableCategories = async (auth_req: AuthRequest): Promise<Category[]> => {
     const user_id = auth_req.user.id
     const categories: Category[] = await getCategoriesBase(user_id)
-    const active_loan_categories: Category[] = categories.filter(category => category.is_active && category.type_for_loan === 'loan')
-    return active_loan_categories
+    const active_payable_categories: Category[] = categories.filter(category => category.is_active && category.type_for_payable === 'payable')
+    return active_payable_categories
 }
 
 export const getActivePaymentCategories = async (auth_req: AuthRequest): Promise<Category[]> => {
     const user_id = auth_req.user.id
     const categories: Category[] = await getCategoriesBase(user_id)
-    const active_payment_categories: Category[] = categories.filter(category => category.is_active && category.type_for_loan === 'payment')
+    const active_payment_categories: Category[] = categories.filter(category => category.is_active && category.type_for_payable === 'payable_payment')
     return active_payment_categories
 }
 
@@ -147,7 +147,7 @@ export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCat
         id: category.id,
         name: category.name,
         type: category.type,
-        type_for_loan: category.type_for_loan,
+        type_for_payable: category.type_for_payable,
         is_active: category.is_active,
         category_group: category.category_group ? { id: category.category_group.id, name: category.category_group.name } : null,
         transactions_count: Number(result.raw[index].transactions_count)

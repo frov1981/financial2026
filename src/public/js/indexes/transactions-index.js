@@ -142,12 +142,12 @@ function renderRow(transaction) {
 
   let action_name = ""
   let action_id = 0
-  if (transaction.loan) {
-    action_name = "loan"
-    action_id = transaction.loan.id
-  } else if (transaction.loan_payment) {
+  if (transaction.Payable) {
+    action_name = "Payable"
+    action_id = transaction.Payable.id
+  } else if (transaction.Payable_payment) {
     action_name = "payment"
-    action_id = transaction.loan_payment.id
+    action_id = transaction.Payable_payment.id
   } else {
     action_name = "transaction"
     action_id = transaction.id
@@ -200,19 +200,19 @@ function renderRow(transaction) {
         </div>
         ` : ''
     }
-      ${transaction.loan_payment?.loan?.name
+      ${transaction.Payable_payment?.Payable?.name
       ? `
         <div class="grouped-icon-line">
           <span class="grouped-icon">${iconGrouped()}</span>
-          <span>${transaction.loan_payment?.loan?.name || '-'}</span>
+          <span>${transaction.Payable_payment?.Payable?.name || '-'}</span>
         </div>
         ` : ''
     }
-      ${transaction.loan_payment?.loan?.category?.name
+      ${transaction.Payable_payment?.Payable?.category?.name
       ? `
         <div class="grouped-icon-line">
           <span class="grouped-icon">${iconGrouped()}</span>
-          <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
+          <span>${transaction.Payable_payment?.Payable?.category?.name || '-'}</span>
         </div>
         ` : ''
     }
@@ -267,12 +267,12 @@ function renderCard(transaction) {
 
   let action_name = ""
   let action_id = 0
-  if (transaction.loan) {
-    action_name = "loan"
-    action_id = transaction.loan.id
-  } else if (transaction.loan_payment) {
+  if (transaction.Payable) {
+    action_name = "Payable"
+    action_id = transaction.Payable.id
+  } else if (transaction.Payable_payment) {
     action_name = "payment"
-    action_id = transaction.loan_payment.id
+    action_id = transaction.Payable_payment.id
   } else {
     action_name = "transaction"
     action_id = transaction.id
@@ -359,20 +359,20 @@ function renderCard(transaction) {
             </div>
           ` : ''
     }
-          ${transaction.loan_payment?.loan?.name
+          ${transaction.Payable_payment?.Payable?.name
       ? `<div class="card-category">
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconGrouped()}</span>
-                  <span>${transaction.loan_payment?.loan?.name || '-'}</span>
+                  <span>${transaction.Payable_payment?.Payable?.name || '-'}</span>
                 </div>
               </div>
             ` : ''
     }
-          ${transaction.loan_payment?.loan?.category?.name
+          ${transaction.Payable_payment?.Payable?.category?.name
       ? `<div class="card-category">
                 <div class="grouped-icon-line">
                   <span class="grouped-icon">${iconGrouped()}</span>
-                  <span>${transaction.loan_payment?.loan?.category?.name || '-'}</span>
+                  <span>${transaction.Payable_payment?.Payable?.category?.name || '-'}</span>
                 </div>
               </div>
             ` : ''
@@ -478,8 +478,8 @@ function goToRouteUpdate(action_name, action_id) {
     params.set('category_id', CATEGORY_ID)
     params.set('from', 'categories')
   }
-  if (action_name === "loan") {
-    location.href = `/loans/update/${action_id}?${params.toString()}`
+  if (action_name === "Payable") {
+    location.href = `/Payables/update/${action_id}?${params.toString()}`
   } else if (action_name === "payment") {
     location.href = `/payments/update/${action_id}?${params.toString()}`
   } else {
@@ -493,8 +493,8 @@ function goToRouteClone(action_name, action_id) {
     params.set('category_id', CATEGORY_ID)
     params.set('from', 'categories')
   }
-  if (action_name === "loan") {
-    location.href = `/loans/clone/${action_id}?${params.toString()}`
+  if (action_name === "Payable") {
+    location.href = `/Payables/clone/${action_id}?${params.toString()}`
   } else if (action_name === "payment") {
     location.href = `/payments/clone/${action_id}?${params.toString()}`
   } else {
@@ -508,8 +508,8 @@ function goToRouteDelete(action_name, action_id) {
     params.set('category_id', CATEGORY_ID)
     params.set('from', 'categories')
   }
-  if (action_name === "loan") {
-    location.href = `/loans/delete/${action_id}?${params.toString()}`
+  if (action_name === "Payable") {
+    location.href = `/Payables/delete/${action_id}?${params.toString()}`
   } else if (action_name === "payment") {
     location.href = `/payments/delete/${action_id}?${params.toString()}`
   } else {

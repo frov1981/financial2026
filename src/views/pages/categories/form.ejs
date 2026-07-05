@@ -70,29 +70,29 @@
     <% } %>
 
     <!-- Tipo de categoría -->
-    <% if (!isHidden('type_for_loan')) { %>
+    <% if (!isHidden('type_for_payable')) { %>
     <div class="mb-4">
-      <label class="block font-medium mb-1">Tipo de categoría para préstamos</label>
+      <label class="block font-medium mb-1">Tipo de categoría para Cuentas por Pagar</label>
 
       <div class="flex gap-6">
         <label class="flex items-center gap-1">
           <input
             type="radio"
-            name="type_for_loan"
-            value="loan"
-            <%= category?.type_for_loan === 'loan' ? 'checked' : '' %>
-            <%= isReadOnly('type_for_loan') ? 'disabled' : '' %>
+            name="type_for_payable"
+            value="payable"
+            <%= category?.type_for_payable === 'payable' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable') ? 'disabled' : '' %>
           >
-          Para Préstamos
+          Para Cuentas por Pagar
         </label>
 
         <label class="flex items-center gap-1">
           <input
             type="radio"
-            name="type_for_loan"
+            name="type_for_payable"
             value="payment"
-            <%= category?.type_for_loan === 'payment' ? 'checked' : '' %>
-            <%= isReadOnly('type_for_loan') ? 'disabled' : '' %>
+            <%= category?.type_for_payable === 'payment' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable') ? 'disabled' : '' %>
           >
           Para Pagos
         </label>
@@ -100,21 +100,21 @@
         <label class="flex items-center gap-1">
           <input
             type="radio"
-            name="type_for_loan"
+            name="type_for_payable"
             value=""
-            <%= category?.type_for_loan == null ? 'checked' : '' %>
-            <%= isReadOnly('type_for_loan') ? 'disabled' : '' %>
+            <%= category?.type_for_payable == null ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable') ? 'disabled' : '' %>
           >
           Sin tipo
         </label>
       </div>
 
-      <% if (isReadOnly('type_for_loan')) { %>
-        <input type="hidden" name="type_for_loan" value="<%= category?.type_for_loan || '' %>">
+      <% if (isReadOnly('type_for_payable')) { %>
+        <input type="hidden" name="type_for_payable" value="<%= category?.type_for_payable || '' %>">
       <% } %>
 
-      <% if (errors?.type_for_loan) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.type_for_loan %></p>
+      <% if (errors?.type_for_payable) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.type_for_payable %></p>
       <% } %>
     </div>
     <% } %>
@@ -137,7 +137,7 @@
     </div>
     <% } %>
 
-    <!-- Grupo de Prestamos -->
+    <!-- Grupo de Cuentas por Pagar -->
      <% if (!isHidden('category_group_id')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Grupo</label>

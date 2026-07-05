@@ -13,18 +13,18 @@ type CashFlowSummary = {
   net_cash_flow: number[]
 }
 
-type LoanFlowSummary = {
+type PayableFlowSummary = {
   labels: string[]
-  total_loans: number[]
-  total_payments: number[]
+  total_payables: number[]
+  total_payable_payments: number[]
   net_balance: number[]
 }
 
 const base_kpi = {
   incomes: 0,
   expenses: 0,
-  loans: 0,
-  payments: 0,
+  payables: 0,
+  payable_payments: 0,
   savings: 0,
   withdrawals: 0,
   total_inflows: 0,
@@ -86,8 +86,8 @@ export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promis
     expenses: prev.expenses + current.expenses,
     savings: prev.savings + current.savings,
     withdrawals: prev.withdrawals + current.withdrawals,
-    loans: prev.loans + current.loans,
-    payments: prev.payments + current.payments,
+    payables: prev.payables + current.payables,
+    payable_payments: prev.payable_payments + current.payable_payments,
     total_inflows: prev.total_inflows + current.total_inflows,
     total_outflows: prev.total_outflows + current.total_outflows,
     net_cash_flow: prev.net_cash_flow + current.net_cash_flow,
@@ -171,8 +171,8 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
     acc.expenses += Number(row.expenses)
     acc.savings += Number(row.savings)
     acc.withdrawals += Number(row.withdrawals)
-    acc.loans += Number(row.loans)
-    acc.payments += Number(row.payments)
+    acc.payables += Number(row.payables)
+    acc.payable_payments += Number(row.payable_payments)
     acc.total_inflows += Number(row.total_inflows)
     acc.total_outflows += Number(row.total_outflows)
     acc.net_cash_flow += Number(row.net_cash_flow)
@@ -288,17 +288,17 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
   return result
 }
 
-export const getHomeLoanFlowSummaryCache = async (auth_req: AuthRequest): Promise<LoanFlowSummary> => {
+export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Promise<PayableFlowSummary> => {
   const user_id = auth_req.user.id
-  const year = Number(auth_req.query.year_period_for_loan_summ || 0)
+  const year = Number(auth_req.query.year_period_for_payable_summ || 0)
 
-  const cache_key = cacheKeys.homeLoanFlowSummary(user_id, year)
-  const cached = cache.get<LoanFlowSummary>(cache_key)
+  const cache_key = cacheKeys.homePayableFlowSummary(user_id, year)
+  const cached = cache.get<PayableFlowSummary>(cache_key)
   if (cached !== undefined) return cached
 
   const labels: string[] = []
-  const total_loans: number[] = []
-  const total_payments: number[] = []
+  const total_payables: number[] = []
+  const total_payable_payments: number[] = []
   const net_balance: number[] = []
 
   let available_years = cache.get<number[]>(cacheKeys.homeAvailableYearsKpi(user_id)) || []
@@ -308,8 +308,8 @@ export const getHomeLoanFlowSummaryCache = async (auth_req: AuthRequest): Promis
     for (const y of available_years) {
       if (y === 0) continue
 
-      let loans = 0
-      let payments = 0
+      let payables = 0
+      let payable_payments = 0
       let net = 0
 
       for (let month = 1; month <= 12; month++) {
@@ -322,14 +322,14 @@ export const getHomeLoanFlowSummaryCache = async (auth_req: AuthRequest): Promis
           cache.set(kpi_key, kpi)
         }
 
-        loans += kpi?.loans ?? 0
-        payments += kpi?.payments ?? 0
-        net += (kpi?.loans ?? 0) - (kpi?.payments ?? 0)
+        payables += kpi?.payables ?? 0
+        payable_payments += kpi?.payable_payments ?? 0
+        net += (kpi?.payables ?? 0) - (kpi?.payable_payments ?? 0)
       }
 
       labels.push(String(y))
-      total_loans.push(loans)
-      total_payments.push(payments)
+      total_payables.push(payables)
+      total_payable_payments.push(payable_payments)
       net_balance.push(net)
     }
   } else {
@@ -340,16 +340,16 @@ export const getHomeLoanFlowSummaryCache = async (auth_req: AuthRequest): Promis
       const kpi = cache.get<KpiBalance>(kpi_key)
 
       labels.push(month_labels[month - 1])
-      total_loans.push(kpi?.loans ?? 0)
-      total_payments.push(kpi?.payments ?? 0)
-      net_balance.push((kpi?.loans ?? 0) - (kpi?.payments ?? 0))
+      total_payables.push(kpi?.payables ?? 0)
+      total_payable_payments.push(kpi?.payable_payments ?? 0)
+      net_balance.push((kpi?.payables ?? 0) - (kpi?.payable_payments ?? 0))
     }
   }
 
-  const result: LoanFlowSummary = {
+  const result: PayableFlowSummary = {
     labels,
-    total_loans,
-    total_payments,
+    total_payables,
+    total_payable_payments,
     net_balance
   }
 

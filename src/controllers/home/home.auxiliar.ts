@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon'
-import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomeLoanFlowSummaryCache, getHomeTrendKpiCache } from '../../cache/cache-home.service'
+import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomePayableFlowSummaryCache, getHomeTrendKpiCache } from '../../cache/cache-home.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
-import { Loan } from "../../entities/Loan.entity"
-import { LoanPayment } from "../../entities/LoanPayment.entity"
+import { Payable } from "../../entities/Payable.entity"
+import { PayablePayment } from "../../entities/PayablePayment.entity"
 import { Transaction } from "../../entities/Transaction.entity"
 import { AuthRequest } from "../../types/auth-request"
 
@@ -222,12 +222,12 @@ export const getKpisLast6MonthsBalance = async (auth_req: AuthRequest) => {
 }
 
 /* ============================================================================
-   Servicio: Resumen anual de préstamos (total prestado, pagado, intereses, saldo)
+   Servicio: Resumen anual de Cuentas por Pagar (total prestado, pagado, intereses, saldo)
 ============================================================================ */
-export const getChartDataLast6YearsLoan = async (auth_req: AuthRequest) => {
+export const getChartDataLast6YearsPayable = async (auth_req: AuthRequest) => {
   const user_id = auth_req.user.id
-  const loan_repo = AppDataSource.getRepository(Loan)
-  const payment_repo = AppDataSource.getRepository(LoanPayment)
+  const payable_repo = AppDataSource.getRepository(Payable)
+  const payment_repo = AppDataSource.getRepository(PayablePayment)
   const last_years = 5
 
   /* ============================
@@ -239,59 +239,59 @@ export const getChartDataLast6YearsLoan = async (auth_req: AuthRequest) => {
   /* ============================
      Total prestado y saldo por año
   ============================ */
-  const loan_rows = await loan_repo
-    .createQueryBuilder('l')
+  const payable_rows = await payable_repo
+    .createQueryBuilder('p')
     .select([
-      "YEAR(l.start_date) AS year",
-      "SUM(l.total_amount) AS total_loan",
-      "SUM(l.balance) AS balance"
+      "YEAR(p.start_date) AS year",
+      "SUM(p.total_amount) AS total_payable",
+      "SUM(p.balance) AS balance"
     ])
-    .where("l.user_id = :user_id", { user_id })
-    .andWhere("l.is_active = 1")
-    .groupBy("YEAR(l.start_date)")
-    .orderBy("YEAR(l.start_date)", "ASC")
-    .getRawMany<{ year: string, total_loan: string, balance: string }>()
+    .where("p.user_id = :user_id", { user_id })
+    .andWhere("p.is_active = 1")
+    .groupBy("YEAR(p.start_date)")
+    .orderBy("YEAR(p.start_date)", "ASC")
+    .getRawMany<{ year: string, total_payable: string, balance: string }>()
 
   /* ============================
      Total pagado e intereses por año
   ============================ */
   const payment_rows = await payment_repo
     .createQueryBuilder('p')
-    .innerJoin('p.loan', 'l')
+    .innerJoin('p.payable', 'payable')
     .select([
-      "YEAR(l.start_date) AS year",
+      "YEAR(payable.start_date) AS year",
       "SUM(p.principal_paid) AS total_paid",
       "SUM(p.interest_paid) AS total_interest"
     ])
-    .where("l.user_id = :user_id", { user_id })
-    .andWhere("l.is_active = 1")
-    .groupBy("YEAR(l.start_date)")
-    .orderBy("YEAR(l.start_date)", "ASC")
+    .where("payable.user_id = :user_id", { user_id })
+    .andWhere("payable.is_active = 1")
+    .groupBy("YEAR(payable.start_date)")
+    .orderBy("YEAR(payable.start_date)", "ASC")
     .getRawMany<{ year: string, total_paid: string, total_interest: string }>()
 
   /* ============================
      Normalización: asegurar todos los años
   ============================ */
   const labels: string[] = []
-  const total_loan: number[] = []
+  const total_payable: number[] = []
   const total_paid: number[] = []
   const total_interest: number[] = []
   const balance: number[] = []
 
   years.forEach(y => {
-    const loanRow = loan_rows.find(r => Number(r.year) === y)
+    const payableRow = payable_rows.find(r => Number(r.year) === y)
     const payRow = payment_rows.find(r => Number(r.year) === y)
 
     labels.push(String(y))
-    total_loan.push(loanRow ? Number(loanRow.total_loan) : 0)
-    balance.push(loanRow ? Number(loanRow.balance) : 0)
+    total_payable.push(payableRow ? Number(payableRow.total_payable) : 0)
+    balance.push(payableRow ? Number(payableRow.balance) : 0)
     total_paid.push(payRow ? Number(payRow.total_paid) : 0)
     total_interest.push(payRow ? Number(payRow.total_interest) : 0)
   })
 
   return {
     labels,
-    total_loan,
+    total_payable,
     total_paid,
     total_interest,
     balance
@@ -361,26 +361,26 @@ export const getKpisGlobalBalance = async (auth_req: AuthRequest) => {
   ============================ */
   const net_balance = net_worth - available_savings
 
-  const loan_repo = AppDataSource.getRepository(Loan)
+  const payable_repo = AppDataSource.getRepository(Payable)
 
   /* ============================
-     KPIs Préstamos
+     KPIs Cuentas por Pagar
   ============================ */
-  const loan_data = await loan_repo
-    .createQueryBuilder('l')
+  const payable_data = await payable_repo
+    .createQueryBuilder('p')
     .select([
-      "SUM(l.total_amount) AS total_loan",
-      "SUM(l.principal_paid) AS total_principal_paid",
-      "SUM(l.interest_paid) AS total_interest_paid",
-      "SUM(l.balance) AS total_loan_balance"
+      "SUM(p.total_amount) AS total_payable",
+      "SUM(p.principal_paid) AS total_principal_paid",
+      "SUM(p.interest_paid) AS total_interest_paid",
+      "SUM(p.balance) AS totat_payable_balance"
     ])
-    .where('l.user_id = :user_id', { user_id })
+    .where('p.user_id = :user_id', { user_id })
     .getRawOne()
 
-  const total_loan = Number(loan_data?.total_loan || 0)
-  const total_principal_paid = Number(loan_data?.total_principal_paid || 0)
-  const total_interest_paid = Number(loan_data?.total_interest_paid || 0)
-  const total_loan_balance = Number(loan_data?.total_loan_balance || 0)
+  const total_payable = Number(payable_data?.total_payable || 0)
+  const total_principal_paid = Number(payable_data?.total_principal_paid || 0)
+  const total_interest_paid = Number(payable_data?.total_interest_paid || 0)
+  const total_payable_balance = Number(payable_data?.total_payable_balance || 0)
 
   return {
     total_income,
@@ -390,10 +390,10 @@ export const getKpisGlobalBalance = async (auth_req: AuthRequest) => {
     net_worth,
     available_savings,
     net_balance,
-    total_loan,
+    total_payable,
     total_principal_paid,
     total_interest_paid,
-    total_loan_balance
+    total_payable_balance
   }
 }
 
@@ -402,7 +402,7 @@ export const getKpisLastYearBalance = async (auth_req: AuthRequest) => {
   const timezone = auth_req.timezone ?? 'UTC'
   const transaction_repo = AppDataSource.getRepository(Transaction)
   const account_repo = AppDataSource.getRepository(Account)
-  const loan_repo = AppDataSource.getRepository(Loan)
+  const payable_repo = AppDataSource.getRepository(Payable)
 
   const fromDateUTC = DateTime.now()
     .setZone(timezone)
@@ -456,24 +456,24 @@ export const getKpisLastYearBalance = async (auth_req: AuthRequest) => {
   const net_balance = net_worth - available_savings
 
   /* ============================
-     Préstamos
+     Cuentas por Pagar
   ============================ */
-  const loan_data = await loan_repo
-    .createQueryBuilder('l')
+  const payable_data = await payable_repo
+    .createQueryBuilder('p')
     .select([
-      "SUM(l.total_amount) AS total_loan",
-      "SUM(l.principal_paid) AS total_principal_paid",
-      "SUM(l.interest_paid) AS total_interest_paid",
-      "SUM(l.balance) AS total_loan_balance"
+      "SUM(p.total_amount) AS total_payable",
+      "SUM(p.principal_paid) AS total_principal_paid",
+      "SUM(p.interest_paid) AS total_interest_paid",
+      "SUM(p.balance) AS total_payable_balance"
     ])
-    .where('l.user_id = :user_id', { user_id })
-    .andWhere('l.created_at >= :fromDate', { fromDate: fromDateUTC })
+    .where('p.user_id = :user_id', { user_id })
+    .andWhere('p.created_at >= :fromDate', { fromDate: fromDateUTC })
     .getRawOne()
 
-  const total_loan = Number(loan_data?.total_loan || 0)
-  const total_principal_paid = Number(loan_data?.total_principal_paid || 0)
-  const total_interest_paid = Number(loan_data?.total_interest_paid || 0)
-  const total_loan_balance = Number(loan_data?.total_loan_balance || 0)
+  const total_payable = Number(payable_data?.total_payable || 0)
+  const total_principal_paid = Number(payable_data?.total_principal_paid || 0)
+  const total_interest_paid = Number(payable_data?.total_interest_paid || 0)
+  const total_payable_balance = Number(payable_data?.total_payable_balance || 0)
 
   return {
     total_income,
@@ -483,10 +483,10 @@ export const getKpisLastYearBalance = async (auth_req: AuthRequest) => {
     net_worth,
     available_savings,
     net_balance,
-    total_loan,
+    total_payable,
     total_principal_paid,
     total_interest_paid,
-    total_loan_balance
+    total_payable_balance
   }
 }
 
@@ -516,8 +516,8 @@ export const getCashSummary = async (auth_req: AuthRequest) => {
   return rows
 }
 
-export const getLoanSummary = async (auth_req: AuthRequest) => {
-  const rows = await getHomeLoanFlowSummaryCache(auth_req)
+export const getPayableSummary = async (auth_req: AuthRequest) => {
+  const rows = await getHomePayableFlowSummaryCache(auth_req)
   return rows
 }
 

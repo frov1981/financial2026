@@ -4,8 +4,8 @@ import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToOn
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Account } from './Account.entity'
 import { Category } from './Category.entity'
-import { Loan } from './Loan.entity'
-import { LoanPayment } from './LoanPayment.entity'
+import { Payable } from './Payable.entity'
+import { PayablePayment } from './PayablePayment.entity'
 import { User } from './User.entity'
 import { Receivable } from './Receivable.entity'
 import { ReceivableCollection } from './ReceivableCollection.entity'
@@ -28,10 +28,10 @@ export class Transaction {
 
   @Column({ type: 'varchar', nullable: true })
   @IsOptional()
-  @IsIn(['income', 'expense', 'income_for_loan', 'payment_for_loan', 'saving', 'withdrawal', 'transfer'], {
+  @IsIn(['income', 'expense', 'income_for_payable', 'payment_for_payable', 'saving', 'withdrawal', 'transfer'], {
     message: 'Tipo de transacción detallado inválido'
   })
-  detailed_type?: 'income' | 'expense' | 'income_for_loan' | 'payment_for_loan' | 'saving' | 'withdrawal' | 'transfer' | null
+  detailed_type?: 'income' | 'expense' | 'income_for_payable' | 'payment_for_payable' | 'saving' | 'withdrawal' | 'transfer' | null
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_transactions_account' })
@@ -64,11 +64,11 @@ export class Transaction {
   @MaxLength(1000, { message: 'Máximo 1000 caracteres' })
   description!: string
 
-  @OneToOne(() => Loan, loan => loan.transaction, { nullable: true })
-  loan!: Loan
+  @OneToOne(() => Payable, payable => payable.transaction, { nullable: true })
+  payable!: Payable
 
-  @OneToOne(() => LoanPayment, payment => payment.transaction, { nullable: true })
-  loan_payment!: LoanPayment | null
+  @OneToOne(() => PayablePayment, payment => payment.transaction, { nullable: true })
+  payable_payment!: PayablePayment | null
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at!: Date

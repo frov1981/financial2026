@@ -6,9 +6,9 @@ import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
 import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { Category } from '../entities/Category.entity'
 import { CategoryGroup } from '../entities/CategoryGroups.entity'
-import { Loan } from '../entities/Loan.entity'
-import { LoanGroup } from '../entities/LoanGroup.entity'
-import { LoanPayment } from '../entities/LoanPayment.entity'
+import { Payable } from '../entities/Payable.entity'
+import { PayableGroup } from '../entities/PayableGroup.entity'
+import { PayablePayment } from '../entities/PayablePayment.entity'
 import { Receivable } from '../entities/Receivable.entity'
 import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
 import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
@@ -29,9 +29,9 @@ export const AppDataSource = new DataSource({
     Account,
     Category,
     CategoryGroup,
-    Loan,
-    LoanGroup,
-    LoanPayment,
+    Payable,
+    PayableGroup,
+    PayablePayment,
     Transaction,
     CacheKpiBalance,
     CacheKpiCategory,

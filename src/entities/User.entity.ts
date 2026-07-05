@@ -1,10 +1,10 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique } from 'typeorm'
 import { Account } from './Account.entity'
 import { Category } from './Category.entity'
-import { Loan } from './Loan.entity'
+import { Payable } from './Payable.entity'
 import { Transaction } from './Transaction.entity'
 import { CategoryGroup } from './CategoryGroups.entity'
-import { LoanGroup } from './LoanGroup.entity'
+import { PayableGroup } from './PayableGroup.entity'
 import { CacheKpiBalance } from './CacheKpiBalance.entity'
 import { ReceivableGroup } from './ReceivableGroup.entity'
 import { Receivable } from './Receivable.entity'
@@ -40,14 +40,14 @@ export class User {
   @OneToMany(() => Transaction, transaction => transaction.user)
   transactions!: Transaction[]
 
-  @OneToMany(() => Loan, loan => loan.user)
-  loans!: Loan[]
+  @OneToMany(() => Payable, payable => payable.user)
+  payables!: Payable[]
 
   @OneToMany(() => CategoryGroup, group => group.user)
   category_groups!: CategoryGroup[]
 
-  @OneToMany(() => LoanGroup, group => group.user)
-  loan_groups!: LoanGroup[]
+  @OneToMany(() => PayableGroup, group => group.user)
+  payable_groups!: PayableGroup[]
 
   @OneToMany(() => CacheKpiBalance, cache => cache.user)
   cache_kpi_balances!: CacheKpiBalance[]

@@ -11,7 +11,7 @@ const KPI_CONFIG = [
     { key: 'net_savings', label: 'Ahorrado', color: 'blue', trend: true },
     { key: 'incomes', label: 'Ingresos', color: 'green', trend: true },
     { key: 'expenses', label: 'Egresos', color: 'red', trend: true },
-    { key: 'loans', label: 'Prestamos', color: 'green', trend: true },
+    { key: 'payables', label: 'Cuentas por pagar', color: 'green', trend: true },
     { key: 'payments', label: 'Pagos', color: 'red', trend: true },
     { key: 'savings', label: 'Ahorros', color: 'green', trend: true },
     { key: 'withdrawals', label: 'Retiros', color: 'red', trend: true },
@@ -26,18 +26,18 @@ const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
 const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
 const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 const CASH_FLOW_YEAR_STATE_KEY = `home.cash.flow.year.${window.USER_ID}`
-const LOAN_FLOW_YEAR_STATE_KEY = `home.loan.flow.year.${window.USER_ID}`
+const PAYABLE_FLOW_YEAR_STATE_KEY = `home.payable.flow.year.${window.USER_ID}`
 
 const labelForKpi = 'KPIs'
 const labelForTrendBalance = 'Balances'
-const labelForTrendLoan = 'Préstamos'
+const labelForTrendPayable = 'Cuentas por pagar'
 
 let kpi_years = []
 let kpi_year_index = 0
 let cash_flow_year_index = 0
 let cashFlowChart = null
-let loan_flow_year_index = 0
-let loanFlowChart = null
+let payable_flow_year_index = 0
+let payableFlowChart = null
 
 /* ============================
    DOM Ready
@@ -65,10 +65,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cash_next = document.getElementById('html-cash-flow-summary-next')
     if (cash_prev) cash_prev.innerHTML = iconCarouselPrev()
     if (cash_next) cash_next.innerHTML = iconCarouselNext()
-    const loan_prev = document.getElementById('html-loan-flow-summary-prev')
-    const loan_next = document.getElementById('html-loan-flow-summary-next')
-    if (loan_prev) loan_prev.innerHTML = iconCarouselPrev()
-    if (loan_next) loan_next.innerHTML = iconCarouselNext()
+    const payable_prev = document.getElementById('html-payable-flow-summary-prev')
+    const payable_next = document.getElementById('html-payable-flow-summary-next')
+    if (payable_prev) payable_prev.innerHTML = iconCarouselPrev()
+    if (payable_next) payable_next.innerHTML = iconCarouselNext()
 
     // Inicializar el Html para KPIs
     renderBalanceKpiHtml()
@@ -89,10 +89,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const current_year_kpi = kpi_years[kpi_year_index]
         const current_year_cash_flow = kpi_years[cash_flow_year_index]
 
-        const savedYearRawLoanFlow = loadFilters(LOAN_FLOW_YEAR_STATE_KEY)
-        const savedYearLoanFlow = savedYearRawLoanFlow !== null ? Number(savedYearRawLoanFlow) : null
-        loan_flow_year_index = kpi_years.includes(savedYearLoanFlow) ? kpi_years.indexOf(savedYearLoanFlow) : 0
-        const current_year_loan_flow = kpi_years[loan_flow_year_index]
+        const savedYearRawPayableFlow = loadFilters(PAYABLE_FLOW_YEAR_STATE_KEY)
+        const savedYearPayableFlow = savedYearRawPayableFlow !== null ? Number(savedYearRawPayableFlow) : null
+        payable_flow_year_index = kpi_years.includes(savedYearPayableFlow) ? kpi_years.indexOf(savedYearPayableFlow) : 0
+        const current_year_payable_flow = kpi_years[payable_flow_year_index]
 
         updateLabelForBalanceKpi(current_year_kpi)
         initYearNavForBalanceKpi()
@@ -102,9 +102,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         await changeYearForCashFlowSumm()
         initYearNavForCashFlowSumm()
 
-        updateLabelForLoanFlowSumm(current_year_loan_flow)
-        await changeYearForLoanFlowSumm()
-        initYearNavForLoanFlowSumm()
+        updateLabelForPayableFlowSumm(current_year_payable_flow)
+        await changeYearForPayableFlowSumm()
+        initYearNavForPayableFlowSumm()
 
         initHomeCarousel()
     } catch (err) {
@@ -153,7 +153,7 @@ function renderBalanceKpiHtml() {
 }
 
 function renderKpis(year, balanceKpi, trendKpi) {
-    const fields = ['incomes', 'expenses', 'loans', 'payments', 'savings', 'withdrawals', 'total_inflows', 'total_outflows', 'net_cash_flow', 'net_savings', 'available_balance', 'principal_breakdown', 'interest_breakdown']
+    const fields = ['incomes', 'expenses', 'payables', 'payable_payments', 'savings', 'withdrawals', 'total_inflows', 'total_outflows', 'net_cash_flow', 'net_savings', 'available_balance', 'principal_breakdown', 'interest_breakdown']
     fields.forEach(field => {
         const el = document.getElementById(`html-balance-kpi-${field.replace(/_/g, '-')}`)
         if (el) el.textContent = (balanceKpi[field] ?? 0).toFixed(2)
@@ -241,19 +241,19 @@ function renderCashFlowSummChart(data) {
     })
 }
 
-function renderLoanFlowSummChart(data) {
-    const ctx = document.getElementById('loanFlowChart').getContext('2d')
+function renderPayableFlowSummChart(data) {
+    const ctx = document.getElementById('payableFlowChart').getContext('2d')
 
-    if (loanFlowChart) loanFlowChart.destroy()
+    if (payableFlowChart) payableFlowChart.destroy()
 
-    loanFlowChart = new Chart(ctx, {
+    payableFlowChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
             datasets: [
-                { label: 'Préstamos', data: data.total_loans, tension: 0.35 },
-                { label: 'Pagos', data: data.total_payments, tension: 0.35 },
-                { label: 'Balance', data: data.net_balance, borderDash: [6, 4], tension: 0.35 }
+                { label: 'Cuentas por Pagar', data: data.total_payables, tension: 0.35 },
+                { label: 'Pagos', data: data.total_payable_payments, tension: 0.35 },
+                { label: 'Balance', data: data.net_payable_balance, borderDash: [6, 4], tension: 0.35 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -275,19 +275,19 @@ async function changeYearForCashFlowSumm() {
     renderCashFlowSummChart(cashSummary)
 }
 
-async function changeYearForLoanFlowSumm() {
-    const year = kpi_years[loan_flow_year_index]
+async function changeYearForPayableFlowSumm() {
+    const year = kpi_years[payable_flow_year_index]
 
-    saveFilters(LOAN_FLOW_YEAR_STATE_KEY, year)
-    updateLabelForLoanFlowSumm(year)
-    updateYearNavForLoanFlowSumm()
+    saveFilters(PAYABLE_FLOW_YEAR_STATE_KEY, year)
+    updateLabelForPayableFlowSumm(year)
+    updateYearNavForPayableFlowSumm()
 
-    const res = await fetch(`/loan-summary?year_period_for_loan_summ=${year}`, { credentials: 'same-origin' })
+    const res = await fetch(`/payable-summary?year_period_for_payable_summ=${year}`, { credentials: 'same-origin' })
     if (!res.ok) return
 
-    const { loanSummary } = await res.json()
+    const { payableSummary } = await res.json()
 
-    renderLoanFlowSummChart(loanSummary)
+    renderPayableFlowSummChart(payableSummary)
 }
 
 function initYearNavForCashFlowSumm() {
@@ -313,27 +313,27 @@ function initYearNavForCashFlowSumm() {
     updateYearNavForCashFlowSumm()
 }
 
-function initYearNavForLoanFlowSumm() {
-    const prevBtn = document.getElementById('html-loan-flow-summary-prev')
-    const nextBtn = document.getElementById('html-loan-flow-summary-next')
+function initYearNavForPayableFlowSumm() {
+    const prevBtn = document.getElementById('html-payable-flow-summary-prev')
+    const nextBtn = document.getElementById('html-payable-flow-summary-next')
 
     if (!prevBtn || !nextBtn) return
 
     prevBtn.addEventListener('click', async () => {
-        if (loan_flow_year_index < kpi_years.length - 1) {
-            loan_flow_year_index++
-            await changeYearForLoanFlowSumm()
+        if (payable_flow_year_index < kpi_years.length - 1) {
+            payable_flow_year_index++
+            await changeYearForPayableFlowSumm()
         }
     })
 
     nextBtn.addEventListener('click', async () => {
-        if (loan_flow_year_index > 0) {
-            loan_flow_year_index--
-            await changeYearForLoanFlowSumm()
+        if (payable_flow_year_index > 0) {
+            payable_flow_year_index--
+            await changeYearForPayableFlowSumm()
         }
     })
 
-    updateYearNavForLoanFlowSumm()
+    updateYearNavForPayableFlowSumm()
 }
 
 function updateLabelForCashFlowSumm(year) {
@@ -343,11 +343,11 @@ function updateLabelForCashFlowSumm(year) {
     label.textContent = year === 0 ? `${labelForTrendBalance} - Todos` : `${labelForTrendBalance} - ${year}`
 }
 
-function updateLabelForLoanFlowSumm(year) {
-    const label = document.getElementById('html-loan-flow-summary-year-label')
+function updateLabelForPayableFlowSumm(year) {
+    const label = document.getElementById('html-payable-flow-summary-year-label')
     if (!label) return
 
-    label.textContent = year === 0 ? `${labelForTrendLoan} - Todos` : `${labelForTrendLoan} - ${year}`
+    label.textContent = year === 0 ? `${labelForTrendPayable} - Todos` : `${labelForTrendPayable} - ${year}`
 }
 
 function updateYearNavForCashFlowSumm() {
@@ -360,14 +360,14 @@ function updateYearNavForCashFlowSumm() {
     nextBtn.disabled = cash_flow_year_index <= 0
 }
 
-function updateYearNavForLoanFlowSumm() {
-    const prevBtn = document.getElementById('html-loan-flow-summary-prev')
-    const nextBtn = document.getElementById('html-loan-flow-summary-next')
+function updateYearNavForPayableFlowSumm() {
+    const prevBtn = document.getElementById('html-payable-flow-summary-prev')
+    const nextBtn = document.getElementById('html-payable-flow-summary-next')
 
     if (!prevBtn || !nextBtn) return
 
-    prevBtn.disabled = loan_flow_year_index >= kpi_years.length - 1
-    nextBtn.disabled = loan_flow_year_index <= 0
+    prevBtn.disabled = payable_flow_year_index >= kpi_years.length - 1
+    nextBtn.disabled = payable_flow_year_index <= 0
 }
 
 /* ============================

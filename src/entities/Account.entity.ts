@@ -1,8 +1,8 @@
 import { IsBoolean, IsIn, IsNotEmpty } from 'class-validator'
 import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
-import { Loan } from './Loan.entity'
-import { LoanPayment } from './LoanPayment.entity'
+import { Payable } from './Payable.entity'
+import { PayablePayment } from './PayablePayment.entity'
 import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
 import { ReceivableCollection } from './ReceivableCollection.entity'
@@ -36,11 +36,11 @@ export class Account {
   @OneToMany(() => Transaction, transaction => transaction.account)
   transactions!: Transaction[]
 
-  @OneToMany(() => LoanPayment, payment => payment.account)
-  loanPayments!: LoanPayment[]
+  @OneToMany(() => PayablePayment, payment => payment.account)
+  payablePayments!: PayablePayment[]
 
-  @OneToMany(() => Loan, loan => loan.disbursement_account)
-  loans!: Loan[]
+  @OneToMany(() => Payable, payable => payable.disbursement_account)
+  payables!: Payable[]
 
   @OneToMany(() => ReceivableCollection, collection => collection.account)
   receivableCollections!: ReceivableCollection[]

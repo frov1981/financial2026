@@ -29,7 +29,7 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
             user: { id: auth_req.user.id }
         },
         relations: {
-            category: true, loan: true, loan_payment: true
+            category: true, payable: true, payable_payment: true
         },
         select: {
             id: true, type: true, amount: true, date: true, description: true,

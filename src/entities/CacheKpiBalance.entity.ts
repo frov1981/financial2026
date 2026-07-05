@@ -32,10 +32,10 @@ export class CacheKpiBalance {
   withdrawals!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  loans!: number
+  payables!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
-  payments!: number
+  payable_payments!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
   total_inflows!: number

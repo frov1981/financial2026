@@ -66,18 +66,18 @@ function categoryTypeTag(type) {
   }
 }
 
-function categoryTypeForLoanTag(type) {
+function categoryTypeForPayableTag(type) {
   switch (type) {
-    case 'loan':
+    case 'payable':
       return `
         <div class="tx-tag">
-          Prestamos
+          Cuentas por pagar
         </div>
       `
     case 'payment':
       return `
         <div class="tx-tag ">
-          Pagos
+          Pagos por Cuentas por pagar
         </div>
       `
     default:

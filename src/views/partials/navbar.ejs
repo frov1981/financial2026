@@ -12,9 +12,9 @@
     <% } %>
 
     
-    <% if (typeof loan_balance !== 'undefined') { %>
-      <span class="navbar-loan_balance">
-      <%= loan_balance.toFixed(2) %>
+    <% if (typeof payable_balance !== 'undefined') { %>
+      <span class="navbar-payable_balance">
+      <%= payable_balance.toFixed(2) %>
       </span>
     <% } %>
 
@@ -37,7 +37,7 @@
       <li><a href="/accounts" class="hover:underline">Cuentas</a></li>
       <li><a href="/categories" class="hover:underline">Categorías</a></li>
       <li><a href="/transactions" class="hover:underline">Transacciones</a></li>
-      <li><a href="/loans" class="hover:underline">Préstamos</a></li>
+      <li><a href="/payables" class="hover:underline">Cuentas por Pagar</a></li>
       <li><a href="/logout" class="hover:underline">Cerrar Sesión</a></li>
     </ul>
   </div>
@@ -51,7 +51,7 @@
     <li><a href="/accounts" class="block py-2">Cuentas</a></li>
     <li><a href="/categories" class="block py-2">Categorías</a></li>
     <li><a href="/transactions" class="block py-2">Transacciones</a></li>
-    <li><a href="/loans" class="block py-2">Préstamos</a></li>
+    <li><a href="/payables" class="block py-2">Cuentas por Pagar</a></li>
     <li><a href="/logout" class="block py-2">Cerrar Sesión</a></li>
   </ul>
 </nav>
