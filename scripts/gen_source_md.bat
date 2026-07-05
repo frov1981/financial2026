@@ -42,4 +42,3 @@ for /r src %%F in (*.ts *.js *.ejs *.css *.json) do (
 
 echo.
 echo Archivo generado: %OUTPUT%
-pause

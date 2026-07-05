@@ -1478,17 +1478,18 @@ import { DataSource } from 'typeorm'
 import { Account } from '../entities/Account.entity'
 import { AuthCode } from '../entities/AuthCode.entity'
 import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
+import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { Category } from '../entities/Category.entity'
 import { CategoryGroup } from '../entities/CategoryGroups.entity'
 import { Loan } from '../entities/Loan.entity'
 import { LoanGroup } from '../entities/LoanGroup.entity'
 import { LoanPayment } from '../entities/LoanPayment.entity'
-import { Transaction } from '../entities/Transaction.entity'
-import { User } from '../entities/User.entity'
-import { OneLineSqlLogger } from './typeorm.logger'
 import { Receivable } from '../entities/Receivable.entity'
 import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
 import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
+import { Transaction } from '../entities/Transaction.entity'
+import { User } from '../entities/User.entity'
+import { OneLineSqlLogger } from './typeorm.logger'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -1508,6 +1509,7 @@ export const AppDataSource = new DataSource({
     LoanPayment,
     Transaction,
     CacheKpiBalance,
+    CacheKpiCategory,
     Receivable,
     ReceivableCollection,
     ReceivableGroup
@@ -3624,8 +3626,12 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       deleteAll(auth_req, 'loan')
 
       KpiCacheService
-        .recalcKPIsByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
+        .recalculateBalanceKPIByTransaction(auth_req, existing)
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI Balances`, parseError(error)))
+
+      KpiCacheService
+        .recalculateCategoryKPIByTransaction(auth_req, existing)
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI Categorías`, parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -3698,6 +3704,7 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
       const transaction = queryRunner.manager.create(Transaction, {
         user: { id: auth_req.user.id } as any,
         type: 'income',
+        detailed_type: 'income_for_loan',
         amount: loan.total_amount,
         account: new_account,
         category: new_category,
@@ -3742,8 +3749,12 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     deleteAll(auth_req, 'loan')
     if (loan.transaction) {
       KpiCacheService
-        .recalcKPIsByTransaction(auth_req, loan.transaction)
-        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
+        .recalculateBalanceKPIByTransaction(auth_req, loan.transaction)        
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI Balance`, parseError(error)))
+
+      KpiCacheService
+        .recalculateCategoryKPIByTransaction(auth_req, loan.transaction)
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI Categorías`, parseError(error)))
     }
 
     if (return_from === 'categories' && return_category_id) {
@@ -4534,10 +4545,14 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             deleteAll(auth_req, 'payment')
 
             KpiCacheService
-                .recalcKPIsByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(error)))
+                .recalculateBalanceKPIByTransaction(auth_req, existing.transaction)
+                .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Balance`, parseError(error)))
 
-            if (return_from === 'categories' && return_category_id) {
+            KpiCacheService
+                .recalculateCategoryKPIByTransaction(auth_req, existing.transaction)
+                .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Categorías`, parseError(error)))
+
+                if (return_from === 'categories' && return_category_id) {
                 return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
             }
             return res.redirect(`/payments/${loan_id}/loan`)
@@ -4633,10 +4648,12 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             trx.category = payment.category
             trx.date = payment.payment_date
             trx.description = payment.note
+            trx.detailed_type = 'payment_for_loan'
         } else {
             trx = transactionRepo.create({
                 user: { id: auth_req.user.id } as any,
                 type: 'expense',
+                detailed_type: 'payment_for_loan',
                 amount: new_total,
                 account,
                 category: payment.category,
@@ -4652,10 +4669,14 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         deleteAll(auth_req, 'payment')
 
         KpiCacheService
-            .recalcKPIsByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI`, parseError(error)))
+            .recalculateBalanceKPIByTransaction(auth_req, trx)
+            .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Balance`, parseError(error)))
 
-        if (return_from === 'categories' && return_category_id) {
+        KpiCacheService
+            .recalculateCategoryKPIByTransaction(auth_req, trx)
+            .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Categorías`, parseError(error)))
+
+            if (return_from === 'categories' && return_category_id) {
             return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
         }
         return res.redirect(`/payments/${loan_id}/loan`)
@@ -5314,7 +5335,6 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\transaction\tra
  
 ```ts
 import { Request, RequestHandler, Response } from 'express';
-import { DateTime } from 'luxon';
 import { performance } from 'perf_hooks';
 import { getAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service';
 import { getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
@@ -5322,16 +5342,16 @@ import { deleteAll } from '../../cache/cache-key.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
 import { Transaction } from '../../entities/Transaction.entity';
+import { transactionFormMatrix } from '../../policies/transaction-form.policy';
 import { KpiCacheService } from '../../services/kpi-cache.service';
 import { AuthRequest } from '../../types/auth-request';
+import { TransactionFormMode } from '../../types/form-view-params';
 import { parseLocalDateToUTC } from '../../utils/date.util';
 import { parseError } from '../../utils/error.util';
 import { logger } from '../../utils/logger.util';
 import { getSqlErrorMessage } from '../../utils/sql-err.util';
 import { calculateTransactionDeltas } from '../transaction/transaction.auxiliar';
 import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator';
-import { TransactionFormMode } from '../../types/form-view-params';
-import { transactionFormMatrix } from '../../policies/transaction-form.policy';
 
 /* ============================
    Título según modo
@@ -5436,10 +5456,14 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       deleteAll(auth_req, 'transaction')
 
       KpiCacheService
-        .recalcKPIsByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
+        .recalculateBalanceKPIByTransaction(auth_req, existing)
+        .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Balance`, parseError(error)))
 
-      if (return_from === 'categories' && return_category_id) {
+      KpiCacheService
+        .recalculateCategoryKPIByTransaction(auth_req, existing)
+        .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Categorías`, parseError(error)))
+
+        if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
       }
       return res.redirect('/transactions')
@@ -5479,6 +5503,27 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     if (transaction.type === 'transfer') { transaction.category = null }
     if (transaction.type !== 'transfer') { transaction.to_account = null }
 
+    // Determinar detailed_type basado en el tipo de transacción
+    if (transaction.type === 'income') {
+      transaction.detailed_type = 'income'
+    } else if (transaction.type === 'expense') {
+      transaction.detailed_type = 'expense'
+    } else if (transaction.type === 'transfer') {
+      const from_account = transaction.account
+      const to_account = transaction.to_account
+      const from_is_saving = from_account && isSavingAccount(from_account)
+      const to_is_saving = to_account && isSavingAccount(to_account)
+      if (to_is_saving && !from_is_saving) {
+        transaction.detailed_type = 'saving'
+      }
+      else if (from_is_saving && !to_is_saving) {
+        transaction.detailed_type = 'withdrawal'
+      }
+      else {
+        transaction.detailed_type = 'transfer'
+      }
+    }
+
     const errors = await validateSaveTransaction(transaction, auth_req, previous_transaction)
     if (errors) throw { validationErrors: errors }
     const deltas = new Map<number, number>()
@@ -5508,10 +5553,14 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     deleteAll(auth_req, 'transaction')
 
     KpiCacheService
-      .recalcKPIsByTransaction(auth_req, saved_transaction)
-      .catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
+      .recalculateBalanceKPIByTransaction(auth_req, saved_transaction)
+      .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Balance`, parseError(error)))
 
-    if (return_from === 'categories' && return_category_id) {
+    KpiCacheService
+      .recalculateCategoryKPIByTransaction(auth_req, saved_transaction)
+      .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Categorías`, parseError(error)))
+
+      if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
     }
     return res.redirect('/transactions')
@@ -5898,6 +5947,57 @@ export class CacheKpiBalance {
   interest_breakdown!: number
 
 } 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\CacheKpiCategory.entity.ts
+```
+ 
+```ts
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
+import { Category } from './Category.entity'
+import { CategoryGroup } from './CategoryGroups.entity'
+import { User } from './User.entity'
+
+@Index('uk_cache_kpi_categories', ['user', 'year_period', 'month_period', 'category_group', 'category'], { unique: true })
+@Index('idx_user_period', ['user', 'year_period', 'month_period'])
+@Index('idx_category_group', ['user', 'category_group'])
+@Index('idx_category', ['user', 'category'])
+@Entity('cache_kpi_categories')
+export class CacheKpiCategory {
+
+  @PrimaryGeneratedColumn()
+  id!: number
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_cache_kpi_categories_user' })
+  user!: User
+
+  @Column({ type: 'smallint' })
+  year_period!: number
+
+  @Column({ type: 'tinyint' })
+  month_period!: number
+
+  @ManyToOne(() => CategoryGroup)
+  @JoinColumn({ name: 'category_group_id', foreignKeyConstraintName: 'fk_cache_kpi_categories_group' })
+  category_group!: CategoryGroup
+
+  @ManyToOne(() => Category)
+  @JoinColumn({ name: 'category_id', foreignKeyConstraintName: 'fk_cache_kpi_categories_category' })
+  category!: Category
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  amount!: number
+
+  @Column({ type: 'int', default: 0 })
+  transaction_count!: number
+
+}
+ 
 ```
  
 --- 
@@ -6385,7 +6485,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\Transaction.entity
  
 ```ts
 import { Transform } from 'class-transformer'
-import { IsIn, IsNotEmpty, IsNumber, IsPositive, MaxLength, ValidateIf } from 'class-validator'
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsPositive, MaxLength, ValidateIf } from 'class-validator'
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { DecimalTransformer } from '../config/typeorm-decimal.transformer'
 import { Account } from './Account.entity'
@@ -6411,6 +6511,13 @@ export class Transaction {
     message: 'Tipo de transacción inválido'
   })
   type!: 'income' | 'expense' | 'transfer'
+
+  @Column({ type: 'varchar', nullable: true })
+  @IsOptional()
+  @IsIn(['income', 'expense', 'income_for_loan', 'payment_for_loan', 'saving', 'withdrawal', 'transfer'], {
+    message: 'Tipo de transacción detallado inválido'
+  })
+  detailed_type?: 'income' | 'expense' | 'income_for_loan' | 'payment_for_loan' | 'saving' | 'withdrawal' | 'transfer' | null
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_transactions_account' })
@@ -7191,6 +7298,10 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\base\breakpoints
  
 ```css
 @media (max-width: 768px) {
+    
+    html {
+        font-size: 84%;
+    }
 
     .accounts-mobile,
     .categories-mobile,
@@ -14634,10 +14745,11 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\kpi-cache.service.
 ```ts
 import { AppDataSource } from '../config/typeorm.datasource'
 import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
+import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { AuthRequest } from '../types/auth-request'
-import { logger } from '../utils/logger.util'
-import { parseError } from '../utils/error.util'
 import { formatDateForInputLocal } from '../utils/date.util'
+import { parseError } from '../utils/error.util'
+import { logger } from '../utils/logger.util'
 
 function money(n: number) {
   return Number(n.toFixed(2))
@@ -14648,40 +14760,44 @@ function money(n: number) {
 ============================ */
 const query_base = `
 SELECT
-  SUM(CASE WHEN t.type = 'income' AND l.id IS NULL THEN t.amount ELSE 0 END) AS incomes,
-  SUM(CASE WHEN t.type = 'expense' AND lp.id IS NULL THEN t.amount ELSE 0 END) AS expenses,
-  SUM(CASE WHEN t.type = 'income' AND l.id IS NOT NULL THEN t.amount ELSE 0 END) AS loans,
-  SUM(CASE WHEN t.type = 'expense' AND lp.id IS NOT NULL THEN t.amount ELSE 0 END) AS payments,
-
-  SUM(CASE 
-    WHEN t.type = 'transfer' 
-    AND ta.type = 'saving' 
-    AND (fa.type <> 'saving' OR ta.id <> fa.id)
-  THEN t.amount ELSE 0 END) AS savings,
-
-  SUM(CASE 
-    WHEN t.type = 'transfer' 
-    AND fa.type = 'saving' 
-    AND (ta.type <> 'saving' OR ta.id <> fa.id)
-  THEN t.amount ELSE 0 END) AS withdrawals
-
-FROM transactions t
-LEFT JOIN loans l ON l.transaction_id = t.id
-LEFT JOIN loan_payments lp ON lp.transaction_id = t.id
-LEFT JOIN accounts fa ON fa.id = t.account_id
-LEFT JOIN accounts ta ON ta.id = t.to_account_id
-
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income' THEN t.amount ELSE 0 END), 0) AS incomes,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'expense' THEN t.amount ELSE 0 END), 0) AS expenses,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income_for_loan' THEN t.amount ELSE 0 END), 0) AS loans,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'payment_for_loan' THEN t.amount ELSE 0 END), 0) AS payments,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'saving' THEN t.amount ELSE 0 END), 0) AS savings,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals
+ FROM transactions t
 WHERE t.user_id = ?
-AND (? IS NULL OR t.date >= ?)
-AND (? IS NULL OR t.date < ?)
+  AND (? IS NULL OR t.date >= ?)
+  AND (? IS NULL OR t.date <  ?)
+`
+
+const category_query_base = `
+SELECT
+  cg.id AS category_group_id,
+  c.id AS category_id,
+  COALESCE(cg.name, '') AS cat_group_name,
+  COALESCE(c.name, '') AS cat_name,
+  SUM(t.amount) AS amount,
+  COUNT(*) AS transaction_count
+FROM transactions t
+LEFT JOIN categories c ON c.id = t.category_id
+LEFT JOIN category_groups cg ON cg.id = c.category_group_id
+WHERE t.user_id = ?
+  AND t.category_id IS NOT NULL
+  AND (? IS NULL OR t.date >= ?)
+  AND (? IS NULL OR t.date <  ?)
+GROUP BY cg.id, cg.name, c.id, c.name
+ORDER BY cg.name, c.name
 `
 
 export class KpiCacheService {
 
+
   /* ============================
-     KPI MES ACTUAL (SOLO UNO)
+   PARA RECALCULAR EL KPI DE BALANCE DEL MES ACTUAL Y TOTAL
   ============================ */
-  static async recalcCurrentMonthKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
+  private static async recalculateCurrMonthBalanceKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
@@ -14767,10 +14883,7 @@ export class KpiCacheService {
     }
   }
 
-  /* ============================
-     REBUILD COMPLETO
-  ============================ */
-  static async rebuildAllUserKPIs(user_id: number, timezone: string) {
+  private static async recalculateAllBalanceKPI(user_id: number, timezone: string) {
 
     try {
 
@@ -14841,47 +14954,12 @@ export class KpiCacheService {
       logger.info(`KPI FULL REBUILD user=${user_id}`)
 
     } catch (error) {
-      logger.error('Error en rebuildAllUserKPIs', parseError(error))
+      logger.error('Error en recalculateAllBalanceKPI', parseError(error))
     }
   }
 
-  /* ============================
-   ENTRY POINT (REEMPLAZA recalcMonthlyKPIs)
-  ============================ */
-  static async recalcKPIs(auth_req: AuthRequest, period_year: number, period_month: number) {
-
-    const user_id = auth_req.user.id
-    const timezone = auth_req.timezone || 'UTC'
-
-    try {
-      /* 
-        Se obtiene la fecha actual usando el mismo flujo que usa la app
-        para garantizar consistencia con BD (UTC basado en timezone)
-      */
-      const now_local = new Date()
-      const now_utc = new Date(formatDateForInputLocal(now_local, timezone))
-
-      const current_year = now_utc.getUTCFullYear()
-      const current_month = now_utc.getUTCMonth() + 1
-
-      const is_current_period = current_year === period_year && current_month === period_month
-
-      if (is_current_period) {
-        await this.recalcCurrentMonthKPI(auth_req, period_year, period_month)
-      } else {
-        await this.rebuildAllUserKPIs(user_id, timezone)
-      }
-
-    } catch (error: any) {
-      logger.error('Error en recalcKPIs', parseError(error))
-    }
-  }
-
-  /* ============================
-   RECALCULAR KPI POR TRANSACCIÓN
-  ============================ */
-  static async recalcKPIsByTransaction(auth_req: AuthRequest, transaction: any) {
-    logger.debug('recalcKPIsByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
+    static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
+    logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
@@ -14889,7 +14967,7 @@ export class KpiCacheService {
     try {
 
       if (!transaction?.date) {
-        logger.warn('recalcKPIsByTransaction sin transaction.date')
+        logger.warn('recalculateBalanceKPIByTransaction sin transaction.date')
         return
       }
 
@@ -14905,15 +14983,137 @@ export class KpiCacheService {
 
       logger.debug('KPI_PERIOD_RAW', { trx_id: transaction.id, trx_date: transaction.date })
       if (is_current_period) {
-        await this.recalcCurrentMonthKPI(auth_req, trx_year, trx_month)
+        await this.recalculateCurrMonthBalanceKPI(auth_req, trx_year, trx_month)
       } else {
-        await this.rebuildAllUserKPIs(user_id, timezone)
+        await this.recalculateAllBalanceKPI(user_id, timezone)
       }
 
       logger.debug('KPI recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
-
     } catch (error: any) {
-      logger.error('Error en recalcKPIsByTransaction', parseError(error))
+      logger.error('Error en recalculateBalanceKPIByTransaction', parseError(error))
+    }
+  }
+
+  /* ============================
+  PARA RECALCULAR EL KPI DE CATEGORÍAS DEL MES ACTUAL Y TOTAL
+  ============================ */
+  private static async recalculateCurrMonthCategoryKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
+    const user_id = auth_req.user.id
+    const timezone = auth_req.timezone || 'UTC'
+
+    try {
+      const start_local = new Date(period_year, period_month - 1, 1)
+      const end_local = new Date(period_year, period_month, 1)
+
+      const start_date = new Date(formatDateForInputLocal(start_local, timezone))
+      const end_date = new Date(formatDateForInputLocal(end_local, timezone))
+
+      const repo = AppDataSource.getRepository(CacheKpiCategory)
+
+      await repo.delete({ user: { id: user_id }, year_period: period_year, month_period: period_month })
+
+      const rows = await AppDataSource.manager.query(category_query_base, [
+        user_id,
+        start_date, start_date,
+        end_date, end_date
+      ])
+
+      for (const row of rows) {
+        await repo.insert({
+          user: { id: user_id } as any,
+          year_period: period_year,
+          month_period: period_month,
+          category_group: { id: Number(row.category_group_id) } as any,
+          category: { id: Number(row.category_id) } as any,
+          amount: Number(row.amount || 0),
+          transaction_count: Number(row.transaction_count || 0)
+        })
+      }
+
+      logger.info(`KPI CATEGORIAS MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
+    } catch (error: any) {
+      logger.error('Error recalculando KPI categorías mes', parseError(error))
+    }
+  }
+
+  private static async recalculateAllCategoryKPI(user_id: number, timezone: string) {
+    try {
+      const repo = AppDataSource.getRepository(CacheKpiCategory)
+
+      await repo.delete({ user: { id: user_id } })
+
+      const rows = await AppDataSource.manager.query(`
+        SELECT DISTINCT YEAR(date) as year, MONTH(date) as month
+        FROM transactions
+        WHERE user_id = ?
+      `, [user_id])
+
+      for (const row of rows) {
+        const year = Number(row.year)
+        const month = Number(row.month)
+
+        const start_local = new Date(year, month - 1, 1)
+        const end_local = new Date(year, month, 1)
+
+        const start_date = new Date(formatDateForInputLocal(start_local, timezone))
+        const end_date = new Date(formatDateForInputLocal(end_local, timezone))
+
+        const category_rows = await AppDataSource.manager.query(category_query_base, [
+          user_id,
+          start_date, start_date,
+          end_date, end_date
+        ])
+
+        for (const category_row of category_rows) {
+          await repo.insert({
+            user: { id: user_id } as any,
+            year_period: year,
+            month_period: month,
+            category_group: { id: Number(category_row.category_group_id) } as any,
+            category: { id: Number(category_row.category_id) } as any,
+            amount: Number(category_row.amount || 0),
+            transaction_count: Number(category_row.transaction_count || 0)
+          })
+        }
+      }
+
+      logger.info(`KPI CATEGORIAS FULL REBUILD user=${user_id}`)
+    } catch (error) {
+      logger.error('Error en recalculateAllCategoryKPI', parseError(error))
+    }
+  }
+
+  static async recalculateCategoryKPIByTransaction(auth_req: AuthRequest, transaction: any) {
+    logger.debug('recalculateCategoryKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, timezone: auth_req.timezone })
+
+    const user_id = auth_req.user.id
+    const timezone = auth_req.timezone || 'UTC'
+
+    try {
+      if (!transaction?.date) {
+        logger.warn('recalculateCategoryKPIByTransaction sin transaction.date')
+        return
+      }
+
+      const trx_utc = new Date(formatDateForInputLocal(transaction.date, timezone))
+      const trx_year = trx_utc.getUTCFullYear()
+      const trx_month = trx_utc.getUTCMonth() + 1
+
+      const now_utc = new Date(formatDateForInputLocal(new Date(), timezone))
+      const current_year = now_utc.getUTCFullYear()
+      const current_month = now_utc.getUTCMonth() + 1
+
+      const is_current_period = trx_year === current_year && trx_month === current_month
+
+      if (is_current_period) {
+        await this.recalculateCurrMonthCategoryKPI(auth_req, trx_year, trx_month)
+      } else {
+        await this.recalculateAllCategoryKPI(user_id, timezone)
+      }
+
+      logger.debug('KPI CATEGORÍAS recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
+    } catch (error: any) {
+      logger.error('Error en recalculateCategoryKPIByTransaction', parseError(error))
     }
   }
 

@@ -1,35 +1,17 @@
-# Dependencias
+# Folders
+.vscode/
 node_modules/
-
-# Build
 dist/
+logs/
+coverage/
+db/
 
 # Entornos
 .env
 .env.*
-
-# Logs
-logs/
-*.log
-
-# Coverage
-coverage/
-
-# Editor
-.vscode/
-
-# Seeds
-/src/seeds/
-
-# Python bytecode
-__pycache__/
-*.py[cod]
 
 # Archivos de texto
 *.txt
 
 # Logs
 *.log
-
-# Database
-db
