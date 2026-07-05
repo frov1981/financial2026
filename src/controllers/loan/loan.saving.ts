@@ -127,7 +127,11 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
 
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI Balances`, parseError(error)))
+
+      KpiCacheService
+        .recalculateCategoryKPIByTransaction(auth_req, existing)
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI Categorías`, parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -245,8 +249,12 @@ export const saveLoan: RequestHandler = async (req: Request, res: Response) => {
     deleteAll(auth_req, 'loan')
     if (loan.transaction) {
       KpiCacheService
-        .recalculateBalanceKPIByTransaction(auth_req, loan.transaction)
-        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI`, parseError(error)))
+        .recalculateBalanceKPIByTransaction(auth_req, loan.transaction)        
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI Balance`, parseError(error)))
+
+      KpiCacheService
+        .recalculateCategoryKPIByTransaction(auth_req, loan.transaction)
+        .catch(error => logger.error(`${saveLoan.name}-Error recalculando KPI Categorías`, parseError(error)))
     }
 
     if (return_from === 'categories' && return_category_id) {

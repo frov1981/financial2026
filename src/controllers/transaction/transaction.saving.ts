@@ -1,5 +1,4 @@
 import { Request, RequestHandler, Response } from 'express';
-import { DateTime } from 'luxon';
 import { performance } from 'perf_hooks';
 import { getAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service';
 import { getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
@@ -7,16 +6,16 @@ import { deleteAll } from '../../cache/cache-key.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
 import { Transaction } from '../../entities/Transaction.entity';
+import { transactionFormMatrix } from '../../policies/transaction-form.policy';
 import { KpiCacheService } from '../../services/kpi-cache.service';
 import { AuthRequest } from '../../types/auth-request';
+import { TransactionFormMode } from '../../types/form-view-params';
 import { parseLocalDateToUTC } from '../../utils/date.util';
 import { parseError } from '../../utils/error.util';
 import { logger } from '../../utils/logger.util';
 import { getSqlErrorMessage } from '../../utils/sql-err.util';
 import { calculateTransactionDeltas } from '../transaction/transaction.auxiliar';
 import { validateDeleteTransaction, validateSaveTransaction } from '../transaction/transaction.validator';
-import { TransactionFormMode } from '../../types/form-view-params';
-import { transactionFormMatrix } from '../../policies/transaction-form.policy';
 
 /* ============================
    Título según modo
@@ -122,9 +121,13 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
+        .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Balance`, parseError(error)))
 
-      if (return_from === 'categories' && return_category_id) {
+      KpiCacheService
+        .recalculateCategoryKPIByTransaction(auth_req, existing)
+        .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Categorías`, parseError(error)))
+
+        if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
       }
       return res.redirect('/transactions')
@@ -215,9 +218,13 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
     KpiCacheService
       .recalculateBalanceKPIByTransaction(auth_req, saved_transaction)
-      .catch(error => logger.error(`${saveTransaction.name}-Error. `, parseError(error)))
+      .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Balance`, parseError(error)))
 
-    if (return_from === 'categories' && return_category_id) {
+    KpiCacheService
+      .recalculateCategoryKPIByTransaction(auth_req, saved_transaction)
+      .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Categorías`, parseError(error)))
+
+      if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
     }
     return res.redirect('/transactions')

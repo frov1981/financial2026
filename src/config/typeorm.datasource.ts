@@ -3,17 +3,18 @@ import { DataSource } from 'typeorm'
 import { Account } from '../entities/Account.entity'
 import { AuthCode } from '../entities/AuthCode.entity'
 import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
+import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { Category } from '../entities/Category.entity'
 import { CategoryGroup } from '../entities/CategoryGroups.entity'
 import { Loan } from '../entities/Loan.entity'
 import { LoanGroup } from '../entities/LoanGroup.entity'
 import { LoanPayment } from '../entities/LoanPayment.entity'
-import { Transaction } from '../entities/Transaction.entity'
-import { User } from '../entities/User.entity'
-import { OneLineSqlLogger } from './typeorm.logger'
 import { Receivable } from '../entities/Receivable.entity'
 import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
 import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
+import { Transaction } from '../entities/Transaction.entity'
+import { User } from '../entities/User.entity'
+import { OneLineSqlLogger } from './typeorm.logger'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -33,6 +34,7 @@ export const AppDataSource = new DataSource({
     LoanPayment,
     Transaction,
     CacheKpiBalance,
+    CacheKpiCategory,
     Receivable,
     ReceivableCollection,
     ReceivableGroup

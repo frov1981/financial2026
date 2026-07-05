@@ -1,9 +1,10 @@
 import { AppDataSource } from '../config/typeorm.datasource'
 import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
+import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { AuthRequest } from '../types/auth-request'
-import { logger } from '../utils/logger.util'
-import { parseError } from '../utils/error.util'
 import { formatDateForInputLocal } from '../utils/date.util'
+import { parseError } from '../utils/error.util'
+import { logger } from '../utils/logger.util'
 
 function money(n: number) {
   return Number(n.toFixed(2))
@@ -14,25 +15,43 @@ function money(n: number) {
 ============================ */
 const query_base = `
 SELECT
-  COALESCE(SUM(CASE 
-    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income' THEN t.amount ELSE 0 END), 0) AS incomes,
-  COALESCE(SUM(CASE 
-    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'expense' THEN t.amount ELSE 0 END), 0) AS expenses,
-  COALESCE(SUM(CASE 
-    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income_for_loan' THEN t.amount ELSE 0 END), 0) AS loans,
-  COALESCE(SUM(CASE 
-    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'payment_for_loan' THEN t.amount ELSE 0 END), 0) AS payments,
-  COALESCE(SUM(CASE 
-    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'saving' THEN t.amount ELSE 0 END), 0) AS savings,
-  COALESCE(SUM(CASE 
-    WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals
-FROM transactions t
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income' THEN t.amount ELSE 0 END), 0) AS incomes,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'expense' THEN t.amount ELSE 0 END), 0) AS expenses,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income_for_loan' THEN t.amount ELSE 0 END), 0) AS loans,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'payment_for_loan' THEN t.amount ELSE 0 END), 0) AS payments,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'saving' THEN t.amount ELSE 0 END), 0) AS savings,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals
+ FROM transactions t
 WHERE t.user_id = ?
-AND (? IS NULL OR t.date >= ?)
-AND (? IS NULL OR t.date < ?)
+  AND (? IS NULL OR t.date >= ?)
+  AND (? IS NULL OR t.date <  ?)
 `
+
+const category_query_base = `
+SELECT
+  cg.id AS category_group_id,
+  c.id AS category_id,
+  COALESCE(cg.name, '') AS cat_group_name,
+  COALESCE(c.name, '') AS cat_name,
+  SUM(t.amount) AS amount,
+  COUNT(*) AS transaction_count
+FROM transactions t
+LEFT JOIN categories c ON c.id = t.category_id
+LEFT JOIN category_groups cg ON cg.id = c.category_group_id
+WHERE t.user_id = ?
+  AND t.category_id IS NOT NULL
+  AND (? IS NULL OR t.date >= ?)
+  AND (? IS NULL OR t.date <  ?)
+GROUP BY cg.id, cg.name, c.id, c.name
+ORDER BY cg.name, c.name
+`
+
 export class KpiCacheService {
 
+
+  /* ============================
+   PARA RECALCULAR EL KPI DE BALANCE DEL MES ACTUAL Y TOTAL
+  ============================ */
   private static async recalculateCurrMonthBalanceKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
 
     const user_id = auth_req.user.id
@@ -194,7 +213,7 @@ export class KpiCacheService {
     }
   }
 
-  static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
+    static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
     logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
 
     const user_id = auth_req.user.id
@@ -225,9 +244,131 @@ export class KpiCacheService {
       }
 
       logger.debug('KPI recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
-
     } catch (error: any) {
       logger.error('Error en recalculateBalanceKPIByTransaction', parseError(error))
+    }
+  }
+
+  /* ============================
+  PARA RECALCULAR EL KPI DE CATEGORÍAS DEL MES ACTUAL Y TOTAL
+  ============================ */
+  private static async recalculateCurrMonthCategoryKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
+    const user_id = auth_req.user.id
+    const timezone = auth_req.timezone || 'UTC'
+
+    try {
+      const start_local = new Date(period_year, period_month - 1, 1)
+      const end_local = new Date(period_year, period_month, 1)
+
+      const start_date = new Date(formatDateForInputLocal(start_local, timezone))
+      const end_date = new Date(formatDateForInputLocal(end_local, timezone))
+
+      const repo = AppDataSource.getRepository(CacheKpiCategory)
+
+      await repo.delete({ user: { id: user_id }, year_period: period_year, month_period: period_month })
+
+      const rows = await AppDataSource.manager.query(category_query_base, [
+        user_id,
+        start_date, start_date,
+        end_date, end_date
+      ])
+
+      for (const row of rows) {
+        await repo.insert({
+          user: { id: user_id } as any,
+          year_period: period_year,
+          month_period: period_month,
+          category_group: { id: Number(row.category_group_id) } as any,
+          category: { id: Number(row.category_id) } as any,
+          amount: Number(row.amount || 0),
+          transaction_count: Number(row.transaction_count || 0)
+        })
+      }
+
+      logger.info(`KPI CATEGORIAS MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
+    } catch (error: any) {
+      logger.error('Error recalculando KPI categorías mes', parseError(error))
+    }
+  }
+
+  private static async recalculateAllCategoryKPI(user_id: number, timezone: string) {
+    try {
+      const repo = AppDataSource.getRepository(CacheKpiCategory)
+
+      await repo.delete({ user: { id: user_id } })
+
+      const rows = await AppDataSource.manager.query(`
+        SELECT DISTINCT YEAR(date) as year, MONTH(date) as month
+        FROM transactions
+        WHERE user_id = ?
+      `, [user_id])
+
+      for (const row of rows) {
+        const year = Number(row.year)
+        const month = Number(row.month)
+
+        const start_local = new Date(year, month - 1, 1)
+        const end_local = new Date(year, month, 1)
+
+        const start_date = new Date(formatDateForInputLocal(start_local, timezone))
+        const end_date = new Date(formatDateForInputLocal(end_local, timezone))
+
+        const category_rows = await AppDataSource.manager.query(category_query_base, [
+          user_id,
+          start_date, start_date,
+          end_date, end_date
+        ])
+
+        for (const category_row of category_rows) {
+          await repo.insert({
+            user: { id: user_id } as any,
+            year_period: year,
+            month_period: month,
+            category_group: { id: Number(category_row.category_group_id) } as any,
+            category: { id: Number(category_row.category_id) } as any,
+            amount: Number(category_row.amount || 0),
+            transaction_count: Number(category_row.transaction_count || 0)
+          })
+        }
+      }
+
+      logger.info(`KPI CATEGORIAS FULL REBUILD user=${user_id}`)
+    } catch (error) {
+      logger.error('Error en recalculateAllCategoryKPI', parseError(error))
+    }
+  }
+
+  static async recalculateCategoryKPIByTransaction(auth_req: AuthRequest, transaction: any) {
+    logger.debug('recalculateCategoryKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, timezone: auth_req.timezone })
+
+    const user_id = auth_req.user.id
+    const timezone = auth_req.timezone || 'UTC'
+
+    try {
+      if (!transaction?.date) {
+        logger.warn('recalculateCategoryKPIByTransaction sin transaction.date')
+        return
+      }
+
+      const trx_utc = new Date(formatDateForInputLocal(transaction.date, timezone))
+      const trx_year = trx_utc.getUTCFullYear()
+      const trx_month = trx_utc.getUTCMonth() + 1
+
+      const now_utc = new Date(formatDateForInputLocal(new Date(), timezone))
+      const current_year = now_utc.getUTCFullYear()
+      const current_month = now_utc.getUTCMonth() + 1
+
+      const is_current_period = trx_year === current_year && trx_month === current_month
+
+      if (is_current_period) {
+        await this.recalculateCurrMonthCategoryKPI(auth_req, trx_year, trx_month)
+      } else {
+        await this.recalculateAllCategoryKPI(user_id, timezone)
+      }
+
+      logger.debug('KPI CATEGORÍAS recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
+    } catch (error: any) {
+      logger.error('Error en recalculateCategoryKPIByTransaction', parseError(error))
     }
   }
 
