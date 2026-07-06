@@ -15,7 +15,7 @@ export const validatePayableGroup = async (auth_req: AuthRequest, payable_group:
   if (payable_group.name) {
     const existing = await getPayableGroupByName(auth_req, payable_group.name)
     if (existing && existing.id !== payable_group.id) {
-      field_errors.name = 'Ya existe un grupo de cuentas por pagar con este nombre'
+      field_errors.name = 'Ya existe un grupo de Cuentas por Pagar con este nombre'
     }
   }
   return Object.keys(field_errors).length > 0 ? field_errors : null

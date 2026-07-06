@@ -149,7 +149,7 @@ export const apiForGettingPayables: RequestHandler = async (req: Request, res: R
     res.json(result)
   } catch (error) {
     logger.error(`${apiForGettingPayables.name}-Error. `, parseError(error))
-    res.status(500).json({ error: 'Error al listar cuentas por pagar' })
+    res.status(500).json({ error: 'Error al listar Cuentas por Pagar' })
   } finally {
   }
 }

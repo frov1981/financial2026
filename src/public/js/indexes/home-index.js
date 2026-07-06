@@ -11,8 +11,8 @@ const KPI_CONFIG = [
     { key: 'net_savings', label: 'Ahorrado', color: 'blue', trend: true },
     { key: 'incomes', label: 'Ingresos', color: 'green', trend: true },
     { key: 'expenses', label: 'Egresos', color: 'red', trend: true },
-    { key: 'payables', label: 'Cuentas por pagar', color: 'green', trend: true },
-    { key: 'payments', label: 'Pagos', color: 'red', trend: true },
+    { key: 'payables', label: 'Cuentas por Pagar', color: 'green', trend: true },
+    { key: 'payable_payments', label: 'Pagos', color: 'red', trend: true },
     { key: 'savings', label: 'Ahorros', color: 'green', trend: true },
     { key: 'withdrawals', label: 'Retiros', color: 'red', trend: true },
     { key: 'total_inflows', label: 'Total Ingresos', color: 'green', trend: true },
@@ -30,7 +30,7 @@ const PAYABLE_FLOW_YEAR_STATE_KEY = `home.payable.flow.year.${window.USER_ID}`
 
 const labelForKpi = 'KPIs'
 const labelForTrendBalance = 'Balances'
-const labelForTrendPayable = 'Cuentas por pagar'
+const labelForTrendPayable = 'Cuentas por Pagar'
 
 let kpi_years = []
 let kpi_year_index = 0
