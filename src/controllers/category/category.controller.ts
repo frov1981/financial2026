@@ -1,7 +1,7 @@
 import { Request, RequestHandler, Response } from 'express'
 import { DTOCategory, getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
+import { getActiveCategoryGroup } from '../../cache/cache-category-groups.service'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
-import { getActiveParentCategoriesByUser } from '../../services/populate-items.service'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { parseError } from '../../utils/error.util'
@@ -14,7 +14,7 @@ type CategoryFormViewParams = BaseFormViewParams & {
 
 const renderCategoryForm = async (res: Response, params: CategoryFormViewParams) => {
   const { title, view, category, errors, mode, auth_req } = params
-  const category_group_list = await getActiveParentCategoriesByUser(auth_req)
+  const category_group_list = await getActiveCategoryGroup(auth_req)
   const category_form_policy = categoryFormMatrix[mode]
   return res.render('layouts/main', {
     title,

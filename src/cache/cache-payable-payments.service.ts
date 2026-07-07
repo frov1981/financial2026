@@ -1,4 +1,5 @@
 import { AppDataSource } from "../config/typeorm.datasource"
+import { Category } from "../entities/Category.entity"
 import { PayablePayment } from "../entities/PayablePayment.entity"
 import { AuthRequest } from "../types/auth-request"
 import { logger } from "../utils/logger.util"
@@ -37,6 +38,28 @@ export const getPayments = async (auth_req: AuthRequest): Promise<PayablePayment
     const user_id = auth_req.user.id
     const payments: PayablePayment[] = await getPaymentsBase(user_id)
     return payments
+}
+
+export const getActiveCategoriesForPayablePaymentsByUser = async (auth_req: AuthRequest): Promise<Category[]> => {
+    const user_id = auth_req.user.id
+    const cache_key = cacheKeys.payablePaymentCategoriesByUser(user_id)
+    const cached_categories = cache.get<Category[]>(cache_key)
+    if (cached_categories !== undefined) {
+        return cached_categories
+    }
+
+    const repo = AppDataSource.getRepository(Category)
+    const categories = await repo.find({
+        where: {
+            user: { id: user_id },
+            is_active: true,
+            type_for_payable: 'payable_payment'
+        },
+        order: { name: 'ASC' }
+    })
+
+    cache.set(cache_key, categories)
+    return categories
 }
 
 export const getPaymentById = async (auth_req: AuthRequest, payment_id: number): Promise<PayablePayment | null> => {

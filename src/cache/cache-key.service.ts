@@ -16,6 +16,8 @@ export const cacheKeys = {
 
   payablesByUser: (user_id: number) => `payables_user_${user_id}`,
   payablesByUserForApi: (user_id: number) => `payables_api_user_${user_id}`,
+  payableCategoriesByUser: (user_id: number) => `payable_categories_user_${user_id}`,
+  payablePaymentCategoriesByUser: (user_id: number) => `payable_payment_categories_user_${user_id}`,
 
   payableGroupByUser: (user_id: number) => `payable_group_user_${user_id}`,
   payableGroupByUserForApi: (user_id: number) => `payable_group_api_user_${user_id}`,
@@ -53,6 +55,8 @@ export const cacheKeys = {
     `category_group_api_user_${user_id}`,
     `payables_user_${user_id}`,
     `payables_api_user_${user_id}`,
+    `payable_categories_user_${user_id}`,
+    `payable_payment_categories_user_${user_id}`,
     `payable_group_user_${user_id}`,
     `payable_group_api_user_${user_id}`,
     `payment_user_${user_id}`,

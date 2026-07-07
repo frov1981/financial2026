@@ -52,3 +52,7 @@ export const getActivePayableGroup = async (auth_req: AuthRequest): Promise<Paya
     const payable_group = payable_groups.filter(payable_group => payable_group.is_active)
     return payable_group
 }
+
+export const getActiveParentPayablesByUser = async (auth_req: AuthRequest): Promise<PayableGroup[]> => {
+    return getActivePayableGroup(auth_req)
+}
