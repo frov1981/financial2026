@@ -3,8 +3,8 @@ import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getPaymentById, getPaymentsForApi } from '../../cache/cache-payable-payments.service'
 import { getPayableById } from '../../cache/cache-payables.service'
 import { payablePaymentFormMatrix } from '../../policies/payable-payment-form.policy'
-import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
-import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
+import { getActiveCategoriesForPayablePaymentsByUser } from '../../services/populate-items.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
@@ -19,7 +19,7 @@ type PaymentFormViewParams = BaseFormViewParams & {
 const renderPayablePaymentForm = async (res: Response, params: PaymentFormViewParams) => {
     const { title, view, payment, errors, mode, auth_req } = params
     const payment_form_policy = payablePaymentFormMatrix[mode]
-    const active_expense_category_list = await getActiveCategoriesForPaymentsByUser(auth_req)
+    const active_expense_category_list = await getActiveCategoriesForPayablePaymentsByUser(auth_req)
     const account_list = await getActiveAccounts(auth_req)
     const payable_id = auth_req.params.payable_id || payment.payable?.id || null
     const category_id = auth_req.query.category_id || null

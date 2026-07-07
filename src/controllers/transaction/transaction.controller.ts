@@ -4,7 +4,7 @@ import { getActiveCategoryById, getActiveExpenseCategories, getActiveExpenseCate
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
-import { getNextValidTransactionDate } from '../../services/next-valid-trx-date.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'

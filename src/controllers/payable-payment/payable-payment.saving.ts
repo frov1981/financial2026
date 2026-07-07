@@ -13,7 +13,7 @@ import { Transaction } from '../../entities/Transaction.entity';
 import { payablePaymentFormMatrix } from '../../policies/payable-payment-form.policy';
 import { KpiCacheService } from '../../services/kpi-cache.service';
 import { getNextPayablePaymentNumber } from '../../services/payable-payment-number.service';
-import { getActiveCategoriesForPaymentsByUser } from '../../services/populate-items.service';
+import { getActiveCategoriesForPayablePaymentsByUser } from '../../services/populate-items.service';
 import { AuthRequest } from '../../types/auth-request';
 import { PayablePaymentFormMode } from '../../types/form-view-params';
 import { parseBoolean } from '../../utils/bool.util';
@@ -111,7 +111,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         payment: await buildPaymentView(auth_req, req.body),
         payable_id,
         account_list: await getActiveAccounts(auth_req),
-        active_expense_category_list: await getActiveCategoriesForPaymentsByUser(auth_req),
+        active_expense_category_list: await getActiveCategoriesForPayablePaymentsByUser(auth_req),
         payment_form_policy: payablePaymentFormMatrix[mode],
         mode,
         context: { from: return_from || null, category_id: return_category_id || null }
