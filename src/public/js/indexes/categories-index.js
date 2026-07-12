@@ -198,7 +198,7 @@ function renderCard(category) {
 
         <div class="card-tags">
           ${categoryTypeTag(category.type)}
-          ${categoryTypeForPayableTag(category.type_for_payable)}
+          ${categoryTypeForPayableTag(category.type_for_payable_or_receivable)}
           ${statusTag(category.is_active)}
         </div>
       </div>

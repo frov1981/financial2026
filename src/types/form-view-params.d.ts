@@ -35,6 +35,11 @@ export type TransactionFormMode = 'insert' | 'update' | 'delete'
 type TransactionFieldMatrix = Record<string, TransactionFieldMode>
 type TransactionFormMatrix = Record<TransactionFormMode, TransactionFieldMatrix>
 
+export type ReceivableGroupFieldMode = 'hidden' | 'readonly' | 'editable'
+export type ReceivableGroupFormMode = 'insert' | 'update' | 'delete'
+type ReceivableGroupFieldMatrix = Record<string, ReceivableGroupFieldMode>
+type ReceivableGroupFormMatrix = Record<ReceivableGroupFormMode, ReceivableGroupFieldMatrix>
+
 export type BaseFormViewParams = {
     title: string
     view: string

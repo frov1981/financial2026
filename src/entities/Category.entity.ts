@@ -28,8 +28,8 @@ export class Category {
 
   @Column({ type: 'varchar' })
   @IsOptional()
-  @IsIn(['payable', 'payable_payment'], { message: 'El tipo debe ser payable o payable_payment o vacío' })
-  type_for_payable!: 'payable' | 'payable_payment' | 'receivable' | 'collection' | null
+  @IsIn(['payable', 'payable_payment', 'receivable', 'receivable_collection'], { message: 'El tipo debe ser para cuentas por cobrar o pagar' })
+  type_for_payable_or_receivable!: 'payable' | 'payable_payment' | 'receivable' | 'receivable_collection' | null
 
   @Column({ default: true })
   @IsBoolean({ message: 'El estado debe ser true o false' })

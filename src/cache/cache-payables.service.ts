@@ -93,7 +93,7 @@ export const getActiveCategoriesForPayablesByUser = async (auth_req: AuthRequest
         where: {
             user: { id: user_id },
             is_active: true,
-            type_for_payable: 'payable'
+            type_for_payable_or_receivable: 'payable'
         },
         order: { name: 'ASC' }
     })

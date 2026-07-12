@@ -48,7 +48,7 @@ export const routeToFormInsertCategory: RequestHandler = async (req: Request, re
     auth_req,
     category: {
       type: null,
-      type_for_payable: null,
+      type_for_payable_or_receivable: null,
       category_group: null,
       is_active: true
     },

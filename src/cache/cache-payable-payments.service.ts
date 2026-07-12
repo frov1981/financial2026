@@ -20,7 +20,7 @@ export type DTOPayablePayment = {
 }
 
 const getPaymentsBase = async (user_id: number): Promise<PayablePayment[]> => {
-    const cache_key = cacheKeys.paymentsByUser(user_id)
+    const cache_key = cacheKeys.payablePaymentsByUser(user_id)
     const cached_payments = cache.get<PayablePayment[]>(cache_key)
     if (cached_payments !== undefined) return cached_payments
 
@@ -53,7 +53,7 @@ export const getActiveCategoriesForPayablePaymentsByUser = async (auth_req: Auth
         where: {
             user: { id: user_id },
             is_active: true,
-            type_for_payable: 'payable_payment'
+            type_for_payable_or_receivable: 'payable_payment'
         },
         order: { name: 'ASC' }
     })
@@ -71,7 +71,7 @@ export const getPaymentById = async (auth_req: AuthRequest, payment_id: number):
 
 export const getPaymentsForApi = async (auth_req: AuthRequest, payable_id: number): Promise<DTOPayablePayment[]> => {
     const user_id = auth_req.user.id
-    const cache_key = cacheKeys.paymentsByPayableForApi(user_id, payable_id)
+    const cache_key = cacheKeys.payablePaymentsByPayableForApi(user_id, payable_id)
 
     const cached = cache.get<DTOPayablePayment[]>(cache_key)
     if (cached !== undefined) return cached

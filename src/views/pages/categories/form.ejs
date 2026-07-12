@@ -70,7 +70,7 @@
     <% } %>
 
     <!-- Tipo de categoría -->
-    <% if (!isHidden('type_for_payable')) { %>
+    <% if (!isHidden('type_for_payable_or_receivable')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Tipo de categoría para Cuentas por Pagar</label>
 
@@ -78,10 +78,10 @@
         <label class="flex items-center gap-1">
           <input
             type="radio"
-            name="type_for_payable"
+            name="type_for_payable_or_receivable"
             value="payable"
-            <%= category?.type_for_payable === 'payable' ? 'checked' : '' %>
-            <%= isReadOnly('type_for_payable') ? 'disabled' : '' %>
+            <%= category?.type_for_payable_or_receivable === 'payable' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
           >
           Para Cuentas por Pagar
         </label>
@@ -89,10 +89,10 @@
         <label class="flex items-center gap-1">
           <input
             type="radio"
-            name="type_for_payable"
+            name="type_for_payable_or_receivable"
             value="payable_payment"
-            <%= category?.type_for_payable === 'payable_payment' ? 'checked' : '' %>
-            <%= isReadOnly('type_for_payable') ? 'disabled' : '' %>
+            <%= category?.type_for_payable_or_receivable === 'payable_payment' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
           >
           Para Pagos
         </label>
@@ -100,21 +100,21 @@
         <label class="flex items-center gap-1">
           <input
             type="radio"
-            name="type_for_payable"
+            name="type_for_payable_or_receivable"
             value=""
-            <%= category?.type_for_payable == null ? 'checked' : '' %>
-            <%= isReadOnly('type_for_payable') ? 'disabled' : '' %>
+            <%= category?.type_for_payable_or_receivable == null ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
           >
           Sin tipo
         </label>
       </div>
 
-      <% if (isReadOnly('type_for_payable')) { %>
-        <input type="hidden" name="type_for_payable" value="<%= category?.type_for_payable || '' %>">
+      <% if (isReadOnly('type_for_payable_or_receivable')) { %>
+        <input type="hidden" name="type_for_payable_or_receivable" value="<%= category?.type_for_payable_or_receivable || '' %>">
       <% } %>
 
-      <% if (errors?.type_for_payable) { %>
-        <p class="text-red-600 text-sm mt-1"><%= errors.type_for_payable %></p>
+      <% if (errors?.type_for_payable_or_receivable) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.type_for_payable_or_receivable %></p>
       <% } %>
     </div>
     <% } %>
