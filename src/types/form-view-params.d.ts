@@ -40,6 +40,16 @@ export type ReceivableGroupFormMode = 'insert' | 'update' | 'delete'
 type ReceivableGroupFieldMatrix = Record<string, ReceivableGroupFieldMode>
 type ReceivableGroupFormMatrix = Record<ReceivableGroupFormMode, ReceivableGroupFieldMatrix>
 
+export type ReceivableFieldMode = 'hidden' | 'readonly' | 'editable'
+export type ReceivableFormMode = 'insert' | 'update' | 'delete'
+type ReceivableFieldMatrix = Record<string, ReceivableFieldMode>
+type ReceivableFormMatrix = Record<ReceivableFormMode, ReceivableFieldMatrix>
+
+export type ReceivableCollectionFieldMode = 'hidden' | 'readonly' | 'editable'
+export type ReceivableCollectionFormMode = 'insert' | 'update' | 'delete'
+type ReceivableCollectionFieldMatrix = Record<string, ReceivableCollectionFieldMode>
+type ReceivableCollectionFormMatrix = Record<ReceivableCollectionFormMode, ReceivableCollectionFieldMatrix>
+
 export type BaseFormViewParams = {
     title: string
     view: string

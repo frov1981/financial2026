@@ -11,8 +11,8 @@ type DTOReceivable = {
     id: number
     name: string
     total_amount: number
-    principal_paid: number
-    interest_paid: number
+    principal_received: number
+    interest_received: number
     balance: number
     start_date: Date
     end_date: Date | null
@@ -133,8 +133,8 @@ export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<{ rec
         id: receivable.id,
         name: receivable.name,
         total_amount: receivable.total_amount,
-        principal_paid: receivable.principal_received,
-        interest_paid: receivable.interest_received,
+        principal_received: receivable.principal_received,
+        interest_received: receivable.interest_received,
         balance: receivable.balance,
         start_date: receivable.start_date,
         end_date: receivable.end_date,

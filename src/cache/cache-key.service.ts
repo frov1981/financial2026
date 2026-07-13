@@ -31,16 +31,16 @@ export const cacheKeys = {
   receivablesByUser: (user_id: number) => `receivables_user_${user_id}`,
   receivablesByUserForApi: (user_id: number) => `receivables_api_user_${user_id}`,
   receivableCategoriesByUser: (user_id: number) => `receivable_categories_user_${user_id}`,
-  receivablePaymentCategoriesByUser: (user_id: number) => `receivable_payment_categories_user_${user_id}`,
+  receivableCollectionsCategoriesByUser: (user_id: number) => `receivable_payment_categories_user_${user_id}`,
   /*Receivable Groups*/
   receivableGroupByUser: (user_id: number) => `receivable_group_user_${user_id}`,
   receivableGroupByUserForApi: (user_id: number) => `receivable_group_api_user_${user_id}`,
   /*Receivable Collections*/
   receivableCollectionsByUser: (user_id: number) => `receivable_collections_user_${user_id}`,
   receivableCollectionsByUserForApi: (user_id: number) => `receivable_collections_api_user_${user_id}`,
-  receivablePaymentsByCollection: (user_id: number, payment_id: number) => `receivable_payment_user_${user_id}_payment_${payment_id}`,
-  receivablePaymentsByCollectionForApi: (user_id: number, payable_id: number) => `receivable_payment_api_user_${user_id}_payable_${payable_id}`,
-  receivablePaymentsBycollectionPrefix: (user_id: number) => `receivable_payment_api_user_${user_id}_payable_`,
+  receivableCollectionsByCollection: (user_id: number, payment_id: number) => `receivable_collection_user_${user_id}_collection_${payment_id}`,
+  receivableCollectionsByCollectionForApi: (user_id: number, payable_id: number) => `receivable_collection_api_user_${user_id}_collection_${payable_id}`,
+  receivableCollectionsByCollectionPrefix: (user_id: number) => `receivable_collection_api_user_${user_id}_collection_`,
   /*Home*/
   homeAvailableYearsKpi: (user_id: number) => `home_available_years_kpi_user_${user_id}`,
   homeBalanceKpi: (user_id: number, year: number, month: number) => `home_balance_kpi_user_${user_id}_year_${year}_month_${month}`,

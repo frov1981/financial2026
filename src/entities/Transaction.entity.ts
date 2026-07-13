@@ -28,10 +28,10 @@ export class Transaction {
 
   @Column({ type: 'varchar', nullable: true })
   @IsOptional()
-  @IsIn(['income', 'expense', 'income_for_payable', 'payment_for_payable', 'saving', 'withdrawal', 'transfer'], {
+  @IsIn(['income', 'expense', 'income_for_payable', 'payment_for_payable', 'expense_for_receivable', 'collection_for_receivable', 'saving', 'withdrawal', 'transfer'], {
     message: 'Tipo de transacción detallado inválido'
   })
-  detailed_type?: 'income' | 'expense' | 'income_for_payable' | 'payment_for_payable' | 'saving' | 'withdrawal' | 'transfer' | null
+  detailed_type?: 'income' | 'expense' | 'income_for_payable' | 'payment_for_payable' | 'expense_for_receivable' | 'collection_for_receivable' | 'saving' | 'withdrawal' | 'transfer' | null
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id', foreignKeyConstraintName: 'fk_transactions_account' })
