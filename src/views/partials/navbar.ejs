@@ -18,6 +18,12 @@
       </span>
     <% } %>
 
+    <% if (typeof receivable_balance !== 'undefined') { %>
+      <span class="navbar-receivable_balance">
+      <%= receivable_balance.toFixed(2) %>
+      </span>
+    <% } %>
+
     <!-- Botón hamburguesa (solo móvil) -->
     <button
       id="mobile-menu-btn"

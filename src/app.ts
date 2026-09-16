@@ -6,6 +6,7 @@ import { sessionStore } from './config/session-store'
 import { apiLimiter } from './config/rate-limiter'
 import { csrfProtection, csrfTokenMiddleware } from './middlewares/csrf.middleware'
 import { injectPayableBalance } from './middlewares/inject-payable-balance.middleware'
+import { injectReceivableBalance } from './middlewares/inject-receivable-balance.middleware'
 import { injectNetBalance } from './middlewares/inject-net-balance.middleware'
 import { httpLogger } from './middlewares/logger.middleware'
 import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
@@ -105,7 +106,7 @@ protectedRouter.use('/transactions', transactionRoutes)
 protectedRouter.use('/payables', injectPayableBalance, payableRoutes)
 protectedRouter.use('/payable-groups', payableGroupRoutes)
 protectedRouter.use('/payments', injectPayableBalance, paymentRoutes)
-protectedRouter.use('/receivables', injectPayableBalance, receivableRoutes)
+protectedRouter.use('/receivables', injectReceivableBalance, receivableRoutes)
 protectedRouter.use('/receivables-groups', receivableGroupRoutes)
-protectedRouter.use('/receivables-collections', injectPayableBalance, receivableCollectionRoutes)
+protectedRouter.use('/receivables-collections', injectReceivableBalance, receivableCollectionRoutes)
 app.use(protectedRouter)
