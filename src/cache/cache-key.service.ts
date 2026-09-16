@@ -97,9 +97,10 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const deleted = cache.del(cacheKeys.allByUser(user_id))
   const deleted_kpis = delByPrefix(cacheKeys.homeBalanceKpiPrefix(user_id))
   const deleted_payments = delByPrefix(cacheKeys.payablePaymentsByPayablePrefix(user_id))
+  const deleted_receivable_collections = delByPrefix(cacheKeys.receivableCollectionsByCollectionPrefix(user_id))
   const deleted_kpis_accum = delByPrefix(cacheKeys.homeBalanceKpiAccumPrefix(user_id))
   const deleted_trend = delByPrefix(cacheKeys.homeTrendKpiPrefix(user_id))
   const deleted_cash_flow_summary = delByPrefix(cacheKeys.homeCashFlowSummaryPrefix(user_id))
   const deleted_payable_flow_summary = delByPrefix(cacheKeys.homePayableFlowSummaryPrefix(user_id))
-  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}]`)
+  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}]`)
 }

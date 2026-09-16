@@ -5,27 +5,27 @@ export const receivableCollectionFormMatrix: ReceivableCollectionFormMatrix = {
   insert: {
     account_id: 'editable',
     category_id: 'editable',
-    principal_paid: 'editable',
-    interest_paid: 'editable',
-    payment_date: 'editable',
+    principal_collected: 'editable',
+    interest_collected: 'editable',
+    collection_date: 'editable',
     note: 'editable'
   },
 
   update: {
     account_id: 'readonly',
     category_id: 'editable',
-    principal_paid: 'editable',
-    interest_paid: 'editable',
-    payment_date: 'editable',
+    principal_collected: 'editable',
+    interest_collected: 'editable',
+    collection_date: 'editable',
     note: 'editable'
   },
 
   delete: {
     account_id: 'readonly',
     category_id: 'readonly',
-    principal_paid: 'readonly',
-    interest_paid: 'readonly',
-    payment_date: 'readonly',
+    principal_collected: 'readonly',
+    interest_collected: 'readonly',
+    collection_date: 'readonly',
     note: 'readonly'
   }
 

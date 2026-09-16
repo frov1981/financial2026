@@ -1,0 +1,62 @@
+<script>
+  window.USER_ID = "<%= USER_ID %>"
+</script>
+
+<div class="max-w-6xl mx-auto ui-page">
+  <div class="ui-header">
+    <h1 class="ui-title">Cuentas por Cobrar</h1>
+
+    <div class="ui-toolbar">
+      <%- include('../../partials/btn-new', {
+        href: '#',
+        title: 'Nueva cuenta por cobrar',
+        text: 'Nuevo',
+        data_btn: 'new'
+      }) %>
+
+      <%- include('../../partials/search-box', {
+        placeholder: 'Buscar cuentas por cobrar...'
+      }) %>
+
+    <!-- Modal Insertar -->
+    <%- include('../../partials/ui-modal',{
+      modal_id:'insert-modal',
+      title:'¿Qué desea insertar?',
+      buttons:[
+        {id:'insert-group', text:'Grupo de Cuentas por Cobrar', variant:'ui-modal-btn-primary'},
+        {id:'insert-child', text:'Cuenta por Cobrar Hija', variant:'ui-modal-btn-success'},
+        {id:'close-modal', text:'Cancelar', variant:'ui-modal-btn-neutral'}
+      ]
+    }) %>
+    </div>
+  </div>
+
+  <div class="ui-scroll-area">
+    <div id="receivables-mobile" class="receivables-mobile"></div>
+
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Nombre</th>
+            <th class="ui-th col-left">Monto</th>
+            <th class="ui-th col-left">Capital</th>
+            <th class="ui-th col-left">Interés</th>
+            <th class="ui-th col-left">Saldo</th>
+            <th class="ui-th col-left">Estado</th>
+            <th class="ui-th col-left">Cuenta</th>
+            <th class="ui-th col-left">Categoría</th>
+            <th class="ui-th col-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="receivables-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="/js/indexes/receivables-index.js"></script>
+<script src="/js/helpers/icon-helper.js"></script>
+<script src="/js/helpers/amount-helper.js"></script>
+<script src="/js/helpers/type-tags-helper.js"></script>
+<script src="/js/helpers/format-datetime-helper.js"></script>

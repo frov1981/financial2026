@@ -113,6 +113,6 @@ export const validateDeleteReceivable = async (auth_req: AuthRequest, receivable
   const paymentsCount = await receivablePaymentRepo.count({
     where: { receivable: { id: receivable.id } }
   })
-  if (paymentsCount > 0) field_errors.general = 'No se puede eliminar una cuenta con pagar con pagos registrados'
+  if (paymentsCount > 0) field_errors.general = 'No se puede eliminar una cuenta por cobrar con cobros registrados'
   return Object.keys(field_errors).length > 0 ? field_errors : null
 }

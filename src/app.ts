@@ -17,6 +17,9 @@ import homeRoutes from './routes/home.route'
 import payableGroupRoutes from './routes/payable-group.route'
 import payableRoutes from './routes/payable.route'
 import paymentRoutes from './routes/payable-payment.route'
+import receivableGroupRoutes from './routes/receivable-group.route'
+import receivableRoutes from './routes/receivable.route'
+import receivableCollectionRoutes from './routes/receivable-collection.route'
 import transactionRoutes from './routes/transaction.route'
 
 export const app = express()
@@ -102,4 +105,7 @@ protectedRouter.use('/transactions', transactionRoutes)
 protectedRouter.use('/payables', injectPayableBalance, payableRoutes)
 protectedRouter.use('/payable-groups', payableGroupRoutes)
 protectedRouter.use('/payments', injectPayableBalance, paymentRoutes)
+protectedRouter.use('/receivables', injectPayableBalance, receivableRoutes)
+protectedRouter.use('/receivables-groups', receivableGroupRoutes)
+protectedRouter.use('/receivables-collections', injectPayableBalance, receivableCollectionRoutes)
 app.use(protectedRouter)

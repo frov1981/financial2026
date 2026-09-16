@@ -150,7 +150,8 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
         name: req.body.name,
         note: req.body.note,
         total_amount: 0,
-        interest_paid: 0,
+        principal_received: 0,
+        interest_received: 0,
         balance: 0,
         start_date: parseLocalDateToUTC(req.body.start_date, timezone),
         receivable_group: receivable_group,
@@ -196,13 +197,13 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
     if (mode === 'insert') {
       if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
       if (!new_category) { throw { code: 'CATEGORY_NOT_FOUND' } }
-      new_account.balance += receivable.total_amount
+      new_account.balance -= receivable.total_amount
       await queryRunner.manager.save(new_account)
       receivable.disbursement_account = new_account
       receivable.category = new_category
       const transaction = queryRunner.manager.create(Transaction, {
         user: { id: auth_req.user.id } as any,
-        type: 'income',
+        type: 'expense',
         detailed_type: 'expense_for_receivable',
         amount: receivable.total_amount,
         account: new_account,
@@ -220,15 +221,17 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
       if (!old_account) throw { code: 'DISBURSEMENT_REQUIRED' }
       if (old_account.id === new_account.id) {
         const delta = receivable.total_amount - previous_amount
-        old_account.balance += delta
+        old_account.balance -= delta
         await queryRunner.manager.save(old_account)
       } else {
-        old_account.balance -= previous_amount
-        new_account.balance += receivable.total_amount
+        old_account.balance += previous_amount
+        new_account.balance -= receivable.total_amount
         await queryRunner.manager.save([old_account, new_account])
       }
       receivable.disbursement_account = new_account
       if (receivable.transaction?.id) {
+        receivable.transaction.type = 'expense'
+        receivable.transaction.detailed_type = 'expense_for_receivable'
         receivable.transaction.amount = receivable.total_amount
         receivable.transaction.date = receivable.start_date
         receivable.transaction.description = receivable.note || receivable.name

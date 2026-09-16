@@ -74,10 +74,22 @@ function categoryTypeForPayableTag(type) {
           Cuentas por Pagar
         </div>
       `
-    case 'payment':
+    case 'payable_payment':
       return `
         <div class="tx-tag ">
-          Pagos por Cuentas por Pagar
+          Cuentas por Pagar
+        </div>
+      `
+    case 'receivable':
+      return `
+        <div class="tx-tag">
+          Cuentas por Cobrar
+        </div>
+      `
+    case 'receivable_collection':
+      return `
+        <div class="tx-tag">
+          Cobros
         </div>
       `
     default:

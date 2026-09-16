@@ -1,3 +1,4 @@
+import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { ReceivableCollection } from "../entities/ReceivableCollection.entity"
@@ -80,7 +81,7 @@ export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id:
     const start = performance.now()
 
     const result = await repo.find({
-        where: { id: collection_id },
+        where: { receivable: { id: collection_id } },
         relations: { receivable: true, account: true, category: true },
         order: { collection_date: 'DESC' }
     })

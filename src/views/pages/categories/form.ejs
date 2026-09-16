@@ -72,7 +72,7 @@
     <!-- Tipo de categoría -->
     <% if (!isHidden('type_for_payable_or_receivable')) { %>
     <div class="mb-4">
-      <label class="block font-medium mb-1">Tipo de categoría para Cuentas por Pagar</label>
+      <label class="block font-medium mb-1">Tipo de Cuenta por Pagar o Cobrar</label>
 
       <div class="flex gap-6">
         <label class="flex items-center gap-1">
@@ -83,7 +83,7 @@
             <%= category?.type_for_payable_or_receivable === 'payable' ? 'checked' : '' %>
             <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
           >
-          Para Cuentas por Pagar
+        Cuentas por Pagar
         </label>
 
         <label class="flex items-center gap-1">
@@ -94,7 +94,29 @@
             <%= category?.type_for_payable_or_receivable === 'payable_payment' ? 'checked' : '' %>
             <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
           >
-          Para Pagos
+          Pagos
+        </label>
+
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type_for_payable_or_receivable"
+            value="receivable"
+            <%= category?.type_for_payable_or_receivable === 'receivable' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
+          >
+          Cuentas por Cobrar
+        </label>
+
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type_for_payable_or_receivable"
+            value="receivable_collection"
+            <%= category?.type_for_payable_or_receivable === 'receivable_collection' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
+          >
+          Cobros
         </label>
 
         <label class="flex items-center gap-1">

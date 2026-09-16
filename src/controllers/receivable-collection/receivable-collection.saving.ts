@@ -10,6 +10,7 @@ import { Receivable } from '../../entities/Receivable.entity';
 import { ReceivableCollection } from '../../entities/ReceivableCollection.entity';
 import { Transaction } from '../../entities/Transaction.entity';
 import { KpiCacheService } from '../../services/kpi-cache.service';
+import { getNextReceivableCollectionNumber } from '../../services/receivable-collection-number.service';
 import { AuthRequest } from '../../types/auth-request';
 import { ReceivableCollectionFormMode } from '../../types/form-view-params';
 import { parseBoolean } from '../../utils/bool.util';
@@ -50,9 +51,9 @@ const applyAccountDelta = (account: Account, old_total: number, new_total: numbe
 ============================ */
 const getTitle = (mode: string) => {
     switch (mode) {
-        case 'insert': return 'Registrar Pago'
-        case 'update': return 'Editar Pago'
-        case 'delete': return 'Eliminar Pago'
+        case 'insert': return 'Registrar Cobro'
+        case 'update': return 'Editar Cobro'
+        case 'delete': return 'Eliminar Cobro'
         default: return 'Indefinido'
     }
 }
@@ -120,7 +121,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
     await queryRunner.startTransaction()
 
     try {
-        if (!receivable_id) throw new Error('Cuenta por pagar es requerida')
+        if (!receivable_id) throw new Error('Cuenta por cobrar es requerida')
 
         const receivableRepo = queryRunner.manager.getRepository(Receivable)
         const receivableCollectionRepo = queryRunner.manager.getRepository(ReceivableCollection)
@@ -128,18 +129,18 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
         const accountRepo = queryRunner.manager.getRepository(Account)
 
         const receivable = await getReceivableById(auth_req, receivable_id)
-        if (!receivable) throw new Error('Cuenta por pagar no encontrada')
+        if (!receivable) throw new Error('Cuenta por cobrar no encontrada')
 
         let existing: ReceivableCollection | null = null
         if (receivableCollection_id) {
             existing = await getCollectionById(auth_req, receivableCollection_id)
-            if (!existing) throw new Error('Pago no encontrado')
+            if (!existing) throw new Error('Cobro no encontrado')
         }
         /* =========================
            DELETE
         ============================ */
         if (mode === 'delete') {
-            if (!existing) throw new Error('Pago no encontrado')
+            if (!existing) throw new Error('Cobro no encontrado')
             const errors = await validateDeleteReceivableCollection(auth_req, existing)
             if (errors) throw { validationErrors: errors }
             const total = getTotal(existing)
@@ -169,7 +170,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
                 if (return_from === 'categories' && return_category_id) {
                 return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
             }
-            return res.redirect(`/receivableCollections/${receivable_id}/receivable`)
+            return res.redirect(`/receivables-collections/${receivable_id}/payable`)
         }
         /* =========================
            INSERT / UPDATE
@@ -192,7 +193,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
         if (mode === 'insert') {
             const principal_collected = Number(clean.principal_collected ?? clean.principal_paid ?? 0)
             const interest_collected = Number(clean.interest_collected ?? clean.interest_paid ?? 0)
-            const collection_number = 0
+            const collection_number = principal_collected > 0 ? await getNextReceivableCollectionNumber(receivable_id) : 0
 
             receivableCollection = receivableCollectionRepo.create({
                 receivable,
@@ -205,7 +206,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
                 collection_date: parseLocalDateToUTC(clean.collection_date ?? clean.payment_date ?? clean.receivableCollection_date, timezone)
             })
         } else {
-            if (!existing) throw new Error('Pago no encontrado')
+            if (!existing) throw new Error('Cobro no encontrado')
             old_receivableCollection = structuredClone(existing)
             old_principal = existing.principal_collected
             old_total = getTotal(existing)
@@ -301,7 +302,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
             if (return_from === 'categories' && return_category_id) {
             return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
         }
-        return res.redirect(`/receivableCollections/${receivable_id}/receivable`)
+        return res.redirect(`/receivables-collections/${receivable_id}/payable`)
     } catch (error: any) {
         /* ============================
             Manejo de errores
@@ -312,7 +313,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {
             title: getTitle(mode),
-            view: 'pages/receivable-receivableCollections/form',
+            view: 'pages/payable-receivable_collections/form',
             ...form_state,
             errors: validationErrors
         })

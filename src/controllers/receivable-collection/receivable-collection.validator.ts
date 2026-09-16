@@ -16,11 +16,11 @@ export const validateSaveReceivableCollection = async (auth_req: AuthRequest, re
     let available_amount = receivableCollection.receivable.balance
     if (old_receivableCollection) available_amount += old_receivableCollection.principal_collected
     if (receivableCollection.principal_collected > available_amount) {
-        field_errors.principal_collected = 'El monto del capital supera el saldo pendiente de la cuenta por pagar'
+        field_errors.principal_collected = 'El monto del capital supera el saldo pendiente de la cuenta por cobrar'
     }
     const total_receivableCollection = receivableCollection.principal_collected + receivableCollection.interest_collected
     if (total_receivableCollection <= 0) {
-        field_errors.general = 'El monto total del pago (capital + intereses) debe ser mayor a cero'
+        field_errors.general = 'El monto total del cobro (capital + intereses) debe ser mayor a cero'
     }
     // Detectar cambios contables
     let financial_change = false

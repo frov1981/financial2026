@@ -1,0 +1,137 @@
+<%
+  const rules = receivable_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'readonly'
+%>
+
+<%
+const cancel_url = context?.from === 'categories' && context?.category_id
+  ? `/transactions?from=categories&category_id=${context.category_id}`
+  : '/receivables'
+%>
+
+<script>
+  window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
+</script>
+
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6">
+    <%=
+      mode === 'insert' ? 'Insertar Cuenta por Cobrar' :
+      mode === 'update' ? 'Editar Cuenta por Cobrar' :
+      mode === 'delete' ? 'Eliminar Cuenta por Cobrar' :
+      ''
+    %>
+  </h1>
+
+  <form method="post" action="/receivables/">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <% if (errors?.general) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors.general %>
+      </div>
+    <% } %>
+
+    <input type="hidden" name="id" value="<%= receivable?.id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
+    <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
+    <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
+
+    <% if (!isHidden('name')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Nombre</label>
+      <input type="text" name="name" class="w-full border rounded px-3 py-2" value="<%= receivable?.name || '' %>" <%= isReadOnly('name') ? 'readonly' : '' %> required>
+      <% if (errors?.name) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('total_amount')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Monto total</label>
+      <input type="number" step="0.01" name="total_amount" class="w-full border rounded px-3 py-2" value="<%= receivable?.total_amount || '0.00' %>" <%= isReadOnly('total_amount') ? 'readonly' : '' %> required>
+      <% if (errors?.total_amount) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.total_amount %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('start_date')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Fecha inicio</label>
+      <input type="datetime-local" name="start_date" class="w-full border rounded px-3 py-2" value="<%= receivable?.start_date || '' %>" <%= isReadOnly('start_date') ? 'readonly' : '' %> required>
+      <% if (errors?.start_date) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.start_date %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('receivable_group_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Grupo de Cuentas por Cobrar</label>
+      <div class="autocomplete" data-items='<%- JSON.stringify(receivable_group_list) %>' data-default-id="<%= receivable?.receivable_group?.id || '' %>" data-placeholder="-- Escoja una opción --">
+        <input type="text" class="autocomplete-input" autocomplete="off" value="<%= receivable?.receivable_group?.name || '' %>" <%= isReadOnly('receivable_group_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="receivable_group_id" value="<%= receivable?.receivable_group?.id || '' %>">
+        <% if (!isReadOnly('receivable_group_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      <% if (errors?.receivable_group) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.receivable_group %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('disbursement_account_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Cuenta de desembolso</label>
+      <div class="autocomplete" data-items='<%- JSON.stringify(disbursement_account_list) %>' data-default-id="<%= receivable?.disbursement_account?.id || '' %>" data-placeholder="-- Escoja una opción --">
+        <input type="text" class="autocomplete-input" autocomplete="off" value="<%= receivable?.disbursement_account?.name || '' %>" <%= isReadOnly('disbursement_account_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="disbursement_account_id" value="<%= receivable?.disbursement_account?.id || '' %>">
+        <% if (!isReadOnly('disbursement_account_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      <% if (errors?.disbursement_account) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.disbursement_account %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('category_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Categoría</label>
+      <div class="autocomplete" data-items='<%- JSON.stringify(active_income_category_list) %>' data-default-id="<%= receivable?.category?.id || '' %>" data-placeholder="-- Escoja una opción --">
+        <input type="text" class="autocomplete-input" autocomplete="off" value="<%= receivable?.category?.name || '' %>" <%= isReadOnly('category_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="category_id" value="<%= receivable?.category?.id || '' %>">
+        <% if (!isReadOnly('category_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      <% if (errors?.category) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('note')) { %>
+    <div class="mb-6">
+      <label class="block font-medium mb-1">Nota</label>
+      <textarea name="note" rows="3" class="w-full border rounded px-3 py-2" <%= isReadOnly('note') ? 'readonly' : '' %>><%= receivable?.note || '' %></textarea>
+    </div>
+    <% } %>
+
+    <div class="flex justify-end gap-2">
+      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+      <% if (mode === 'delete') { %>
+        <button class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
+      <% } else { %>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<script src="/js/forms/autocomplete-form.js"></script>

@@ -62,16 +62,16 @@ export const routeToFormInsertReceivableCollection: RequestHandler = async (req,
     const timezone = auth_req.timezone || 'UTC'
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderReceivableCollectionForm(res, {
-        title: 'Insertar Pago',
+        title: 'Insertar Cobro',
         view: 'pages/payable-receivable_collections/form',
         errors: {},
         auth_req,
         mode,
         receivable_collection: {
-            receivable_collection_date: formatDateForInputLocal(default_date, timezone),
+            collection_date: formatDateForInputLocal(default_date, timezone),
             note: '',
-            principal_paid: '0.00',
-            interest_paid: '0.00',
+            principal_collected: '0.00',
+            interest_collected: '0.00',
             category: null,
             account: null,
         },
@@ -95,7 +95,7 @@ export const routeToFormUpdateReceivableCollection: RequestHandler = async (req,
         auth_req,
         receivable_collection: {
             ...receivable_collection,
-            receivable_collection_date: formatDateForInputLocal(receivable_collection.collection_date, timezone)
+            collection_date: formatDateForInputLocal(receivable_collection.collection_date, timezone)
         }
     })
 }
@@ -111,14 +111,14 @@ export const routeToFormCloneReceivableCollection: RequestHandler = async (req, 
     }
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderReceivableCollectionForm(res, {
-        title: 'Insertar Pago',
+        title: 'Insertar Cobro',
         view: 'pages/payable-receivable_collections/form',
         errors: {},
         mode,
         auth_req,
         receivable_collection: {
             ...receivable_collection,
-            receivable_collection_date: formatDateForInputLocal(default_date, timezone)
+            collection_date: formatDateForInputLocal(default_date, timezone)
         }
     })
 }
@@ -140,7 +140,7 @@ export const routeToFormDeleteReceivableCollection: RequestHandler = async (req,
         auth_req,
         receivable_collection: {
             ...receivable_collection,
-            receivable_collection_date: formatDateForInputLocal(receivable_collection.collection_date, timezone)
+            collection_date: formatDateForInputLocal(receivable_collection.collection_date, timezone)
         }
     })
 }
