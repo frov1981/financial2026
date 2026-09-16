@@ -20,10 +20,19 @@ type PayableFlowSummary = {
   net_balance: number[]
 }
 
+type ReceivableFlowSummary = {
+  labels: string[]
+  total_receivables: number[]
+  total_receivable_collections: number[]
+  net_balance: number[]
+}
+
 const base_kpi = {
   incomes: 0,
   expenses: 0,
   payables: 0,
+  receivables: 0,
+  receivable_collections: 0,
   payable_payments: 0,
   savings: 0,
   withdrawals: 0,
@@ -87,6 +96,8 @@ export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promis
     savings: prev.savings + current.savings,
     withdrawals: prev.withdrawals + current.withdrawals,
     payables: prev.payables + current.payables,
+    receivables: prev.receivables + current.receivables,
+    receivable_collections: prev.receivable_collections + current.receivable_collections,
     payable_payments: prev.payable_payments + current.payable_payments,
     total_inflows: prev.total_inflows + current.total_inflows,
     total_outflows: prev.total_outflows + current.total_outflows,
@@ -169,6 +180,8 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
   const result: KpiBalance = rows.reduce((acc, row) => {
     acc.incomes += Number(row.incomes)
     acc.expenses += Number(row.expenses)
+    acc.receivables += Number(row.receivables || 0)
+    acc.receivable_collections += Number(row.receivable_collections || 0)
     acc.savings += Number(row.savings)
     acc.withdrawals += Number(row.withdrawals)
     acc.payables += Number(row.payables)
@@ -350,6 +363,75 @@ export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Pro
     labels,
     total_payables,
     total_payable_payments,
+    net_balance
+  }
+
+  cache.set(cache_key, result)
+  return result
+}
+
+export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): Promise<ReceivableFlowSummary> => {
+  const user_id = auth_req.user.id
+  const year = Number(auth_req.query.year_period_for_payable_summ || 0)
+
+  const cache_key = cacheKeys.homeReceivableFlowSummary(user_id, year)
+  const cached = cache.get<ReceivableFlowSummary>(cache_key)
+  if (cached !== undefined) return cached
+
+  const labels: string[] = []
+  const total_receivables: number[] = []
+  const total_receivable_collections: number[] = []
+  const net_balance: number[] = []
+
+  let available_years = cache.get<number[]>(cacheKeys.homeAvailableYearsKpi(user_id)) || []
+  available_years.sort((a, b) => a - b)
+
+  if (year === 0) {
+    for (const y of available_years) {
+      if (y === 0) continue
+
+      let receivables = 0
+      let receivable_collections = 0
+      let net = 0
+
+      for (let month = 1; month <= 12; month++) {
+        const kpi_key = cacheKeys.homeBalanceKpi(user_id, y, month)
+        let kpi = cache.get<any>(kpi_key)
+
+        if (!kpi) {
+          const req = buildAuthReq(auth_req, y, month)
+          kpi = await getHomeBalanceKpiCache(req)
+          cache.set(kpi_key, kpi)
+        }
+
+        receivables += kpi?.receivables ?? 0
+        receivable_collections += kpi?.receivable_collections ?? 0
+        net += (kpi?.receivables ?? 0) - (kpi?.receivable_collections ?? 0)
+      }
+
+      labels.push(String(y))
+      total_receivables.push(receivables)
+      total_receivable_collections.push(receivable_collections)
+      net_balance.push(net)
+    }
+  } else {
+    const month_labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+    for (let month = 1; month <= 12; month++) {
+      const kpi_key = cacheKeys.homeBalanceKpi(user_id, year, month)
+      const kpi = cache.get<any>(kpi_key)
+
+      labels.push(month_labels[month - 1])
+      total_receivables.push(kpi?.receivables ?? 0)
+      total_receivable_collections.push(kpi?.receivable_collections ?? 0)
+      net_balance.push((kpi?.receivables ?? 0) - (kpi?.receivable_collections ?? 0))
+    }
+  }
+
+  const result: ReceivableFlowSummary = {
+    labels,
+    total_receivables,
+    total_receivable_collections,
     net_balance
   }
 

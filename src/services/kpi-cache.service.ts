@@ -20,7 +20,9 @@ SELECT
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income_for_payable' THEN t.amount ELSE 0 END), 0) AS payables,
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'payment_for_payable' THEN t.amount ELSE 0 END), 0) AS payable_payments,
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'saving' THEN t.amount ELSE 0 END), 0) AS savings,
-  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'collection_for_receivable' THEN t.amount ELSE 0 END), 0) AS receivable_collections,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'expense_for_receivable' THEN t.amount ELSE 0 END), 0) AS receivable_disbursements
  FROM transactions t
 WHERE t.user_id = ?
   AND (? IS NULL OR t.date >= ?)
@@ -88,9 +90,12 @@ export class KpiCacheService {
       const payable_payments = Number(r.payable_payments || 0)
       const savings = Number(r.savings || 0)
       const withdrawals = Number(r.withdrawals || 0)
+      const receivable_collections = Number(r.receivable_collections || 0)
+      const receivable_disbursements = Number(r.receivable_disbursements || 0)
 
-      const total_inflows = money(incomes + payables)
-      const total_outflows = money(expenses + payable_payments)
+      // Include receivable flows: collections are inflows, disbursements are outflows
+      const total_inflows = money(incomes + payables + receivable_collections)
+      const total_outflows = money(expenses + payable_payments + receivable_disbursements)
       const net_cash_flow = money(total_inflows - total_outflows)
       const net_savings = money(savings - withdrawals)
       const available_balance = money(net_cash_flow - net_savings)
@@ -109,6 +114,8 @@ export class KpiCacheService {
         savings,
         withdrawals,
         payables,
+        receivables: receivable_disbursements,
+        receivable_collections,
         payable_payments,
         total_inflows,
         total_outflows,
@@ -179,9 +186,12 @@ export class KpiCacheService {
         const payable_payments = Number(r.payable_payments || 0)
         const savings = Number(r.savings || 0)
         const withdrawals = Number(r.withdrawals || 0)
+        const receivable_collections = Number(r.receivable_collections || 0)
+        const receivable_disbursements = Number(r.receivable_disbursements || 0)
 
-        const total_inflows = money(incomes + payables)
-        const total_outflows = money(expenses + payable_payments)
+        // Include receivable flows in inflows/outflows
+        const total_inflows = money(incomes + payables + receivable_collections)
+        const total_outflows = money(expenses + payable_payments + receivable_disbursements)
         const net_cash_flow = money(total_inflows - total_outflows)
         const net_savings = money(savings - withdrawals)
         const available_balance = money(net_cash_flow - net_savings)
@@ -195,6 +205,8 @@ export class KpiCacheService {
           savings,
           withdrawals,
           payables,
+          receivables: receivable_disbursements,
+          receivable_collections,
           payable_payments,
           total_inflows,
           total_outflows,

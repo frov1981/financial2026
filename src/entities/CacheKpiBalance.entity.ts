@@ -35,6 +35,12 @@ export class CacheKpiBalance {
   payables!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  receivables!: number
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  receivable_collections!: number
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
   payable_payments!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
