@@ -111,13 +111,20 @@ export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promis
   cache.set(cache_key, result)
   return result
 }
-const calcTrend = (current: number, previous: number): TrendValue => {
-  if (previous === 0) return null
-  const diff = Number((current - previous).toFixed(2))
-  const percent = Number(((diff / previous) * 100).toFixed(2))
+const calcTrend = (key: string, current: number, previous: number): TrendValue => {
+  // If previous is zero and current is also zero, there's no trend to show
+  if (previous === 0 && current === 0) return null
+
+  // Compute diff. If previous is zero but current != 0, treat diff as (current - 0) so we can show a direction.
+  let diff = Number((current - previous).toFixed(2))
+  // For some KPIs (like receivables), an increase is unfavorable — invert sign.
+  if (key === 'receivables') diff = Number((-diff).toFixed(2))
+
+  // Percent is undefined when previous is zero; set to null in that case so UI can still show direction.
+  const percent = previous === 0 ? null : Number(((diff / previous) * 100).toFixed(2))
   return {
     diff,
-    percent,
+    percent: percent as any,
     direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'equal'
   }
 }
@@ -128,7 +135,7 @@ const calcTrendObject = (current: KpiBalance, previous: KpiBalance): KpiTrend =>
     if (key === 'is_populate') continue
     const curr = current[key as keyof KpiBalance]
     const prev = previous[key as keyof KpiBalance]
-    result[key as keyof KpiBalance] = calcTrend(curr, prev)
+    result[key as keyof KpiBalance] = calcTrend(key, curr, prev)
   }
   return result
 }

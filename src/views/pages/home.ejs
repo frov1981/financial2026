@@ -74,6 +74,26 @@
       </div>
     </div>
 
+    <!-- ============================
+    RECEIVABLE FLOW SUMMARY
+    ============================= -->
+    <div class="ui-card home-slide">
+
+      <div class="ui-card-header html-receivable-flow-summary-header-nav">
+        <button id="html-receivable-flow-summary-prev" class="html-receivable-flow-summary-year-btn"></button>
+        <h2 id="html-receivable-flow-summary-year-label" class="html-receivable-flow-summary-year-label">
+          Tendencia Cuentas por Cobrar
+        </h2>
+        <button id="html-receivable-flow-summary-next" class="html-receivable-flow-summary-year-btn"></button>
+      </div>
+
+      <div id="html-receivable-flow-summary" class="ui-card-body">
+        <div style="height: 280px;">
+          <canvas id="receivableFlowChart"></canvas>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <button id="carousel-next" class="carousel-nav carousel-nav-next" onclick="scrollCarouselNext()" title="Siguiente">

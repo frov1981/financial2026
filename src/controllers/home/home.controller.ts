@@ -7,7 +7,7 @@ import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
-import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsPayable, getKpisGlobalBalance, getKpisLast6MonthsBalance, getPayableSummary, getTrendKpi } from './home.auxiliar'
+import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsPayable, getKpisGlobalBalance, getKpisLast6MonthsBalance, getPayableSummary, getTrendKpi, getReceivableSummary } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.user_id) {
@@ -148,6 +148,21 @@ export const apiForGettingPayableSummary: RequestHandler = async (req: Request, 
     })
   } catch (error) {
     logger.error('Error en apiForGettingPayableSummary:', parseError(error))
+    res.json({ message: 'Error' })
+  }
+}
+
+export const apiForGettingReceivableSummary: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  try {
+    const availableYearsKpi = await getAvailableYearsKpi(auth_req)
+    const receivableSummary = await getReceivableSummary(auth_req)
+    res.json({
+      availableYearsKpi,
+      receivableSummary,
+    })
+  } catch (error) {
+    logger.error('Error en apiForGettingReceivableSummary:', parseError(error))
     res.json({ message: 'Error' })
   }
 }

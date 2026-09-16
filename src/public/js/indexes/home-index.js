@@ -4,6 +4,8 @@
 const CARD_IDS = [
     'html-balance-kpi',
     'html-cash-flow-summary',
+    'html-payable-flow-summary',
+    'html-receivable-flow-summary',
 ]
 
 const KPI_CONFIG = [
@@ -13,6 +15,8 @@ const KPI_CONFIG = [
     { key: 'expenses', label: 'Egresos', color: 'red', trend: true },
     { key: 'payables', label: 'Cuentas por Pagar', color: 'green', trend: true },
     { key: 'payable_payments', label: 'Pagos', color: 'red', trend: true },
+    { key: 'receivables', label: 'Cuentas por Cobrar', color: 'red', trend: true },
+    { key: 'receivable_collections', label: 'Cobros', color: 'green', trend: true },
     { key: 'savings', label: 'Ahorros', color: 'green', trend: true },
     { key: 'withdrawals', label: 'Retiros', color: 'red', trend: true },
     { key: 'total_inflows', label: 'Total Ingresos', color: 'green', trend: true },
@@ -27,6 +31,7 @@ const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
 const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 const CASH_FLOW_YEAR_STATE_KEY = `home.cash.flow.year.${window.USER_ID}`
 const PAYABLE_FLOW_YEAR_STATE_KEY = `home.payable.flow.year.${window.USER_ID}`
+const RECEIVABLE_FLOW_YEAR_STATE_KEY = `home.receivable.flow.year.${window.USER_ID}`
 
 const labelForKpi = 'KPIs'
 const labelForTrendBalance = 'Balances'
@@ -38,6 +43,8 @@ let cash_flow_year_index = 0
 let cashFlowChart = null
 let payable_flow_year_index = 0
 let payableFlowChart = null
+let receivable_flow_year_index = 0
+let receivableFlowChart = null
 
 /* ============================
    DOM Ready
@@ -69,9 +76,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const payable_next = document.getElementById('html-payable-flow-summary-next')
     if (payable_prev) payable_prev.innerHTML = iconCarouselPrev()
     if (payable_next) payable_next.innerHTML = iconCarouselNext()
+    const receivable_prev = document.getElementById('html-receivable-flow-summary-prev')
+    const receivable_next = document.getElementById('html-receivable-flow-summary-next')
+    if (receivable_prev) receivable_prev.innerHTML = iconCarouselPrev()
+    if (receivable_next) receivable_next.innerHTML = iconCarouselNext()
 
     // Inicializar el Html para KPIs
     renderBalanceKpiHtml()
+    // Mostrar etiquetas por defecto inmediatamente para evitar que queden vacías
+    updateLabelForBalanceKpi(0)
+    updateLabelForCashFlowSumm(0)
+    updateLabelForPayableFlowSumm(0)
+    updateLabelForReceivableFlowSumm(0)
     // Invocar desde el backend
     try {
         const res_kpi = await fetch('/kpis', { credentials: 'same-origin' })
@@ -94,6 +110,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         payable_flow_year_index = kpi_years.includes(savedYearPayableFlow) ? kpi_years.indexOf(savedYearPayableFlow) : 0
         const current_year_payable_flow = kpi_years[payable_flow_year_index]
 
+        const savedYearRawReceivableFlow = loadFilters(RECEIVABLE_FLOW_YEAR_STATE_KEY)
+        const savedYearReceivableFlow = savedYearRawReceivableFlow !== null ? Number(savedYearRawReceivableFlow) : null
+        receivable_flow_year_index = kpi_years.includes(savedYearReceivableFlow) ? kpi_years.indexOf(savedYearReceivableFlow) : 0
+        const current_year_receivable_flow = kpi_years[receivable_flow_year_index]
+
         updateLabelForBalanceKpi(current_year_kpi)
         initYearNavForBalanceKpi()
         await changeYearForBalanceKpi()
@@ -105,6 +126,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateLabelForPayableFlowSumm(current_year_payable_flow)
         await changeYearForPayableFlowSumm()
         initYearNavForPayableFlowSumm()
+
+        updateLabelForReceivableFlowSumm(current_year_receivable_flow)
+        await changeYearForReceivableFlowSumm()
+        initYearNavForReceivableFlowSumm()
 
         initHomeCarousel()
     } catch (err) {
@@ -121,8 +146,8 @@ function renderBalanceKpiHtml() {
     let chunk = []
     KPI_CONFIG.forEach((kpi, index) => {
         chunk.push(kpi)
-        if (chunk.length === 6 || index === KPI_CONFIG.length - 1) {
-            html += `<div class="ui-kpi-grid cols-6">`
+            if (chunk.length === 6 || index === KPI_CONFIG.length - 1) {
+                html += `<div class="ui-kpi-grid cols-6">`
             chunk.forEach(item => {
                 const id = item.key.replace(/_/g, '-')
                 html += `
@@ -153,7 +178,7 @@ function renderBalanceKpiHtml() {
 }
 
 function renderKpis(year, balanceKpi, trendKpi) {
-    const fields = ['incomes', 'expenses', 'payables', 'payable_payments', 'savings', 'withdrawals', 'total_inflows', 'total_outflows', 'net_cash_flow', 'net_savings', 'available_balance', 'principal_breakdown', 'interest_breakdown']
+    const fields = ['incomes', 'expenses', 'payables', 'payable_payments', 'receivables', 'receivable_collections', 'savings', 'withdrawals', 'total_inflows', 'total_outflows', 'net_cash_flow', 'net_savings', 'available_balance', 'principal_breakdown', 'interest_breakdown']
     fields.forEach(field => {
         const el = document.getElementById(`html-balance-kpi-${field.replace(/_/g, '-')}`)
         if (el) el.textContent = (balanceKpi[field] ?? 0).toFixed(2)
@@ -172,6 +197,25 @@ function renderKpis(year, balanceKpi, trendKpi) {
             el_trend.style.display = 'none'
             el_arrow.style.display = 'none'
         }
+    })
+}
+
+function renderReceivableFlowSummChart(data) {
+    const ctx = document.getElementById('receivableFlowChart').getContext('2d')
+
+    if (receivableFlowChart) receivableFlowChart.destroy()
+
+    receivableFlowChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [
+                { label: 'Cuentas por Cobrar', data: data.total_receivables, tension: 0.35 },
+                { label: 'Cobros', data: data.total_receivable_collections, tension: 0.35 },
+                { label: 'Balance', data: data.net_balance, borderDash: [6, 4], tension: 0.35 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
     })
 }
 
@@ -290,6 +334,21 @@ async function changeYearForPayableFlowSumm() {
     renderPayableFlowSummChart(payableSummary)
 }
 
+async function changeYearForReceivableFlowSumm() {
+    const year = kpi_years[receivable_flow_year_index]
+
+    saveFilters(RECEIVABLE_FLOW_YEAR_STATE_KEY, year)
+    updateLabelForReceivableFlowSumm(year)
+    updateYearNavForReceivableFlowSumm()
+
+    const res = await fetch(`/receivable-summary?year_period_for_payable_summ=${year}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+
+    const { receivableSummary } = await res.json()
+
+    renderReceivableFlowSummChart(receivableSummary)
+}
+
 function initYearNavForCashFlowSumm() {
     const prevBtn = document.getElementById('html-cash-flow-summary-prev')
     const nextBtn = document.getElementById('html-cash-flow-summary-next')
@@ -336,6 +395,29 @@ function initYearNavForPayableFlowSumm() {
     updateYearNavForPayableFlowSumm()
 }
 
+function initYearNavForReceivableFlowSumm() {
+    const prevBtn = document.getElementById('html-receivable-flow-summary-prev')
+    const nextBtn = document.getElementById('html-receivable-flow-summary-next')
+
+    if (!prevBtn || !nextBtn) return
+
+    prevBtn.addEventListener('click', async () => {
+        if (receivable_flow_year_index < kpi_years.length - 1) {
+            receivable_flow_year_index++
+            await changeYearForReceivableFlowSumm()
+        }
+    })
+
+    nextBtn.addEventListener('click', async () => {
+        if (receivable_flow_year_index > 0) {
+            receivable_flow_year_index--
+            await changeYearForReceivableFlowSumm()
+        }
+    })
+
+    updateYearNavForReceivableFlowSumm()
+}
+
 function updateLabelForCashFlowSumm(year) {
     const label = document.getElementById('html-cash-flow-summary-year-label')
     if (!label) return
@@ -348,6 +430,23 @@ function updateLabelForPayableFlowSumm(year) {
     if (!label) return
 
     label.textContent = year === 0 ? `${labelForTrendPayable} - Todos` : `${labelForTrendPayable} - ${year}`
+}
+
+function updateLabelForReceivableFlowSumm(year) {
+    const label = document.getElementById('html-receivable-flow-summary-year-label')
+    if (!label) return
+
+    label.textContent = year === 0 ? `Cuentas por Cobrar - Todos` : `Cuentas por Cobrar - ${year}`
+}
+
+function updateYearNavForReceivableFlowSumm() {
+    const prevBtn = document.getElementById('html-receivable-flow-summary-prev')
+    const nextBtn = document.getElementById('html-receivable-flow-summary-next')
+
+    if (!prevBtn || !nextBtn) return
+
+    prevBtn.disabled = receivable_flow_year_index >= kpi_years.length - 1
+    nextBtn.disabled = receivable_flow_year_index <= 0
 }
 
 function updateYearNavForCashFlowSumm() {

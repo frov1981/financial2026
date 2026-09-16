@@ -3,6 +3,7 @@ import {
     apiForGettingCashSummary,
     apiForGettingKpis,
     apiForGettingPayableSummary,
+    apiForGettingReceivableSummary,
     apiForLogout,
     apiForValidatingLogin,
     routeToPageHome,
@@ -29,6 +30,7 @@ protectedSubRouter.get('/logout', apiForLogout)
 protectedSubRouter.get('/kpis', apiForGettingKpis)
 protectedSubRouter.get('/cash-summary', apiForGettingCashSummary)
 protectedSubRouter.get('/payable-summary', apiForGettingPayableSummary)
+protectedSubRouter.get('/receivable-summary', apiForGettingReceivableSummary)
 protectedSubRouter.get('/home', routeToPageHome)
 
 router.use(protectedSubRouter)
