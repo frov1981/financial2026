@@ -54,6 +54,10 @@ export const cacheKeys = {
   homeBalanceKpiAccum: (user_id: number, year: number, month: number) => `home_kpis_balance_accum_user_${user_id}_year_${year}_month_${month}`,
   homeBalanceKpiAccumPrefix: (user_id: number) => `home_kpis_balance_accum_user_${user_id}_`,
 
+  /* Balances */
+  payableBalanceByUser: (user_id: number) => `payable_balance_user_${user_id}`,
+  receivableBalanceByUser: (user_id: number) => `receivable_balance_user_${user_id}`,
+
   allByUser: (user_id: number) => [
     /*Accounts*/
     `accounts_user_${user_id}`,
@@ -81,6 +85,8 @@ export const cacheKeys = {
     `receivable_group_api_user_${user_id}`,
     `receivable_collections_user_${user_id}`,
     `receivable_collections_api_user_${user_id}`,
+    `payable_balance_user_${user_id}`,
+    `receivable_balance_user_${user_id}`,
     /*Home*/
     `home_available_years_kpi_user_${user_id}`,
   ]
@@ -98,9 +104,11 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const deleted_kpis = delByPrefix(cacheKeys.homeBalanceKpiPrefix(user_id))
   const deleted_payments = delByPrefix(cacheKeys.payablePaymentsByPayablePrefix(user_id))
   const deleted_receivable_collections = delByPrefix(cacheKeys.receivableCollectionsByCollectionPrefix(user_id))
+  const deleted_payable_balance = cache.del(cacheKeys.payableBalanceByUser(user_id))
+  const deleted_receivable_balance = cache.del(cacheKeys.receivableBalanceByUser(user_id))
   const deleted_kpis_accum = delByPrefix(cacheKeys.homeBalanceKpiAccumPrefix(user_id))
   const deleted_trend = delByPrefix(cacheKeys.homeTrendKpiPrefix(user_id))
   const deleted_cash_flow_summary = delByPrefix(cacheKeys.homeCashFlowSummaryPrefix(user_id))
   const deleted_payable_flow_summary = delByPrefix(cacheKeys.homePayableFlowSummaryPrefix(user_id))
-  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}]`)
+  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], payableBalanceDeleted=[${deleted_payable_balance}], receivableBalanceDeleted=[${deleted_receivable_balance}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}]`)
 }
