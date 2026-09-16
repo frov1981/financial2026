@@ -51,10 +51,28 @@ function debounce(fn, delay) {
   }
 }
 
-function rowClassByType(type) {
+function rowClassByType(transactionOrType) {
+  // Accept either a transaction object or a bare type string
+  if (!transactionOrType) return ''
+
+  let type = ''
+
+  if (typeof transactionOrType === 'string') {
+    type = transactionOrType
+  } else {
+    type = transactionOrType.type || ''
+  }
+
   if (type === 'income') return 'income'
   if (type === 'expense') return 'expense'
   if (type === 'transfer') return 'transfer'
+  return ''
+}
+
+function moduleOriginClass(transaction) {
+  const dt = transaction?.detailed_type || ''
+  if (dt.includes('payable')) return 'payable'
+  if (dt.includes('receivable')) return 'receivable'
   return ''
 }
 
@@ -62,6 +80,18 @@ function isBatchActive() {
   if (typeof batchGetState !== 'function') return false
   const state = batchGetState()
   return !!state?.active
+}
+
+function isModuleManaged(transaction) {
+  const dt = transaction?.detailed_type || ''
+  return dt.includes('payable') || dt.includes('receivable')
+}
+
+function moduleOriginLabel(transaction) {
+  const dt = transaction?.detailed_type || ''
+  if (dt.includes('payable')) return 'Modulo de Pagos'
+  if (dt.includes('receivable')) return 'Modulo de Cobros'
+  return ''
 }
 
 /* ============================================================================
@@ -154,7 +184,7 @@ function renderRow(transaction) {
   }
 
   return `
-    <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction.type)}">
+    <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction)}">
       <td class="px-4 py-2 text-center col-nowrap">
         <div>${date}</div>
         <div class="text-xs text-gray-600">${time}</div>
@@ -229,13 +259,20 @@ function renderRow(transaction) {
             >
           ` : ''}
 
-          <button 
-            class="icon-btn edit" 
-            title="Editar"
-            onclick="goToRouteUpdate('${action_name}', ${action_id})">
-            ${iconEdit()}
-            <span class="ui-btn-text">Editar</span>
-          </button>
+          ${isModuleManaged(transaction) ? `
+            <span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>
+          ` : ''}
+
+          ${!isModuleManaged(transaction) ? `
+            <button 
+              class="icon-btn edit" 
+              title="Editar"
+              onclick="goToRouteUpdate('${action_name}', ${action_id})">
+              ${iconEdit()}
+              <span class="ui-btn-text">Editar</span>
+            </button>
+          ` : ''}
+
           <button 
             class="icon-btn clone" 
             title="Clonar"
@@ -243,13 +280,17 @@ function renderRow(transaction) {
             ${iconClone()}
             <span class="ui-btn-text">Clonar</span>
           </button>
-          <button 
-            class="icon-btn delete" 
-            title="Eliminar"
-            onclick="goToRouteDelete('${action_name}', ${action_id})">
-            ${iconDelete()}
-            <span class="ui-btn-text">Eliminar</span>
-          </button>
+
+          ${!isModuleManaged(transaction) ? `
+            <button 
+              class="icon-btn delete" 
+              title="Eliminar"
+              onclick="goToRouteDelete('${action_name}', ${action_id})">
+              ${iconDelete()}
+              <span class="ui-btn-text">Eliminar</span>
+            </button>
+          ` : ''}
+
         </div>
       </td>
     </tr> 
@@ -280,7 +321,7 @@ function renderCard(transaction) {
 
   return `
     <div 
-      class="transaction-card ${rowClassByType(transaction.type)}"
+      class="transaction-card ${rowClassByType(transaction)}"
       data-id="${transaction.id}"
       onclick="selectTransactionCard(event, ${transaction.id})">
 
@@ -301,21 +342,28 @@ function renderCard(transaction) {
             >
           ` : ''}
 
-          <button 
-            class="icon-btn edit"
-            onclick="event.stopPropagation(); goToRouteUpdate('${action_name}', ${action_id})">
-            ${iconEdit()}
-          </button>
+          ${isModuleManaged(transaction) ? `
+            <span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>
+          ` : ''}
+          ${!isModuleManaged(transaction) ? `
+            <button 
+              class="icon-btn edit"
+              onclick="event.stopPropagation(); goToRouteUpdate('${action_name}', ${action_id})">
+              ${iconEdit()}
+            </button>
+          ` : ''}
           <button 
             class="icon-btn clone"
             onclick="event.stopPropagation(); goToRouteClone('${action_name}', ${action_id})">
             ${iconClone()}
           </button>
-          <button  
-            class="icon-btn delete"
-            onclick="event.stopPropagation(); goToRouteDelete('${action_name}', ${action_id})">
-            ${iconDelete()}
-          </button>
+          ${!isModuleManaged(transaction) ? `
+            <button  
+              class="icon-btn delete"
+              onclick="event.stopPropagation(); goToRouteDelete('${action_name}', ${action_id})">
+              ${iconDelete()}
+            </button>
+          ` : ''}
         </div>
       </div>
 

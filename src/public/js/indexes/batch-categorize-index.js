@@ -25,7 +25,17 @@ const mobileContainer = document.getElementById('batch-categorize-mobile')
 /* ============================================================================
 4. Utils
 ============================================================================ */
-function rowClassByType(type) {
+function rowClassByType(transactionOrType) {
+  if (!transactionOrType) return ''
+
+  let type = ''
+
+  if (typeof transactionOrType === 'string') {
+    type = transactionOrType
+  } else {
+    type = transactionOrType.type || ''
+  }
+
   if (type === 'income') return 'income'
   if (type === 'expense') return 'expense'
   if (type === 'transfer') return 'transfer'
@@ -48,7 +58,7 @@ function renderRow(transaction) {
   const date = formatDate(transaction.date)
 
   return `
-    <tr class="${rowClassByType(transaction.type)}">
+    <tr class="${rowClassByType(transaction)}">
       <td class="ui-td col-left">${date}</td>
       <td class="ui-td col-left col-sm">${transactionTypeTag(transaction.type)}</td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
@@ -85,7 +95,7 @@ function renderCard(transaction) {
   const date = formatDate(transaction.date)
 
   return `
-    <div class="transaction-card ${rowClassByType(transaction.type)}">
+    <div class="transaction-card ${rowClassByType(transaction)}">
       <div class="card-header">
         <div class="card-datetime">
           <span class="card-date">${date}</span>

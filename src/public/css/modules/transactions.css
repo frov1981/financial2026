@@ -35,6 +35,37 @@
     background: var(--ui-purple-50);
 }
 
+/* Origin badge */
+.tx-origin {
+        display: inline-block;
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-weight: 600;
+        line-height: 1;
+        margin-right: 6px;
+}
+
+.tx-origin.payable {
+        background: var(--ui-yellow-100);
+        color: var(--ui-yellow-800);
+        border: 1px solid rgba(218, 165, 32, 0.2);
+}
+
+.tx-origin.receivable {
+        background: var(--ui-teal-100);
+        color: var(--ui-teal-700);
+        border: 1px solid rgba(20, 170, 140, 0.2);
+}
+
+/* Small adjustments for mobile */
+@media (max-width: 768px) {
+    .tx-origin {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+}
+
 .transaction-card .card-header {
     display: flex;
     justify-content: space-between;
