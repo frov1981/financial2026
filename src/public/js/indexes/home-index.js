@@ -152,10 +152,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         initYearNavForReceivableFlowSumm()
 
         initHomeCarousel()
+        // Adjust table heights to match carousel proportions
+        adjustCategoryTableHeight()
+        window.addEventListener('resize', adjustCategoryTableHeight)
     } catch (err) {
         console.error('Error cargando dashboard', err)
     }
 })
+
+    /* ============================
+       Responsive table height
+       Measure carousel height and set category table body height proportionally
+    ============================ */
+    function adjustCategoryTableHeight() {
+        const carousel = document.querySelector('.home-carousel')
+        const wrapper = document.getElementById('html-category-kpi-body')
+        const slide = wrapper ? wrapper.closest('.home-slide') : null
+        if (!wrapper) return
+
+        // Prefer carousel height; fallback to slide or window
+        const carouselH = carousel ? carousel.clientHeight : (slide ? slide.clientHeight : window.innerHeight)
+
+        // Compute header height inside the slide (buttons + label)
+        let headerH = 0
+        if (slide) {
+            const hdr = slide.querySelector('.ui-card-header')
+            headerH = hdr ? hdr.offsetHeight : 0
+        }
+
+        // Desired table area: a portion of carousel height minus header
+        // Keep sensible min/max to avoid too small/too large values
+        const portion = 0.6 // 60% of carousel height
+        let desired = Math.floor(carouselH * portion) - headerH
+        const MIN = 140
+        const MAX = Math.floor(window.innerHeight * 0.8)
+        if (desired < MIN) desired = MIN
+        if (desired > MAX) desired = MAX
+
+        wrapper.style.height = desired + 'px'
+    }
 
 /* ============================
    KPI Balance Section
