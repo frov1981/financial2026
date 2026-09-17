@@ -21,8 +21,6 @@ const KPI_CONFIG = [
     { key: 'withdrawals', label: 'Retiros', color: 'red', trend: true },
     { key: 'total_inflows', label: 'Total Ingresos', color: 'green', trend: true },
     { key: 'total_outflows', label: 'Total Egresos', color: 'red', trend: true },
-    //{ key: 'principal_breakdown', label: 'Desglose Capital', color: 'green', trend: true },
-    //{ key: 'interest_breakdown', label: 'Desglose Interes', color: 'red', trend: true },
     { key: 'net_cash_flow', label: 'Neto', color: 'blue', trend: true },
 ]
 
@@ -35,7 +33,8 @@ const RECEIVABLE_FLOW_YEAR_STATE_KEY = `home.receivable.flow.year.${window.USER_
 
 const labelForKpi = 'KPIs'
 const labelForTrendBalance = 'Balances'
-const labelForTrendPayable = 'Cuentas por Pagar'
+const labelForTrendPayable = 'Por Pagar'
+const labelForTrendReceivable = 'Por Cobrar'
 
 let kpi_years = []
 let kpi_year_index = 0
@@ -210,9 +209,9 @@ function renderReceivableFlowSummChart(data) {
         data: {
             labels: data.labels,
             datasets: [
-                { label: 'Cuentas por Cobrar', data: data.total_receivables, tension: 0.35 },
+                { label: 'Por Cobrar', data: data.total_receivables, tension: 0.35 },
                 { label: 'Cobros', data: data.total_receivable_collections, tension: 0.35 },
-                { label: 'Balance', data: data.net_balance, borderDash: [6, 4], tension: 0.35 }
+                { label: 'Balances', data: data.net_balance, borderDash: [6, 4], tension: 0.35 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -295,9 +294,9 @@ function renderPayableFlowSummChart(data) {
         data: {
             labels: data.labels,
             datasets: [
-                { label: 'Cuentas por Pagar', data: data.total_payables, tension: 0.35 },
+                { label: 'Por Pagar', data: data.total_payables, tension: 0.35 },
                 { label: 'Pagos', data: data.total_payable_payments, tension: 0.35 },
-                { label: 'Balance', data: data.net_payable_balance, borderDash: [6, 4], tension: 0.35 }
+                { label: 'Balances', data: data.net_payable_balance, borderDash: [6, 4], tension: 0.35 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -436,7 +435,7 @@ function updateLabelForReceivableFlowSumm(year) {
     const label = document.getElementById('html-receivable-flow-summary-year-label')
     if (!label) return
 
-    label.textContent = year === 0 ? `Cuentas por Cobrar - Todos` : `Cuentas por Cobrar - ${year}`
+    label.textContent = year === 0 ? `${labelForTrendReceivable} - Todos` : `${labelForTrendReceivable} - ${year}`
 }
 
 function updateYearNavForReceivableFlowSumm() {

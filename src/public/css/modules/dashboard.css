@@ -103,7 +103,8 @@
 }
 
 .html-cash-flow-summary-header-nav,
-.html-payable-flow-summary-header-nav {
+.html-payable-flow-summary-header-nav,
+.html-receivable-flow-summary-header-nav {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -114,7 +115,8 @@
 
 .html-balance-kpi-year-label,
 .html-cash-flow-summary-year-label,
-.html-payable-flow-summary-year-label {
+.html-payable-flow-summary-year-label,
+.html-receivable-flow-summary-year-label {
     font-size: 1rem;
     font-weight: 600;
     margin: 0;
@@ -123,7 +125,8 @@
 
 .html-balance-kpi-year-btn,
 .html-cash-flow-summary-year-btn,
-.html-payable-flow-summary-year-btn  {
+.html-payable-flow-summary-year-btn,
+.html-receivable-flow-summary-year-btn  {
     width: 32px;
     height: 32px;
     border: none;
