@@ -370,7 +370,10 @@ function renderRow(transaction) {
         <div class="text-xs text-gray-600">${time}</div>
         <div class="text-xs text-gray-600">${weekday}</div>
       </td>
-      <td class="ui-td col-left">${transactionTypeTag(transaction.type)}</td>
+      <td class="ui-td col-left">
+        ${transactionTypeTag(transaction.type)}
+        ${isModuleManaged(transaction) ? `<span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>` : ''}
+      </td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
       <td class="ui-td col-left col-nowrap">
         ${transaction.type === 'transfer'
@@ -437,10 +440,6 @@ function renderRow(transaction) {
               data-transaction-id="${transaction.id}"
               onclick="event.stopPropagation(); batchToggleSelection(${transaction.id}, this.checked)"
             >
-          ` : ''}
-
-          ${isModuleManaged(transaction) ? `
-            <span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>
           ` : ''}
 
           ${!isModuleManaged(transaction) ? `
@@ -524,9 +523,6 @@ function renderCard(transaction) {
             >
           ` : ''}
 
-          ${isModuleManaged(transaction) ? `
-            <span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>
-          ` : ''}
           ${!isModuleManaged(transaction) ? `
             <button 
               class="icon-btn edit"
@@ -553,6 +549,7 @@ function renderCard(transaction) {
       <div class="card-content">
         <div class="card-info">
           <div class="card-account">
+            ${isModuleManaged(transaction) ? `<span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>` : ''}
             ${transaction.type === 'transfer'
       ? `
                 <div class="grouped-icon-line">

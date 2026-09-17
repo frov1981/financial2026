@@ -58,6 +58,16 @@
         border: 1px solid rgba(20, 170, 140, 0.2);
 }
 
+.ui-table .tx-origin {
+    display: block;
+    width: fit-content;
+    margin: 4px 0 0;
+}
+
+.transaction-card .card-account .tx-origin {
+    margin: 0 0 4px;
+}
+
 /* Small adjustments for mobile */
 @media (max-width: 768px) {
     .tx-origin {
