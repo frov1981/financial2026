@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/css/output.css">
 
     <!-- Helper globales -->
+    <script src="/js/helpers/viewport-height-helper.js"></script>
     <script src="/js/helpers/logger-helper.js"></script>
     <script src="/js/helpers/storage-helper.js"></script>
     <script src="/js/helpers/timezone-helper.js"></script>
@@ -20,7 +21,7 @@
 
 </head>
 
-<body class="bg-gray-100 min-h-screen">
+<body class="app-body bg-gray-100 min-h-screen">
 
     <!-- Overlay global (bloqueo de pantalla) -->
     <div id="overlay" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center">
@@ -36,7 +37,7 @@
 
     <%- include('../partials/navbar') %>
 
-        <main class="max-w-7xl mx-auto px-2 py-3 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
+        <main class="app-main max-w-7xl mx-auto px-2 py-3 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
             <%- include('../' + view) %>
         </main>
         <script src="/js/helpers/message-box-helper.js"></script>

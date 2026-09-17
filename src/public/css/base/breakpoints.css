@@ -81,3 +81,31 @@
     }
 
 }
+
+@media (min-width: 769px) {
+    .ui-table th {
+        font-size: 0.65625rem;
+    }
+
+    .ui-table th,
+    .ui-table td {
+        padding: 0.375rem 0.75rem;
+    }
+
+    .ui-table .ui-btn,
+    .ui-table .icon-btn {
+        min-height: 1.875rem;
+        padding: 0.375rem;
+    }
+
+    .ui-table .ui-btn {
+        gap: 0.28125rem;
+        font-size: 0.65625rem;
+    }
+
+    .ui-table .ui-btn svg,
+    .ui-table .icon-btn svg {
+        width: 0.9375rem;
+        height: 0.9375rem;
+    }
+}

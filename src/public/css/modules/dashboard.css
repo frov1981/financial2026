@@ -200,6 +200,7 @@
 #html-category-kpi-table {
     font-size: 0.8rem;
     table-layout: fixed;
+    background: var(--ui-white);
 }
 
 #html-category-kpi-table th,
@@ -208,6 +209,41 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+#html-category-kpi-table thead th {
+    background: var(--ui-blue-50);
+    color: var(--ui-blue-700);
+    border-bottom: 2px solid var(--ui-blue-200);
+    font-weight: 600;
+}
+
+#html-category-kpi-table tbody tr:nth-child(odd) {
+    background: var(--ui-white);
+}
+
+#html-category-kpi-table tbody tr:nth-child(even) {
+    background: #f4f8ff;
+}
+
+#html-category-kpi-table tbody tr:hover {
+    background: var(--ui-blue-100);
+}
+
+#html-category-kpi-table tbody td {
+    color: var(--ui-gray-700);
+    border-bottom-color: #e6edf7;
+}
+
+#html-category-kpi-table tbody td:first-child {
+    color: var(--ui-gray-900);
+    font-weight: 500;
+}
+
+#html-category-kpi-table tbody td:nth-child(2),
+#html-category-kpi-table tbody td:nth-child(3) {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
 }
 
 /* Column width distribution: Categoria 50%, Monto 30%, Cant 20% */

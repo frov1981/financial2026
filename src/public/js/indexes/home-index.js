@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!wrapper) return
 
         // Prefer carousel height; fallback to slide or window
-        const carouselH = carousel ? carousel.clientHeight : (slide ? slide.clientHeight : window.innerHeight)
+        const carouselH = carousel ? carousel.clientHeight : (slide ? slide.clientHeight : window.APP_VIEWPORT_HEIGHT)
 
         // Compute header height inside the slide (buttons + label)
         let headerH = 0
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const portion = 0.6 // 60% of carousel height
         let desired = Math.floor(carouselH * portion) - headerH
         const MIN = 140
-        const MAX = Math.floor(window.innerHeight * 0.8)
+        const MAX = Math.floor(window.APP_VIEWPORT_HEIGHT * 0.8)
         if (desired < MIN) desired = MIN
         if (desired > MAX) desired = MAX
 
