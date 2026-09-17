@@ -6,6 +6,7 @@ storage/
 logs/
 coverage/
 db/
+scripts/
 
 # Entornos
 .env
