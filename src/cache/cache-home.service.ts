@@ -1,6 +1,7 @@
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { CacheKpiBalance } from "../entities/CacheKpiBalance.entity";
+import { CacheKpiCategory } from "../entities/CacheKpiCategory.entity";
 import { AuthRequest } from "../types/auth-request";
 import { logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
@@ -439,6 +440,50 @@ export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): 
     total_receivable_collections,
     net_balance
   }
+
+  cache.set(cache_key, result)
+  return result
+}
+
+export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  const cache_key = cacheKeys.homeCategoryKpi(user_id, year)
+  const cached = cache.get<any[]>(cache_key)
+  if (cached !== undefined) return cached
+
+  const repo = AppDataSource.getRepository(CacheKpiCategory)
+  const start = performance.now()
+
+  const qb = repo.createQueryBuilder('k')
+    .select('cg.id', 'category_group_id')
+    .addSelect('cat.id', 'category_id')
+    .addSelect("COALESCE(cg.name, '')", 'cat_group_name')
+    .addSelect("COALESCE(cat.name, '')", 'cat_name')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+    .leftJoin('k.category_group', 'cg')
+    .leftJoin('k.category', 'cat')
+    .where('k.user_id = :user_id', { user_id })
+
+  if (year > 0) qb.andWhere('k.year_period = :year', { year })
+
+  qb.groupBy('cg.id, cg.name, cat.id, cat.name')
+  qb.orderBy('cg.name, cat.name')
+
+  const rows = await qb.getRawMany()
+  const end = performance.now()
+  const duration_sec = (end - start) / 1000
+  logger.debug(`method=[${getHomeCategoryKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-categories], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+
+  const result = rows.map((r: any) => ({
+    category_group_id: Number(r.category_group_id),
+    category_id: Number(r.category_id),
+    cat_group_name: String(r.cat_group_name || ''),
+    cat_name: String(r.cat_name || ''),
+    amount: Number(r.amount || 0),
+    transaction_count: Number(r.transaction_count || 0)
+  }))
 
   cache.set(cache_key, result)
   return result

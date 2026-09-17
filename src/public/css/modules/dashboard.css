@@ -113,10 +113,20 @@
     user-select: none;
 }
 
+.html-category-kpi-header-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
 .html-balance-kpi-year-label,
 .html-cash-flow-summary-year-label,
 .html-payable-flow-summary-year-label,
-.html-receivable-flow-summary-year-label {
+.html-receivable-flow-summary-year-label,
+.html-category-kpi-year-label {
     font-size: 1rem;
     font-weight: 600;
     margin: 0;
@@ -126,7 +136,8 @@
 .html-balance-kpi-year-btn,
 .html-cash-flow-summary-year-btn,
 .html-payable-flow-summary-year-btn,
-.html-receivable-flow-summary-year-btn  {
+.html-receivable-flow-summary-year-btn,
+.html-category-kpi-year-btn {
     width: 32px;
     height: 32px;
     border: none;
@@ -144,20 +155,23 @@
 
 .html-balance-kpi-year-btn:hover:not(:disabled),
 .html-cash-flow-summary-year-btn:hover:not(:disabled),
-.html-payable-flow-summary-year-btn:hover:not(:disabled)  {
+.html-payable-flow-summary-year-btn:hover:not(:disabled),
+.html-category-kpi-year-btn:hover:not(:disabled)  {
     background: var(--ui-gray-200);
 }
 
 .html-balance-kpi-year-btn:disabled,
 .html-cash-flow-summary-year-btn:disabled,
-.html-payable-flow-summary-year-btn:disabled  {
+.html-payable-flow-summary-year-btn:disabled,
+.html-category-kpi-year-btn:disabled  {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
 .html-balance-kpi-year-btn svg,
 .html-cash-flow-summary-year-btn svg,
-.html-payable-flow-summary-year-btn svg {
+.html-payable-flow-summary-year-btn svg,
+.html-category-kpi-year-btn svg {
     width: 18px;
     height: 18px;
 }
@@ -180,4 +194,37 @@
     flex: 0 0 auto;
     text-align: right;
     min-width: 20px;
+}
+
+/* Category KPI table layout and responsive column widths */
+#html-category-kpi-table {
+    font-size: 0.8rem;
+    table-layout: fixed;
+}
+
+#html-category-kpi-table th,
+#html-category-kpi-table td {
+    padding: 0.35rem 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Column width distribution: Categoria 50%, Monto 30%, Cant 20% */
+#html-category-kpi-table th:nth-child(1),
+#html-category-kpi-table td:nth-child(1) {
+    width: 50%;
+    text-align: left;
+}
+
+#html-category-kpi-table th:nth-child(2),
+#html-category-kpi-table td:nth-child(2) {
+    width: 30%;
+    text-align: right;
+}
+
+#html-category-kpi-table th:nth-child(3),
+#html-category-kpi-table td:nth-child(3) {
+    width: 20%;
+    text-align: right;
 }

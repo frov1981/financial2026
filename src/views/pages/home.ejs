@@ -15,7 +15,36 @@
        CARD: KPIs GLOBALES
   ============================= -->
   <div class="home-carousel">
+    <!-- ============================
+    CATEGORIES KPI (NEW SLIDE)
+    ============================ -->
+    <div class="ui-card home-slide">
 
+      <div class="ui-card-header html-category-kpi-header-nav">
+        <button id="html-category-kpi-prev" class="html-category-kpi-year-btn"></button>
+        <h2 id="html-category-kpi-year-label" class="html-category-kpi-year-label">
+          Categorías
+        </h2>
+        <button id="html-category-kpi-next" class="html-category-kpi-year-btn"></button>
+      </div>
+
+      <div id="html-category-kpi" class="ui-card-body">
+        <div id="html-category-kpi-body" style="height:320px; overflow:auto;">
+          <table class="ui-table" id="html-category-kpi-table">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th>Monto</th>
+                <th>Cant.</th>
+              </tr>
+            </thead>
+            <tbody id="html-category-kpi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    
 
     <!-- ============================
     KPI BALANCES

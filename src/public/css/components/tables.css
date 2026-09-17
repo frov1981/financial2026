@@ -80,3 +80,39 @@
     display: flex;
     align-items: center;
 }
+
+/* Compact style for category KPI table: reduce text by ~20% and force single-line truncation */
+#html-category-kpi-table {
+    font-size: 0.8rem;
+}
+
+#html-category-kpi-table th,
+#html-category-kpi-table td {
+    padding: 0.35rem 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#html-category-kpi-table td {
+    vertical-align: middle;
+}
+
+/* Column width distribution: Categoria 60%, Monto 30%, Cant 10% */
+#html-category-kpi-table th:nth-child(1),
+#html-category-kpi-table td:nth-child(1) {
+    width: 60%;
+    text-align: left;
+}
+
+#html-category-kpi-table th:nth-child(2),
+#html-category-kpi-table td:nth-child(2) {
+    width: 30%;
+    text-align: right;
+}
+
+#html-category-kpi-table th:nth-child(3),
+#html-category-kpi-table td:nth-child(3) {
+    width: 10%;
+    text-align: right;
+}

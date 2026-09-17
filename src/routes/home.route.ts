@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
     apiForGettingCashSummary,
     apiForGettingKpis,
+    apiForGettingCategoryKpi,
     apiForGettingPayableSummary,
     apiForGettingReceivableSummary,
     apiForLogout,
@@ -31,6 +32,7 @@ protectedSubRouter.get('/kpis', apiForGettingKpis)
 protectedSubRouter.get('/cash-summary', apiForGettingCashSummary)
 protectedSubRouter.get('/payable-summary', apiForGettingPayableSummary)
 protectedSubRouter.get('/receivable-summary', apiForGettingReceivableSummary)
+protectedSubRouter.get('/category-kpi', apiForGettingCategoryKpi)
 protectedSubRouter.get('/home', routeToPageHome)
 
 router.use(protectedSubRouter)

@@ -2,6 +2,7 @@
    Constantes globales
 ============================ */
 const CARD_IDS = [
+    'html-category-kpi',
     'html-balance-kpi',
     'html-cash-flow-summary',
     'html-payable-flow-summary',
@@ -30,6 +31,9 @@ const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 const CASH_FLOW_YEAR_STATE_KEY = `home.cash.flow.year.${window.USER_ID}`
 const PAYABLE_FLOW_YEAR_STATE_KEY = `home.payable.flow.year.${window.USER_ID}`
 const RECEIVABLE_FLOW_YEAR_STATE_KEY = `home.receivable.flow.year.${window.USER_ID}`
+const CATEGORY_KPI_YEAR_STATE_KEY = `home.category.year.${window.USER_ID}`
+const CATEGORY_TABLE_SCROLL_KEY = `home.category.table.scroll.${window.USER_ID}`
+const CATEGORY_SORT_KEY = `home.category.sort.${window.USER_ID}`
 
 const labelForKpi = 'KPIs'
 const labelForTrendBalance = 'Balances'
@@ -44,6 +48,8 @@ let payable_flow_year_index = 0
 let payableFlowChart = null
 let receivable_flow_year_index = 0
 let receivableFlowChart = null
+let category_year_index = 0
+let lastCategoryRows = []
 
 /* ============================
    DOM Ready
@@ -67,6 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const kpi_next = document.getElementById('html-balance-kpi-next')
     if (kpi_prev) kpi_prev.innerHTML = iconCarouselPrev()
     if (kpi_next) kpi_next.innerHTML = iconCarouselNext()
+    const category_prev = document.getElementById('html-category-kpi-prev')
+    const category_next = document.getElementById('html-category-kpi-next')
+    if (category_prev) category_prev.innerHTML = iconCarouselPrev()
+    if (category_next) category_next.innerHTML = iconCarouselNext()
     const cash_prev = document.getElementById('html-cash-flow-summary-prev')
     const cash_next = document.getElementById('html-cash-flow-summary-next')
     if (cash_prev) cash_prev.innerHTML = iconCarouselPrev()
@@ -99,10 +109,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const savedYearRawCashFlow = loadFilters(CASH_FLOW_YEAR_STATE_KEY)
         const savedYearKpi = savedYearRawKpi !== null ? Number(savedYearRawKpi) : null
         const savedYearCashFlow = savedYearRawCashFlow !== null ? Number(savedYearRawCashFlow) : null
+        const savedYearRawCategory = loadFilters(CATEGORY_KPI_YEAR_STATE_KEY)
+        const savedYearCategory = savedYearRawCategory !== null ? Number(savedYearRawCategory) : null
         kpi_year_index = kpi_years.includes(savedYearKpi) ? kpi_years.indexOf(savedYearKpi) : 0
         cash_flow_year_index = kpi_years.includes(savedYearCashFlow) ? kpi_years.indexOf(savedYearCashFlow) : 0
+        category_year_index = kpi_years.includes(savedYearCategory) ? kpi_years.indexOf(savedYearCategory) : 0
         const current_year_kpi = kpi_years[kpi_year_index]
         const current_year_cash_flow = kpi_years[cash_flow_year_index]
+        const current_year_category = kpi_years[category_year_index]
 
         const savedYearRawPayableFlow = loadFilters(PAYABLE_FLOW_YEAR_STATE_KEY)
         const savedYearPayableFlow = savedYearRawPayableFlow !== null ? Number(savedYearRawPayableFlow) : null
@@ -117,6 +131,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateLabelForBalanceKpi(current_year_kpi)
         initYearNavForBalanceKpi()
         await changeYearForBalanceKpi()
+
+        // Category KPI
+        updateLabelForCategory(current_year_category)
+        initYearNavForCategory()
+        await changeYearForCategory()
+
+        // Restore column sort indicator on load (will be applied when rendering)
 
         updateLabelForCashFlowSumm(current_year_cash_flow)
         await changeYearForCashFlowSumm()
@@ -466,6 +487,166 @@ function updateYearNavForPayableFlowSumm() {
 
     prevBtn.disabled = payable_flow_year_index >= kpi_years.length - 1
     nextBtn.disabled = payable_flow_year_index <= 0
+}
+
+/* ============================
+   Category KPI Section
+============================ */
+function initYearNavForCategory() {
+    const prevBtn = document.getElementById('html-category-kpi-prev')
+    const nextBtn = document.getElementById('html-category-kpi-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.addEventListener('click', async () => {
+        if (category_year_index < kpi_years.length - 1) {
+            category_year_index++
+            await changeYearForCategory()
+        }
+    })
+    nextBtn.addEventListener('click', async () => {
+        if (category_year_index > 0) {
+            category_year_index--
+            await changeYearForCategory()
+        }
+    })
+    updateYearNavForCategory()
+}
+
+async function changeYearForCategory() {
+    const year = kpi_years[category_year_index]
+    saveFilters(CATEGORY_KPI_YEAR_STATE_KEY, year)
+    updateLabelForCategory(year)
+    updateYearNavForCategory()
+
+    const res = await fetch(`/category-kpi?year_period_for_kpi=${year}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const { categoryKpi } = await res.json()
+    lastCategoryRows = categoryKpi || []
+    renderCategoryKpiTable(lastCategoryRows)
+
+    const wrapper = document.getElementById('html-category-kpi-body')
+    if (wrapper) {
+        const saved = loadFilters(CATEGORY_TABLE_SCROLL_KEY)
+        if (saved && typeof saved.scrollTop === 'number') {
+            wrapper.scrollTop = saved.scrollTop
+        }
+        wrapper.addEventListener('scroll', () => {
+            saveFilters(CATEGORY_TABLE_SCROLL_KEY, { scrollTop: wrapper.scrollTop })
+        })
+    }
+}
+
+function updateLabelForCategory(year) {
+    const label = document.getElementById('html-category-kpi-year-label')
+    if (!label) return
+    label.textContent = year === 0 ? `Categorías - Todos` : `Categorías - ${year}`
+}
+
+function updateYearNavForCategory() {
+    const prevBtn = document.getElementById('html-category-kpi-prev')
+    const nextBtn = document.getElementById('html-category-kpi-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.disabled = category_year_index >= kpi_years.length - 1
+    nextBtn.disabled = category_year_index <= 0
+}
+
+function renderCategoryKpiTable(rows) {
+    const tbody = document.getElementById('html-category-kpi-tbody')
+    if (!tbody) return
+    tbody.innerHTML = ''
+    // Apply persisted sort
+    const sort = loadCategorySort()
+    const sorted = applyCategorySort(rows || [], sort)
+
+    // Ensure header click handlers are set (will toggle sort and re-render)
+    setupCategoryHeaderHandlers()
+
+    sorted.forEach(r => {
+        const tr = document.createElement('tr')
+        const ccell = document.createElement('td')
+        ccell.textContent = r.cat_name || ''
+        const amount = document.createElement('td')
+        amount.textContent = Number(r.amount || 0).toFixed(2)
+        const tcount = document.createElement('td')
+        tcount.textContent = String(r.transaction_count || 0)
+        tr.appendChild(ccell)
+        tr.appendChild(amount)
+        tr.appendChild(tcount)
+        tbody.appendChild(tr)
+    })
+
+    // Update header indicators after rendering
+    updateCategoryHeaderIndicators(sort)
+}
+
+function loadCategorySort() {
+    const raw = loadFilters(CATEGORY_SORT_KEY)
+    if (!raw || !raw.key) return { key: 'amount', dir: 'desc' }
+    return raw
+}
+
+function saveCategorySort(sort) {
+    saveFilters(CATEGORY_SORT_KEY, sort)
+}
+
+function applyCategorySort(rows, sort) {
+    if (!Array.isArray(rows)) return []
+    const key = sort?.key || 'amount'
+    const dir = sort?.dir === 'asc' ? 1 : -1
+    const copy = [...rows]
+    copy.sort((a, b) => {
+        const va = a[key]
+        const vb = b[key]
+        if (key === 'cat_name') {
+            return dir * String(va || '').localeCompare(String(vb || ''), undefined, { sensitivity: 'base' })
+        }
+        const na = Number(va || 0)
+        const nb = Number(vb || 0)
+        if (na === nb) return 0
+        return dir * (na > nb ? 1 : -1)
+    })
+    return copy
+}
+
+function toggleCategorySort(key) {
+    const current = loadCategorySort()
+    let next = { key, dir: 'desc' }
+    if (current.key === key) {
+        next.dir = current.dir === 'asc' ? 'desc' : 'asc'
+    } else {
+        // default direction: asc for names, desc for numbers
+        next.dir = key === 'cat_name' ? 'asc' : 'desc'
+    }
+    saveCategorySort(next)
+    renderCategoryKpiTable(lastCategoryRows)
+}
+
+function setupCategoryHeaderHandlers() {
+    const table = document.getElementById('html-category-kpi-table')
+    if (!table) return
+    const ths = table.querySelectorAll('thead th')
+    if (!ths || ths.length < 3) return
+    // map columns to keys
+    const mapping = ['cat_name', 'amount', 'transaction_count']
+    ths.forEach((th, idx) => {
+        th.style.cursor = 'pointer'
+        th.onclick = () => toggleCategorySort(mapping[idx])
+    })
+}
+
+function updateCategoryHeaderIndicators(sort) {
+    const table = document.getElementById('html-category-kpi-table')
+    if (!table) return
+    const ths = table.querySelectorAll('thead th')
+    const labels = ['Categoría', 'Monto', 'Cant.']
+    ths.forEach((th, idx) => {
+        const mapping = ['cat_name', 'amount', 'transaction_count']
+        const key = mapping[idx]
+        let label = labels[idx]
+        if (sort && sort.key === key) {
+            label += sort.dir === 'asc' ? ' ▲' : ' ▼'
+        }
+        th.textContent = label
+    })
 }
 
 /* ============================
