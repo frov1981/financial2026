@@ -89,8 +89,8 @@ export async function saveFileReference(input: SaveFileReferenceInput): Promise<
   const savedReference = await repository.save(reference)
   const fileName = `${savedReference.id}-${input.tableName}${image.extension}`
   const thumbnailFileName = `${savedReference.id}-${input.tableName}-thumb.webp`
-  const relativePath = path.join(input.tableName, fileName)
-  const relativeThumbnailPath = path.join(input.tableName, thumbnailFileName)
+  const relativePath = path.join('images', input.tableName, fileName)
+  const relativeThumbnailPath = path.join('images', input.tableName, thumbnailFileName)
   const absolutePath = path.join(storagePath(), relativePath)
   const absoluteThumbnailPath = path.join(storagePath(), relativeThumbnailPath)
 
