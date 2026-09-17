@@ -19,6 +19,7 @@
 </script>
 
 <form id="batch-categorize-form" method="POST" action="/transactions/batch-categorize">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
   <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
   <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
