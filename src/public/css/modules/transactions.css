@@ -202,3 +202,126 @@
 
   border-top: 1px solid var(--ui-gray-200);
 }
+
+.transaction-images-btn.has-images {
+    color: var(--ui-blue-600);
+}
+
+.transaction-images-btn.no-images {
+    color: var(--ui-gray-500);
+    background: var(--ui-gray-100);
+}
+
+.transaction-images-modal-content {
+    width: min(92vw, 760px);
+    max-height: 92vh;
+    overflow: auto;
+}
+
+.transaction-images-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.transaction-images-viewer {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 320px;
+}
+
+.transaction-images-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 300px;
+    padding: 0;
+    border: 0;
+    background: var(--ui-gray-50);
+    cursor: zoom-in;
+}
+
+.transaction-images-preview img {
+    display: block;
+    width: 100%;
+    max-height: 52vh;
+    object-fit: contain;
+    transition: max-height 0.2s ease;
+}
+
+.transaction-images-preview.is-enlarged {
+    cursor: zoom-out;
+}
+
+.transaction-images-preview.is-enlarged img {
+    max-height: 78vh;
+}
+
+.transaction-images-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--ui-gray-200);
+    border-radius: 999px;
+    background: var(--ui-white);
+    cursor: pointer;
+}
+
+.transaction-images-nav:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.transaction-images-nav svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.transaction-images-empty,
+.transaction-images-counter {
+    color: var(--ui-gray-500);
+    text-align: center;
+}
+
+.transaction-images-empty {
+    padding: 3rem 1rem;
+}
+
+.transaction-images-counter {
+    min-height: 1.5rem;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.transaction-images-actions {
+    justify-content: flex-end;
+    border-top: 1px solid var(--ui-gray-200);
+    padding-top: 1rem;
+}
+
+@media (max-width: 600px) {
+    .transaction-images-modal-content {
+        width: calc(100vw - 1rem);
+        padding: 1rem;
+    }
+
+    .transaction-images-viewer {
+        grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+        min-height: 240px;
+    }
+
+    .transaction-images-preview {
+        min-height: 220px;
+    }
+
+    .transaction-images-nav {
+        width: 2rem;
+        height: 2rem;
+    }
+}

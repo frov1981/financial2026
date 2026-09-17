@@ -17,6 +17,12 @@ let currentPage = 1
 let currentSearch = ''
 let totalPages = 1
 let allItems = []
+let transactionImagesState = {
+  transactionId: null,
+  files: [],
+  currentIndex: 0,
+  enlarged: false
+}
 
 /* ============================
    Layout detection (AGREGADO)
@@ -39,6 +45,18 @@ const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('transactions-table')
 const table = document.querySelector('.ui-table')
+const transactionImagesModal = document.getElementById('transaction-images-modal')
+const transactionImagesViewer = document.getElementById('transaction-images-viewer')
+const transactionImagesEmpty = document.getElementById('transaction-images-empty')
+const transactionImagesCurrent = document.getElementById('transaction-images-current')
+const transactionImagesPreview = document.getElementById('transaction-images-preview')
+const transactionImagesCounter = document.getElementById('transaction-images-counter')
+const transactionImagesPrev = document.getElementById('transaction-images-prev')
+const transactionImagesNext = document.getElementById('transaction-images-next')
+const transactionImagesInput = document.getElementById('transaction-images-input')
+const transactionImagesInsert = document.getElementById('transaction-images-insert')
+const transactionImagesDelete = document.getElementById('transaction-images-delete')
+const transactionImagesClose = document.getElementById('transaction-images-close')
 
 /* ============================================================================
 4. Utils generales
@@ -122,6 +140,20 @@ function showTransactionCardDetail(id) {
     ?.classList.remove('hidden')
 }
 
+function transactionImagesButton(transaction) {
+  const hasImages = Number(transaction.no_images) > 0
+  return `
+    <button
+      class="icon-btn transaction-images-btn ${hasImages ? 'has-images' : 'no-images'}"
+      type="button"
+      title="${hasImages ? 'Ver imágenes' : 'Sin imágenes'}"
+      aria-label="${hasImages ? 'Ver imágenes' : 'Sin imágenes'}"
+      onclick="event.stopPropagation(); openTransactionImages(${transaction.id})">
+      ${hasImages ? iconImage() : iconImageOff()}
+    </button>
+  `
+}
+
 function renderTable(data) {
   if (!data.length) {
     tableBody.innerHTML = `
@@ -163,6 +195,154 @@ function renderCards(data) {
     }
   }
 }
+
+function updateTransactionImageCount(transactionId, count) {
+  const transaction = allItems.find(item => item.id === transactionId)
+  if (transaction) transaction.no_images = count
+  render(allItems)
+}
+
+function renderTransactionImageModal() {
+  const { files, currentIndex, enlarged } = transactionImagesState
+  const file = files[currentIndex]
+  const hasFiles = files.length > 0
+
+  transactionImagesEmpty.classList.toggle('hidden', hasFiles)
+  transactionImagesViewer.classList.toggle('hidden', !hasFiles)
+  transactionImagesDelete.disabled = !hasFiles
+  transactionImagesPreview.classList.toggle('is-enlarged', enlarged)
+
+  if (!file) {
+    transactionImagesCurrent.removeAttribute('src')
+    transactionImagesCounter.textContent = ''
+    transactionImagesPrev.disabled = true
+    transactionImagesNext.disabled = true
+    return
+  }
+
+  transactionImagesCurrent.src = enlarged ? file.url : (file.thumbnail_url || file.url)
+  transactionImagesCounter.textContent = `${currentIndex + 1} de ${files.length}`
+  transactionImagesPrev.disabled = files.length < 2
+  transactionImagesNext.disabled = files.length < 2
+  transactionImagesPrev.innerHTML = iconCarouselPrev()
+  transactionImagesNext.innerHTML = iconCarouselNext()
+}
+
+function closeTransactionImages() {
+  transactionImagesModal.classList.add('hidden')
+  transactionImagesState = { transactionId: null, files: [], currentIndex: 0, enlarged: false }
+}
+
+async function openTransactionImages(transactionId) {
+  try {
+    const response = await fetch(`/files/transactions/${transactionId}`)
+    if (!response.ok) throw new Error('No fue posible cargar las imágenes')
+
+    const data = await response.json()
+    transactionImagesState = {
+      transactionId,
+      files: data.files || [],
+      currentIndex: 0,
+      enlarged: false
+    }
+    transactionImagesModal.classList.remove('hidden')
+    renderTransactionImageModal()
+  } catch (error) {
+    console.error('Error cargando imágenes:', error)
+    alert('No fue posible cargar las imágenes de la transacción.')
+  }
+}
+
+async function uploadTransactionImages() {
+  const files = Array.from(transactionImagesInput.files || [])
+  const transactionId = transactionImagesState.transactionId
+  if (!files.length || !transactionId) return
+
+  const formData = new FormData()
+  files.forEach(file => formData.append('images', file))
+
+  try {
+    const response = await fetch(`/files/transactions/${transactionId}`, {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': window.CSRF_TOKEN },
+      body: formData
+    })
+    const data = await response.json().catch(() => ({}))
+    if (data.csrfToken) window.CSRF_TOKEN = data.csrfToken
+    if (!response.ok) throw new Error(data.error || 'Error al insertar imágenes')
+
+    transactionImagesState.files = [...transactionImagesState.files, ...(data.files || [])]
+    transactionImagesState.currentIndex = Math.max(0, transactionImagesState.files.length - 1)
+    updateTransactionImageCount(transactionId, transactionImagesState.files.length)
+    renderTransactionImageModal()
+  } catch (error) {
+    console.error('Error insertando imágenes:', error)
+    alert(error.message || 'No fue posible insertar las imágenes.')
+  } finally {
+    transactionImagesInput.value = ''
+  }
+}
+
+async function deleteCurrentTransactionImage() {
+  const { files, currentIndex, transactionId } = transactionImagesState
+  const file = files[currentIndex]
+  if (!file || !transactionId || !confirm('¿Eliminar esta imagen?')) return
+
+  try {
+    const response = await fetch(`/files/item/${file.id}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-Token': window.CSRF_TOKEN }
+    })
+    const data = await response.json().catch(() => ({}))
+    if (data.csrfToken) window.CSRF_TOKEN = data.csrfToken
+    if (!response.ok) throw new Error(data.error || 'Error al eliminar la imagen')
+
+    transactionImagesState.files.splice(currentIndex, 1)
+    transactionImagesState.currentIndex = Math.min(currentIndex, transactionImagesState.files.length - 1)
+    transactionImagesState.enlarged = false
+    updateTransactionImageCount(transactionId, transactionImagesState.files.length)
+    renderTransactionImageModal()
+  } catch (error) {
+    console.error('Error eliminando imagen:', error)
+    alert(error.message || 'No fue posible eliminar la imagen.')
+  }
+}
+
+transactionImagesPrev.addEventListener('click', () => {
+  const total = transactionImagesState.files.length
+  if (total > 1) {
+    transactionImagesState.currentIndex = (transactionImagesState.currentIndex - 1 + total) % total
+    transactionImagesState.enlarged = false
+    renderTransactionImageModal()
+  }
+})
+
+transactionImagesNext.addEventListener('click', () => {
+  const total = transactionImagesState.files.length
+  if (total > 1) {
+    transactionImagesState.currentIndex = (transactionImagesState.currentIndex + 1) % total
+    transactionImagesState.enlarged = false
+    renderTransactionImageModal()
+  }
+})
+
+transactionImagesPreview.addEventListener('click', () => {
+  if (transactionImagesState.files.length) {
+    transactionImagesState.enlarged = !transactionImagesState.enlarged
+    renderTransactionImageModal()
+  }
+})
+
+transactionImagesInsert.addEventListener('click', () => transactionImagesInput.click())
+transactionImagesInput.addEventListener('change', uploadTransactionImages)
+transactionImagesDelete.addEventListener('click', deleteCurrentTransactionImage)
+transactionImagesClose.addEventListener('click', closeTransactionImages)
+transactionImagesModal.addEventListener('click', closeTransactionImages)
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !transactionImagesModal.classList.contains('hidden')) {
+    closeTransactionImages()
+  }
+})
 
 /* ============================================================================
 6. Render Desktop / Mobile
@@ -291,6 +471,8 @@ function renderRow(transaction) {
             </button>
           ` : ''}
 
+          ${transactionImagesButton(transaction)}
+
         </div>
       </td>
     </tr> 
@@ -364,6 +546,7 @@ function renderCard(transaction) {
               ${iconDelete()}
             </button>
           ` : ''}
+          ${transactionImagesButton(transaction)}
         </div>
       </div>
 

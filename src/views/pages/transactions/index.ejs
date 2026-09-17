@@ -1,5 +1,6 @@
 <script>
   window.USER_ID = "<%= USER_ID %>"
+  window.CSRF_TOKEN = "<%= csrfToken %>"
 </script>
 
 <script>
@@ -95,6 +96,30 @@
       </table>
     </div>
 
+  </div>
+</div>
+
+<div id="transaction-images-modal" class="ui-modal hidden" role="dialog" aria-modal="true">
+  <div class="transaction-images-modal-content" onclick="event.stopPropagation()">
+    <div id="transaction-images-empty" class="transaction-images-empty hidden">
+      No hay imágenes para esta transacción.
+    </div>
+
+    <div id="transaction-images-viewer" class="transaction-images-viewer hidden">
+      <button id="transaction-images-prev" class="transaction-images-nav" type="button" title="Imagen anterior" aria-label="Imagen anterior"></button>
+      <button id="transaction-images-preview" class="transaction-images-preview" type="button" title="Ampliar imagen" aria-label="Ampliar imagen">
+        <img id="transaction-images-current" alt="Imagen de la transacción">
+      </button>
+      <button id="transaction-images-next" class="transaction-images-nav" type="button" title="Siguiente imagen" aria-label="Siguiente imagen"></button>
+    </div>
+
+    <div id="transaction-images-counter" class="transaction-images-counter"></div>
+    <div class="transaction-images-actions">
+      <input id="transaction-images-input" type="file" accept="image/avif,image/gif,image/jpeg,image/png,image/webp" multiple hidden>
+      <button id="transaction-images-insert" class="ui-modal-btn ui-modal-btn-success" type="button">Insertar</button>
+      <button id="transaction-images-delete" class="ui-modal-btn ui-modal-btn-primary" type="button" disabled>Eliminar</button>
+      <button id="transaction-images-close" class="ui-modal-btn ui-modal-btn-neutral" type="button">Cerrar</button>
+    </div>
   </div>
 </div>
 

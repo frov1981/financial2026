@@ -22,6 +22,7 @@ import receivableGroupRoutes from './routes/receivable-group.route'
 import receivableRoutes from './routes/receivable.route'
 import receivableCollectionRoutes from './routes/receivable-collection.route'
 import transactionRoutes from './routes/transaction.route'
+import fileReferenceRoutes from './routes/file-reference.route'
 
 export const app = express()
 const isProd = process.env.NODE_ENV === 'production'
@@ -109,4 +110,5 @@ protectedRouter.use('/payments', injectPayableBalance, paymentRoutes)
 protectedRouter.use('/receivables', injectReceivableBalance, receivableRoutes)
 protectedRouter.use('/receivables-groups', receivableGroupRoutes)
 protectedRouter.use('/receivables-collections', injectReceivableBalance, receivableCollectionRoutes)
+protectedRouter.use('/files', fileReferenceRoutes)
 app.use(protectedRouter)

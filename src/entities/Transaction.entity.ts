@@ -64,6 +64,9 @@ export class Transaction {
   @MaxLength(1000, { message: 'Máximo 1000 caracteres' })
   description!: string
 
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  no_images!: number
+
   @OneToOne(() => Payable, payable => payable.transaction, { nullable: true })
   payable!: Payable
 

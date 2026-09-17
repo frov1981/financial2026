@@ -14,6 +14,7 @@ import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
 import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
+import { FileReference } from '../entities/FileReference.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
 
 export const AppDataSource = new DataSource({
@@ -37,7 +38,8 @@ export const AppDataSource = new DataSource({
     CacheKpiCategory,
     Receivable,
     ReceivableCollection,
-    ReceivableGroup
+    ReceivableGroup,
+    FileReference
   ],
   synchronize: false,
   timezone: 'Z',
