@@ -2,6 +2,7 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { AuthRequest } from "../types/auth-request";
+import { CategoryTypeForPayableOrReceivable } from "../types/category-type-for-payable-or-receivable";
 import { logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
@@ -10,7 +11,7 @@ export type DTOCategory = {
     id: number
     name: string
     type: 'income' | 'expense'
-    type_for_payable_or_receivable: 'payable' | 'payable_payment' | 'receivable' | 'receivable_collection' | null
+    type_for_payable_or_receivable: CategoryTypeForPayableOrReceivable
     is_active: boolean
     category_group: { id: number, name: string } | null
     transactions_count: number

@@ -7,6 +7,7 @@ import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
 import { Receivable } from './Receivable.entity'
 import { ReceivableCollection } from './ReceivableCollection.entity'
+import { CategoryTypeForPayableOrReceivable } from '../types/category-type-for-payable-or-receivable'
 
 @Entity('categories')
 export class Category {
@@ -29,7 +30,7 @@ export class Category {
   @Column({ type: 'varchar' })
   @IsOptional()
   @IsIn(['payable', 'payable_payment', 'receivable', 'receivable_collection'], { message: 'El tipo debe ser para cuentas por cobrar o pagar' })
-  type_for_payable_or_receivable!: 'payable' | 'payable_payment' | 'receivable' | 'receivable_collection' | null
+  type_for_payable_or_receivable!: CategoryTypeForPayableOrReceivable
 
   @Column({ default: true })
   @IsBoolean({ message: 'El estado debe ser true o false' })
