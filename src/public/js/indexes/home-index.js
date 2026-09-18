@@ -34,6 +34,9 @@ const RECEIVABLE_FLOW_YEAR_STATE_KEY = `home.receivable.flow.year.${window.USER_
 const CATEGORY_KPI_YEAR_STATE_KEY = `home.category.year.${window.USER_ID}`
 const CATEGORY_TABLE_SCROLL_KEY = `home.category.table.scroll.${window.USER_ID}`
 const CATEGORY_SORT_KEY = `home.category.sort.${window.USER_ID}`
+const CATEGORY_GROUP_KPI_YEAR_STATE_KEY = `home.category.group.year.${window.USER_ID}`
+const CATEGORY_GROUP_TABLE_SCROLL_KEY = `home.category.group.table.scroll.${window.USER_ID}`
+const CATEGORY_GROUP_SORT_KEY = `home.category.group.sort.${window.USER_ID}`
 
 const labelForKpi = 'KPIs'
 const labelForTrendBalance = 'Balances'
@@ -50,12 +53,15 @@ let receivable_flow_year_index = 0
 let receivableFlowChart = null
 let category_year_index = 0
 let lastCategoryRows = []
+let categoryKpiDetailChart = null
+let category_group_year_index = 0
+let lastCategoryGroupRows = []
+let categoryGroupKpiDetailChart = null
 
 /* ============================
    DOM Ready
 ============================ */
 document.addEventListener('DOMContentLoaded', async () => {
-    // Inicializar los Cards
     const savedState = loadFilters(CARD_STATE_KEY) || {}
     CARD_IDS.forEach(id => {
         const body = document.getElementById(id)
@@ -69,22 +75,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const carousel_next = document.getElementById('carousel-next')
     if (carousel_prev) carousel_prev.innerHTML = iconCarouselPrev()
     if (carousel_next) carousel_next.innerHTML = iconCarouselNext()
+
     const kpi_prev = document.getElementById('html-balance-kpi-prev')
     const kpi_next = document.getElementById('html-balance-kpi-next')
     if (kpi_prev) kpi_prev.innerHTML = iconCarouselPrev()
     if (kpi_next) kpi_next.innerHTML = iconCarouselNext()
+
     const category_prev = document.getElementById('html-category-kpi-prev')
     const category_next = document.getElementById('html-category-kpi-next')
     if (category_prev) category_prev.innerHTML = iconCarouselPrev()
     if (category_next) category_next.innerHTML = iconCarouselNext()
+
+    const category_group_prev = document.getElementById('html-category-group-kpi-prev')
+    const category_group_next = document.getElementById('html-category-group-kpi-next')
+    if (category_group_prev) category_group_prev.innerHTML = iconCarouselPrev()
+    if (category_group_next) category_group_next.innerHTML = iconCarouselNext()
+
     const cash_prev = document.getElementById('html-cash-flow-summary-prev')
     const cash_next = document.getElementById('html-cash-flow-summary-next')
     if (cash_prev) cash_prev.innerHTML = iconCarouselPrev()
     if (cash_next) cash_next.innerHTML = iconCarouselNext()
+
     const payable_prev = document.getElementById('html-payable-flow-summary-prev')
     const payable_next = document.getElementById('html-payable-flow-summary-next')
     if (payable_prev) payable_prev.innerHTML = iconCarouselPrev()
     if (payable_next) payable_next.innerHTML = iconCarouselNext()
+
     const receivable_prev = document.getElementById('html-receivable-flow-summary-prev')
     const receivable_next = document.getElementById('html-receivable-flow-summary-next')
     if (receivable_prev) receivable_prev.innerHTML = iconCarouselPrev()
@@ -92,18 +108,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inicializar el Html para KPIs
     renderBalanceKpiHtml()
-    // Mostrar etiquetas por defecto inmediatamente para evitar que queden vacías
     updateLabelForBalanceKpi(0)
     updateLabelForCashFlowSumm(0)
     updateLabelForPayableFlowSumm(0)
     updateLabelForReceivableFlowSumm(0)
-    // Invocar desde el backend
+
     try {
         const res_kpi = await fetch('/kpis', { credentials: 'same-origin' })
         if (!res_kpi.ok) throw new Error('No autorizado')
         const { availableYearsKpi, } = await res_kpi.json()
 
-        // Inicializar navegación año
         kpi_years = availableYearsKpi || [0]
         const savedYearRawKpi = loadFilters(KPI_YEAR_STATE_KEY)
         const savedYearRawCashFlow = loadFilters(CASH_FLOW_YEAR_STATE_KEY)
@@ -111,12 +125,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const savedYearCashFlow = savedYearRawCashFlow !== null ? Number(savedYearRawCashFlow) : null
         const savedYearRawCategory = loadFilters(CATEGORY_KPI_YEAR_STATE_KEY)
         const savedYearCategory = savedYearRawCategory !== null ? Number(savedYearRawCategory) : null
+        const savedYearRawCategoryGroup = loadFilters(CATEGORY_GROUP_KPI_YEAR_STATE_KEY)
+        const savedYearCategoryGroup = savedYearRawCategoryGroup !== null ? Number(savedYearRawCategoryGroup) : null
+
         kpi_year_index = kpi_years.includes(savedYearKpi) ? kpi_years.indexOf(savedYearKpi) : 0
         cash_flow_year_index = kpi_years.includes(savedYearCashFlow) ? kpi_years.indexOf(savedYearCashFlow) : 0
         category_year_index = kpi_years.includes(savedYearCategory) ? kpi_years.indexOf(savedYearCategory) : 0
+        category_group_year_index = kpi_years.includes(savedYearCategoryGroup) ? kpi_years.indexOf(savedYearCategoryGroup) : 0
         const current_year_kpi = kpi_years[kpi_year_index]
         const current_year_cash_flow = kpi_years[cash_flow_year_index]
         const current_year_category = kpi_years[category_year_index]
+        const current_year_category_group = kpi_years[category_group_year_index]
 
         const savedYearRawPayableFlow = loadFilters(PAYABLE_FLOW_YEAR_STATE_KEY)
         const savedYearPayableFlow = savedYearRawPayableFlow !== null ? Number(savedYearRawPayableFlow) : null
@@ -132,12 +151,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         initYearNavForBalanceKpi()
         await changeYearForBalanceKpi()
 
-        // Category KPI
         updateLabelForCategory(current_year_category)
         initYearNavForCategory()
         await changeYearForCategory()
 
-        // Restore column sort indicator on load (will be applied when rendering)
+        updateLabelForCategoryGroup(current_year_category_group)
+        initYearNavForCategoryGroup()
+        await changeYearForCategoryGroup()
 
         updateLabelForCashFlowSumm(current_year_cash_flow)
         await changeYearForCashFlowSumm()
@@ -152,57 +172,64 @@ document.addEventListener('DOMContentLoaded', async () => {
         initYearNavForReceivableFlowSumm()
 
         initHomeCarousel()
-        // Adjust table heights to match carousel proportions
         adjustCategoryTableHeight()
+        adjustCategoryGroupTableHeight()
+
         window.addEventListener('resize', adjustCategoryTableHeight)
+        window.addEventListener('resize', adjustCategoryGroupTableHeight)
     } catch (err) {
         console.error('Error cargando dashboard', err)
     }
 })
 
-    /* ============================
-       Responsive table height
-       Measure carousel height and set category table body height proportionally
-    ============================ */
-    function adjustCategoryTableHeight() {
-        const carousel = document.querySelector('.home-carousel')
-        const wrapper = document.getElementById('html-category-kpi-body')
-        const slide = wrapper ? wrapper.closest('.home-slide') : null
-        if (!wrapper) return
+function adjustCategoryTableHeight() {
+    const carousel = document.querySelector('.home-carousel')
+    const wrapper = document.getElementById('html-category-kpi-body')
+    const slide = wrapper ? wrapper.closest('.home-slide') : null
+    if (!wrapper) return
 
-        // Prefer carousel height; fallback to slide or window
-        const carouselH = carousel ? carousel.clientHeight : (slide ? slide.clientHeight : window.APP_VIEWPORT_HEIGHT)
+    const carouselH = carousel ? carousel.clientHeight : (slide ? slide.clientHeight : window.APP_VIEWPORT_HEIGHT)
 
-        // Compute header height inside the slide (buttons + label)
-        let headerH = 0
-        if (slide) {
-            const hdr = slide.querySelector('.ui-card-header')
-            headerH = hdr ? hdr.offsetHeight : 0
-        }
-
-        // Desired table area: a portion of carousel height minus header
-        // Keep sensible min/max to avoid too small/too large values
-        const portion = 0.6 // 60% of carousel height
-        let desired = Math.floor(carouselH * portion) - headerH
-        const MIN = 140
-        const MAX = Math.floor(window.APP_VIEWPORT_HEIGHT * 0.8)
-        if (desired < MIN) desired = MIN
-        if (desired > MAX) desired = MAX
-
-        wrapper.style.height = desired + 'px'
+    let headerH = 0
+    if (slide) {
+        const hdr = slide.querySelector('.ui-card-header')
+        headerH = hdr ? hdr.offsetHeight : 0
     }
 
-/* ============================
-   KPI Balance Section
-============================ */
+    const portion = 0.6 // 60% of carousel height
+    let desired = Math.floor(carouselH * portion) - headerH
+    const MIN = 140
+    const MAX = Math.floor(window.APP_VIEWPORT_HEIGHT * 0.8)
+    if (desired < MIN) desired = MIN
+    if (desired > MAX) desired = MAX
+
+    wrapper.style.height = desired + 'px'
+}
+
+function adjustCategoryGroupTableHeight() {
+    const carousel = document.querySelector('.home-carousel')
+    const wrapper = document.getElementById('html-category-group-kpi-body')
+    const slide = wrapper ? wrapper.closest('.home-slide') : null
+    if (!wrapper) return
+
+    const carouselH = carousel ? carousel.clientHeight : (slide ? slide.clientHeight : window.APP_VIEWPORT_HEIGHT)
+    const header = slide?.querySelector('.ui-card-header')
+    let desired = Math.floor(carouselH * 0.6) - (header ? header.offsetHeight : 0)
+    const min = 140
+    const max = Math.floor(window.APP_VIEWPORT_HEIGHT * 0.8)
+    if (desired < min) desired = min
+    if (desired > max) desired = max
+    wrapper.style.height = desired + 'px'
+}
+
 function renderBalanceKpiHtml() {
     const container = document.getElementById('html-balance-kpi')
     let html = ''
     let chunk = []
     KPI_CONFIG.forEach((kpi, index) => {
         chunk.push(kpi)
-            if (chunk.length === 6 || index === KPI_CONFIG.length - 1) {
-                html += `<div class="ui-kpi-grid cols-6">`
+        if (chunk.length === 6 || index === KPI_CONFIG.length - 1) {
+            html += `<div class="ui-kpi-grid cols-6">`
             chunk.forEach(item => {
                 const id = item.key.replace(/_/g, '-')
                 html += `
@@ -233,7 +260,22 @@ function renderBalanceKpiHtml() {
 }
 
 function renderKpis(year, balanceKpi, trendKpi) {
-    const fields = ['incomes', 'expenses', 'payables', 'payable_payments', 'receivables', 'receivable_collections', 'savings', 'withdrawals', 'total_inflows', 'total_outflows', 'net_cash_flow', 'net_savings', 'available_balance', 'principal_breakdown', 'interest_breakdown']
+    const fields = [
+        'incomes',
+        'expenses',
+        'payables',
+        'payable_payments',
+        'receivables',
+        'receivable_collections',
+        'savings', 'withdrawals',
+        'total_inflows',
+        'total_outflows',
+        'net_cash_flow',
+        'net_savings',
+        'available_balance',
+        'principal_breakdown',
+        'interest_breakdown'
+    ]
     fields.forEach(field => {
         const el = document.getElementById(`html-balance-kpi-${field.replace(/_/g, '-')}`)
         if (el) el.textContent = (balanceKpi[field] ?? 0).toFixed(2)
@@ -257,9 +299,7 @@ function renderKpis(year, balanceKpi, trendKpi) {
 
 function renderReceivableFlowSummChart(data) {
     const ctx = document.getElementById('receivableFlowChart').getContext('2d')
-
     if (receivableFlowChart) receivableFlowChart.destroy()
-
     receivableFlowChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -318,14 +358,10 @@ function updateYearNavForBalanceKpi() {
     nextBtn.disabled = kpi_year_index <= 0
 }
 
-/* ============================
-   Cash Flow Summary Section
-============================ */
 function renderCashFlowSummChart(data) {
     const ctx = document.getElementById('cashFlowChart').getContext('2d')
-
+    
     if (cashFlowChart) cashFlowChart.destroy()
-
     cashFlowChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -344,7 +380,6 @@ function renderPayableFlowSummChart(data) {
     const ctx = document.getElementById('payableFlowChart').getContext('2d')
 
     if (payableFlowChart) payableFlowChart.destroy()
-
     payableFlowChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -370,7 +405,6 @@ async function changeYearForCashFlowSumm() {
     if (!res.ok) return
 
     const { cashSummary } = await res.json()
-
     renderCashFlowSummChart(cashSummary)
 }
 
@@ -385,7 +419,6 @@ async function changeYearForPayableFlowSumm() {
     if (!res.ok) return
 
     const { payableSummary } = await res.json()
-
     renderPayableFlowSummChart(payableSummary)
 }
 
@@ -400,7 +433,6 @@ async function changeYearForReceivableFlowSumm() {
     if (!res.ok) return
 
     const { receivableSummary } = await res.json()
-
     renderReceivableFlowSummChart(receivableSummary)
 }
 
@@ -476,30 +508,25 @@ function initYearNavForReceivableFlowSumm() {
 function updateLabelForCashFlowSumm(year) {
     const label = document.getElementById('html-cash-flow-summary-year-label')
     if (!label) return
-
     label.textContent = year === 0 ? `${labelForTrendBalance} - Todos` : `${labelForTrendBalance} - ${year}`
 }
 
 function updateLabelForPayableFlowSumm(year) {
     const label = document.getElementById('html-payable-flow-summary-year-label')
     if (!label) return
-
     label.textContent = year === 0 ? `${labelForTrendPayable} - Todos` : `${labelForTrendPayable} - ${year}`
 }
 
 function updateLabelForReceivableFlowSumm(year) {
     const label = document.getElementById('html-receivable-flow-summary-year-label')
     if (!label) return
-
     label.textContent = year === 0 ? `${labelForTrendReceivable} - Todos` : `${labelForTrendReceivable} - ${year}`
 }
 
 function updateYearNavForReceivableFlowSumm() {
     const prevBtn = document.getElementById('html-receivable-flow-summary-prev')
     const nextBtn = document.getElementById('html-receivable-flow-summary-next')
-
     if (!prevBtn || !nextBtn) return
-
     prevBtn.disabled = receivable_flow_year_index >= kpi_years.length - 1
     nextBtn.disabled = receivable_flow_year_index <= 0
 }
@@ -507,9 +534,7 @@ function updateYearNavForReceivableFlowSumm() {
 function updateYearNavForCashFlowSumm() {
     const prevBtn = document.getElementById('html-cash-flow-summary-prev')
     const nextBtn = document.getElementById('html-cash-flow-summary-next')
-
     if (!prevBtn || !nextBtn) return
-
     prevBtn.disabled = cash_flow_year_index >= kpi_years.length - 1
     nextBtn.disabled = cash_flow_year_index <= 0
 }
@@ -517,16 +542,11 @@ function updateYearNavForCashFlowSumm() {
 function updateYearNavForPayableFlowSumm() {
     const prevBtn = document.getElementById('html-payable-flow-summary-prev')
     const nextBtn = document.getElementById('html-payable-flow-summary-next')
-
     if (!prevBtn || !nextBtn) return
-
     prevBtn.disabled = payable_flow_year_index >= kpi_years.length - 1
     nextBtn.disabled = payable_flow_year_index <= 0
 }
 
-/* ============================
-   Category KPI Section
-============================ */
 function initYearNavForCategory() {
     const prevBtn = document.getElementById('html-category-kpi-prev')
     const nextBtn = document.getElementById('html-category-kpi-next')
@@ -588,11 +608,8 @@ function renderCategoryKpiTable(rows) {
     const tbody = document.getElementById('html-category-kpi-tbody')
     if (!tbody) return
     tbody.innerHTML = ''
-    // Apply persisted sort
     const sort = loadCategorySort()
     const sorted = applyCategorySort(rows || [], sort)
-
-    // Ensure header click handlers are set (will toggle sort and re-render)
     setupCategoryHeaderHandlers()
 
     sorted.forEach(r => {
@@ -603,14 +620,261 @@ function renderCategoryKpiTable(rows) {
         amount.textContent = Number(r.amount || 0).toFixed(2)
         const tcount = document.createElement('td')
         tcount.textContent = String(r.transaction_count || 0)
+        const action = document.createElement('td')
+        const detailButton = document.createElement('button')
+        detailButton.type = 'button'
+        detailButton.className = 'category-kpi-action'
+        detailButton.title = 'Ver estadística'
+        detailButton.setAttribute('aria-label', `Ver estadística de ${r.cat_name || 'categoría'}`)
+        detailButton.innerHTML = iconMoreHorizontal()
+        detailButton.addEventListener('click', () => {
+            detailButton.blur()
+            openCategoryKpiDetail(r)
+        })
+        action.appendChild(detailButton)
         tr.appendChild(ccell)
         tr.appendChild(amount)
         tr.appendChild(tcount)
+        tr.appendChild(action)
         tbody.appendChild(tr)
     })
 
-    // Update header indicators after rendering
     updateCategoryHeaderIndicators(sort)
+}
+
+async function openCategoryKpiDetail(category) {
+    const modal = document.getElementById('category-kpi-detail-modal')
+    const title = document.getElementById('category-kpi-detail-title')
+    if (!modal || !title || !category?.category_id) return
+
+    const year = kpi_years[category_year_index]
+    title.textContent = `${category.cat_name || 'Categoría'} - ${year === 0 ? 'Todos' : year}`
+    const query = new URLSearchParams({
+        category_id: String(category.category_id),
+        year_period_for_kpi: String(year)
+    })
+    const res = await fetch(`/category-kpi-detail?${query}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const { categoryKpiDetail } = await res.json()
+    const monthLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    const labels = categoryKpiDetail.map(row => year === 0
+        ? String(row.year_period)
+        : monthLabels[row.month_period - 1])
+    const ctx = document.getElementById('category-kpi-detail-chart')?.getContext('2d')
+    if (!ctx) return
+    if (categoryKpiDetailChart) categoryKpiDetailChart.destroy()
+    categoryKpiDetailChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Monto',
+                data: categoryKpiDetail.map(row => row.amount),
+                tension: 0.35,
+                fill: false,
+                borderColor: '#16a34a',
+                backgroundColor: '#16a34a',
+                pointBackgroundColor: '#16a34a',
+                pointBorderColor: '#16a34a'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            scales: { y: { beginAtZero: true } }
+        }
+    })
+    modal.classList.remove('hidden')
+}
+
+function closeCategoryKpiDetail() {
+    document.getElementById('category-kpi-detail-modal')?.classList.add('hidden')
+}
+
+document.getElementById('category-kpi-detail-close')?.addEventListener('click', closeCategoryKpiDetail)
+document.getElementById('category-kpi-detail-modal')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) closeCategoryKpiDetail()
+})
+
+function initYearNavForCategoryGroup() {
+    const prevBtn = document.getElementById('html-category-group-kpi-prev')
+    const nextBtn = document.getElementById('html-category-group-kpi-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.addEventListener('click', async () => {
+        if (category_group_year_index < kpi_years.length - 1) {
+            category_group_year_index++
+            await changeYearForCategoryGroup()
+        }
+    })
+    nextBtn.addEventListener('click', async () => {
+        if (category_group_year_index > 0) {
+            category_group_year_index--
+            await changeYearForCategoryGroup()
+        }
+    })
+    updateYearNavForCategoryGroup()
+}
+
+async function changeYearForCategoryGroup() {
+    const year = kpi_years[category_group_year_index]
+    saveFilters(CATEGORY_GROUP_KPI_YEAR_STATE_KEY, year)
+    updateLabelForCategoryGroup(year)
+    updateYearNavForCategoryGroup()
+
+    const res = await fetch(`/category-group-kpi?year_period_for_kpi=${year}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const { categoryGroupKpi } = await res.json()
+    lastCategoryGroupRows = categoryGroupKpi || []
+    renderCategoryGroupKpiTable(lastCategoryGroupRows)
+
+    const wrapper = document.getElementById('html-category-group-kpi-body')
+    if (wrapper) {
+        const saved = loadFilters(CATEGORY_GROUP_TABLE_SCROLL_KEY)
+        if (saved && typeof saved.scrollTop === 'number') wrapper.scrollTop = saved.scrollTop
+        wrapper.onscroll = () => saveFilters(CATEGORY_GROUP_TABLE_SCROLL_KEY, { scrollTop: wrapper.scrollTop })
+    }
+}
+
+function updateLabelForCategoryGroup(year) {
+    const label = document.getElementById('html-category-group-kpi-year-label')
+    if (label) label.textContent = year === 0 ? 'Grupo Categorías - Todos' : `Grupo Categorías - ${year}`
+}
+
+function updateYearNavForCategoryGroup() {
+    const prevBtn = document.getElementById('html-category-group-kpi-prev')
+    const nextBtn = document.getElementById('html-category-group-kpi-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.disabled = category_group_year_index >= kpi_years.length - 1
+    nextBtn.disabled = category_group_year_index <= 0
+}
+
+function renderCategoryGroupKpiTable(rows) {
+    const tbody = document.getElementById('html-category-group-kpi-tbody')
+    if (!tbody) return
+    tbody.innerHTML = ''
+    const sort = loadCategoryGroupSort()
+    setupCategoryGroupHeaderHandlers()
+    applyCategoryGroupSort(rows || [], sort).forEach(row => {
+        const tr = document.createElement('tr')
+        const name = document.createElement('td')
+        name.textContent = row.cat_group_name || ''
+        const amount = document.createElement('td')
+        amount.textContent = Number(row.amount || 0).toFixed(2)
+        const count = document.createElement('td')
+        count.textContent = String(row.transaction_count || 0)
+        const action = document.createElement('td')
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'category-kpi-action'
+        button.title = 'Ver estadística'
+        button.setAttribute('aria-label', `Ver estadística de ${row.cat_group_name || 'grupo'}`)
+        button.innerHTML = iconMoreHorizontal()
+        button.addEventListener('click', () => {
+            button.blur()
+            openCategoryGroupKpiDetail(row)
+        })
+        action.appendChild(button)
+        tr.append(name, amount, count, action)
+        tbody.appendChild(tr)
+    })
+    updateCategoryGroupHeaderIndicators(sort)
+}
+
+async function openCategoryGroupKpiDetail(group) {
+    const modal = document.getElementById('category-group-kpi-detail-modal')
+    const title = document.getElementById('category-group-kpi-detail-title')
+    if (!modal || !title || !group?.category_group_id) return
+    const year = kpi_years[category_group_year_index]
+    title.textContent = `${group.cat_group_name || 'Grupo Categoría'} - ${year === 0 ? 'Todos' : year}`
+    const query = new URLSearchParams({
+        category_group_id: String(group.category_group_id),
+        year_period_for_kpi: String(year)
+    })
+    const res = await fetch(`/category-group-kpi-detail?${query}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const { categoryGroupKpiDetail } = await res.json()
+    const monthLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    const labels = categoryGroupKpiDetail.map(row => year === 0 ? String(row.year_period) : monthLabels[row.month_period - 1])
+    const ctx = document.getElementById('category-group-kpi-detail-chart')?.getContext('2d')
+    if (!ctx) return
+    if (categoryGroupKpiDetailChart) categoryGroupKpiDetailChart.destroy()
+    categoryGroupKpiDetailChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Monto',
+                data: categoryGroupKpiDetail.map(row => row.amount),
+                tension: 0.35,
+                fill: false,
+                borderColor: '#16a34a',
+                backgroundColor: '#16a34a',
+                pointBackgroundColor: '#16a34a',
+                pointBorderColor: '#16a34a'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, scales: { y: { beginAtZero: true } } }
+    })
+    modal.classList.remove('hidden')
+}
+
+function closeCategoryGroupKpiDetail() {
+    document.getElementById('category-group-kpi-detail-modal')?.classList.add('hidden')
+}
+
+document.getElementById('category-group-kpi-detail-close')?.addEventListener('click', closeCategoryGroupKpiDetail)
+document.getElementById('category-group-kpi-detail-modal')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) closeCategoryGroupKpiDetail()
+})
+
+function loadCategoryGroupSort() {
+    const raw = loadFilters(CATEGORY_GROUP_SORT_KEY)
+    return raw?.key ? raw : { key: 'amount', dir: 'desc' }
+}
+
+function saveCategoryGroupSort(sort) {
+    saveFilters(CATEGORY_GROUP_SORT_KEY, sort)
+}
+
+function applyCategoryGroupSort(rows, sort) {
+    const key = sort?.key || 'amount'
+    const dir = sort?.dir === 'asc' ? 1 : -1
+    return [...rows].sort((a, b) => {
+        if (key === 'cat_group_name') return dir * String(a[key] || '').localeCompare(String(b[key] || ''), undefined, { sensitivity: 'base' })
+        const va = Number(a[key] || 0)
+        const vb = Number(b[key] || 0)
+        return va === vb ? 0 : dir * (va > vb ? 1 : -1)
+    })
+}
+
+function toggleCategoryGroupSort(key) {
+    const current = loadCategoryGroupSort()
+    const next = { key, dir: current.key === key && current.dir === 'desc' ? 'asc' : (key === 'cat_group_name' ? 'asc' : 'desc') }
+    saveCategoryGroupSort(next)
+    renderCategoryGroupKpiTable(lastCategoryGroupRows)
+}
+
+function setupCategoryGroupHeaderHandlers() {
+    const ths = document.getElementById('html-category-group-kpi-table')?.querySelectorAll('thead th')
+    if (!ths || ths.length < 4) return
+    const mapping = ['cat_group_name', 'amount', 'transaction_count']
+    ths.forEach((th, index) => {
+        th.style.cursor = index < mapping.length ? 'pointer' : 'default'
+        th.onclick = index < mapping.length ? () => toggleCategoryGroupSort(mapping[index]) : null
+    })
+}
+
+function updateCategoryGroupHeaderIndicators(sort) {
+    const ths = document.getElementById('html-category-group-kpi-table')?.querySelectorAll('thead th')
+    if (!ths) return
+    const labels = ['Grupo Categoría', 'Monto', 'Cant.', 'Acción']
+    const mapping = ['cat_group_name', 'amount', 'transaction_count']
+    ths.forEach((th, index) => {
+        let label = labels[index]
+        if (sort?.key === mapping[index]) label += sort.dir === 'asc' ? ' ▲' : ' ▼'
+        th.textContent = label
+    })
 }
 
 function loadCategorySort() {
@@ -648,7 +912,6 @@ function toggleCategorySort(key) {
     if (current.key === key) {
         next.dir = current.dir === 'asc' ? 'desc' : 'asc'
     } else {
-        // default direction: asc for names, desc for numbers
         next.dir = key === 'cat_name' ? 'asc' : 'desc'
     }
     saveCategorySort(next)
@@ -659,10 +922,15 @@ function setupCategoryHeaderHandlers() {
     const table = document.getElementById('html-category-kpi-table')
     if (!table) return
     const ths = table.querySelectorAll('thead th')
-    if (!ths || ths.length < 3) return
-    // map columns to keys
+    if (!ths || ths.length < 4) return
+
     const mapping = ['cat_name', 'amount', 'transaction_count']
     ths.forEach((th, idx) => {
+        if (idx >= mapping.length) {
+            th.style.cursor = 'default'
+            th.onclick = null
+            return
+        }
         th.style.cursor = 'pointer'
         th.onclick = () => toggleCategorySort(mapping[idx])
     })
@@ -672,7 +940,7 @@ function updateCategoryHeaderIndicators(sort) {
     const table = document.getElementById('html-category-kpi-table')
     if (!table) return
     const ths = table.querySelectorAll('thead th')
-    const labels = ['Categoría', 'Monto', 'Cant.']
+    const labels = ['Categoría', 'Monto', 'Cant.', 'Acción']
     ths.forEach((th, idx) => {
         const mapping = ['cat_name', 'amount', 'transaction_count']
         const key = mapping[idx]
@@ -684,9 +952,6 @@ function updateCategoryHeaderIndicators(sort) {
     })
 }
 
-/* ============================
-   Carousel Event Section
-============================ */
 function toggleCard(id) {
     const body = document.getElementById(id)
     const icon = document.getElementById(`icon-${id}`)

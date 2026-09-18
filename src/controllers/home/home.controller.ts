@@ -7,7 +7,7 @@ import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
-import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsPayable, getKpisGlobalBalance, getKpisLast6MonthsBalance, getPayableSummary, getTrendKpi, getReceivableSummary, getCategoryKpi } from './home.auxiliar'
+import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsPayable, getKpisGlobalBalance, getKpisLast6MonthsBalance, getPayableSummary, getTrendKpi, getReceivableSummary, getCategoryKpi, getCategoryKpiDetail, getCategoryGroupKpi, getCategoryGroupKpiDetail } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.user_id) {
@@ -178,6 +178,39 @@ export const apiForGettingCategoryKpi: RequestHandler = async (req: Request, res
     })
   } catch (error) {
     logger.error('Error en apiForGettingCategoryKpi:', parseError(error))
+    res.json({ message: 'Error' })
+  }
+}
+
+export const apiForGettingCategoryKpiDetail: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  try {
+    const categoryKpiDetail = await getCategoryKpiDetail(auth_req)
+    res.json({ categoryKpiDetail })
+  } catch (error) {
+    logger.error('Error en apiForGettingCategoryKpiDetail:', parseError(error))
+    res.json({ message: 'Error' })
+  }
+}
+
+export const apiForGettingCategoryGroupKpi: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  try {
+    const categoryGroupKpi = await getCategoryGroupKpi(auth_req)
+    res.json({ categoryGroupKpi })
+  } catch (error) {
+    logger.error('Error en apiForGettingCategoryGroupKpi:', parseError(error))
+    res.json({ message: 'Error' })
+  }
+}
+
+export const apiForGettingCategoryGroupKpiDetail: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  try {
+    const categoryGroupKpiDetail = await getCategoryGroupKpiDetail(auth_req)
+    res.json({ categoryGroupKpiDetail })
+  } catch (error) {
+    logger.error('Error en apiForGettingCategoryGroupKpiDetail:', parseError(error))
     res.json({ message: 'Error' })
   }
 }

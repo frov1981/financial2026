@@ -1,7 +1,3 @@
-/* ============================
-   Íconos SVG reutilizables
-============================ */
-
 /* Insertar / Nuevo */
 function iconInsert() {
     return `
@@ -110,10 +106,6 @@ function iconRefresh() {
   `
 }
 
-/* ============================
-   Flechas navegación
-============================ */
-
 /* Flecha derecha (siguiente / avanzar) */
 function iconArrowRight({ size = 4, color = 'currentColor' } = {}) {
     return `
@@ -158,10 +150,6 @@ function iconChevronClose() {
   `;
 }
 
-/* ============================
-   Iconos transferencia
-============================ */
-
 /* Origen (sale dinero) */
 function iconTransferOut() {
   return iconArrowLeft({ size: 3, color: '#dc2626' })
@@ -172,6 +160,7 @@ function iconTransferIn() {
   return iconArrowRight({ size: 3, color: '#16a34a' })
 }
 
+/* Carousel previo */
 function iconCarouselPrev() {
   return `
     <svg width="20" height="20" viewBox="0 0 24 24"
@@ -182,6 +171,7 @@ function iconCarouselPrev() {
   `
 }
 
+/* Carasouel avanza */
 function iconCarouselNext() {
   return `
     <svg width="20" height="20" viewBox="0 0 24 24"
@@ -203,10 +193,12 @@ function iconGroup({ size = 4, color = 'currentColor' } = {}) {
   `
 }
 
+/* Icono agrupado */
 function iconGrouped() {
   return iconGroup({ size: 3, color: '#1c1fdb' })
 }
 
+/* Icono tendecia sube */
 function iconTrendUp() {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
@@ -218,6 +210,7 @@ function iconTrendUp() {
   `
 }
 
+/* Icono tendencia baja */
 function iconTrendDown() {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
@@ -252,6 +245,18 @@ function iconImageOff() {
       <circle cx="8.5" cy="8.5" r="1.5"/>
       <path d="m21 15-5-5L5 21"/>
       <path d="m3 3 18 18"/>
+    </svg>
+  `
+}
+
+/* Más acciones */
+function iconMoreHorizontal() {
+    return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="currentColor" width="20" height="20" aria-hidden="true">
+      <circle cx="5" cy="12" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="19" cy="12" r="2"/>
     </svg>
   `
 }

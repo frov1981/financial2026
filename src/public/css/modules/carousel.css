@@ -30,12 +30,12 @@
 .carousel-nav {
   position: absolute;
   display: flex;
-  top: 9%;
+  top: 7%;
   transform: translateY(-50%);
   z-index: 1;
   width: 40px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: 25px;
   border: 1px solid #d1d5db;
   background-color: white;
   color: #374151;

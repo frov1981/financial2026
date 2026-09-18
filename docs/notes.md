@@ -23,3 +23,12 @@ node -e "const fs=require('fs');const path=require('path');const bases=['src/vie
 9.  net_cash_flow.      total_inflows - total_outflows
 10. net_savings.        savings - withdrawals
 11. available_balance   net_cash_flow - net_savings
+
+--==============================================================
+-- Matar una sesion localhost
+
+1. buscar la session por el puerto
+netstat -ano | findstr :3000
+
+2. matar la session usando el pid
+taskkill /PID 12345 /F

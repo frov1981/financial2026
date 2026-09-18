@@ -58,6 +58,12 @@ export const cacheKeys = {
   /* Categories KPI (annualized) */
   homeCategoryKpi: (user_id: number, year: number) => `home_category_kpi_user_${user_id}_year_${year}`,
   homeCategoryKpiPrefix: (user_id: number) => `home_category_kpi_user_${user_id}_year_`,
+  homeCategoryKpiDetail: (user_id: number, year: number, category_id: number) => `home_category_kpi_detail_user_${user_id}_year_${year}_category_${category_id}`,
+  homeCategoryKpiDetailPrefix: (user_id: number) => `home_category_kpi_detail_user_${user_id}_`,
+  homeCategoryGroupKpi: (user_id: number, year: number) => `home_category_group_kpi_user_${user_id}_year_${year}`,
+  homeCategoryGroupKpiPrefix: (user_id: number) => `home_category_group_kpi_user_${user_id}_`,
+  homeCategoryGroupKpiDetail: (user_id: number, year: number, group_id: number) => `home_category_group_kpi_detail_user_${user_id}_year_${year}_group_${group_id}`,
+  homeCategoryGroupKpiDetailPrefix: (user_id: number) => `home_category_group_kpi_detail_user_${user_id}_`,
 
   /* Balances */
   payableBalanceByUser: (user_id: number) => `payable_balance_user_${user_id}`,
@@ -108,6 +114,9 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const deleted = cache.del(cacheKeys.allByUser(user_id))
   const deleted_kpis = delByPrefix(cacheKeys.homeBalanceKpiPrefix(user_id))
   const deleted_category_kpi = delByPrefix(cacheKeys.homeCategoryKpiPrefix(user_id))
+  const deleted_category_kpi_detail = delByPrefix(cacheKeys.homeCategoryKpiDetailPrefix(user_id))
+  const deleted_category_group_kpi = delByPrefix(cacheKeys.homeCategoryGroupKpiPrefix(user_id))
+  const deleted_category_group_kpi_detail = delByPrefix(cacheKeys.homeCategoryGroupKpiDetailPrefix(user_id))
   const deleted_payments = delByPrefix(cacheKeys.payablePaymentsByPayablePrefix(user_id))
   const deleted_receivable_collections = delByPrefix(cacheKeys.receivableCollectionsByCollectionPrefix(user_id))
   const deleted_payable_balance = cache.del(cacheKeys.payableBalanceByUser(user_id))
@@ -117,5 +126,5 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const deleted_cash_flow_summary = delByPrefix(cacheKeys.homeCashFlowSummaryPrefix(user_id))
   const deleted_payable_flow_summary = delByPrefix(cacheKeys.homePayableFlowSummaryPrefix(user_id))
   const deleted_receivable_flow_summary = delByPrefix(cacheKeys.homeReceivableFlowSummaryPrefix(user_id))
-  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], categoryKpiDeleted=[${deleted_category_kpi}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], payableBalanceDeleted=[${deleted_payable_balance}], receivableBalanceDeleted=[${deleted_receivable_balance}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}], receivableFlowSummary=[${deleted_receivable_flow_summary}]`)
+  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], categoryKpiDeleted=[${deleted_category_kpi}], categoryKpiDetailDeleted=[${deleted_category_kpi_detail}], categoryGroupKpiDeleted=[${deleted_category_group_kpi}], categoryGroupKpiDetailDeleted=[${deleted_category_group_kpi_detail}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], payableBalanceDeleted=[${deleted_payable_balance}], receivableBalanceDeleted=[${deleted_receivable_balance}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}], receivableFlowSummary=[${deleted_receivable_flow_summary}]`)
 }

@@ -488,3 +488,145 @@ export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
   cache.set(cache_key, result)
   return result
 }
+
+export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const category_id = Number(auth_req.query.category_id || 0)
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  if (!category_id) return []
+
+  const cache_key = cacheKeys.homeCategoryKpiDetail(user_id, year, category_id)
+  const cached = cache.get<any[]>(cache_key)
+  if (cached !== undefined) return cached
+
+  const repo = AppDataSource.getRepository(CacheKpiCategory)
+  const query = repo.createQueryBuilder('k')
+    .select('k.year_period', 'year_period')
+    .addSelect('k.month_period', 'month_period')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+    .where('k.user_id = :user_id', { user_id })
+    .andWhere('k.category_id = :category_id', { category_id })
+
+  if (year > 0) query.andWhere('k.year_period = :year', { year })
+
+  if (year === 0) {
+    query.select('k.year_period', 'year_period')
+      .addSelect('SUM(k.amount)', 'amount')
+      .addSelect('SUM(k.transaction_count)', 'transaction_count')
+  }
+
+  const rows = await query
+    .groupBy(year === 0 ? 'k.year_period' : 'k.year_period, k.month_period')
+    .orderBy('k.year_period', 'ASC')
+    .addOrderBy(year === 0 ? 'k.year_period' : 'k.month_period', 'ASC')
+    .getRawMany()
+
+  const result = rows.map((row: any) => ({
+    year_period: Number(row.year_period),
+    month_period: Number(row.month_period),
+    amount: Number(row.amount || 0),
+    transaction_count: Number(row.transaction_count || 0)
+  }))
+
+  if (year === 0) {
+    cache.set(cache_key, result)
+    return result
+  }
+
+  const byMonth = new Map(result.map(row => [row.month_period, row]))
+  const resultWithAllMonths = Array.from({ length: 12 }, (_, index) => byMonth.get(index + 1) || ({
+    year_period: year,
+    month_period: index + 1,
+    amount: 0,
+    transaction_count: 0
+  }))
+
+  cache.set(cache_key, resultWithAllMonths)
+  return resultWithAllMonths
+}
+
+export const getHomeCategoryGroupKpi = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  const cache_key = cacheKeys.homeCategoryGroupKpi(user_id, year)
+  const cached = cache.get<any[]>(cache_key)
+  if (cached !== undefined) return cached
+
+  const repo = AppDataSource.getRepository(CacheKpiCategory)
+  const query = repo.createQueryBuilder('k')
+    .select('cg.id', 'category_group_id')
+    .addSelect("COALESCE(cg.name, '')", 'cat_group_name')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+    .leftJoin('k.category_group', 'cg')
+    .where('k.user_id = :user_id', { user_id })
+
+  if (year > 0) query.andWhere('k.year_period = :year', { year })
+
+  const rows = await query
+    .groupBy('cg.id, cg.name')
+    .orderBy('cg.name', 'ASC')
+    .getRawMany()
+
+  const result = rows.map((row: any) => ({
+    category_group_id: Number(row.category_group_id),
+    cat_group_name: String(row.cat_group_name || ''),
+    amount: Number(row.amount || 0),
+    transaction_count: Number(row.transaction_count || 0)
+  }))
+  cache.set(cache_key, result)
+  return result
+}
+
+export const getHomeCategoryGroupKpiDetail = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const group_id = Number(auth_req.query.category_group_id || 0)
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  if (!group_id) return []
+
+  const cache_key = cacheKeys.homeCategoryGroupKpiDetail(user_id, year, group_id)
+  const cached = cache.get<any[]>(cache_key)
+  if (cached !== undefined) return cached
+
+  const repo = AppDataSource.getRepository(CacheKpiCategory)
+  const query = repo.createQueryBuilder('k')
+    .select('k.year_period', 'year_period')
+    .addSelect('k.month_period', 'month_period')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+    .where('k.user_id = :user_id', { user_id })
+    .andWhere('k.category_group_id = :group_id', { group_id })
+
+  if (year > 0) query.andWhere('k.year_period = :year', { year })
+  if (year === 0) query.select('k.year_period', 'year_period')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+
+  const rows = await query
+    .groupBy(year === 0 ? 'k.year_period' : 'k.year_period, k.month_period')
+    .orderBy('k.year_period', 'ASC')
+    .addOrderBy(year === 0 ? 'k.year_period' : 'k.month_period', 'ASC')
+    .getRawMany()
+
+  const result = rows.map((row: any) => ({
+    year_period: Number(row.year_period),
+    month_period: Number(row.month_period),
+    amount: Number(row.amount || 0),
+    transaction_count: Number(row.transaction_count || 0)
+  }))
+  if (year === 0) {
+    cache.set(cache_key, result)
+    return result
+  }
+
+  const byMonth = new Map(result.map(row => [row.month_period, row]))
+  const resultWithAllMonths = Array.from({ length: 12 }, (_, index) => byMonth.get(index + 1) || ({
+    year_period: year,
+    month_period: index + 1,
+    amount: 0,
+    transaction_count: 0
+  }))
+  cache.set(cache_key, resultWithAllMonths)
+  return resultWithAllMonths
+}

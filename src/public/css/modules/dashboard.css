@@ -246,21 +246,79 @@
     font-weight: 500;
 }
 
-/* Column width distribution: Categoria 50%, Monto 30%, Cant 20% */
+/* Column width distribution: Categoria 45%, Monto 25%, Cant 15%, Accion 15% */
 #html-category-kpi-table th:nth-child(1),
 #html-category-kpi-table td:nth-child(1) {
-    width: 50%;
+    width: 45%;
     text-align: left;
 }
 
 #html-category-kpi-table th:nth-child(2),
 #html-category-kpi-table td:nth-child(2) {
-    width: 30%;
+    width: 25%;
     text-align: right;
 }
 
 #html-category-kpi-table th:nth-child(3),
 #html-category-kpi-table td:nth-child(3) {
-    width: 20%;
+    width: 15%;
     text-align: right;
+}
+
+#html-category-kpi-table th:nth-child(4),
+#html-category-kpi-table td:nth-child(4) {
+    width: 15%;
+    text-align: center;
+    overflow: visible;
+}
+
+#html-category-group-kpi-table {
+    font-size: 0.8rem;
+    table-layout: fixed;
+    background: var(--ui-white);
+}
+
+#html-category-group-kpi-table th,
+#html-category-group-kpi-table td {
+    padding: 0.35rem 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#html-category-group-kpi-table thead th {
+    background: var(--ui-blue-50);
+    color: var(--ui-blue-700);
+    border-bottom: 2px solid var(--ui-blue-200);
+    font-weight: 600;
+}
+
+#html-category-group-kpi-table tbody tr:nth-child(odd) { background: var(--ui-white); }
+#html-category-group-kpi-table tbody tr:nth-child(even) { background: #f4f8ff; }
+#html-category-group-kpi-table tbody tr:hover { background: var(--ui-blue-100); }
+#html-category-group-kpi-table tbody td {
+    color: var(--ui-gray-700);
+    border-bottom-color: #e6edf7;
+    vertical-align: middle;
+}
+#html-category-group-kpi-table tbody td:first-child {
+    color: var(--ui-gray-900);
+    font-weight: 500;
+}
+#html-category-group-kpi-table tbody td:nth-child(2),
+#html-category-group-kpi-table tbody td:nth-child(3) {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+#html-category-group-kpi-table th:nth-child(1),
+#html-category-group-kpi-table td:nth-child(1) { width: 45%; text-align: left; }
+#html-category-group-kpi-table th:nth-child(2),
+#html-category-group-kpi-table td:nth-child(2) { width: 25%; text-align: right; }
+#html-category-group-kpi-table th:nth-child(3),
+#html-category-group-kpi-table td:nth-child(3) { width: 15%; text-align: right; }
+#html-category-group-kpi-table th:nth-child(4),
+#html-category-group-kpi-table td:nth-child(4) {
+    width: 15%;
+    text-align: center;
+    overflow: visible;
 }

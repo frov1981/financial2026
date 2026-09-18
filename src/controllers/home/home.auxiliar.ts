@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomePayableFlowSummaryCache, getHomeReceivableFlowSummaryCache, getHomeTrendKpiCache, getHomeCategoryKpiCache } from '../../cache/cache-home.service'
+import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomePayableFlowSummaryCache, getHomeReceivableFlowSummaryCache, getHomeTrendKpiCache, getHomeCategoryKpiCache, getHomeCategoryKpiDetail, getHomeCategoryGroupKpi, getHomeCategoryGroupKpiDetail } from '../../cache/cache-home.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
 import { Payable } from "../../entities/Payable.entity"
@@ -530,5 +530,14 @@ export const getCategoryKpi = async (auth_req: AuthRequest) => {
   const rows = await getHomeCategoryKpiCache(auth_req)
   return rows
 }
+
+export const getCategoryKpiDetail = async (auth_req: AuthRequest) => {
+  const rows = await getHomeCategoryKpiDetail(auth_req)
+  return rows
+}
+
+export const getCategoryGroupKpi = async (auth_req: AuthRequest) => getHomeCategoryGroupKpi(auth_req)
+
+export const getCategoryGroupKpiDetail = async (auth_req: AuthRequest) => getHomeCategoryGroupKpiDetail(auth_req)
 
 

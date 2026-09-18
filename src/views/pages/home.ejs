@@ -42,9 +42,36 @@
                 <th>Categoría</th>
                 <th>Monto</th>
                 <th>Cant.</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody id="html-category-kpi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card home-slide">
+      <div class="ui-card-header html-category-group-kpi-header-nav">
+        <button id="html-category-group-kpi-prev" class="html-category-group-kpi-year-btn"></button>
+        <h2 id="html-category-group-kpi-year-label" class="html-category-group-kpi-year-label">
+          Grupo Categorías
+        </h2>
+        <button id="html-category-group-kpi-next" class="html-category-group-kpi-year-btn"></button>
+      </div>
+
+      <div id="html-category-group-kpi" class="ui-card-body">
+        <div id="html-category-group-kpi-body" style="overflow:auto;">
+          <table class="ui-table" id="html-category-group-kpi-table">
+            <thead>
+              <tr>
+                <th>Grupo Categoría</th>
+                <th>Monto</th>
+                <th>Cant.</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="html-category-group-kpi-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -134,6 +161,30 @@
   <button id="carousel-next" class="carousel-nav carousel-nav-next" onclick="scrollCarouselNext()" title="Siguiente">
   </button>
 
+</div>
+
+<div id="category-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-kpi-detail-title">
+  <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h2 id="category-kpi-detail-title" class="text-lg font-semibold"></h2>
+      <button id="category-kpi-detail-close" type="button" class="ui-modal-btn ui-modal-btn-neutral">Cerrar</button>
+    </div>
+    <div style="height: 300px;">
+      <canvas id="category-kpi-detail-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="category-group-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-group-kpi-detail-title">
+  <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h2 id="category-group-kpi-detail-title" class="text-lg font-semibold"></h2>
+      <button id="category-group-kpi-detail-close" type="button" class="ui-modal-btn ui-modal-btn-neutral">Cerrar</button>
+    </div>
+    <div style="height: 300px;">
+      <canvas id="category-group-kpi-detail-chart"></canvas>
+    </div>
+  </div>
 </div>
 
   </div>

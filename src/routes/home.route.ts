@@ -3,6 +3,9 @@ import {
     apiForGettingCashSummary,
     apiForGettingKpis,
     apiForGettingCategoryKpi,
+    apiForGettingCategoryKpiDetail,
+    apiForGettingCategoryGroupKpi,
+    apiForGettingCategoryGroupKpiDetail,
     apiForGettingPayableSummary,
     apiForGettingReceivableSummary,
     apiForLogout,
@@ -33,6 +36,9 @@ protectedSubRouter.get('/cash-summary', apiForGettingCashSummary)
 protectedSubRouter.get('/payable-summary', apiForGettingPayableSummary)
 protectedSubRouter.get('/receivable-summary', apiForGettingReceivableSummary)
 protectedSubRouter.get('/category-kpi', apiForGettingCategoryKpi)
+protectedSubRouter.get('/category-kpi-detail', apiForGettingCategoryKpiDetail)
+protectedSubRouter.get('/category-group-kpi', apiForGettingCategoryGroupKpi)
+protectedSubRouter.get('/category-group-kpi-detail', apiForGettingCategoryGroupKpiDetail)
 protectedSubRouter.get('/home', routeToPageHome)
 
 router.use(protectedSubRouter)
