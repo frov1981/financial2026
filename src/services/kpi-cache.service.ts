@@ -4,7 +4,8 @@ import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { AuthRequest } from '../types/auth-request'
 import { formatDateForInputLocal } from '../utils/date.util'
 import { parseError } from '../utils/error.util'
-import { logger } from '../utils/logger.util'
+import { logger as root_logger } from '../utils/logger.util'
+
 
 function money(n: number) {
   return Number(n.toFixed(2))
@@ -57,6 +58,7 @@ export class KpiCacheService {
   private static async recalculateCurrMonthBalanceKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
 
     const user_id = auth_req.user.id
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
     const timezone = auth_req.timezone || 'UTC'
 
     try {
@@ -68,7 +70,7 @@ export class KpiCacheService {
       const start_date = new Date(formatDateForInputLocal(start_local, timezone))
       const end_date = new Date(formatDateForInputLocal(end_local, timezone))
 
-      logger.debug('KPI_DATE_RANGE', { user_id, period_year, period_month, timezone, start_local, end_local, start_date, end_date })
+      kpi_cache_logger.debug('KPI_DATE_RANGE', { user_id, period_year, period_month, timezone, start_local, end_local, start_date, end_date })
 
       const result = await AppDataSource.manager.query(query_base, [
         user_id,
@@ -82,7 +84,7 @@ export class KpiCacheService {
 
       const r = result[0]
 
-      logger.debug('KPI_QUERY_RESULT', { user_id, period_year, period_month, timezone, start_date, end_date, result: r })
+      kpi_cache_logger.debug('KPI_QUERY_RESULT', { user_id, period_year, period_month, timezone, start_date, end_date, result: r })
 
       const incomes = Number(r.incomes || 0)
       const expenses = Number(r.expenses || 0)
@@ -106,7 +108,7 @@ export class KpiCacheService {
         where: { user: { id: user_id }, period_year, period_month },
         relations: ['user']
       })
-      logger.debug('KPI_COMPARE', { period_year, period_month, old_available_balance: existing?.available_balance, old_incomes: existing?.incomes, old_expenses: existing?.expenses, old_payables: existing?.payables, old_payablePayments: existing?.payable_payments, old_savings: existing?.savings, old_withdrawals: existing?.withdrawals, new_available_balance: available_balance, new_incomes: incomes, new_expenses: expenses, new_payables: payables, new_payablePayments: payable_payments, new_savings: savings, new_withdrawals: withdrawals })
+      kpi_cache_logger.debug('KPI_COMPARE', { period_year, period_month, old_available_balance: existing?.available_balance, old_incomes: existing?.incomes, old_expenses: existing?.expenses, old_payables: existing?.payables, old_payablePayments: existing?.payable_payments, old_savings: existing?.savings, old_withdrawals: existing?.withdrawals, new_available_balance: available_balance, new_incomes: incomes, new_expenses: expenses, new_payables: payables, new_payablePayments: payable_payments, new_savings: savings, new_withdrawals: withdrawals })
 
       const payload = {
         incomes,
@@ -125,7 +127,7 @@ export class KpiCacheService {
         principal_breakdown: 0,
         interest_breakdown: 0
       }
-      logger.debug('KPI_MONTH_AFTER', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
+      kpi_cache_logger.debug('KPI_MONTH_AFTER', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
 
       if (existing) {
         await repo.update({ id: existing.id }, payload)
@@ -137,15 +139,16 @@ export class KpiCacheService {
           ...payload
         })
       }
-      logger.debug('KPI_MONTH_BEFORE', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
-      logger.info(`KPI MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
+      kpi_cache_logger.debug('KPI_MONTH_BEFORE', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
+      kpi_cache_logger.info(`KPI MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
 
     } catch (error: any) {
-      logger.error('Error recalculando KPI mes', parseError(error))
+      kpi_cache_logger.error('Error recalculando KPI mes', parseError(error))
     }
   }
 
   private static async recalculateAllBalanceKPI(user_id: number, timezone: string) {
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
 
     try {
 
@@ -218,15 +221,16 @@ export class KpiCacheService {
         })
       }
 
-      logger.info(`KPI FULL REBUILD user=${user_id}`)
+      kpi_cache_logger.info(`KPI FULL REBUILD user=${user_id}`)
 
     } catch (error) {
-      logger.error('Error en recalculateAllBalanceKPI', parseError(error))
+      kpi_cache_logger.error('Error en recalculateAllBalanceKPI', parseError(error))
     }
   }
 
     static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
-    logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', auth_req.user.id)
+    kpi_cache_logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
@@ -234,7 +238,7 @@ export class KpiCacheService {
     try {
 
       if (!transaction?.date) {
-        logger.warn('recalculateBalanceKPIByTransaction sin transaction.date')
+        kpi_cache_logger.warn('recalculateBalanceKPIByTransaction sin transaction.date')
         return
       }
 
@@ -248,16 +252,16 @@ export class KpiCacheService {
 
       const is_current_period = trx_year === current_year && trx_month === current_month
 
-      logger.debug('KPI_PERIOD_RAW', { trx_id: transaction.id, trx_date: transaction.date })
+      kpi_cache_logger.debug('KPI_PERIOD_RAW', { trx_id: transaction.id, trx_date: transaction.date })
       if (is_current_period) {
         await this.recalculateCurrMonthBalanceKPI(auth_req, trx_year, trx_month)
       } else {
         await this.recalculateAllBalanceKPI(user_id, timezone)
       }
 
-      logger.debug('KPI recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
+      kpi_cache_logger.debug('KPI recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
     } catch (error: any) {
-      logger.error('Error en recalculateBalanceKPIByTransaction', parseError(error))
+      kpi_cache_logger.error('Error en recalculateBalanceKPIByTransaction', parseError(error))
     }
   }
 
@@ -266,6 +270,7 @@ export class KpiCacheService {
   ============================ */
   private static async recalculateCurrMonthCategoryKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
     const user_id = auth_req.user.id
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
     const timezone = auth_req.timezone || 'UTC'
 
     try {
@@ -297,13 +302,14 @@ export class KpiCacheService {
         })
       }
 
-      logger.info(`KPI CATEGORIAS MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
+      kpi_cache_logger.info(`KPI CATEGORIAS MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
     } catch (error: any) {
-      logger.error('Error recalculando KPI categorías mes', parseError(error))
+      kpi_cache_logger.error('Error recalculando KPI categorías mes', parseError(error))
     }
   }
 
   private static async recalculateAllCategoryKPI(user_id: number, timezone: string) {
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
     try {
       const repo = AppDataSource.getRepository(CacheKpiCategory)
 
@@ -344,21 +350,22 @@ export class KpiCacheService {
         }
       }
 
-      logger.info(`KPI CATEGORIAS FULL REBUILD user=${user_id}`)
+      kpi_cache_logger.info(`KPI CATEGORIAS FULL REBUILD user=${user_id}`)
     } catch (error) {
-      logger.error('Error en recalculateAllCategoryKPI', parseError(error))
+      kpi_cache_logger.error('Error en recalculateAllCategoryKPI', parseError(error))
     }
   }
 
   static async recalculateCategoryKPIByTransaction(auth_req: AuthRequest, transaction: any) {
-    logger.debug('recalculateCategoryKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, timezone: auth_req.timezone })
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', auth_req.user.id)
+    kpi_cache_logger.debug('recalculateCategoryKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, timezone: auth_req.timezone })
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
 
     try {
       if (!transaction?.date) {
-        logger.warn('recalculateCategoryKPIByTransaction sin transaction.date')
+        kpi_cache_logger.warn('recalculateCategoryKPIByTransaction sin transaction.date')
         return
       }
 
@@ -378,9 +385,9 @@ export class KpiCacheService {
         await this.recalculateAllCategoryKPI(user_id, timezone)
       }
 
-      logger.debug('KPI CATEGORÍAS recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
+      kpi_cache_logger.debug('KPI CATEGORÍAS recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
     } catch (error: any) {
-      logger.error('Error en recalculateCategoryKPIByTransaction', parseError(error))
+      kpi_cache_logger.error('Error en recalculateCategoryKPIByTransaction', parseError(error))
     }
   }
 

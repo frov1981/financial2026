@@ -64,6 +64,7 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
 export const apiForBatchCategorize: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const apiForBatchCategorize_logger = logger.forMethod(apiForBatchCategorize.name, 'BATCH_CATEGORIZE', user_id)
     const return_from = req.body.return_from
     const return_category_id = req.body.return_category_id ? Number(req.body.return_category_id) : null
 
@@ -137,7 +138,6 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
                 throw new Error('Categoría de gastos inválida')
             }
         }
-
         /* ============================================================
         5. Procesar actualización (SOLO category)
         ============================================================ */
@@ -179,7 +179,7 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
         return res.redirect('/transactions?saved_batch=true')
 
     } catch (error) {
-        logger.error(`${apiForBatchCategorize.name} - Error`, parseError(error))
+        apiForBatchCategorize_logger.error('Error al categorizar transacciones', parseError(error))
 
         const active_income_categories = await getActiveIncomeCategories(auth_req)
         const active_expense_categories = await getActiveExpenseCategories(auth_req)

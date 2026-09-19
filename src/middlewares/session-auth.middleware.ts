@@ -8,8 +8,9 @@ import { parseError } from '../utils/error.util'
 
 
 export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
+  const session_user_id = (req.session as any)?.user_id
+  const sessionAuthMiddleware_logger = logger.forMethod(sessionAuthMiddleware.name, 'SESSION_AUTH', session_user_id ?? null)
   try {
-    const session_user_id = (req.session as any)?.user_id
     if (!session_user_id) return res.redirect('/login')
 
     const user = await AppDataSource.getRepository(User).findOneBy({ id: session_user_id })
@@ -24,7 +25,7 @@ export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: R
 
     next()
   } catch (error) {
-    logger.error(`${sessionAuthMiddleware.name}-Error. `, parseError(error))
+    sessionAuthMiddleware_logger.error('Error autenticando sesión', parseError(error))
     return res.redirect('/login')
   }
 }

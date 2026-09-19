@@ -52,10 +52,10 @@ const buildReceivableGroupView = (body: any, mode: ReceivableGroupFormMode) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveReceivableGroup: RequestHandler = async (req: Request, res: Response) => {
-    const start = performance.now()
-    logger.info(`${saveReceivableGroup.name} called`, { body: req.body, param: req.params })
+    const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const saveReceivableGroup_logger = logger.forMethod(saveReceivableGroup.name, 'RECEIVABLE_GROUP_SAVE', user_id)
     const receivable_group_id = Number(req.body.id)
     const mode: ReceivableGroupFormMode = req.body.mode || 'insert'
     const repo_receivable_group = AppDataSource.getRepository(ReceivableGroup)
@@ -66,6 +66,7 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
         mode
     }
     try {
+        saveReceivableGroup_logger.info('Inicio proceso de guardado de grupo por cobrar', { body: req.body, param: req.params })
         let existing: ReceivableGroup | null = null
         if (receivable_group_id) {
             existing = await getReceivableGroupById(auth_req, receivable_group_id)
@@ -115,7 +116,7 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
         /* ============================
            Manejo de errores
         ============================ */
-        logger.error(`${saveReceivableGroup.name}-Error. `, { user_id: auth_req.user.id, receivable_group_id: receivable_group_id, mode, error: parseError(error), })
+        saveReceivableGroup_logger.error('Error al guardar grupo por cobrar', { user_id: auth_req.user.id, receivable_group_id: receivable_group_id, mode, error: parseError(error), })
         const validationErrors = error?.validationErrors || null
         return res.render('layouts/main', {
             title: getTitle(mode),
@@ -124,8 +125,9 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
             errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         })
     } finally {
-        const end = performance.now()
-        const duration_sec = (end - start) / 1000
-        logger.debug(`${saveReceivableGroup.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        saveReceivableGroup_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        saveReceivableGroup_logger.debug('Fin de la operación de guardado de grupo por cobrar', { user_id })
     }
 }

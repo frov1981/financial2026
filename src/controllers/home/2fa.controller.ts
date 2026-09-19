@@ -19,9 +19,10 @@ export const show2FA = (req: Request, res: Response) => {
 }
 
 export const verify2FA = async (req: Request, res: Response) => {
+  const pendingUserId = (req.session as any)?.pending2FAUserId
+  const verify2FA_logger = logger.forMethod(verify2FA.name, 'VERIFY_2FA', pendingUserId ?? null)
   try {
     const { code } = req.body
-    const pendingUserId = (req.session as any)?.pending2FAUserId
 
     if (!pendingUserId) return res.redirect('/login')
 
@@ -65,7 +66,7 @@ export const verify2FA = async (req: Request, res: Response) => {
 
     req.session.regenerate(err => {
       if (err) {
-        logger.error(err)
+        verify2FA_logger.error('Session regeneration failed', parseError(err))
         return res.redirect('/login')
       }
 
@@ -74,7 +75,7 @@ export const verify2FA = async (req: Request, res: Response) => {
 
       req.session.save(err2 => {
         if (err2) {
-          logger.error(err2)
+          verify2FA_logger.error('Session save failed', parseError(err2))
           return res.redirect('/login')
         }
 
@@ -83,7 +84,7 @@ export const verify2FA = async (req: Request, res: Response) => {
     })
 
   } catch (error: any) {
-    logger.error('verify2FA error', parseError(error))
+    verify2FA_logger.error('verify2FA error', parseError(error))
     res.render(
       'pages/2fa',
       {

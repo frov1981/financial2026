@@ -148,12 +148,13 @@ Api para devolver el DTO Payable en JSON
 ==================================================*/
 export const apiForGettingPayablePayments: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
+    const apiForGettingPayablePayments_logger = logger.forMethod(apiForGettingPayablePayments.name, 'PAYABLE_PAYMENT_LIST', auth_req.user.id)
     const payable_id = Number(req.params.payable_id)
     try {
         const payments = await getPaymentsForApi(auth_req, payable_id)
         res.json(payments)
     } catch (error) {
-        logger.error(`${apiForGettingPayablePayments.name}-Error. `, parseError(error))
+        apiForGettingPayablePayments_logger.error('Error al listar pagos', parseError(error))
         res.status(500).json({ error: 'Error al listar pagos' })
     } finally {
     }

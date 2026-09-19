@@ -150,12 +150,13 @@ Api para devolver el DTO Payable en JSON
 ==================================================*/
 export const apiForGettingReceivableCollections: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
+    const apiForGettingReceivableCollections_logger = logger.forMethod(apiForGettingReceivableCollections.name, 'RECEIVABLE_COLLECTION_LIST', auth_req.user.id)
     const payable_id = Number(req.params.payable_id)
     try {
         const receivable_collections = await getCollectionsForApi(auth_req, payable_id)
         res.json(receivable_collections)
     } catch (error) {
-        logger.error(`${apiForGettingReceivableCollections.name}-Error. `, parseError(error))
+        apiForGettingReceivableCollections_logger.error('Error al listar cobros', parseError(error))
         res.status(500).json({ error: 'Error al listar cobros' })
     } finally {
     }

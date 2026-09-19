@@ -70,10 +70,10 @@ const buildPayableView = async (auth_req: AuthRequest, body: any) => {
     Obtener cuentas activas del usuario para mostrar en el formulario 
 ============================ */
 export const savePayable: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${savePayable.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const savePayable_logger = logger.forMethod(savePayable.name, 'PAYABLE_SAVE', user_id)
   const mode: PayableFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
   const payable_id = Number(req.body.id)
@@ -98,6 +98,7 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
   await queryRunner.startTransaction()
 
   try {
+    savePayable_logger.info('Inicio proceso de guardado de cuenta por pagar', { body: req.body, param: req.params })
     let existing: Payable | null = null
     if (payable_id) {
       existing = await getPayableById(auth_req, payable_id)
@@ -126,11 +127,11 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
 
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${savePayable.name}-Error recalculando KPI Balances`, parseError(error)))
+        .catch(error => savePayable_logger.error('Error recalculando KPI balances', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${savePayable.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => savePayable_logger.error('Error recalculando KPI categorías', parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -249,11 +250,11 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
     if (payable.transaction) {
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, payable.transaction)        
-        .catch(error => logger.error(`${savePayable.name}-Error recalculando KPI Balance`, parseError(error)))
+        .catch(error => savePayable_logger.error('Error recalculando KPI balance', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, payable.transaction)
-        .catch(error => logger.error(`${savePayable.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => savePayable_logger.error('Error recalculando KPI categorías', parseError(error)))
     }
 
     if (return_from === 'categories' && return_category_id) {
@@ -265,7 +266,7 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
        Manejo de errores
     ============================ */
     await queryRunner.rollbackTransaction()
-    logger.error(`${savePayable.name}-Error. `, { user_id: auth_req.user.id, payable_id, mode, error: parseError(error), })
+    savePayable_logger.error('Error al guardar cuenta por pagar', { user_id: auth_req.user.id, payable_id, mode, error: parseError(error), })
 
     let validationErrors: Record<string, string> | null = null
     switch (error?.code) {
@@ -289,8 +290,9 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
     })
   } finally {
     await queryRunner.release()
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${savePayable.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    savePayable_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    savePayable_logger.debug('Fin de la operación de guardado de cuenta por pagar', { user_id })
   }
 }

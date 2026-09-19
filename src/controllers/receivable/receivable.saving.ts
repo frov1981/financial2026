@@ -70,10 +70,10 @@ const buildReceivableView = async (auth_req: AuthRequest, body: any) => {
     Obtener cuentas activas del usuario para mostrar en el formulario 
 ============================ */
 export const saveReceivable: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveReceivable.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveReceivable_logger = logger.forMethod(saveReceivable.name, 'RECEIVABLE_SAVE', user_id)
   const mode: ReceivableFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
   const receivable_id = Number(req.body.id)
@@ -98,6 +98,7 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
   await queryRunner.startTransaction()
 
   try {
+    saveReceivable_logger.info('Inicio proceso de guardado de cuenta por cobrar', { body: req.body, param: req.params })
     let existing: Receivable | null = null
     if (receivable_id) {
       existing = await getReceivableById(auth_req, receivable_id)
@@ -126,11 +127,11 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
 
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveReceivable.name}-Error recalculando KPI Balances`, parseError(error)))
+        .catch(error => saveReceivable_logger.error('Error recalculando KPI balances', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveReceivable.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => saveReceivable_logger.error('Error recalculando KPI categorías', parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -252,11 +253,11 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
     if (receivable.transaction) {
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, receivable.transaction)        
-        .catch(error => logger.error(`${saveReceivable.name}-Error recalculando KPI Balance`, parseError(error)))
+        .catch(error => saveReceivable_logger.error('Error recalculando KPI balance', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, receivable.transaction)
-        .catch(error => logger.error(`${saveReceivable.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => saveReceivable_logger.error('Error recalculando KPI categorías', parseError(error)))
     }
 
     if (return_from === 'categories' && return_category_id) {
@@ -268,7 +269,7 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
        Manejo de errores
     ============================ */
     await queryRunner.rollbackTransaction()
-    logger.error(`${saveReceivable.name}-Error. `, { user_id: auth_req.user.id, receivable_id, mode, error: parseError(error), })
+    saveReceivable_logger.error('Error al guardar cuenta por cobrar', { user_id: auth_req.user.id, receivable_id, mode, error: parseError(error), })
 
     let validationErrors: Record<string, string> | null = null
     switch (error?.code) {
@@ -292,8 +293,9 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
     })
   } finally {
     await queryRunner.release()
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveReceivable.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveReceivable_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveReceivable_logger.debug('Fin de la operación de guardado de cuenta por cobrar', { user_id })
   }
 }

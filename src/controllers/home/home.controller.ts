@@ -42,6 +42,7 @@ export const routeToPageHome = async (req: Request, res: Response) => {
 }
 
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
+  const apiForValidatingLogin_logger = logger.forMethod(apiForValidatingLogin.name, 'LOGIN')
   try {
     const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
     const timezone = String(req.body.timezone || 'UTC')
@@ -99,7 +100,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     })
     return res.redirect('/2fa')
   } catch (error: any) {
-    logger.error(`${apiForValidatingLogin.name}-Error.`, parseError(error))
+    apiForValidatingLogin_logger.error('Error validando inicio de sesión', parseError(error))
     return res.render('pages/login', { error: 'Error interno, intenta de nuevo' })
   } finally {
   }
@@ -107,6 +108,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
 
 export const apiForGettingKpis: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingKpis_logger = logger.forMethod(apiForGettingKpis.name, 'HOME_KPIS', auth_req.user.id)
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const balanceKpi = await getBalanceKpi(auth_req)
@@ -117,13 +119,14 @@ export const apiForGettingKpis: RequestHandler = async (req: Request, res: Respo
       trendKpi,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingKpis:', parseError(error))
+      apiForGettingKpis_logger.error('Error en apiForGettingKpis:', parseError(error))
     res.json({ message: 'Error' })
   }
 }
 
 export const apiForGettingCashSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingCashSummary_logger = logger.forMethod(apiForGettingCashSummary.name, 'CASH_SUMMARY', auth_req.user.id)
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const cashSummary = await getCashSummary(auth_req)
@@ -132,13 +135,14 @@ export const apiForGettingCashSummary: RequestHandler = async (req: Request, res
       cashSummary,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingCashSummary:', parseError(error))
+      apiForGettingCashSummary_logger.error('Error en apiForGettingCashSummary:', parseError(error))
     res.json({ message: 'Error' })
   }
 }
 
 export const apiForGettingPayableSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingPayableSummary_logger = logger.forMethod(apiForGettingPayableSummary.name, 'PAYABLE_SUMMARY', auth_req.user.id)
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const payableSummary = await getPayableSummary(auth_req)
@@ -147,13 +151,14 @@ export const apiForGettingPayableSummary: RequestHandler = async (req: Request, 
       payableSummary,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingPayableSummary:', parseError(error))
+      apiForGettingPayableSummary_logger.error('Error en apiForGettingPayableSummary:', parseError(error))
     res.json({ message: 'Error' })
   }
 }
 
 export const apiForGettingReceivableSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingReceivableSummary_logger = logger.forMethod(apiForGettingReceivableSummary.name, 'RECEIVABLE_SUMMARY', auth_req.user.id)
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const receivableSummary = await getReceivableSummary(auth_req)
@@ -162,13 +167,14 @@ export const apiForGettingReceivableSummary: RequestHandler = async (req: Reques
       receivableSummary,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingReceivableSummary:', parseError(error))
+      apiForGettingReceivableSummary_logger.error('Error en apiForGettingReceivableSummary:', parseError(error))
     res.json({ message: 'Error' })
   }
 }
 
 export const apiForGettingCategoryKpi: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingCategoryKpi_logger = logger.forMethod(apiForGettingCategoryKpi.name, 'CATEGORY_KPI', auth_req.user.id)
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const categoryKpi = await getCategoryKpi(auth_req)
@@ -177,49 +183,54 @@ export const apiForGettingCategoryKpi: RequestHandler = async (req: Request, res
       categoryKpi,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingCategoryKpi:', parseError(error))
+      apiForGettingCategoryKpi_logger.error('Error en apiForGettingCategoryKpi:', parseError(error))
     res.json({ message: 'Error' })
   }
 }
 
 export const apiForGettingCategoryKpiDetail: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingCategoryKpiDetail_logger = logger.forMethod(apiForGettingCategoryKpiDetail.name, 'CATEGORY_KPI_DETAIL', auth_req.user.id)
   try {
     const categoryKpiDetail = await getCategoryKpiDetail(auth_req)
     res.json({ categoryKpiDetail })
   } catch (error) {
-    logger.error('Error en apiForGettingCategoryKpiDetail:', parseError(error))
+      apiForGettingCategoryKpiDetail_logger.error('Error en apiForGettingCategoryKpiDetail:', parseError(error))
     res.json({ message: 'Error' })
   }
 }
 
 export const apiForGettingCategoryGroupKpi: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingCategoryGroupKpi_logger = logger.forMethod(apiForGettingCategoryGroupKpi.name, 'CATEGORY_GROUP_KPI', auth_req.user.id)
   try {
     const categoryGroupKpi = await getCategoryGroupKpi(auth_req)
     res.json({ categoryGroupKpi })
   } catch (error) {
-    logger.error('Error en apiForGettingCategoryGroupKpi:', parseError(error))
+      apiForGettingCategoryGroupKpi_logger.error('Error en apiForGettingCategoryGroupKpi:', parseError(error))
     res.json({ message: 'Error' })
   }
 }
 
 export const apiForGettingCategoryGroupKpiDetail: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingCategoryGroupKpiDetail_logger = logger.forMethod(apiForGettingCategoryGroupKpiDetail.name, 'CATEGORY_GROUP_KPI_DETAIL', auth_req.user.id)
   try {
     const categoryGroupKpiDetail = await getCategoryGroupKpiDetail(auth_req)
     res.json({ categoryGroupKpiDetail })
   } catch (error) {
-    logger.error('Error en apiForGettingCategoryGroupKpiDetail:', parseError(error))
+      apiForGettingCategoryGroupKpiDetail_logger.error('Error en apiForGettingCategoryGroupKpiDetail:', parseError(error))
     res.json({ message: 'Error' })
   }
 }
 
 export const apiForLogout: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForLogout_logger = logger.forMethod(apiForLogout.name, 'LOGOUT', auth_req.user.id)
   try {
     req.session.destroy(err => {
       if (err) {
-        logger.error('Error destroying session:', err)
+          apiForLogout_logger.error('Error destruyendo sesión', err)
         return res.redirect('/home')
       }
 
@@ -228,7 +239,7 @@ export const apiForLogout: RequestHandler = async (req: Request, res: Response) 
       return res.redirect('/login')
     })
   } catch (error) {
-    logger.error('Logout error:', parseError(error))
+      apiForLogout_logger.error('Error cerrando sesión', parseError(error))
     return res.redirect('/login')
   }
 }

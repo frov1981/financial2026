@@ -1,7 +1,8 @@
 import nodemailer from 'nodemailer'
 import { User } from '../entities/User.entity'
 import { parseError } from '../utils/error.util'
-import { logger } from '../utils/logger.util'
+import { logger as root_logger } from '../utils/logger.util'
+
 import { buildWeeklyBalanceMail } from './weekly-balance-mail.service'
 
 const transporter = nodemailer.createTransport({
@@ -15,6 +16,7 @@ const transporter = nodemailer.createTransport({
 })
 
 export async function sendWeeklyBalanceMail(user: User, timezone = 'UTC'): Promise<void> {
+  const weekly_balance_mail_logger = root_logger.forMethod('sendWeeklyBalanceMail', 'SEND_WEEKLY_BALANCE_MAIL', user.id)
   try {
     const mail = await buildWeeklyBalanceMail(user, timezone)
 
@@ -31,9 +33,9 @@ export async function sendWeeklyBalanceMail(user: User, timezone = 'UTC'): Promi
       }],
     })
 
-    logger.info(`[MAIL] Resumen semanal enviado a [${user.email}]`)
+    weekly_balance_mail_logger.info(`[MAIL] Resumen semanal enviado a [${user.email}]`)
   } catch (error) {
-    logger.error(`[MAIL] Error enviando resumen semanal a [${user.email}]`, parseError(error))
+    weekly_balance_mail_logger.error(`[MAIL] Error enviando resumen semanal a [${user.email}]`, parseError(error))
     throw error
   }
 }

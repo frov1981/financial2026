@@ -3,7 +3,7 @@ import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { Receivable } from "../entities/Receivable.entity";
 import { AuthRequest } from "../types/auth-request";
-import { logger } from '../utils/logger.util';
+import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
@@ -111,6 +111,7 @@ export const getInactiveReceivables = async (auth_req: AuthRequest): Promise<Rec
 
 export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<{ receivables: DTOReceivable[], group_totals: DTOReceivableGroupTotal[] }> => {
     const user_id = auth_req.user.id
+    const cache_receivables_logger = root_logger.forMethod('getReceivablesForApi', 'CACHE_RECEIVABLES', user_id)
     const cache_key = cacheKeys.receivablesByUserForApi(user_id)
     const cached_receivables = cache.get<{ receivables: DTOReceivable[], group_totals: DTOReceivableGroupTotal[] }>(cache_key)
     if (cached_receivables !== undefined) {
@@ -168,7 +169,7 @@ export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<{ rec
     
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getReceivablesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[receivable], count=[${receivables.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache_receivables_logger.debug(`method=[${getReceivablesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[receivable], count=[${receivables.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, response)
     return response
 }

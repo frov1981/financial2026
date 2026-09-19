@@ -52,10 +52,10 @@ const buildPayableGroupView = (body: any, mode: PayableGroupFormMode) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const savePayableGroup: RequestHandler = async (req: Request, res: Response) => {
-    const start = performance.now()
-    logger.info(`${savePayableGroup.name} called`, { body: req.body, param: req.params })
+    const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const savePayableGroup_logger = logger.forMethod(savePayableGroup.name, 'PAYABLE_GROUP_SAVE', user_id)
     const payable_group_id = Number(req.body.id)
     const mode: PayableGroupFormMode = req.body.mode || 'insert'
     const repo_payable_group = AppDataSource.getRepository(PayableGroup)
@@ -66,6 +66,7 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
         mode
     }
     try {
+        savePayableGroup_logger.info('Inicio proceso de guardado de grupo por pagar', { body: req.body, param: req.params })
         let existing: PayableGroup | null = null
         if (payable_group_id) {
             existing = await getPayableGroupById(auth_req, payable_group_id)
@@ -115,7 +116,7 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
         /* ============================
            Manejo de errores
         ============================ */
-        logger.error(`${savePayableGroup.name}-Error. `, { user_id: auth_req.user.id, payable_group_id: payable_group_id, mode, error: parseError(error), })
+        savePayableGroup_logger.error('Error al guardar grupo por pagar', { user_id: auth_req.user.id, payable_group_id: payable_group_id, mode, error: parseError(error), })
         const validationErrors = error?.validationErrors || null
         return res.render('layouts/main', {
             title: getTitle(mode),
@@ -124,8 +125,9 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
             errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         })
     } finally {
-        const end = performance.now()
-        const duration_sec = (end - start) / 1000
-        logger.debug(`${savePayableGroup.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        savePayableGroup_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        savePayableGroup_logger.debug('Fin de la operación de guardado de grupo por pagar', { user_id })
     }
 }

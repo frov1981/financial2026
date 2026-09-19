@@ -49,10 +49,12 @@ const buildAccountView = (body: any) => {
 }
 
 export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveAccount.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveAccount_logger = logger.forMethod(saveAccount.name, 'ACCOUNT_SAVE', user_id)
+  saveAccount_logger.debug('Inicio proceso de guardado de cuenta', { user_id })
+  saveAccount_logger.debug('Parametros recibidos al backend', { body: req.body, param: req.params })
   const account_id = req.body.id ? Number(req.body.id) : undefined
   const mode: AccountFormMode = req.body.mode || 'insert'
   const repo_account = AppDataSource.getRepository(Account)
@@ -85,7 +87,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     let account: Account
     if (mode === 'insert') {
       account = repo_account.create({
-        user: { id: auth_req.user.id } as any,
+        user: { id: user_id } as any,
         type: req.body.type,
         name: req.body.name,
         is_active: true,
@@ -114,7 +116,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error('Error saving account', { user_id: auth_req.user.id, account_id, mode, error: parseError(error) })
+    saveAccount_logger.error('Error saving account', { user_id: user_id, account_id, mode, error: parseError(error) })
     const validation_errors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -123,8 +125,9 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
   } finally {
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveAccount.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveAccount_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveAccount_logger.debug('Fin de la operación de guardado de cuenta', { user_id })
   }
 }

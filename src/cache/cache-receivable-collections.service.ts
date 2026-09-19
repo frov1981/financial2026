@@ -3,7 +3,7 @@ import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { ReceivableCollection } from "../entities/ReceivableCollection.entity"
 import { AuthRequest } from "../types/auth-request"
-import { logger } from "../utils/logger.util"
+import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
 
@@ -72,6 +72,7 @@ export const getCollectionById = async (auth_req: AuthRequest, collection_id: nu
 
 export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id: number): Promise<DTOReceivableCollection[]> => {
     const user_id = auth_req.user.id
+    const cache_receivable_collections_logger = root_logger.forMethod('getCollectionsForApi', 'CACHE_RECEIVABLE_COLLECTIONS', user_id)
     const cache_key = cacheKeys.receivableCollectionsByCollectionForApi(user_id, collection_id)
 
     const cached = cache.get<DTOReceivableCollection[]>(cache_key)
@@ -101,7 +102,7 @@ export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id:
 
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getCollectionsForApi.name}], cacheKey=[${cache_key}], receivable=[${collection_id}], user=[${user_id}], entity=[receivable_payment], count=[${collections.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache_receivable_collections_logger.debug(`method=[${getCollectionsForApi.name}], cacheKey=[${cache_key}], receivable=[${collection_id}], user=[${user_id}], entity=[receivable_payment], count=[${collections.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, collections)
     return collections
 }

@@ -82,8 +82,9 @@ function imageUrls(reference: FileReference) {
 }
 
 export const apiForUploadingFiles: RequestHandler = async (req: Request, res: Response) => {
+  const authRequest = req as AuthRequest
+  const apiForUploadingFiles_logger = logger.forMethod(apiForUploadingFiles.name, 'FILE_UPLOAD', authRequest.user.id)
   try {
-    const authRequest = req as AuthRequest
     const tableName = parseTableName(req.params.tableName)
     const recordId = parseRecordId(req.params.recordId)
     if (tableName !== 'transactions' || !recordId) {
@@ -114,14 +115,15 @@ export const apiForUploadingFiles: RequestHandler = async (req: Request, res: Re
       csrfToken: res.locals.csrfToken
     })
   } catch (error) {
-    logger.error(`${apiForUploadingFiles.name}-Error. `, parseError(error))
+    apiForUploadingFiles_logger.error('Error al guardar las imágenes', parseError(error))
     return res.status(400).json({ error: error instanceof Error ? error.message : 'Error al guardar las imágenes' })
   }
 }
 
 export const apiForGettingFiles: RequestHandler = async (req: Request, res: Response) => {
+  const authRequest = req as AuthRequest
+  const apiForGettingFiles_logger = logger.forMethod(apiForGettingFiles.name, 'FILE_LIST', authRequest.user.id)
   try {
-    const authRequest = req as AuthRequest
     const tableName = parseTableName(req.params.tableName)
     const recordId = parseRecordId(req.params.recordId)
     if (tableName !== 'transactions' || !recordId) {
@@ -135,7 +137,7 @@ export const apiForGettingFiles: RequestHandler = async (req: Request, res: Resp
     const references = await getFileReferences(tableName, recordId)
     return res.json({ files: references.map(imageUrls) })
   } catch (error) {
-    logger.error(`${apiForGettingFiles.name}-Error. `, parseError(error))
+    apiForGettingFiles_logger.error('Error al listar las imágenes', parseError(error))
     return res.status(500).json({ error: 'Error al listar las imágenes' })
   }
 }
@@ -151,6 +153,8 @@ async function findOwnedReference(req: Request): Promise<FileReference | null> {
 }
 
 export const apiForServingFile: RequestHandler = async (req: Request, res: Response) => {
+  const authRequest = req as AuthRequest
+  const apiForServingFile_logger = logger.forMethod(apiForServingFile.name, 'FILE_SERVE', authRequest.user.id)
   try {
     const reference = await findOwnedReference(req)
     if (!reference) return res.status(404).send('Archivo no encontrado')
@@ -163,12 +167,14 @@ export const apiForServingFile: RequestHandler = async (req: Request, res: Respo
     res.setHeader('Cache-Control', 'private, max-age=31536000, immutable')
     return res.sendFile(absoluteStoragePath(relativePath))
   } catch (error) {
-    logger.error(`${apiForServingFile.name}-Error. `, parseError(error))
+    apiForServingFile_logger.error('Error al servir la imagen', parseError(error))
     return res.status(404).send('Archivo no encontrado')
   }
 }
 
 export const apiForDeletingFile: RequestHandler = async (req: Request, res: Response) => {
+  const authRequest = req as AuthRequest
+  const apiForDeletingFile_logger = logger.forMethod(apiForDeletingFile.name, 'FILE_DELETE', authRequest.user.id)
   try {
     const reference = await findOwnedReference(req)
     if (!reference) return res.status(404).json({ error: 'Archivo no encontrado' })
@@ -183,7 +189,7 @@ export const apiForDeletingFile: RequestHandler = async (req: Request, res: Resp
       : null
     return res.json({ success: true, no_images: noImages, csrfToken: res.locals.csrfToken })
   } catch (error) {
-    logger.error(`${apiForDeletingFile.name}-Error. `, parseError(error))
+    apiForDeletingFile_logger.error('Error al eliminar la imagen', parseError(error))
     return res.status(500).json({ error: 'Error al eliminar la imagen' })
   }
 }

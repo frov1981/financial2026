@@ -49,8 +49,9 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
 }
 
 export const apiForGettingTransactions: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForGettingTransactions_logger = logger.forMethod(apiForGettingTransactions.name, 'TRANSACTION_LIST', auth_req.user.id)
   try {
-    const auth_req = req as AuthRequest
     const page = Number(auth_req.query.page) || 1
     const limit = Number(auth_req.query.limit) || 10
     const search = (auth_req.query.search as string) || ''
@@ -95,7 +96,7 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
 
     res.json({ items, total, page, limit, category_id: category_id })
   } catch (error) {
-    logger.error(`${apiForGettingTransactions.name}-Error. `, parseError(error))
+    apiForGettingTransactions_logger.error('Error al listar transacciones', parseError(error))
     res.status(500).json({ error: 'Error al listar transacciones' })
   } finally {
   }

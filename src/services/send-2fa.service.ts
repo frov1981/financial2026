@@ -3,10 +3,12 @@ import { AppDataSource } from '../config/typeorm.datasource'
 import { AuthCode } from '../entities/AuthCode.entity'
 import { User } from '../entities/User.entity'
 import { generateNumericCode, hashCode } from '../utils/auth-code.util'
-import { logger } from '../utils/logger.util'
+import { logger as root_logger } from '../utils/logger.util'
+
 import { send2FACodeMail } from './send-2fa-mail.service'
 
 export async function send2FACode(user: User): Promise<void> {
+    const send_2fa_logger = root_logger.forMethod('send2FACode', 'SEND_2FA', user.id)
     const repo = AppDataSource.getRepository(AuthCode)
 
     await repo.delete({ user: { id: user.id }, used_at: IsNull() })
@@ -21,5 +23,5 @@ export async function send2FACode(user: User): Promise<void> {
 
     await repo.save(authCode)
     await send2FACodeMail(user.email, user.name, code)
-    logger.info(`[2FA] Código enviado por correo a [${user.email}], codigo: [${code}]`)
+    send_2fa_logger.info(`[2FA] Código enviado por correo a [${user.email}], codigo: [${code}]`)
 }

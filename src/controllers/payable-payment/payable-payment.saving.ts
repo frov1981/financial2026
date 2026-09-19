@@ -95,10 +95,10 @@ const buildPaymentView = async (auth_req: AuthRequest, body: any) => {
    Controller
 ============================ */
 export const savePayment: RequestHandler = async (req: Request, res: Response) => {
-    const start = performance.now()
-    logger.info(`${savePayment.name} called`, { body: req.body, param: req.params })
+    const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const savePayment_logger = logger.forMethod(savePayment.name, 'PAYABLE_PAYMENT_SAVE', user_id)
     const timezone = auth_req.timezone || 'UTC'
     const payment_id = Number(req.body.id)
     const payable_id = Number(req.body.payable_id)
@@ -121,6 +121,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     await queryRunner.startTransaction()
 
     try {
+        savePayment_logger.info('Inicio proceso de guardado de pago', { body: req.body, param: req.params })
         if (!payable_id) throw new Error('Cuenta por pagar es requerida')
 
         const payableRepo = queryRunner.manager.getRepository(Payable)
@@ -161,11 +162,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
             KpiCacheService
                 .recalculateBalanceKPIByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Balance`, parseError(error)))
+                .catch(error => savePayment_logger.error('Error recalculando KPI balance', parseError(error)))
 
             KpiCacheService
                 .recalculateCategoryKPIByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Categorías`, parseError(error)))
+                .catch(error => savePayment_logger.error('Error recalculando KPI categorías', parseError(error)))
 
                 if (return_from === 'categories' && return_category_id) {
                 return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -285,11 +286,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
         KpiCacheService
             .recalculateBalanceKPIByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Balance`, parseError(error)))
+            .catch(error => savePayment_logger.error('Error recalculando KPI balance', parseError(error)))
 
         KpiCacheService
             .recalculateCategoryKPIByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Categorías`, parseError(error)))
+            .catch(error => savePayment_logger.error('Error recalculando KPI categorías', parseError(error)))
 
             if (return_from === 'categories' && return_category_id) {
             return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -300,7 +301,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             Manejo de errores
         ============================ */
         await queryRunner.rollbackTransaction()
-        logger.error(`${savePayment.name}-Error.`, { user_id: auth_req.user.id, payment_id, payable_id, mode, error: parseError(error), })
+        savePayment_logger.error('Error al guardar pago', { user_id: auth_req.user.id, payment_id, payable_id, mode, error: parseError(error), })
 
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {
@@ -311,8 +312,9 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         })
     } finally {
         await queryRunner.release()
-        const end = performance.now()
-        const duration_sec = (end - start) / 1000
-        logger.debug(`${savePayment.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        savePayment_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        savePayment_logger.debug('Fin de la operación de guardado de pago', { user_id })
     }
 }

@@ -57,10 +57,10 @@ const isSavingAccount = (acc: Account | null | undefined): acc is Account & { ty
 }
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveTransaction.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveTransaction_logger = logger.forMethod(saveTransaction.name, 'TRANSACTION_SAVE', user_id)
   const timezone = req.body.timezone || 'UTC'
   const mode: TransactionFormMode = req.body.mode || 'insert'
   const transaction_id = Number(req.body.id)
@@ -90,6 +90,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const repo_transaction = AppDataSource.getRepository(Transaction)
 
   try {
+    saveTransaction_logger.info('Inicio proceso de guardado de transacción', { body: req.body, param: req.params })
     let existing: Transaction | null = null
     if (transaction_id) {
       existing = await repo_transaction.findOne({
@@ -121,11 +122,11 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Balance`, parseError(error)))
+        .catch(error => saveTransaction_logger.error('Error recalculando KPI balance', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => saveTransaction_logger.error('Error recalculando KPI categorías', parseError(error)))
 
         if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -218,11 +219,11 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
     KpiCacheService
       .recalculateBalanceKPIByTransaction(auth_req, saved_transaction)
-      .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Balance`, parseError(error)))
+      .catch(error => saveTransaction_logger.error('Error recalculando KPI balance', parseError(error)))
 
     KpiCacheService
       .recalculateCategoryKPIByTransaction(auth_req, saved_transaction)
-      .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Categorías`, parseError(error)))
+      .catch(error => saveTransaction_logger.error('Error recalculando KPI categorías', parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -234,7 +235,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
        Manejo de errores
     ============================ */
     await query_runner.rollbackTransaction()
-    logger.error(`${saveTransaction.name}-Error. `, { user_id: auth_req.user.id, transaction_id, mode, error: parseError(error), })
+    saveTransaction_logger.error('Error al guardar transacción', { user_id: auth_req.user.id, transaction_id, mode, error: parseError(error), })
 
     const validation_errors = error?.validationErrors || null
     return res.status(500).render('layouts/main', {
@@ -250,8 +251,9 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     })
   } finally {
     await query_runner.release()
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveTransaction.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveTransaction_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveTransaction_logger.debug('Fin de la operación de guardado de transacción', { user_id })
   }
 }

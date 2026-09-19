@@ -95,10 +95,10 @@ const buildPaymentView = async (auth_req: AuthRequest, body: any) => {
    Controller
 ============================ */
 export const saveReceivableCollection: RequestHandler = async (req: Request, res: Response) => {
-    const start = performance.now()
-    logger.info(`${saveReceivableCollection.name} called`, { body: req.body, param: req.params })
+    const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const saveReceivableCollection_logger = logger.forMethod(saveReceivableCollection.name, 'RECEIVABLE_COLLECTION_SAVE', user_id)
     const timezone = auth_req.timezone || 'UTC'
     const receivableCollection_id = Number(req.body.id)
     const receivable_id = Number(req.body.receivable_id)
@@ -121,6 +121,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
     await queryRunner.startTransaction()
 
     try {
+        saveReceivableCollection_logger.info('Inicio proceso de guardado de cobro', { body: req.body, param: req.params })
         if (!receivable_id) throw new Error('Cuenta por cobrar es requerida')
 
         const receivableRepo = queryRunner.manager.getRepository(Receivable)
@@ -161,11 +162,11 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
 
             KpiCacheService
                 .recalculateBalanceKPIByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${saveReceivableCollection.name}-Error recalculando KPI Balance`, parseError(error)))
+                .catch(error => saveReceivableCollection_logger.error('Error recalculando KPI balance', parseError(error)))
 
             KpiCacheService
                 .recalculateCategoryKPIByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${saveReceivableCollection.name}-Error recalculando KPI Categorías`, parseError(error)))
+                .catch(error => saveReceivableCollection_logger.error('Error recalculando KPI categorías', parseError(error)))
 
                 if (return_from === 'categories' && return_category_id) {
                 return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -293,11 +294,11 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
 
         KpiCacheService
             .recalculateBalanceKPIByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${saveReceivableCollection.name}-Error recalculando KPI Balance`, parseError(error)))
+            .catch(error => saveReceivableCollection_logger.error('Error recalculando KPI balance', parseError(error)))
 
         KpiCacheService
             .recalculateCategoryKPIByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${saveReceivableCollection.name}-Error recalculando KPI Categorías`, parseError(error)))
+            .catch(error => saveReceivableCollection_logger.error('Error recalculando KPI categorías', parseError(error)))
 
             if (return_from === 'categories' && return_category_id) {
             return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -308,7 +309,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
             Manejo de errores
         ============================ */
         await queryRunner.rollbackTransaction()
-        logger.error(`${saveReceivableCollection.name}-Error.`, { user_id: auth_req.user.id, receivableCollection_id, receivable_id, mode, error: parseError(error), })
+        saveReceivableCollection_logger.error('Error al guardar cobro', { user_id: auth_req.user.id, receivableCollection_id, receivable_id, mode, error: parseError(error), })
 
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {
@@ -319,8 +320,9 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
         })
     } finally {
         await queryRunner.release()
-        const end = performance.now()
-        const duration_sec = (end - start) / 1000
-        logger.debug(`${saveReceivableCollection.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        saveReceivableCollection_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        saveReceivableCollection_logger.debug('Fin de la operación de guardado de cobro', { user_id })
     }
 }

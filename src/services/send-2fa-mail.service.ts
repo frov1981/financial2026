@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer'
-import { logger } from '../utils/logger.util'
+import { logger as root_logger } from '../utils/logger.util'
+
+const send_2fa_mail_logger = root_logger.forMethod('send2FACodeByEmail', 'SEND_2FA_MAIL')
 import { parseError } from '../utils/error.util'
 
 const transporter = nodemailer.createTransport({
@@ -25,7 +27,7 @@ export async function send2FACodeMail(to: string, name: string, code: string): P
       `
         })
     } catch (error) {
-        logger.error('[MAIL] Error enviando correo 2FA', parseError(error))
+        send_2fa_mail_logger.error('[MAIL] Error enviando correo 2FA', parseError(error))
         throw error
     }
 }

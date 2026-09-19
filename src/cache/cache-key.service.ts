@@ -1,5 +1,5 @@
 import { AuthRequest } from "../types/auth-request"
-import { logger } from "../utils/logger.util"
+import { logger as root_logger } from "../utils/logger.util"
 import { cache } from "./cache.service"
 
 export type TypeSource = 'account' | 'category' | 'category_group' | 'payable' | 'payable_group' | 'payable_payment' | 'receivable' | 'receivable_group' | 'receivable_collection' | 'transaction' | 'home'
@@ -111,6 +111,7 @@ const delByPrefix = (prefix: string) => {
 
 export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const user_id = auth_req.user.id
+  const cache_key_logger = root_logger.forMethod('deleteAll', 'CACHE_KEYS', user_id)
   const deleted = cache.del(cacheKeys.allByUser(user_id))
   const deleted_kpis = delByPrefix(cacheKeys.homeBalanceKpiPrefix(user_id))
   const deleted_category_kpi = delByPrefix(cacheKeys.homeCategoryKpiPrefix(user_id))
@@ -126,5 +127,5 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const deleted_cash_flow_summary = delByPrefix(cacheKeys.homeCashFlowSummaryPrefix(user_id))
   const deleted_payable_flow_summary = delByPrefix(cacheKeys.homePayableFlowSummaryPrefix(user_id))
   const deleted_receivable_flow_summary = delByPrefix(cacheKeys.homeReceivableFlowSummaryPrefix(user_id))
-  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], categoryKpiDeleted=[${deleted_category_kpi}], categoryKpiDetailDeleted=[${deleted_category_kpi_detail}], categoryGroupKpiDeleted=[${deleted_category_group_kpi}], categoryGroupKpiDetailDeleted=[${deleted_category_group_kpi_detail}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], payableBalanceDeleted=[${deleted_payable_balance}], receivableBalanceDeleted=[${deleted_receivable_balance}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}], receivableFlowSummary=[${deleted_receivable_flow_summary}]`)
+  cache_key_logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], categoryKpiDeleted=[${deleted_category_kpi}], categoryKpiDetailDeleted=[${deleted_category_kpi_detail}], categoryGroupKpiDeleted=[${deleted_category_group_kpi}], categoryGroupKpiDetailDeleted=[${deleted_category_group_kpi_detail}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], payableBalanceDeleted=[${deleted_payable_balance}], receivableBalanceDeleted=[${deleted_receivable_balance}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}], receivableFlowSummary=[${deleted_receivable_flow_summary}]`)
 }

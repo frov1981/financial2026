@@ -52,10 +52,10 @@ const buildCategoryGroupView = (body: any, mode: CategoryGroupFormMode) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveCategoryGroup: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveCategoryGroup.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveCategoryGroup_logger = logger.forMethod(saveCategoryGroup.name, 'CATEGORY_GROUP_SAVE', user_id)
   const category_group_id = Number(req.body.id)
   const mode: CategoryGroupFormMode = req.body.mode || 'insert'
   const repo_category_group = AppDataSource.getRepository(CategoryGroup)
@@ -66,6 +66,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
     mode
   }
   try {
+    saveCategoryGroup_logger.info('Inicio proceso de guardado de grupo de categoría', { body: req.body, param: req.params })
     let existing: CategoryGroup | null = null
     if (category_group_id) {
       existing = await getCategoryGroupById(auth_req, category_group_id)
@@ -114,7 +115,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error(`${saveCategoryGroup.name}-Error. `, { user_id: auth_req.user.id, category_group_id, mode, error: parseError(error), })
+    saveCategoryGroup_logger.error('Error al guardar grupo de categoría', { user_id: auth_req.user.id, category_group_id, mode, error: parseError(error), })
     const validationErrors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -123,8 +124,9 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
       errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
   } finally {
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveCategoryGroup.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveCategoryGroup_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveCategoryGroup_logger.debug('Fin de la operación de guardado de grupo de categoría', { user_id })
   }
 }

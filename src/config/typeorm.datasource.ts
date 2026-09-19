@@ -19,6 +19,7 @@ import { OneLineSqlLogger } from './typeorm.logger'
 import { NotificationSchedule } from '../entities/NotificationSchedule.entity'
 import { NotificationType } from '../entities/NotificationType.entity'
 import { NotificationDelivery } from '../entities/NotificationDelivery.entity'
+import { LogEvent } from '../entities/LogEvent.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -45,7 +46,8 @@ export const AppDataSource = new DataSource({
     FileReference,
     NotificationSchedule,
     NotificationType,
-    NotificationDelivery
+    NotificationDelivery,
+    LogEvent
   ],
   synchronize: false,
   timezone: 'Z',

@@ -91,12 +91,19 @@ Api para devolver el DTO Account en JSON
 ==================================================*/
 export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingAccounts_logger = logger.forMethod(apiForGettingAccounts.name, 'ACCOUNT_LIST', auth_req.user.id)
+  const started_at = performance.now()
   try {
+    apiForGettingAccounts_logger.debug('Obteniendo cuentas para el usuario', { user_id: auth_req.user.id })
     const accounts: DTOAccount[] = await getAccountsForApi(auth_req)
     res.json(accounts)
   } catch (error) {
-    logger.error(`${apiForGettingAccounts.name}-Error. `, parseError(error))
+    apiForGettingAccounts_logger.error('Error al listar cuentas', parseError(error))
     res.status(500).json({ error: 'Error al listar cuentas' })
   } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingAccounts_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    apiForGettingAccounts_logger.debug('Fin de la operación de listado de cuentas')
   }
 }

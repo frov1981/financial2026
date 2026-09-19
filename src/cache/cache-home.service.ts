@@ -3,7 +3,7 @@ import { AppDataSource } from "../config/typeorm.datasource";
 import { CacheKpiBalance } from "../entities/CacheKpiBalance.entity";
 import { CacheKpiCategory } from "../entities/CacheKpiCategory.entity";
 import { AuthRequest } from "../types/auth-request";
-import { logger } from '../utils/logger.util';
+import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
@@ -146,6 +146,7 @@ const calcTrendObject = (current: KpiBalance, previous: KpiBalance): KpiTrend =>
  *******************************************************************************************/
 export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Promise<number[]> => {
   const user_id = auth_req.user.id
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const cache_key = cacheKeys.homeAvailableYearsKpi(user_id)
   const cached_available_kpi_years = cache.get<number[]>(cache_key)
   if (cached_available_kpi_years !== undefined) return cached_available_kpi_years
@@ -158,16 +159,17 @@ export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Prom
     .getRawMany()
   const end = performance.now()
   const duration_sec = (end - start) / 1000
-  logger.debug(`method=[${getHomeAvailableYearsKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+  cache_home_logger.debug(`method=[${getHomeAvailableYearsKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   const years = rows.map(r => Number(r.year))
   const f_year = [0, ...years]
-  logger.info(`${getHomeAvailableYearsKpiCache.name}. Años disponibles: `, { f_year })
+  cache_home_logger.info(`${getHomeAvailableYearsKpiCache.name}. Años disponibles: `, { f_year })
   cache.set(cache_key, f_year)
   return f_year
 }
 
 export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<KpiBalance> => {
   const user_id = auth_req.user.id
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const year_period_for_kpi = Number(auth_req.query.year_period_for_kpi || 0)
   const month_period_for_kpi = Number(auth_req.query.month_period_for_kpi || 0)
   const cache_key = cacheKeys.homeBalanceKpi(user_id, year_period_for_kpi, month_period_for_kpi)
@@ -181,7 +183,7 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
   const rows = await qb.getMany()
   const end = performance.now()
   const duration_sec = (end - start) / 1000
-  logger.debug(`method=[${getHomeBalanceKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+  cache_home_logger.debug(`method=[${getHomeBalanceKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   if (!rows.length) return base_kpi
 
   const result: KpiBalance = rows.reduce((acc, row) => {
@@ -448,6 +450,7 @@ export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): 
 
 export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
   const user_id = auth_req.user.id
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   const cache_key = cacheKeys.homeCategoryKpi(user_id, year)
   const cached = cache.get<any[]>(cache_key)
@@ -475,7 +478,7 @@ export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
   const rows = await qb.getRawMany()
   const end = performance.now()
   const duration_sec = (end - start) / 1000
-  logger.debug(`method=[${getHomeCategoryKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-categories], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+  cache_home_logger.debug(`method=[${getHomeCategoryKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-categories], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
 
   const result = rows.map((r: any) => ({
     category_group_id: Number(r.category_group_id),
@@ -492,6 +495,7 @@ export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
 
 export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest) => {
   const user_id = auth_req.user.id
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const category_id = Number(auth_req.query.category_id || 0)
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   if (!category_id) return []

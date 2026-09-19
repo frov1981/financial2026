@@ -144,11 +144,12 @@ Api para devolver el DTO Receivable en JSON
 ==================================================*/
 export const apiForGettingReceivables: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingReceivables_logger = logger.forMethod(apiForGettingReceivables.name, 'RECEIVABLE_LIST', auth_req.user.id)
   try {
     const result = await getReceivablesForApi(auth_req)
     res.json(result)
   } catch (error) {
-    logger.error(`${apiForGettingReceivables.name}-Error. `, parseError(error))
+    apiForGettingReceivables_logger.error('Error al listar cuentas por cobrar', parseError(error))
     res.status(500).json({ error: 'Error al listar Cuentas por Cobrar' })
   } finally {
   }
