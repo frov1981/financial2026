@@ -1,0 +1,41 @@
+<div class="max-w-4xl mx-auto ui-page notifications-page">
+  <div class="ui-header">
+    <h1 class="ui-title">Notificaciones</h1>
+  </div>
+
+  <div class="ui-scroll-area">
+    <div class="notifications-mobile">
+      <article class="ui-card notification-card">
+        <div class="ui-card-body">
+          <h2 class="notification-card-title"><%= notification.notification_title %></h2>
+          <dl class="notification-details">
+            <div><dt>Día de envío</dt><dd><%= days.find(day => day.value === notification.send_day).label %></dd></div>
+            <div><dt>Hora de envío</dt><dd><%= notification.send_time %></dd></div>
+          </dl>
+          <a href="/notifications/schedule" class="ui-btn ui-btn-primary">Editar</a>
+        </div>
+      </article>
+    </div>
+
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th>Notificación</th>
+            <th>Día de envío</th>
+            <th>Hora de envío</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><%= notification.notification_title %></td>
+            <td><%= days.find(day => day.value === notification.send_day).label %></td>
+            <td><%= notification.send_time %></td>
+            <td><a href="/notifications/schedule" class="ui-btn ui-btn-primary">Configurar horario</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

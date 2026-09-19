@@ -125,7 +125,7 @@ export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccou
             subQuery
                 .select('COUNT(t.id)')
                 .from('transactions', 't')
-                .where('t.account_id = account.id'),
+                .where('(t.account_id = account.id OR t.to_account_id = account.id)'),
             'transaction_count'
         )
         .orderBy('account.name', 'ASC')

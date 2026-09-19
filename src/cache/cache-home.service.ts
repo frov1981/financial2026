@@ -252,7 +252,7 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
   const total_outflows: number[] = []
   const net_cash_flow: number[] = []
 
-  let available_years = cache.get<number[]>(cacheKeys.homeAvailableYearsKpi(user_id)) || []
+  let available_years = await getHomeAvailableYearsKpiCache(auth_req)
   available_years.sort((a, b) => a - b)
 
   if (year === 0) {
@@ -287,7 +287,8 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
 
     for (let month = 1; month <= 12; month++) {
       const kpi_key = cacheKeys.homeBalanceKpi(user_id, year, month)
-      const kpi = cache.get<KpiBalance>(kpi_key)
+      const req = buildAuthReq(auth_req, year, month)
+      const kpi = await getHomeBalanceKpiCache(req)
 
       labels.push(month_labels[month - 1])
       total_inflows.push(kpi?.total_inflows ?? 0)

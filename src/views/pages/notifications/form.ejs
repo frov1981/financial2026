@@ -1,0 +1,29 @@
+<div class="max-w-xl mx-auto ui-page">
+  <div class="ui-header">
+    <h1 class="ui-title">Configurar notificación</h1>
+  </div>
+
+  <form method="post" action="/notifications/schedule" class="ui-form notification-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <h2 class="notification-form-title"><%= notification.notification_title %></h2>
+
+    <% if (errors.schedule) { %>
+      <p class="form-error"><%= errors.schedule %></p>
+    <% } %>
+
+    <label for="send_day">Día de envío</label>
+    <select id="send_day" name="send_day" required>
+      <% days.forEach(day => { %>
+        <option value="<%= day.value %>" <%= notification.send_day === day.value ? 'selected' : '' %>><%= day.label %></option>
+      <% }) %>
+    </select>
+
+    <label for="send_time">Hora de envío</label>
+    <input id="send_time" name="send_time" type="time" value="<%= notification.send_time %>" required>
+
+    <div class="notification-form-actions">
+      <a href="/notifications" class="ui-btn">Cancelar</a>
+      <button type="submit" class="ui-btn ui-btn-primary">Guardar</button>
+    </div>
+  </form>
+</div>

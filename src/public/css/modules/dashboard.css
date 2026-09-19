@@ -122,11 +122,21 @@
     user-select: none;
 }
 
+.html-category-group-kpi-header-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
 .html-balance-kpi-year-label,
 .html-cash-flow-summary-year-label,
 .html-payable-flow-summary-year-label,
 .html-receivable-flow-summary-year-label,
-.html-category-kpi-year-label {
+.html-category-kpi-year-label,
+.html-category-group-kpi-year-label {
     font-size: 1rem;
     font-weight: 600;
     margin: 0;
@@ -137,7 +147,8 @@
 .html-cash-flow-summary-year-btn,
 .html-payable-flow-summary-year-btn,
 .html-receivable-flow-summary-year-btn,
-.html-category-kpi-year-btn {
+.html-category-kpi-year-btn,
+.html-category-group-kpi-year-btn {
     width: 32px;
     height: 32px;
     border: none;
@@ -160,10 +171,15 @@
     background: var(--ui-gray-200);
 }
 
+.html-category-group-kpi-year-btn:hover:not(:disabled) {
+    background: var(--ui-gray-200);
+}
+
 .html-balance-kpi-year-btn:disabled,
 .html-cash-flow-summary-year-btn:disabled,
 .html-payable-flow-summary-year-btn:disabled,
-.html-category-kpi-year-btn:disabled  {
+.html-category-kpi-year-btn:disabled,
+.html-category-group-kpi-year-btn:disabled  {
     opacity: 0.4;
     cursor: not-allowed;
 }
@@ -171,7 +187,8 @@
 .html-balance-kpi-year-btn svg,
 .html-cash-flow-summary-year-btn svg,
 .html-payable-flow-summary-year-btn svg,
-.html-category-kpi-year-btn svg {
+.html-category-kpi-year-btn svg,
+.html-category-group-kpi-year-btn svg {
     width: 18px;
     height: 18px;
 }

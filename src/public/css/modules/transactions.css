@@ -24,15 +24,18 @@
 }
 
 .transaction-card.income {
-    background: var(--ui-green-50);
+    background: #eafaf1;
+    border-color: #cfe8d8;
 }
 
 .transaction-card.expense {
-    background: var(--ui-red-50);
+    background: #fdf1f1;
+    border-color: #f2caca;
 }
 
 .transaction-card.transfer {
-    background: var(--ui-purple-50);
+    background: #f0eaff;
+    border-color: #d8c8f6;
 }
 
 /* Origin badge */

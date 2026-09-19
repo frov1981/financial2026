@@ -63,18 +63,18 @@
 }
 
 .tx-income {
-  background-color: var(--ui-green-100);
-  color: var(--ui-green-700);
+  background-color: #cfeedd;
+  color: #065f46;
 }
 
 .tx-expense {
-  background-color: var(--ui-red-100);
-  color: var(--ui-red-700);
+  background-color: #f7d0d0;
+  color: #991b1b;
 }
 
 .tx-transfer {
-  background-color: var(--ui-blue-100);
-  color: var(--ui-blue-700);
+  background-color: #e9defd;
+  color: #4c1d95;
 }
 
 .tag-active {
