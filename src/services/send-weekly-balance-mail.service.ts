@@ -17,6 +17,8 @@ const transporter = nodemailer.createTransport({
 
 export async function sendWeeklyBalanceMail(user: User, timezone = 'UTC'): Promise<void> {
   const weekly_balance_mail_logger = root_logger.forMethod('sendWeeklyBalanceMail', 'SEND_WEEKLY_BALANCE_MAIL', user.id)
+  const started_at = performance.now()
+
   try {
     const mail = await buildWeeklyBalanceMail(user, timezone)
 
@@ -37,5 +39,10 @@ export async function sendWeeklyBalanceMail(user: User, timezone = 'UTC'): Promi
   } catch (error) {
     weekly_balance_mail_logger.error(`[MAIL] Error enviando resumen semanal a [${user.email}]`, parseError(error))
     throw error
-  }
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    weekly_balance_mail_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    weekly_balance_mail_logger.debug('Fin de la operación de envío de resumen semanal')
+  } 
 }

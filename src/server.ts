@@ -19,8 +19,6 @@ AppDataSource.initialize().then(() => {
       service: event.service,
       event_name: event.event_name,
       method_name: event.method_name,
-      ex_event_type: event.ex_event_type,
-      user_id: event.user_id,
       message: event.message,
       context: event.context as any,
     })))
@@ -28,12 +26,15 @@ AppDataSource.initialize().then(() => {
 
   const ormLimit = process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT, 10) : 3
   const sessionLimit = process.env.SESSION_DB_CONNECTION_LIMIT ? parseInt(process.env.SESSION_DB_CONNECTION_LIMIT, 10) : 1
-  server_startup_logger.info('Configured connection limits', { ormLimit, sessionLimit, estimatedTotal: ormLimit + sessionLimit })
+  const estimatedTotal = ormLimit + sessionLimit
+
+  server_startup_logger.info('Limites de conexion configurado', { ormLimit, sessionLimit, estimatedTotal })
+
+  // Inicializar los programadores o tareas
   startNotificationScheduler()
 
-  app.listen(PORT, () => {
-    server_startup_logger.info('Server started on port', { port: PORT })
-  })
+  // Inicializar servidor express
+  app.listen(PORT, () => { server_startup_logger.info('Sevidor iniciado', { port: PORT }) })
 }).catch(error => {
-  server_startup_logger.error('Error initializing backend', parseError(error))
+  server_startup_logger.error('Error inicializando servidor', parseError(error))
 })

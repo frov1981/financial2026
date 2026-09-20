@@ -8,6 +8,7 @@ export const injectNetBalance: RequestHandler = async (req: Request, res: Respon
     const auth_req = req as AuthRequest
     const user_id = auth_req.user?.id
     const injectNetBalance_logger = logger.forMethod(injectNetBalance.name, 'INJECT_NET_BALANCE', user_id ?? null)
+    const started_at = performance.now()
     try {
         const user = auth_req.user
         if (!user) return next()
@@ -17,5 +18,10 @@ export const injectNetBalance: RequestHandler = async (req: Request, res: Respon
     } catch (error) {
         injectNetBalance_logger.error('Error inyectando balance neto', parseError(error))
         next(error)
+    } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        injectNetBalance_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        injectNetBalance_logger.debug('Fin de la operación de inyección de balance neto')
     }
 }

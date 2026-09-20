@@ -99,7 +99,7 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
   const apiForGettingCategories_logger = logger.forMethod(apiForGettingCategories.name, 'CATEGORY_LIST', auth_req.user.id)
   const started_at = performance.now()
   try {
-    apiForGettingCategories_logger.debug('Obteniendo categorías para el usuario', { user_id: auth_req.user.id })
+    apiForGettingCategories_logger.debug('Obteniendo categorías para el usuario')
     const categories: DTOCategory[] = await getCategoriesForApi(auth_req)
     res.json(categories)
   } catch (error) {
@@ -109,6 +109,6 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
     const ended_at = performance.now()
     const elapsed_ms = ended_at - started_at
     apiForGettingCategories_logger.elapsedTime('Elapsed time', { elapsed_ms })
-    apiForGettingCategories_logger.debug('Fin de la operación de listado de categorías', { user_id: auth_req.user.id })
+    apiForGettingCategories_logger.debug('Fin de la operación de listado de categorías')
   }
 }

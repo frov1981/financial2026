@@ -7,7 +7,9 @@ import { logger } from '../utils/logger.util'
 import { parseError } from '../utils/error.util'
 import { LogEvent } from '../entities/LogEvent.entity'
 
-const scheduler_interval_ms = (process.env.SCHEDULER_INTERVAL_IN_SECONDS ? parseInt(process.env.SCHEDULER_INTERVAL_IN_SECONDS, 10) : 60) * 1000
+const scheduler_interval = process.env.SCHEDULER_INTERVAL_IN_SECONDS ? parseInt(process.env.SCHEDULER_INTERVAL_IN_SECONDS, 10) : 60
+const scheduler_interval_ms = scheduler_interval * 1000
+
 let scheduler_running = false
 let log_retention_running = false
 let last_log_retention_at = 0
@@ -17,7 +19,8 @@ const notification_scheduler_logger = logger.forMethod('processNotificationSched
 const log_retention_logger = logger.forMethod('processLogRetention', 'LOG_PURGE')
 const scheduler_start_logger = logger.forMethod('startNotificationScheduler', 'NOTIFICATION_SCHEDULER')
 
-const log_retention_interval_ms = process.env.LOG_RETENTION_INTERVAL_IN_DAYS ? parseInt(process.env.LOG_RETENTION_INTERVAL_IN_DAYS, 10) * 24 * 60 * 60 * 1000 : 1 * 24 * 60 * 60 * 1000
+const log_retention_interval = process.env.LOG_RETENTION_INTERVAL_IN_DAYS ? parseInt(process.env.LOG_RETENTION_INTERVAL_IN_DAYS, 10) : 1
+const log_retention_interval_ms =  log_retention_interval * 24 * 60 * 60 * 1000
 
 const day_values: Record<number, string> = {
   1: 'monday',
@@ -32,10 +35,7 @@ const day_values: Record<number, string> = {
 const isDue = (schedule: NotificationSchedule, now: DateTime): boolean => {
   const local_now = now.setZone(schedule.timezone || 'UTC')
   const [hour, minute] = schedule.send_time.slice(0, 5).split(':').map(Number)
-
-  return day_values[local_now.weekday] === schedule.send_day
-    && local_now.hour === hour
-    && local_now.minute === minute
+  return day_values[local_now.weekday] === schedule.send_day && local_now.hour === hour && local_now.minute === minute
 }
 
 const getPeriodKey = (schedule: NotificationSchedule, now: DateTime): string => {
@@ -45,9 +45,7 @@ const getPeriodKey = (schedule: NotificationSchedule, now: DateTime): string => 
 
 const claimDelivery = async (schedule: NotificationSchedule, period_key: string): Promise<NotificationDelivery | null> => {
   const repository = AppDataSource.getRepository(NotificationDelivery)
-  const existing_delivery = await repository.findOne({
-    where: { schedule: { id: schedule.id }, period_key },
-  })
+  const existing_delivery = await repository.findOne({ where: { schedule: { id: schedule.id }, period_key }, })
 
   if (existing_delivery?.status === 'sent' || existing_delivery?.status === 'processing') return null
 
@@ -97,7 +95,7 @@ const processSchedule = async (schedule: NotificationSchedule, now: DateTime): P
     delivery.status = 'failed'
     delivery.error_message = parseError(error).message
     await repository.save(delivery)
-    process_schedule_logger.error(`[NOTIFICATIONS] Error procesando ${period_key}`, parseError(error))
+    process_schedule_logger.error(`Error procesando ${period_key}`, parseError(error))
   }
 }
 
@@ -119,7 +117,7 @@ export async function processNotificationSchedules(): Promise<void> {
     const now = DateTime.utc()
     await Promise.all(schedules.map(schedule => processSchedule(schedule, now)))
   } catch (error) {
-    notification_scheduler_logger.error('[NOTIFICATIONS] Error consultando programaciones', parseError(error))
+    notification_scheduler_logger.error('Error consultando programaciones', parseError(error))
   } finally {
     scheduler_running = false
   }
@@ -167,7 +165,7 @@ export async function processLogRetention(): Promise<void> {
 
     last_log_retention_at = Date.now()
     if (purge_by_age || purge_by_size) {
-      log_retention_logger.info('Log purge completed', {
+      log_retention_logger.info('Logs purgados con exito', {
         purge_reason: purge_by_age && purge_by_size ? 'AGE_AND_SIZE' : purge_by_age ? 'AGE' : 'SIZE',
         retention_days,
         max_size_mb,
@@ -178,7 +176,7 @@ export async function processLogRetention(): Promise<void> {
       })
     }
   } catch (error) {
-    log_retention_logger.error('[LOGS] Error ejecutando retención', parseError(error))
+    log_retention_logger.error('Error ejecutando retención', parseError(error))
   } finally {
     log_retention_running = false
   }
@@ -190,6 +188,6 @@ export function startNotificationScheduler(): NodeJS.Timeout {
   }, scheduler_interval_ms)
   void processNotificationSchedules()
   void processLogRetention()
-  scheduler_start_logger.info('[NOTIFICATIONS] Scheduler iniciado; intervalo de 60 segundos')
+  scheduler_start_logger.info('Programador iniciado')
   return interval
 }

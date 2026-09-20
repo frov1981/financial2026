@@ -94,7 +94,7 @@ export const apiForGettingAccounts: RequestHandler = async (req: Request, res: R
   const apiForGettingAccounts_logger = logger.forMethod(apiForGettingAccounts.name, 'ACCOUNT_LIST', auth_req.user.id)
   const started_at = performance.now()
   try {
-    apiForGettingAccounts_logger.debug('Obteniendo cuentas para el usuario', { user_id: auth_req.user.id })
+    apiForGettingAccounts_logger.debug('Obteniendo cuentas')
     const accounts: DTOAccount[] = await getAccountsForApi(auth_req)
     res.json(accounts)
   } catch (error) {

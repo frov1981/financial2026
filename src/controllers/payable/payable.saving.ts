@@ -74,6 +74,7 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
   const savePayable_logger = logger.forMethod(savePayable.name, 'PAYABLE_SAVE', user_id)
+  const started_at_logger = performance.now()
   const mode: PayableFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
   const payable_id = Number(req.body.id)
@@ -98,7 +99,7 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
   await queryRunner.startTransaction()
 
   try {
-    savePayable_logger.info('Inicio proceso de guardado de cuenta por pagar', { body: req.body, param: req.params })
+    savePayable_logger.info('Parametros de entrada', { body: req.body, param: req.params })
     let existing: Payable | null = null
     if (payable_id) {
       existing = await getPayableById(auth_req, payable_id)
@@ -266,7 +267,7 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
        Manejo de errores
     ============================ */
     await queryRunner.rollbackTransaction()
-    savePayable_logger.error('Error al guardar cuenta por pagar', { user_id: auth_req.user.id, payable_id, mode, error: parseError(error), })
+    savePayable_logger.error('Error al guardar cuenta por pagar', { payable_id, mode, error: parseError(error), })
 
     let validationErrors: Record<string, string> | null = null
     switch (error?.code) {

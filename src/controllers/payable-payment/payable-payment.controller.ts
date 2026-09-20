@@ -3,7 +3,7 @@ import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getPaymentById, getPaymentsForApi, getActiveCategoriesForPayablePaymentsByUser } from '../../cache/cache-payable-payments.service'
 import { getPayableById } from '../../cache/cache-payables.service'
 import { payablePaymentFormMatrix } from '../../policies/payable-payment-form.policy'
-import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
@@ -149,6 +149,7 @@ Api para devolver el DTO Payable en JSON
 export const apiForGettingPayablePayments: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
     const apiForGettingPayablePayments_logger = logger.forMethod(apiForGettingPayablePayments.name, 'PAYABLE_PAYMENT_LIST', auth_req.user.id)
+    const started_at = performance.now()
     const payable_id = Number(req.params.payable_id)
     try {
         const payments = await getPaymentsForApi(auth_req, payable_id)
@@ -157,6 +158,9 @@ export const apiForGettingPayablePayments: RequestHandler = async (req: Request,
         apiForGettingPayablePayments_logger.error('Error al listar pagos', parseError(error))
         res.status(500).json({ error: 'Error al listar pagos' })
     } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        apiForGettingPayablePayments_logger.elapsedTime('Elapsed time', { elapsed_ms })
     }
 }
 

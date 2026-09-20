@@ -115,7 +115,7 @@ export const apiForUploadingFiles: RequestHandler = async (req: Request, res: Re
       csrfToken: res.locals.csrfToken
     })
   } catch (error) {
-    apiForUploadingFiles_logger.error('Error al guardar las imágenes', parseError(error))
+    apiForUploadingFiles_logger.error('Error', parseError(error))
     return res.status(400).json({ error: error instanceof Error ? error.message : 'Error al guardar las imágenes' })
   }
 }
@@ -137,7 +137,7 @@ export const apiForGettingFiles: RequestHandler = async (req: Request, res: Resp
     const references = await getFileReferences(tableName, recordId)
     return res.json({ files: references.map(imageUrls) })
   } catch (error) {
-    apiForGettingFiles_logger.error('Error al listar las imágenes', parseError(error))
+    apiForGettingFiles_logger.error('Error', parseError(error))
     return res.status(500).json({ error: 'Error al listar las imágenes' })
   }
 }
@@ -167,7 +167,7 @@ export const apiForServingFile: RequestHandler = async (req: Request, res: Respo
     res.setHeader('Cache-Control', 'private, max-age=31536000, immutable')
     return res.sendFile(absoluteStoragePath(relativePath))
   } catch (error) {
-    apiForServingFile_logger.error('Error al servir la imagen', parseError(error))
+    apiForServingFile_logger.error('Error', parseError(error))
     return res.status(404).send('Archivo no encontrado')
   }
 }
@@ -189,7 +189,7 @@ export const apiForDeletingFile: RequestHandler = async (req: Request, res: Resp
       : null
     return res.json({ success: true, no_images: noImages, csrfToken: res.locals.csrfToken })
   } catch (error) {
-    apiForDeletingFile_logger.error('Error al eliminar la imagen', parseError(error))
+    apiForDeletingFile_logger.error('Error', parseError(error))
     return res.status(500).json({ error: 'Error al eliminar la imagen' })
   }
 }

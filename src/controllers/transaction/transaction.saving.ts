@@ -90,7 +90,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const repo_transaction = AppDataSource.getRepository(Transaction)
 
   try {
-    saveTransaction_logger.info('Inicio proceso de guardado de transacción', { body: req.body, param: req.params })
+    saveTransaction_logger.info('Parametros recibidos', { body: req.body, param: req.params })
     let existing: Transaction | null = null
     if (transaction_id) {
       existing = await repo_transaction.findOne({
@@ -235,7 +235,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
        Manejo de errores
     ============================ */
     await query_runner.rollbackTransaction()
-    saveTransaction_logger.error('Error al guardar transacción', { user_id: auth_req.user.id, transaction_id, mode, error: parseError(error), })
+    saveTransaction_logger.error('Error al guardar transacción', { transaction_id, mode, error: parseError(error), })
 
     const validation_errors = error?.validationErrors || null
     return res.status(500).render('layouts/main', {

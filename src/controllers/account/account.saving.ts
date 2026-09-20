@@ -53,8 +53,8 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
   const saveAccount_logger = logger.forMethod(saveAccount.name, 'ACCOUNT_SAVE', user_id)
-  saveAccount_logger.debug('Inicio proceso de guardado de cuenta', { user_id })
-  saveAccount_logger.debug('Parametros recibidos al backend', { body: req.body, param: req.params })
+  saveAccount_logger.debug('Inicio proceso de guardado de cuenta')
+  saveAccount_logger.debug('Parametros recibidos', { body: req.body, param: req.params })
   const account_id = req.body.id ? Number(req.body.id) : undefined
   const mode: AccountFormMode = req.body.mode || 'insert'
   const repo_account = AppDataSource.getRepository(Account)
@@ -116,7 +116,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     /* ============================
        Manejo de errores
     ============================ */
-    saveAccount_logger.error('Error saving account', { user_id: user_id, account_id, mode, error: parseError(error) })
+    saveAccount_logger.error('Error al guardaar la cuenta', { account_id, mode, error: parseError(error) })
     const validation_errors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -128,6 +128,6 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     const ended_at = performance.now()
     const elapsed_ms = ended_at - started_at
     saveAccount_logger.elapsedTime('Elapsed time', { elapsed_ms })
-    saveAccount_logger.debug('Fin de la operación de guardado de cuenta', { user_id })
+    saveAccount_logger.debug('Fin de la operación de guardado de cuenta')
   }
 }

@@ -10,6 +10,7 @@ import { parseError } from '../utils/error.util'
 export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   const session_user_id = (req.session as any)?.user_id
   const sessionAuthMiddleware_logger = logger.forMethod(sessionAuthMiddleware.name, 'SESSION_AUTH', session_user_id ?? null)
+  const started_at = performance.now()
   try {
     if (!session_user_id) return res.redirect('/login')
 
@@ -27,6 +28,11 @@ export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: R
   } catch (error) {
     sessionAuthMiddleware_logger.error('Error autenticando sesión', parseError(error))
     return res.redirect('/login')
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    sessionAuthMiddleware_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    sessionAuthMiddleware_logger.debug('Fin de la operación de autenticación de sesión')
   }
 }
 

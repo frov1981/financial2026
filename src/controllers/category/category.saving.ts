@@ -60,8 +60,8 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
   const saveCategory_logger = logger.forMethod(saveCategory.name, 'CATEGORY_SAVE', user_id)
-  saveCategory_logger.debug('Inicio proceso de guardado de categoría', { user_id })
-  saveCategory_logger.info('Parametros recibidos desde el frontend', { body: req.body, param: req.params })
+  saveCategory_logger.debug('Inicio proceso de guardado de categoría')
+  saveCategory_logger.info('Parametros recibidos', { body: req.body, param: req.params })
   const mode: CategoryFormMode = req.body.mode || 'insert'
   const category_id = Number(req.body.id)
   const category_group_id = Number(req.body.category_group_id)
@@ -128,7 +128,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     /* ============================
        Manejo de errores
     ============================ */
-    saveCategory_logger.error(`Error al guardar la categoría`, { user_id: auth_req.user.id, category_id, mode, error: parseError(error), })
+    saveCategory_logger.error(`Error al guardar la categoria`, { category_id, mode, error: parseError(error), })
     const validationErrors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -140,6 +140,6 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     const ended_at = performance.now()
     const elapsed_ms = (ended_at - started_at) / 1000
     saveCategory_logger.elapsedTime('Elapsed time', { elapsed_ms })
-    saveCategory_logger.debug('Fin de la operación de guardado de categoría', { user_id: auth_req.user.id })
+    saveCategory_logger.debug('Fin de la operación de guardado de categoría')
   }
 }

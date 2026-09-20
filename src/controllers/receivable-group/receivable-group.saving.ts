@@ -66,7 +66,7 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
         mode
     }
     try {
-        saveReceivableGroup_logger.info('Inicio proceso de guardado de grupo por cobrar', { body: req.body, param: req.params })
+        saveReceivableGroup_logger.info('Parametros recibidos', { body: req.body, param: req.params })
         let existing: ReceivableGroup | null = null
         if (receivable_group_id) {
             existing = await getReceivableGroupById(auth_req, receivable_group_id)
@@ -116,7 +116,7 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
         /* ============================
            Manejo de errores
         ============================ */
-        saveReceivableGroup_logger.error('Error al guardar grupo por cobrar', { user_id: auth_req.user.id, receivable_group_id: receivable_group_id, mode, error: parseError(error), })
+        saveReceivableGroup_logger.error('Error al guardar grupo por cobrar', { receivable_group_id: receivable_group_id, mode, error: parseError(error), })
         const validationErrors = error?.validationErrors || null
         return res.render('layouts/main', {
             title: getTitle(mode),

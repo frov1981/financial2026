@@ -66,7 +66,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
     mode
   }
   try {
-    saveCategoryGroup_logger.info('Inicio proceso de guardado de grupo de categoría', { body: req.body, param: req.params })
+    saveCategoryGroup_logger.info('Parametros recibidos', { body: req.body, param: req.params })
     let existing: CategoryGroup | null = null
     if (category_group_id) {
       existing = await getCategoryGroupById(auth_req, category_group_id)
@@ -115,7 +115,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
     /* ============================
        Manejo de errores
     ============================ */
-    saveCategoryGroup_logger.error('Error al guardar grupo de categoría', { user_id: auth_req.user.id, category_group_id, mode, error: parseError(error), })
+    saveCategoryGroup_logger.error('Error al guardar el grupo de categoria', { user_id: auth_req.user.id, category_group_id, mode, error: parseError(error), })
     const validationErrors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -127,6 +127,6 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
     const ended_at = performance.now()
     const elapsed_ms = ended_at - started_at
     saveCategoryGroup_logger.elapsedTime('Elapsed time', { elapsed_ms })
-    saveCategoryGroup_logger.debug('Fin de la operación de guardado de grupo de categoría', { user_id })
+    saveCategoryGroup_logger.debug('Fin de la operación de guardado de grupo de categoría')
   }
 }

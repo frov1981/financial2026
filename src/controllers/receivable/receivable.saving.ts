@@ -269,7 +269,7 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
        Manejo de errores
     ============================ */
     await queryRunner.rollbackTransaction()
-    saveReceivable_logger.error('Error al guardar cuenta por cobrar', { user_id: auth_req.user.id, receivable_id, mode, error: parseError(error), })
+    saveReceivable_logger.error('Error al guardar cuenta por cobrar', { receivable_id, mode, error: parseError(error), })
 
     let validationErrors: Record<string, string> | null = null
     switch (error?.code) {

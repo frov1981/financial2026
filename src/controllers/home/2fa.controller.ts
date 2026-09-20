@@ -23,9 +23,7 @@ export const verify2FA = async (req: Request, res: Response) => {
   const verify2FA_logger = logger.forMethod(verify2FA.name, 'VERIFY_2FA', pendingUserId ?? null)
   try {
     const { code } = req.body
-
     if (!pendingUserId) return res.redirect('/login')
-
     const repo = AppDataSource.getRepository(AuthCode)
 
     const authCode = await repo.findOne({
@@ -61,12 +59,11 @@ export const verify2FA = async (req: Request, res: Response) => {
 
     // preserve timezone across session regeneration (otherwise it's lost)
     const preservedTimezone = (req.session as any).timezone
-
     delete (req.session as any).pending2FAUserId
 
     req.session.regenerate(err => {
       if (err) {
-        verify2FA_logger.error('Session regeneration failed', parseError(err))
+        verify2FA_logger.error('Regeneracion de sesion fallida', parseError(err))
         return res.redirect('/login')
       }
 
@@ -75,16 +72,15 @@ export const verify2FA = async (req: Request, res: Response) => {
 
       req.session.save(err2 => {
         if (err2) {
-          verify2FA_logger.error('Session save failed', parseError(err2))
+          verify2FA_logger.error('Error al guardar la sesion', parseError(err2))
           return res.redirect('/login')
         }
-
         res.redirect('/home')
       })
     })
 
   } catch (error: any) {
-    verify2FA_logger.error('verify2FA error', parseError(error))
+    verify2FA_logger.error('Error en verificacion del 2FA', parseError(error))
     res.render(
       'pages/2fa',
       {

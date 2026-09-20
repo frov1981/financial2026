@@ -196,7 +196,6 @@ export const getKpisLast6MonthsBalance = async (auth_req: AuthRequest) => {
 
     income.push(row ? Number(row.income) : 0)
     expense.push(row ? Number(row.expense) : 0)
-
     cursor.setMonth(cursor.getMonth() + 1)
   }
 
@@ -536,8 +535,12 @@ export const getCategoryKpiDetail = async (auth_req: AuthRequest) => {
   return rows
 }
 
-export const getCategoryGroupKpi = async (auth_req: AuthRequest) => getHomeCategoryGroupKpi(auth_req)
+export const getCategoryGroupKpi = async (auth_req: AuthRequest) => {
+  getHomeCategoryGroupKpi(auth_req)
+}
 
-export const getCategoryGroupKpiDetail = async (auth_req: AuthRequest) => getHomeCategoryGroupKpiDetail(auth_req)
+export const getCategoryGroupKpiDetail = async (auth_req: AuthRequest) => {
+  getHomeCategoryGroupKpiDetail(auth_req)
+}
 
 

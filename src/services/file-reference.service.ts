@@ -4,6 +4,7 @@ import sharp from 'sharp'
 import { AppDataSource } from '../config/typeorm.datasource'
 import { FileReference } from '../entities/FileReference.entity'
 import { Transaction } from '../entities/Transaction.entity'
+import { logger } from '../utils/logger.util'
 
 export const fileOwnerTables = [
   'accounts',
@@ -71,6 +72,8 @@ async function inspectImage(buffer: Buffer): Promise<{ extension: string, mimeTy
 }
 
 export async function saveFileReference(input: SaveFileReferenceInput): Promise<FileReference> {
+  const saveFileReference_logger = logger.forMethod(saveFileReference.name, 'SAVE_FILE_REFERENCE', null)
+  const started_at = performance.now()
   if (!Number.isInteger(input.recordId) || input.recordId <= 0) {
     throw new Error('El id del registro debe ser un entero positivo')
   }
@@ -106,12 +109,18 @@ export async function saveFileReference(input: SaveFileReferenceInput): Promise<
     }
     return result
   } catch (error) {
+    saveFileReference_logger.error('Error guardando referencia de archivo', { error: error instanceof Error ? error.message : String(error) })
     await Promise.allSettled([
       fs.rm(absolutePath, { force: true }),
       fs.rm(absoluteThumbnailPath, { force: true }),
       repository.delete(savedReference.id)
     ])
     throw error
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveFileReference_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveFileReference_logger.debug('Fin de la operación de guardado de referencia de archivo')
   }
 }
 

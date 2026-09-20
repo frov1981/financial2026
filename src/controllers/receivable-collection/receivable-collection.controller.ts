@@ -1,7 +1,7 @@
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getReceivableById } from '../../cache/cache-receivables.service'
-import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
@@ -151,6 +151,7 @@ Api para devolver el DTO Payable en JSON
 export const apiForGettingReceivableCollections: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
     const apiForGettingReceivableCollections_logger = logger.forMethod(apiForGettingReceivableCollections.name, 'RECEIVABLE_COLLECTION_LIST', auth_req.user.id)
+    const started_at = performance.now()
     const payable_id = Number(req.params.payable_id)
     try {
         const receivable_collections = await getCollectionsForApi(auth_req, payable_id)
@@ -159,6 +160,10 @@ export const apiForGettingReceivableCollections: RequestHandler = async (req: Re
         apiForGettingReceivableCollections_logger.error('Error al listar cobros', parseError(error))
         res.status(500).json({ error: 'Error al listar cobros' })
     } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        apiForGettingReceivableCollections_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        apiForGettingReceivableCollections_logger.debug('Fin de la operación del listado de cobros')
     }
 }
 

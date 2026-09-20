@@ -65,6 +65,7 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
     const apiForBatchCategorize_logger = logger.forMethod(apiForBatchCategorize.name, 'BATCH_CATEGORIZE', user_id)
+    const started_at = performance.now()
     const return_from = req.body.return_from
     const return_category_id = req.body.return_category_id ? Number(req.body.return_category_id) : null
 
@@ -195,6 +196,11 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
             errors: { general: 'Error interno del servidor' },
             USER_ID: auth_req.user?.id
         })
+    } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        apiForBatchCategorize_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        apiForBatchCategorize_logger.debug('Fin de la operación de categorización de transacciones')
     }
 
 }

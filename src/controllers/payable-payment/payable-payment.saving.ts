@@ -301,7 +301,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             Manejo de errores
         ============================ */
         await queryRunner.rollbackTransaction()
-        savePayment_logger.error('Error al guardar pago', { user_id: auth_req.user.id, payment_id, payable_id, mode, error: parseError(error), })
+        savePayment_logger.error('Error al guardar pago', { payment_id, payable_id, mode, error: parseError(error), })
 
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {

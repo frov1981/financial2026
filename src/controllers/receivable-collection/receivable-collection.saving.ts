@@ -121,7 +121,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
     await queryRunner.startTransaction()
 
     try {
-        saveReceivableCollection_logger.info('Inicio proceso de guardado de cobro', { body: req.body, param: req.params })
+        saveReceivableCollection_logger.info('Parametros recibido', { body: req.body, param: req.params })
         if (!receivable_id) throw new Error('Cuenta por cobrar es requerida')
 
         const receivableRepo = queryRunner.manager.getRepository(Receivable)
@@ -309,7 +309,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
             Manejo de errores
         ============================ */
         await queryRunner.rollbackTransaction()
-        saveReceivableCollection_logger.error('Error al guardar cobro', { user_id: auth_req.user.id, receivableCollection_id, receivable_id, mode, error: parseError(error), })
+        saveReceivableCollection_logger.error('Error al guardar cobro', { receivableCollection_id, receivable_id, mode, error: parseError(error), })
 
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {

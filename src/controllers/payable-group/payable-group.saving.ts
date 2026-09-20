@@ -116,7 +116,7 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
         /* ============================
            Manejo de errores
         ============================ */
-        savePayableGroup_logger.error('Error al guardar grupo por pagar', { user_id: auth_req.user.id, payable_group_id: payable_group_id, mode, error: parseError(error), })
+        savePayableGroup_logger.error('Error al guardar grupo por pagar', { payable_group_id: payable_group_id, mode, error: parseError(error), })
         const validationErrors = error?.validationErrors || null
         return res.render('layouts/main', {
             title: getTitle(mode),
@@ -128,6 +128,6 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
         const ended_at = performance.now()
         const elapsed_ms = ended_at - started_at
         savePayableGroup_logger.elapsedTime('Elapsed time', { elapsed_ms })
-        savePayableGroup_logger.debug('Fin de la operación de guardado de grupo por pagar', { user_id })
+        savePayableGroup_logger.debug('Fin de la operación de guardado de grupo por pagar')
     }
 }
