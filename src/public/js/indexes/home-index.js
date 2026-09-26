@@ -54,9 +54,13 @@ let receivableFlowChart = null
 let category_year_index = 0
 let lastCategoryRows = []
 let categoryKpiDetailChart = null
+let categoryKpiDetailItem = null
+let categoryKpiDetailYear = 0
 let category_group_year_index = 0
 let lastCategoryGroupRows = []
 let categoryGroupKpiDetailChart = null
+let categoryGroupKpiDetailItem = null
+let categoryGroupKpiDetailYear = 0
 
 /* ============================
    DOM Ready
@@ -105,6 +109,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const receivable_next = document.getElementById('html-receivable-flow-summary-next')
     if (receivable_prev) receivable_prev.innerHTML = iconCarouselPrev()
     if (receivable_next) receivable_next.innerHTML = iconCarouselNext()
+
+    ;['category-kpi-detail', 'category-group-kpi-detail'].forEach(id => {
+        const prev = document.getElementById(`${id}-prev`)
+        const next = document.getElementById(`${id}-next`)
+        const close = document.getElementById(`${id}-close`)
+        if (prev) prev.innerHTML = iconCarouselPrev()
+        if (next) next.innerHTML = iconCarouselNext()
+        if (close) close.innerHTML = iconClose()
+    })
 
     // Inicializar el Html para KPIs
     renderBalanceKpiHtml()
@@ -642,24 +655,58 @@ function renderCategoryKpiTable(rows) {
     updateCategoryHeaderIndicators(sort)
 }
 
-async function openCategoryKpiDetail(category) {
+function getCategoryDetailPeriods() {
+    return [...new Set(kpi_years.filter(year => year > 0))].sort((a, b) => a - b).concat(0)
+}
+
+function updateCategoryDetailNavigation(prefix, selectedYear) {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(selectedYear)
+    const prev = document.getElementById(`${prefix}-prev`)
+    const next = document.getElementById(`${prefix}-next`)
+    if (prev) prev.disabled = index <= 0
+    if (next) next.disabled = index < 0 || index >= periods.length - 1
+}
+
+function buildCategoryDetailSeries(rows, year) {
+    const monthLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    if (year > 0) {
+        const byMonth = new Map(rows.map(row => [Number(row.month_period), Number(row.amount || 0)]))
+        return {
+            labels: monthLabels,
+            values: monthLabels.map((_, index) => byMonth.get(index + 1) || 0)
+        }
+    }
+
+    const byYear = new Map(rows.map(row => [Number(row.year_period), Number(row.amount || 0)]))
+    const years = [...byYear.keys()]
+    if (!years.length) return { labels: [], values: [] }
+    const firstYear = Math.min(...years)
+    const lastYear = Math.max(...years)
+    const labels = Array.from({ length: lastYear - firstYear + 1 }, (_, index) => String(firstYear + index))
+    return {
+        labels,
+        values: labels.map(label => byYear.get(Number(label)) || 0)
+    }
+}
+
+async function openCategoryKpiDetail(category, selectedYear = kpi_years[category_year_index]) {
     const modal = document.getElementById('category-kpi-detail-modal')
     const title = document.getElementById('category-kpi-detail-title')
     if (!modal || !title || !category?.category_id) return
 
-    const year = kpi_years[category_year_index]
-    title.textContent = `${category.cat_name || 'Categoría'} - ${year === 0 ? 'Todos' : year}`
+    categoryKpiDetailItem = category
+    categoryKpiDetailYear = selectedYear
+    title.textContent = `${category.cat_name || 'Categoría'} - ${selectedYear === 0 ? 'Todos' : selectedYear}`
+    updateCategoryDetailNavigation('category-kpi-detail', selectedYear)
     const query = new URLSearchParams({
         category_id: String(category.category_id),
-        year_period_for_kpi: String(year)
+        year_period_for_kpi: String(selectedYear)
     })
     const res = await fetch(`/category-kpi-detail?${query}`, { credentials: 'same-origin' })
     if (!res.ok) return
     const { categoryKpiDetail } = await res.json()
-    const monthLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-    const labels = categoryKpiDetail.map(row => year === 0
-        ? String(row.year_period)
-        : monthLabels[row.month_period - 1])
+    const { labels, values } = buildCategoryDetailSeries(categoryKpiDetail, selectedYear)
     const ctx = document.getElementById('category-kpi-detail-chart')?.getContext('2d')
     if (!ctx) return
     if (categoryKpiDetailChart) categoryKpiDetailChart.destroy()
@@ -669,7 +716,7 @@ async function openCategoryKpiDetail(category) {
             labels,
             datasets: [{
                 label: 'Monto',
-                data: categoryKpiDetail.map(row => row.amount),
+                data: values,
                 tension: 0.35,
                 fill: false,
                 borderColor: '#16a34a',
@@ -695,6 +742,16 @@ function closeCategoryKpiDetail() {
 document.getElementById('category-kpi-detail-close')?.addEventListener('click', closeCategoryKpiDetail)
 document.getElementById('category-kpi-detail-modal')?.addEventListener('click', event => {
     if (event.target === event.currentTarget) closeCategoryKpiDetail()
+})
+document.getElementById('category-kpi-detail-prev')?.addEventListener('click', () => {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(categoryKpiDetailYear)
+    if (categoryKpiDetailItem && index > 0) openCategoryKpiDetail(categoryKpiDetailItem, periods[index - 1])
+})
+document.getElementById('category-kpi-detail-next')?.addEventListener('click', () => {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(categoryKpiDetailYear)
+    if (categoryKpiDetailItem && index >= 0 && index < periods.length - 1) openCategoryKpiDetail(categoryKpiDetailItem, periods[index + 1])
 })
 
 function initYearNavForCategoryGroup() {
@@ -781,21 +838,22 @@ function renderCategoryGroupKpiTable(rows) {
     updateCategoryGroupHeaderIndicators(sort)
 }
 
-async function openCategoryGroupKpiDetail(group) {
+async function openCategoryGroupKpiDetail(group, selectedYear = kpi_years[category_group_year_index]) {
     const modal = document.getElementById('category-group-kpi-detail-modal')
     const title = document.getElementById('category-group-kpi-detail-title')
     if (!modal || !title || !group?.category_group_id) return
-    const year = kpi_years[category_group_year_index]
-    title.textContent = `${group.cat_group_name || 'Grupo Categoría'} - ${year === 0 ? 'Todos' : year}`
+    categoryGroupKpiDetailItem = group
+    categoryGroupKpiDetailYear = selectedYear
+    title.textContent = `${group.cat_group_name || 'Grupo Categoría'} - ${selectedYear === 0 ? 'Todos' : selectedYear}`
+    updateCategoryDetailNavigation('category-group-kpi-detail', selectedYear)
     const query = new URLSearchParams({
         category_group_id: String(group.category_group_id),
-        year_period_for_kpi: String(year)
+        year_period_for_kpi: String(selectedYear)
     })
     const res = await fetch(`/category-group-kpi-detail?${query}`, { credentials: 'same-origin' })
     if (!res.ok) return
     const { categoryGroupKpiDetail } = await res.json()
-    const monthLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-    const labels = categoryGroupKpiDetail.map(row => year === 0 ? String(row.year_period) : monthLabels[row.month_period - 1])
+    const { labels, values } = buildCategoryDetailSeries(categoryGroupKpiDetail, selectedYear)
     const ctx = document.getElementById('category-group-kpi-detail-chart')?.getContext('2d')
     if (!ctx) return
     if (categoryGroupKpiDetailChart) categoryGroupKpiDetailChart.destroy()
@@ -805,7 +863,7 @@ async function openCategoryGroupKpiDetail(group) {
             labels,
             datasets: [{
                 label: 'Monto',
-                data: categoryGroupKpiDetail.map(row => row.amount),
+                data: values,
                 tension: 0.35,
                 fill: false,
                 borderColor: '#16a34a',
@@ -826,6 +884,16 @@ function closeCategoryGroupKpiDetail() {
 document.getElementById('category-group-kpi-detail-close')?.addEventListener('click', closeCategoryGroupKpiDetail)
 document.getElementById('category-group-kpi-detail-modal')?.addEventListener('click', event => {
     if (event.target === event.currentTarget) closeCategoryGroupKpiDetail()
+})
+document.getElementById('category-group-kpi-detail-prev')?.addEventListener('click', () => {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(categoryGroupKpiDetailYear)
+    if (categoryGroupKpiDetailItem && index > 0) openCategoryGroupKpiDetail(categoryGroupKpiDetailItem, periods[index - 1])
+})
+document.getElementById('category-group-kpi-detail-next')?.addEventListener('click', () => {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(categoryGroupKpiDetailYear)
+    if (categoryGroupKpiDetailItem && index >= 0 && index < periods.length - 1) openCategoryGroupKpiDetail(categoryGroupKpiDetailItem, periods[index + 1])
 })
 
 function loadCategoryGroupSort() {

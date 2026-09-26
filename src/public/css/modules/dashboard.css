@@ -193,6 +193,56 @@
     height: 18px;
 }
 
+.kpi-detail-header {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 32px 32px;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.kpi-detail-header h2 {
+    min-width: 0;
+    margin: 0;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.kpi-detail-nav,
+.kpi-detail-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ui-gray-100);
+    color: var(--ui-gray-700);
+    cursor: pointer;
+}
+
+.kpi-detail-nav:hover:not(:disabled),
+.kpi-detail-close:hover {
+    background: var(--ui-gray-200);
+}
+
+.kpi-detail-nav:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.kpi-detail-nav svg {
+    width: 18px;
+    height: 18px;
+}
+
+.kpi-detail-close svg {
+    width: 16px;
+    height: 16px;
+}
+
 .ui-kpi-row {
     display: flex;
     justify-content: space-between;

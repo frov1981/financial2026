@@ -165,9 +165,11 @@
 
 <div id="category-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-kpi-detail-title">
   <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
-    <div class="flex items-center justify-between gap-3 mb-4">
+    <div class="kpi-detail-header">
+      <button id="category-kpi-detail-prev" type="button" class="kpi-detail-nav" aria-label="Periodo anterior" title="Periodo anterior"></button>
       <h2 id="category-kpi-detail-title" class="text-lg font-semibold"></h2>
-      <button id="category-kpi-detail-close" type="button" class="ui-modal-btn ui-modal-btn-neutral">Cerrar</button>
+      <button id="category-kpi-detail-next" type="button" class="kpi-detail-nav" aria-label="Periodo siguiente" title="Periodo siguiente"></button>
+      <button id="category-kpi-detail-close" type="button" class="kpi-detail-close" aria-label="Cerrar" title="Cerrar"></button>
     </div>
     <div style="height: 300px;">
       <canvas id="category-kpi-detail-chart"></canvas>
@@ -177,9 +179,11 @@
 
 <div id="category-group-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-group-kpi-detail-title">
   <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
-    <div class="flex items-center justify-between gap-3 mb-4">
+    <div class="kpi-detail-header">
+      <button id="category-group-kpi-detail-prev" type="button" class="kpi-detail-nav" aria-label="Periodo anterior" title="Periodo anterior"></button>
       <h2 id="category-group-kpi-detail-title" class="text-lg font-semibold"></h2>
-      <button id="category-group-kpi-detail-close" type="button" class="ui-modal-btn ui-modal-btn-neutral">Cerrar</button>
+      <button id="category-group-kpi-detail-next" type="button" class="kpi-detail-nav" aria-label="Periodo siguiente" title="Periodo siguiente"></button>
+      <button id="category-group-kpi-detail-close" type="button" class="kpi-detail-close" aria-label="Cerrar" title="Cerrar"></button>
     </div>
     <div style="height: 300px;">
       <canvas id="category-group-kpi-detail-chart"></canvas>

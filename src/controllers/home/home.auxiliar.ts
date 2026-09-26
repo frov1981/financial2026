@@ -536,11 +536,13 @@ export const getCategoryKpiDetail = async (auth_req: AuthRequest) => {
 }
 
 export const getCategoryGroupKpi = async (auth_req: AuthRequest) => {
-  getHomeCategoryGroupKpi(auth_req)
+  const rows = await getHomeCategoryGroupKpi(auth_req)
+  return rows
 }
 
 export const getCategoryGroupKpiDetail = async (auth_req: AuthRequest) => {
-  getHomeCategoryGroupKpiDetail(auth_req)
+  const rows = await getHomeCategoryGroupKpiDetail(auth_req)
+  return rows
 }
 
 
