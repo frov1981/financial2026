@@ -1,3 +1,4 @@
+(() => {
 document.addEventListener('DOMContentLoaded', () => {
   // ============================
   // Toggle "Es categoría padre"
@@ -74,3 +75,4 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   })
 })
+})()

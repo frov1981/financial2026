@@ -1,3 +1,4 @@
+(() => {
 /* ============================================================================
 1. Constantes globales
 2. Variables de estado
@@ -422,3 +423,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 })
+
+window.goToAccountUpdate = goToAccountUpdate
+window.goToAccountDelete = goToAccountDelete
+window.goToAccountUpdateStatus = goToAccountUpdateStatus
+window.selectAccountCard = selectAccountCard
+})()

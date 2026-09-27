@@ -1,3 +1,4 @@
+(() => {
 document.addEventListener('DOMContentLoaded', () => {
     initAutocompletes()
 })
@@ -183,3 +184,6 @@ function formatBalance(value) {
     const number_value = Number(value) || 0
     return number_value.toFixed(2)
 }
+
+window.setupAutocomplete = setupAutocomplete
+})()

@@ -1,5 +1,6 @@
+(() => {
 /*
-  category-form.js
+  payable-payment-form.js
 
   Archivo intencionalmente vacío de lógica.
   Este formulario es procesado completamente por el backend.
@@ -21,3 +22,4 @@ document.addEventListener('DOMContentLoaded', () => {
     El submit es tradicional (POST) y el backend controla el flujo.
   */
 })
+})()

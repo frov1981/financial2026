@@ -314,7 +314,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {
             title: getTitle(mode),
-            view: 'pages/payable-receivable_collections/form',
+            view: 'pages/payable-receivable-collections/form',
             ...form_state,
             errors: validationErrors
         })

@@ -1,3 +1,4 @@
+(() => {
 /*
   category-form.js
 
@@ -21,3 +22,4 @@ document.addEventListener('DOMContentLoaded', () => {
     El submit es tradicional (POST) y el backend controla el flujo.
   */
 })
+})()

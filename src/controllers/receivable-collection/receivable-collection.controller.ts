@@ -49,7 +49,7 @@ export const routeToPageReceivableCollection: RequestHandler = async (req, res) 
     }
     res.render('layouts/main', {
         title: 'Cobros',
-        view: 'pages/payable-receivable_collections/index',
+        view: 'pages/payable-receivable-collections/index',
         USER_ID: auth_req.user?.id || 'guest',
         RECEIVABLE_ID: receivable_id,
         receivable
@@ -63,7 +63,7 @@ export const routeToFormInsertReceivableCollection: RequestHandler = async (req,
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderReceivableCollectionForm(res, {
         title: 'Insertar Cobro',
-        view: 'pages/payable-receivable_collections/form',
+        view: 'pages/payable-receivable-collections/form',
         errors: {},
         auth_req,
         mode,
@@ -89,7 +89,7 @@ export const routeToFormUpdateReceivableCollection: RequestHandler = async (req,
     }
     return renderReceivableCollectionForm(res, {
         title: 'Editar Cobro',
-        view: 'pages/payable-receivable_collections/form',
+        view: 'pages/payable-receivable-collections/form',
         errors: {},
         mode,
         auth_req,
@@ -112,7 +112,7 @@ export const routeToFormCloneReceivableCollection: RequestHandler = async (req, 
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderReceivableCollectionForm(res, {
         title: 'Insertar Cobro',
-        view: 'pages/payable-receivable_collections/form',
+        view: 'pages/payable-receivable-collections/form',
         errors: {},
         mode,
         auth_req,
@@ -134,7 +134,7 @@ export const routeToFormDeleteReceivableCollection: RequestHandler = async (req,
     }
     return renderReceivableCollectionForm(res, {
         title: 'Eliminar Cobro',
-        view: 'pages/payable-receivable_collections/form',
+        view: 'pages/payable-receivable-collections/form',
         errors: {},
         mode,
         auth_req,

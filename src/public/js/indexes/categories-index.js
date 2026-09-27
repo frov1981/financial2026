@@ -1,3 +1,4 @@
+(() => {
 /* ============================================================================
 1. Constantes globales
 2. Variables de estado
@@ -573,3 +574,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 })
+
+window.toggleCategoryGroupCollapse = toggleCategoryGroupCollapse
+window.goToCategoryUpdateStatus = goToCategoryUpdateStatus
+window.goToCategoryUpdate = goToCategoryUpdate
+window.goToCategoryDelete = goToCategoryDelete
+window.goToCategoryList = goToCategoryList
+window.selectCategoryCard = selectCategoryCard
+window.goToCategoryGroupUpdate = goToCategoryGroupUpdate
+window.goToCategoryGroupDelete = goToCategoryGroupDelete
+})()

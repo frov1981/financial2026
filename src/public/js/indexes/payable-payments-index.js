@@ -1,3 +1,4 @@
+(() => {
 /* ============================================================================
 1. Constantes globales
 2. Variables de estado
@@ -379,3 +380,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 })
+
+window.goToPaymentUpdate = goToPaymentUpdate
+window.goToPaymentClone = goToPaymentClone
+window.goToPaymentDelete = goToPaymentDelete
+window.selectPaymentCard = selectPaymentCard
+})()

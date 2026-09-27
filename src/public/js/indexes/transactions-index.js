@@ -1,3 +1,4 @@
+(() => {
 /* ============================================================================
 1. Constantes globales
 ============================================================================ */
@@ -95,8 +96,8 @@ function moduleOriginClass(transaction) {
 }
 
 function isBatchActive() {
-  if (typeof batchGetState !== 'function') return false
-  const state = batchGetState()
+  if (typeof window.batchGetState !== 'function') return false
+  const state = window.batchGetState()
   return !!state?.active
 }
 
@@ -666,9 +667,9 @@ async function loadTransactions(page = 1) {
     updatePaginationInfo()
 
     if (isBatchActive()) {
-      if (typeof batchApplyUi === 'function') batchApplyUi(true)
-      if (typeof batchToggleActionButtons === 'function') batchToggleActionButtons(true)
-      if (typeof batchRestoreSelection === 'function') batchRestoreSelection()
+      if (typeof window.batchApplyUi === 'function') window.batchApplyUi(true)
+      if (typeof window.batchToggleActionButtons === 'function') window.batchToggleActionButtons(true)
+      if (typeof window.batchRestoreSelection === 'function') window.batchRestoreSelection()
     }
   } catch (error) {
     console.error('Error cargando transacciones:', error)
@@ -861,8 +862,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTransactions(currentPage)
 
   if (SAVED_BATCH) {
-    if (typeof batchRestoreState === 'function') {
-      batchRestoreState()
+    if (typeof window.batchRestoreState === 'function') {
+      window.batchRestoreState()
     }
 
     if (window.history.replaceState) {
@@ -880,10 +881,17 @@ document.addEventListener('DOMContentLoaded', () => {
       render(allItems)
 
       if (isBatchActive()) {
-        batchApplyUi(true)
-        batchToggleActionButtons(true)
-        batchRestoreSelection()
+        window.batchApplyUi(true)
+        window.batchToggleActionButtons(true)
+        window.batchRestoreSelection()
       }
     }
   })
 })
+
+window.openTransactionImages = openTransactionImages
+window.goToRouteUpdate = goToRouteUpdate
+window.goToRouteClone = goToRouteClone
+window.goToRouteDelete = goToRouteDelete
+window.selectTransactionCard = selectTransactionCard
+})()

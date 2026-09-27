@@ -1,3 +1,4 @@
+(() => {
 const API_BASE = '/receivables-collections/list/'
 let allCollections = []
 
@@ -177,3 +178,4 @@ window.addEventListener('resize', () => {
     applyFilters()
   }
 })
+})()

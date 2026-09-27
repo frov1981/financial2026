@@ -1,3 +1,4 @@
+(() => {
 document.addEventListener('DOMContentLoaded', () => {
   const originalType = document.getElementById('original-transaction-type')?.value || ''
 
@@ -116,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // volver a inicializar SOLO este autocomplete
     // revisar la invocación global de setupAutocomplete en "src/public/js/forms/autocomplete-form.js" para evitar conflictos
-    setupAutocomplete(categoryAutocomplete)
+    window.setupAutocomplete(categoryAutocomplete)
   }
 
   function reloadAccountAutocomplete() {
@@ -132,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hidden_el.value = ''
     panel_el.innerHTML = ''
 
-    setupAutocomplete(accountAutocomplete)
+    window.setupAutocomplete(accountAutocomplete)
   }
 
   radios.forEach(radio => {
@@ -148,3 +149,4 @@ document.addEventListener('DOMContentLoaded', () => {
     updateVisibility(checked.value)
   }
 })
+})()

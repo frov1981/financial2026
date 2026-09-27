@@ -1,3 +1,4 @@
+(() => {
 /* ============================
    Constantes globales
 ============================ */
@@ -1071,3 +1072,7 @@ function scrollCarouselPrev() {
     if (!carousel) return
     carousel.scrollBy({ left: -carousel.clientWidth * 0.8, behavior: 'smooth' })
 }
+
+window.scrollCarouselNext = scrollCarouselNext
+window.scrollCarouselPrev = scrollCarouselPrev
+})()

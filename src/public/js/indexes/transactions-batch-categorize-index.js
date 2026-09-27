@@ -1,3 +1,4 @@
+(() => {
 /* ============================================================================
    1. Constantes batch (NO colisionan con las existentes)
 ============================================================================ */
@@ -187,3 +188,8 @@ window.batchStartCategorize = batchStartCategorize
 window.batchAcceptCategorize = batchAcceptCategorize
 window.batchCancelCategorize = batchCancelCategorize
 window.batchRestoreState = batchRestoreState
+window.batchGetState = batchGetState
+window.batchApplyUi = batchApplyUi
+window.batchToggleActionButtons = batchToggleActionButtons
+window.batchRestoreSelection = batchRestoreSelection
+})()

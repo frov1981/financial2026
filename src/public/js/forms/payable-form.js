@@ -1,3 +1,4 @@
+(() => {
 document.addEventListener('DOMContentLoaded', () => {
   const checkbox = document.getElementById('is-parent-checkbox')
   if (!checkbox) return
@@ -83,3 +84,4 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   })
 })
+})()

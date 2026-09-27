@@ -1,3 +1,4 @@
+(() => {
 const API_BASE = '/receivables/list'
 const FILTER_KEY = `receivables.filters.${window.USER_ID}`
 const SELECTED_KEY = `receivables.selected.${window.USER_ID}`
@@ -5,6 +6,7 @@ const SCROLL_KEY = `receivables.scroll.${window.USER_ID}`
 const COLLAPSE_KEY = `receivables.collapse.${window.USER_ID}`
 
 let allReceivables = []
+let groupTotals = []
 
 function getLayoutMode() {
   const w = window.innerWidth
@@ -62,8 +64,8 @@ function toggleReceivableGroupCollapse(groupId) {
 }
 
 function getGroupPendingTotal(group_id) {
-  if (!window.groupTotals) return 0
-  const g = window.groupTotals.find(x => x.receivable_group_id === group_id)
+  if (!groupTotals) return 0
+  const g = groupTotals.find(x => x.receivable_group_id === group_id)
   return g ? g.total_balance : 0
 }
 
@@ -165,7 +167,7 @@ function loadReceivables() {
     .then(res => res.json())
     .then(data => {
       allReceivables = data.receivables || []
-      window.groupTotals = data.group_totals || []
+      groupTotals = data.group_totals || []
       applyAllFilters()
     })
     .catch(err => console.error('Error loading receivables', err))
@@ -345,7 +347,9 @@ window.goToReceivableDelete = function (id) { window.location.href = `/receivabl
 window.goToReceivableView = function (id) { window.location.href = `/receivables-collections/${id}/payable` }
 window.goToReceivableGroupUpdate = function (id) { window.location.href = `/receivables-groups/update/${id}` }
 window.goToReceivableGroupDelete = function (id) { window.location.href = `/receivables-groups/delete/${id}` }
+window.toggleReceivableGroupCollapse = toggleReceivableGroupCollapse
 
 bindEvents()
 updateSearchValue()
 loadReceivables()
+})()

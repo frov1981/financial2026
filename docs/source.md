@@ -15,6 +15,7 @@ import { sessionStore } from './config/session-store'
 import { apiLimiter } from './config/rate-limiter'
 import { csrfProtection, csrfTokenMiddleware } from './middlewares/csrf.middleware'
 import { injectPayableBalance } from './middlewares/inject-payable-balance.middleware'
+import { injectReceivableBalance } from './middlewares/inject-receivable-balance.middleware'
 import { injectNetBalance } from './middlewares/inject-net-balance.middleware'
 import { httpLogger } from './middlewares/logger.middleware'
 import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
@@ -26,7 +27,12 @@ import homeRoutes from './routes/home.route'
 import payableGroupRoutes from './routes/payable-group.route'
 import payableRoutes from './routes/payable.route'
 import paymentRoutes from './routes/payable-payment.route'
+import receivableGroupRoutes from './routes/receivable-group.route'
+import receivableRoutes from './routes/receivable.route'
+import receivableCollectionRoutes from './routes/receivable-collection.route'
 import transactionRoutes from './routes/transaction.route'
+import fileReferenceRoutes from './routes/file-reference.route'
+import notificationRoutes from './routes/notification.route'
 
 export const app = express()
 const isProd = process.env.NODE_ENV === 'production'
@@ -111,6 +117,11 @@ protectedRouter.use('/transactions', transactionRoutes)
 protectedRouter.use('/payables', injectPayableBalance, payableRoutes)
 protectedRouter.use('/payable-groups', payableGroupRoutes)
 protectedRouter.use('/payments', injectPayableBalance, paymentRoutes)
+protectedRouter.use('/receivables', injectReceivableBalance, receivableRoutes)
+protectedRouter.use('/receivables-groups', receivableGroupRoutes)
+protectedRouter.use('/receivables-collections', injectReceivableBalance, receivableCollectionRoutes)
+protectedRouter.use('/files', fileReferenceRoutes)
+protectedRouter.use('/notifications', notificationRoutes)
 app.use(protectedRouter)
  
 ```
@@ -129,19 +140,38 @@ import { app } from './app'
 import { AppDataSource } from './config/typeorm.datasource'
 import { logger } from './utils/logger.util'
 import { parseError } from './utils/error.util'
+import { startNotificationScheduler } from './schedulers/notification.scheduler'
+import { LogEvent } from './entities/LogEvent.entity'
 
 const PORT = process.env.NODE_PORT ? parseInt(process.env.NODE_PORT, 10) : 3000
+const server_startup_logger = logger.forMethod('serverStartup', 'SERVER_STARTUP')
 
 AppDataSource.initialize().then(() => {
+  logger.setDatabaseSink(async events => {
+    await AppDataSource.getRepository(LogEvent).insert(events.map(event => ({
+      occurred_at: event.occurred_at,
+      level: event.level,
+      service: event.service,
+      event_name: event.event_name,
+      method_name: event.method_name,
+      message: event.message,
+      context: event.context as any,
+    })))
+  })
+
   const ormLimit = process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT, 10) : 3
   const sessionLimit = process.env.SESSION_DB_CONNECTION_LIMIT ? parseInt(process.env.SESSION_DB_CONNECTION_LIMIT, 10) : 1
-  logger.info('Configured connection limits', { ormLimit, sessionLimit, estimatedTotal: ormLimit + sessionLimit })
+  const estimatedTotal = ormLimit + sessionLimit
 
-  app.listen(PORT, () => {
-    logger.info('Server started on port', { port: PORT })
-  })
+  server_startup_logger.info('Limites de conexion configurado', { ormLimit, sessionLimit, estimatedTotal })
+
+  // Inicializar los programadores o tareas
+  startNotificationScheduler()
+
+  // Inicializar servidor express
+  app.listen(PORT, () => { server_startup_logger.info('Sevidor iniciado', { port: PORT }) })
 }).catch(error => {
-  logger.error('Error initializing backend', parseError(error))
+  server_startup_logger.error('Error inicializando servidor', parseError(error))
 })
  
 ```
@@ -159,7 +189,7 @@ import { Account } from "../entities/Account.entity";
 import { AuthRequest } from "../types/auth-request";
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-import { logger } from '../utils/logger.util';
+import { logger as root_logger } from '../utils/logger.util';
 
 export type DTOAccount = {
     id: number
@@ -266,6 +296,7 @@ export const getActiveAccountsForDisbursement = async (auth_req: AuthRequest): P
 
 export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccount[]> => {
     const user_id = auth_req.user.id
+    const cache_accounts_logger = root_logger.forMethod('getAccountsForApi', 'CACHE_ACCOUNTS', user_id)
     const cache_key = cacheKeys.accountsByUserForApi(user_id)
     const cached_accounts = cache.get<DTOAccount[]>(cache_key)
     if (cached_accounts !== undefined) {
@@ -280,7 +311,7 @@ export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccou
             subQuery
                 .select('COUNT(t.id)')
                 .from('transactions', 't')
-                .where('t.account_id = account.id'),
+                .where('(t.account_id = account.id OR t.to_account_id = account.id)'),
             'transaction_count'
         )
         .orderBy('account.name', 'ASC')
@@ -297,7 +328,7 @@ export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccou
 
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getAccountsForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[account], count=[${accounts.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache_accounts_logger.debug(`method=[${getAccountsForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[account], count=[${accounts.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, accounts)
     return accounts
 } 
@@ -314,7 +345,8 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { AuthRequest } from "../types/auth-request";
-import { logger } from '../utils/logger.util';
+import { CategoryTypeForPayableOrReceivable } from "../types/category-type-for-payable-or-receivable";
+import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
@@ -322,7 +354,7 @@ export type DTOCategory = {
     id: number
     name: string
     type: 'income' | 'expense'
-    type_for_payable_or_receivable: 'payable' | 'payable_payment' | 'receivable' | 'receivable_collection' | null
+    type_for_payable_or_receivable: CategoryTypeForPayableOrReceivable
     is_active: boolean
     category_group: { id: number, name: string } | null
     transactions_count: number
@@ -432,6 +464,7 @@ export const getActivePaymentCategories = async (auth_req: AuthRequest): Promise
 
 export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCategory[]> => {
     const user_id = auth_req.user.id
+    const cache_categories_logger = root_logger.forMethod('getCategoriesForApi', 'CACHE_CATEGORIES', user_id)
     const cache_key = cacheKeys.categoriesByUserForApi(user_id)
     const cached_categories = cache.get<DTOCategory[]>(cache_key)
     if (cached_categories !== undefined) {
@@ -467,7 +500,7 @@ export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCat
 
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getCategoriesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[category], count=[${categories.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache_categories_logger.debug(`method=[${getCategoriesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[category], count=[${categories.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, categories)
     return categories
 } 
@@ -547,8 +580,9 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-home.service.ts
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { CacheKpiBalance } from "../entities/CacheKpiBalance.entity";
+import { CacheKpiCategory } from "../entities/CacheKpiCategory.entity";
 import { AuthRequest } from "../types/auth-request";
-import { logger } from '../utils/logger.util';
+import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
@@ -566,10 +600,19 @@ type PayableFlowSummary = {
   net_balance: number[]
 }
 
+type ReceivableFlowSummary = {
+  labels: string[]
+  total_receivables: number[]
+  total_receivable_collections: number[]
+  net_balance: number[]
+}
+
 const base_kpi = {
   incomes: 0,
   expenses: 0,
   payables: 0,
+  receivables: 0,
+  receivable_collections: 0,
   payable_payments: 0,
   savings: 0,
   withdrawals: 0,
@@ -633,6 +676,8 @@ export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promis
     savings: prev.savings + current.savings,
     withdrawals: prev.withdrawals + current.withdrawals,
     payables: prev.payables + current.payables,
+    receivables: prev.receivables + current.receivables,
+    receivable_collections: prev.receivable_collections + current.receivable_collections,
     payable_payments: prev.payable_payments + current.payable_payments,
     total_inflows: prev.total_inflows + current.total_inflows,
     total_outflows: prev.total_outflows + current.total_outflows,
@@ -646,13 +691,20 @@ export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promis
   cache.set(cache_key, result)
   return result
 }
-const calcTrend = (current: number, previous: number): TrendValue => {
-  if (previous === 0) return null
-  const diff = Number((current - previous).toFixed(2))
-  const percent = Number(((diff / previous) * 100).toFixed(2))
+const calcTrend = (key: string, current: number, previous: number): TrendValue => {
+  // If previous is zero and current is also zero, there's no trend to show
+  if (previous === 0 && current === 0) return null
+
+  // Compute diff. If previous is zero but current != 0, treat diff as (current - 0) so we can show a direction.
+  let diff = Number((current - previous).toFixed(2))
+  // For some KPIs (like receivables), an increase is unfavorable — invert sign.
+  if (key === 'receivables') diff = Number((-diff).toFixed(2))
+
+  // Percent is undefined when previous is zero; set to null in that case so UI can still show direction.
+  const percent = previous === 0 ? null : Number(((diff / previous) * 100).toFixed(2))
   return {
     diff,
-    percent,
+    percent: percent as any,
     direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'equal'
   }
 }
@@ -663,7 +715,7 @@ const calcTrendObject = (current: KpiBalance, previous: KpiBalance): KpiTrend =>
     if (key === 'is_populate') continue
     const curr = current[key as keyof KpiBalance]
     const prev = previous[key as keyof KpiBalance]
-    result[key as keyof KpiBalance] = calcTrend(curr, prev)
+    result[key as keyof KpiBalance] = calcTrend(key, curr, prev)
   }
   return result
 }
@@ -673,6 +725,7 @@ const calcTrendObject = (current: KpiBalance, previous: KpiBalance): KpiTrend =>
  *******************************************************************************************/
 export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Promise<number[]> => {
   const user_id = auth_req.user.id
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const cache_key = cacheKeys.homeAvailableYearsKpi(user_id)
   const cached_available_kpi_years = cache.get<number[]>(cache_key)
   if (cached_available_kpi_years !== undefined) return cached_available_kpi_years
@@ -685,16 +738,22 @@ export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Prom
     .getRawMany()
   const end = performance.now()
   const duration_sec = (end - start) / 1000
-  logger.debug(`method=[${getHomeAvailableYearsKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+  cache_home_logger.debug(`method=[${getHomeAvailableYearsKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   const years = rows.map(r => Number(r.year))
-  const f_year = [0, ...years]
-  logger.info(`${getHomeAvailableYearsKpiCache.name}. Años disponibles: `, { f_year })
+  const f_year = years.length
+    ? [0, ...Array.from(
+      { length: Math.max(new Date().getFullYear(), ...years) - Math.min(...years) + 1 },
+      (_, index) => Math.max(new Date().getFullYear(), ...years) - index
+    )]
+    : [0]
+  cache_home_logger.info(`${getHomeAvailableYearsKpiCache.name}. Años disponibles: `, { f_year })
   cache.set(cache_key, f_year)
   return f_year
 }
 
 export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<KpiBalance> => {
   const user_id = auth_req.user.id
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const year_period_for_kpi = Number(auth_req.query.year_period_for_kpi || 0)
   const month_period_for_kpi = Number(auth_req.query.month_period_for_kpi || 0)
   const cache_key = cacheKeys.homeBalanceKpi(user_id, year_period_for_kpi, month_period_for_kpi)
@@ -708,13 +767,14 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
   const rows = await qb.getMany()
   const end = performance.now()
   const duration_sec = (end - start) / 1000
-  logger.debug(`method=[${getHomeBalanceKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+  cache_home_logger.debug(`method=[${getHomeBalanceKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   if (!rows.length) return base_kpi
 
-  logger.debug('HOME_KPI_ROWS', rows.map(row => ({ year: row.period_year, month: row.period_month, available_balance: row.available_balance })))
   const result: KpiBalance = rows.reduce((acc, row) => {
     acc.incomes += Number(row.incomes)
     acc.expenses += Number(row.expenses)
+    acc.receivables += Number(row.receivables || 0)
+    acc.receivable_collections += Number(row.receivable_collections || 0)
     acc.savings += Number(row.savings)
     acc.withdrawals += Number(row.withdrawals)
     acc.payables += Number(row.payables)
@@ -729,7 +789,6 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
     acc.is_populate = 1
     return acc
   }, { ...base_kpi })
-  logger.info(`${getHomeBalanceKpiCache.name}. `, { year_period_for_kpi, available_balance: result.available_balance })
   cache.set(cache_key, result)
   return result
 }
@@ -779,7 +838,7 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
   const total_outflows: number[] = []
   const net_cash_flow: number[] = []
 
-  let available_years = cache.get<number[]>(cacheKeys.homeAvailableYearsKpi(user_id)) || []
+  let available_years = await getHomeAvailableYearsKpiCache(auth_req)
   available_years.sort((a, b) => a - b)
 
   if (year === 0) {
@@ -814,7 +873,8 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
 
     for (let month = 1; month <= 12; month++) {
       const kpi_key = cacheKeys.homeBalanceKpi(user_id, year, month)
-      const kpi = cache.get<KpiBalance>(kpi_key)
+      const req = buildAuthReq(auth_req, year, month)
+      const kpi = await getHomeBalanceKpiCache(req)
 
       labels.push(month_labels[month - 1])
       total_inflows.push(kpi?.total_inflows ?? 0)
@@ -902,6 +962,263 @@ export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Pro
   cache.set(cache_key, result)
   return result
 }
+
+export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): Promise<ReceivableFlowSummary> => {
+  const user_id = auth_req.user.id
+  const year = Number(auth_req.query.year_period_for_payable_summ || 0)
+
+  const cache_key = cacheKeys.homeReceivableFlowSummary(user_id, year)
+  const cached = cache.get<ReceivableFlowSummary>(cache_key)
+  if (cached !== undefined) return cached
+
+  const labels: string[] = []
+  const total_receivables: number[] = []
+  const total_receivable_collections: number[] = []
+  const net_balance: number[] = []
+
+  let available_years = cache.get<number[]>(cacheKeys.homeAvailableYearsKpi(user_id)) || []
+  available_years.sort((a, b) => a - b)
+
+  if (year === 0) {
+    for (const y of available_years) {
+      if (y === 0) continue
+
+      let receivables = 0
+      let receivable_collections = 0
+      let net = 0
+
+      for (let month = 1; month <= 12; month++) {
+        const kpi_key = cacheKeys.homeBalanceKpi(user_id, y, month)
+        let kpi = cache.get<any>(kpi_key)
+
+        if (!kpi) {
+          const req = buildAuthReq(auth_req, y, month)
+          kpi = await getHomeBalanceKpiCache(req)
+          cache.set(kpi_key, kpi)
+        }
+
+        receivables += kpi?.receivables ?? 0
+        receivable_collections += kpi?.receivable_collections ?? 0
+        net += (kpi?.receivables ?? 0) - (kpi?.receivable_collections ?? 0)
+      }
+
+      labels.push(String(y))
+      total_receivables.push(receivables)
+      total_receivable_collections.push(receivable_collections)
+      net_balance.push(net)
+    }
+  } else {
+    const month_labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+    for (let month = 1; month <= 12; month++) {
+      const kpi_key = cacheKeys.homeBalanceKpi(user_id, year, month)
+      const kpi = cache.get<any>(kpi_key)
+
+      labels.push(month_labels[month - 1])
+      total_receivables.push(kpi?.receivables ?? 0)
+      total_receivable_collections.push(kpi?.receivable_collections ?? 0)
+      net_balance.push((kpi?.receivables ?? 0) - (kpi?.receivable_collections ?? 0))
+    }
+  }
+
+  const result: ReceivableFlowSummary = {
+    labels,
+    total_receivables,
+    total_receivable_collections,
+    net_balance
+  }
+
+  cache.set(cache_key, result)
+  return result
+}
+
+export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  const cache_key = cacheKeys.homeCategoryKpi(user_id, year)
+  const cached = cache.get<any[]>(cache_key)
+  if (cached !== undefined) return cached
+
+  const repo = AppDataSource.getRepository(CacheKpiCategory)
+  const start = performance.now()
+
+  const qb = repo.createQueryBuilder('k')
+    .select('cg.id', 'category_group_id')
+    .addSelect('cat.id', 'category_id')
+    .addSelect("COALESCE(cg.name, '')", 'cat_group_name')
+    .addSelect("COALESCE(cat.name, '')", 'cat_name')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+    .leftJoin('k.category_group', 'cg')
+    .leftJoin('k.category', 'cat')
+    .where('k.user_id = :user_id', { user_id })
+
+  if (year > 0) qb.andWhere('k.year_period = :year', { year })
+
+  qb.groupBy('cg.id, cg.name, cat.id, cat.name')
+  qb.orderBy('cg.name, cat.name')
+
+  const rows = await qb.getRawMany()
+  const end = performance.now()
+  const duration_sec = (end - start) / 1000
+  cache_home_logger.debug(`method=[${getHomeCategoryKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-categories], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+
+  const result = rows.map((r: any) => ({
+    category_group_id: Number(r.category_group_id),
+    category_id: Number(r.category_id),
+    cat_group_name: String(r.cat_group_name || ''),
+    cat_name: String(r.cat_name || ''),
+    amount: Number(r.amount || 0),
+    transaction_count: Number(r.transaction_count || 0)
+  }))
+
+  cache.set(cache_key, result)
+  return result
+}
+
+export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
+  const category_id = Number(auth_req.query.category_id || 0)
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  if (!category_id) return []
+
+  const cache_key = cacheKeys.homeCategoryKpiDetail(user_id, year, category_id)
+  const cached = cache.get<any[]>(cache_key)
+  if (cached !== undefined) return cached
+
+  const repo = AppDataSource.getRepository(CacheKpiCategory)
+  const query = repo.createQueryBuilder('k')
+    .select('k.year_period', 'year_period')
+    .addSelect('k.month_period', 'month_period')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+    .where('k.user_id = :user_id', { user_id })
+    .andWhere('k.category_id = :category_id', { category_id })
+
+  if (year > 0) query.andWhere('k.year_period = :year', { year })
+
+  if (year === 0) {
+    query.select('k.year_period', 'year_period')
+      .addSelect('SUM(k.amount)', 'amount')
+      .addSelect('SUM(k.transaction_count)', 'transaction_count')
+  }
+
+  const rows = await query
+    .groupBy(year === 0 ? 'k.year_period' : 'k.year_period, k.month_period')
+    .orderBy('k.year_period', 'ASC')
+    .addOrderBy(year === 0 ? 'k.year_period' : 'k.month_period', 'ASC')
+    .getRawMany()
+
+  const result = rows.map((row: any) => ({
+    year_period: Number(row.year_period),
+    month_period: Number(row.month_period),
+    amount: Number(row.amount || 0),
+    transaction_count: Number(row.transaction_count || 0)
+  }))
+
+  if (year === 0) {
+    cache.set(cache_key, result)
+    return result
+  }
+
+  const byMonth = new Map(result.map(row => [row.month_period, row]))
+  const resultWithAllMonths = Array.from({ length: 12 }, (_, index) => byMonth.get(index + 1) || ({
+    year_period: year,
+    month_period: index + 1,
+    amount: 0,
+    transaction_count: 0
+  }))
+
+  cache.set(cache_key, resultWithAllMonths)
+  return resultWithAllMonths
+}
+
+export const getHomeCategoryGroupKpi = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  const cache_key = cacheKeys.homeCategoryGroupKpi(user_id, year)
+  const cached = cache.get<any[]>(cache_key)
+  if (cached !== undefined) return cached
+
+  const repo = AppDataSource.getRepository(CacheKpiCategory)
+  const query = repo.createQueryBuilder('k')
+    .select('cg.id', 'category_group_id')
+    .addSelect("COALESCE(cg.name, '')", 'cat_group_name')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+    .leftJoin('k.category_group', 'cg')
+    .where('k.user_id = :user_id', { user_id })
+
+  if (year > 0) query.andWhere('k.year_period = :year', { year })
+
+  const rows = await query
+    .groupBy('cg.id, cg.name')
+    .orderBy('cg.name', 'ASC')
+    .getRawMany()
+
+  const result = rows.map((row: any) => ({
+    category_group_id: Number(row.category_group_id),
+    cat_group_name: String(row.cat_group_name || ''),
+    amount: Number(row.amount || 0),
+    transaction_count: Number(row.transaction_count || 0)
+  }))
+  cache.set(cache_key, result)
+  return result
+}
+
+export const getHomeCategoryGroupKpiDetail = async (auth_req: AuthRequest) => {
+  const user_id = auth_req.user.id
+  const group_id = Number(auth_req.query.category_group_id || 0)
+  const year = Number(auth_req.query.year_period_for_kpi || 0)
+  if (!group_id) return []
+
+  const cache_key = cacheKeys.homeCategoryGroupKpiDetail(user_id, year, group_id)
+  const cached = cache.get<any[]>(cache_key)
+  if (cached !== undefined) return cached
+
+  const repo = AppDataSource.getRepository(CacheKpiCategory)
+  const query = repo.createQueryBuilder('k')
+    .select('k.year_period', 'year_period')
+    .addSelect('k.month_period', 'month_period')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+    .where('k.user_id = :user_id', { user_id })
+    .andWhere('k.category_group_id = :group_id', { group_id })
+
+  if (year > 0) query.andWhere('k.year_period = :year', { year })
+  if (year === 0) query.select('k.year_period', 'year_period')
+    .addSelect('SUM(k.amount)', 'amount')
+    .addSelect('SUM(k.transaction_count)', 'transaction_count')
+
+  const rows = await query
+    .groupBy(year === 0 ? 'k.year_period' : 'k.year_period, k.month_period')
+    .orderBy('k.year_period', 'ASC')
+    .addOrderBy(year === 0 ? 'k.year_period' : 'k.month_period', 'ASC')
+    .getRawMany()
+
+  const result = rows.map((row: any) => ({
+    year_period: Number(row.year_period),
+    month_period: Number(row.month_period),
+    amount: Number(row.amount || 0),
+    transaction_count: Number(row.transaction_count || 0)
+  }))
+  if (year === 0) {
+    cache.set(cache_key, result)
+    return result
+  }
+
+  const byMonth = new Map(result.map(row => [row.month_period, row]))
+  const resultWithAllMonths = Array.from({ length: 12 }, (_, index) => byMonth.get(index + 1) || ({
+    year_period: year,
+    month_period: index + 1,
+    amount: 0,
+    transaction_count: 0
+  }))
+  cache.set(cache_key, resultWithAllMonths)
+  return resultWithAllMonths
+}
  
 ```
  
@@ -913,7 +1230,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-key.service.ts
  
 ```ts
 import { AuthRequest } from "../types/auth-request"
-import { logger } from "../utils/logger.util"
+import { logger as root_logger } from "../utils/logger.util"
 import { cache } from "./cache.service"
 
 export type TypeSource = 'account' | 'category' | 'category_group' | 'payable' | 'payable_group' | 'payable_payment' | 'receivable' | 'receivable_group' | 'receivable_collection' | 'transaction' | 'home'
@@ -963,10 +1280,25 @@ export const cacheKeys = {
   homeCashFlowSummaryPrefix: (user_id: number) => `home_cash_flow_summary_user_${user_id}_year_`,
   homePayableFlowSummary: (user_id: number, year: number) => `home_payable_flow_summary_user_${user_id}_year_${year}`,
   homePayableFlowSummaryPrefix: (user_id: number) => `home_payable_flow_summary_user_${user_id}_year_`,
+  homeReceivableFlowSummary: (user_id: number, year: number) => `home_receivable_flow_summary_user_${user_id}_year_${year}`,
+  homeReceivableFlowSummaryPrefix: (user_id: number) => `home_receivable_flow_summary_user_${user_id}_year_`,
   homeTrendKpi: (user_id: number, year: number, month: number) => `home_kpis_trend_user_${user_id}_year_${year}_month_${month}`,
   homeTrendKpiPrefix: (user_id: number) => `home_kpis_trend_user_${user_id}_`,
   homeBalanceKpiAccum: (user_id: number, year: number, month: number) => `home_kpis_balance_accum_user_${user_id}_year_${year}_month_${month}`,
   homeBalanceKpiAccumPrefix: (user_id: number) => `home_kpis_balance_accum_user_${user_id}_`,
+  /* Categories KPI (annualized) */
+  homeCategoryKpi: (user_id: number, year: number) => `home_category_kpi_user_${user_id}_year_${year}`,
+  homeCategoryKpiPrefix: (user_id: number) => `home_category_kpi_user_${user_id}_year_`,
+  homeCategoryKpiDetail: (user_id: number, year: number, category_id: number) => `home_category_kpi_detail_user_${user_id}_year_${year}_category_${category_id}`,
+  homeCategoryKpiDetailPrefix: (user_id: number) => `home_category_kpi_detail_user_${user_id}_`,
+  homeCategoryGroupKpi: (user_id: number, year: number) => `home_category_group_kpi_user_${user_id}_year_${year}`,
+  homeCategoryGroupKpiPrefix: (user_id: number) => `home_category_group_kpi_user_${user_id}_`,
+  homeCategoryGroupKpiDetail: (user_id: number, year: number, group_id: number) => `home_category_group_kpi_detail_user_${user_id}_year_${year}_group_${group_id}`,
+  homeCategoryGroupKpiDetailPrefix: (user_id: number) => `home_category_group_kpi_detail_user_${user_id}_`,
+
+  /* Balances */
+  payableBalanceByUser: (user_id: number) => `payable_balance_user_${user_id}`,
+  receivableBalanceByUser: (user_id: number) => `receivable_balance_user_${user_id}`,
 
   allByUser: (user_id: number) => [
     /*Accounts*/
@@ -995,6 +1327,8 @@ export const cacheKeys = {
     `receivable_group_api_user_${user_id}`,
     `receivable_collections_user_${user_id}`,
     `receivable_collections_api_user_${user_id}`,
+    `payable_balance_user_${user_id}`,
+    `receivable_balance_user_${user_id}`,
     /*Home*/
     `home_available_years_kpi_user_${user_id}`,
   ]
@@ -1008,14 +1342,23 @@ const delByPrefix = (prefix: string) => {
 
 export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const user_id = auth_req.user.id
+  const cache_key_logger = root_logger.forMethod('deleteAll', 'CACHE_KEYS', user_id)
   const deleted = cache.del(cacheKeys.allByUser(user_id))
   const deleted_kpis = delByPrefix(cacheKeys.homeBalanceKpiPrefix(user_id))
+  const deleted_category_kpi = delByPrefix(cacheKeys.homeCategoryKpiPrefix(user_id))
+  const deleted_category_kpi_detail = delByPrefix(cacheKeys.homeCategoryKpiDetailPrefix(user_id))
+  const deleted_category_group_kpi = delByPrefix(cacheKeys.homeCategoryGroupKpiPrefix(user_id))
+  const deleted_category_group_kpi_detail = delByPrefix(cacheKeys.homeCategoryGroupKpiDetailPrefix(user_id))
   const deleted_payments = delByPrefix(cacheKeys.payablePaymentsByPayablePrefix(user_id))
+  const deleted_receivable_collections = delByPrefix(cacheKeys.receivableCollectionsByCollectionPrefix(user_id))
+  const deleted_payable_balance = cache.del(cacheKeys.payableBalanceByUser(user_id))
+  const deleted_receivable_balance = cache.del(cacheKeys.receivableBalanceByUser(user_id))
   const deleted_kpis_accum = delByPrefix(cacheKeys.homeBalanceKpiAccumPrefix(user_id))
   const deleted_trend = delByPrefix(cacheKeys.homeTrendKpiPrefix(user_id))
   const deleted_cash_flow_summary = delByPrefix(cacheKeys.homeCashFlowSummaryPrefix(user_id))
   const deleted_payable_flow_summary = delByPrefix(cacheKeys.homePayableFlowSummaryPrefix(user_id))
-  logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}]`)
+  const deleted_receivable_flow_summary = delByPrefix(cacheKeys.homeReceivableFlowSummaryPrefix(user_id))
+  cache_key_logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], categoryKpiDeleted=[${deleted_category_kpi}], categoryKpiDetailDeleted=[${deleted_category_kpi_detail}], categoryGroupKpiDeleted=[${deleted_category_group_kpi}], categoryGroupKpiDetailDeleted=[${deleted_category_group_kpi_detail}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], payableBalanceDeleted=[${deleted_payable_balance}], receivableBalanceDeleted=[${deleted_receivable_balance}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}], receivableFlowSummary=[${deleted_receivable_flow_summary}]`)
 } 
 ```
  
@@ -1097,7 +1440,7 @@ import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { PayablePayment } from "../entities/PayablePayment.entity"
 import { AuthRequest } from "../types/auth-request"
-import { logger } from "../utils/logger.util"
+import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
 
@@ -1166,6 +1509,7 @@ export const getPaymentById = async (auth_req: AuthRequest, payment_id: number):
 
 export const getPaymentsForApi = async (auth_req: AuthRequest, payable_id: number): Promise<DTOPayablePayment[]> => {
     const user_id = auth_req.user.id
+    const cache_payable_payments_logger = root_logger.forMethod('getPaymentsForApi', 'CACHE_PAYABLE_PAYMENTS', user_id)
     const cache_key = cacheKeys.payablePaymentsByPayableForApi(user_id, payable_id)
 
     const cached = cache.get<DTOPayablePayment[]>(cache_key)
@@ -1195,7 +1539,7 @@ export const getPaymentsForApi = async (auth_req: AuthRequest, payable_id: numbe
 
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getPaymentsForApi.name}], cacheKey=[${cache_key}], payable=[${payable_id}], user=[${user_id}], entity=[payable_payment], count=[${payments.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache_payable_payments_logger.debug(`method=[${getPaymentsForApi.name}], cacheKey=[${cache_key}], payable=[${payable_id}], user=[${user_id}], entity=[payable_payment], count=[${payments.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, payments)
     return payments
 } 
@@ -1213,7 +1557,7 @@ import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { Payable } from "../entities/Payable.entity";
 import { AuthRequest } from "../types/auth-request";
-import { logger } from '../utils/logger.util';
+import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
@@ -1321,6 +1665,7 @@ export const getInactivePayables = async (auth_req: AuthRequest): Promise<Payabl
 
 export const getPayablesForApi = async (auth_req: AuthRequest): Promise<{ payables: DTOPayable[], group_totals: DTOPayableGroupTotal[] }> => {
     const user_id = auth_req.user.id
+    const cache_payables_logger = root_logger.forMethod('getPayablesForApi', 'CACHE_PAYABLES', user_id)
     const cache_key = cacheKeys.payablesByUserForApi(user_id)
     const cached_payables = cache.get<{ payables: DTOPayable[], group_totals: DTOPayableGroupTotal[] }>(cache_key)
     if (cached_payables !== undefined) {
@@ -1378,7 +1723,7 @@ export const getPayablesForApi = async (auth_req: AuthRequest): Promise<{ payabl
     
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getPayablesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[payable], count=[${payables.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache_payables_logger.debug(`method=[${getPayablesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[payable], count=[${payables.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, response)
     return response
 } 
@@ -1391,11 +1736,12 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-receivable-coll
 ```
  
 ```ts
+import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { ReceivableCollection } from "../entities/ReceivableCollection.entity"
 import { AuthRequest } from "../types/auth-request"
-import { logger } from "../utils/logger.util"
+import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
 
@@ -1464,6 +1810,7 @@ export const getCollectionById = async (auth_req: AuthRequest, collection_id: nu
 
 export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id: number): Promise<DTOReceivableCollection[]> => {
     const user_id = auth_req.user.id
+    const cache_receivable_collections_logger = root_logger.forMethod('getCollectionsForApi', 'CACHE_RECEIVABLE_COLLECTIONS', user_id)
     const cache_key = cacheKeys.receivableCollectionsByCollectionForApi(user_id, collection_id)
 
     const cached = cache.get<DTOReceivableCollection[]>(cache_key)
@@ -1473,7 +1820,7 @@ export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id:
     const start = performance.now()
 
     const result = await repo.find({
-        where: { id: collection_id },
+        where: { receivable: { id: collection_id } },
         relations: { receivable: true, account: true, category: true },
         order: { collection_date: 'DESC' }
     })
@@ -1493,7 +1840,7 @@ export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id:
 
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getCollectionsForApi.name}], cacheKey=[${cache_key}], receivable=[${collection_id}], user=[${user_id}], entity=[receivable_payment], count=[${collections.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache_receivable_collections_logger.debug(`method=[${getCollectionsForApi.name}], cacheKey=[${cache_key}], receivable=[${collection_id}], user=[${user_id}], entity=[receivable_payment], count=[${collections.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, collections)
     return collections
 } 
@@ -1578,7 +1925,7 @@ import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { Receivable } from "../entities/Receivable.entity";
 import { AuthRequest } from "../types/auth-request";
-import { logger } from '../utils/logger.util';
+import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
 
@@ -1686,6 +2033,7 @@ export const getInactiveReceivables = async (auth_req: AuthRequest): Promise<Rec
 
 export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<{ receivables: DTOReceivable[], group_totals: DTOReceivableGroupTotal[] }> => {
     const user_id = auth_req.user.id
+    const cache_receivables_logger = root_logger.forMethod('getReceivablesForApi', 'CACHE_RECEIVABLES', user_id)
     const cache_key = cacheKeys.receivablesByUserForApi(user_id)
     const cached_receivables = cache.get<{ receivables: DTOReceivable[], group_totals: DTOReceivableGroupTotal[] }>(cache_key)
     if (cached_receivables !== undefined) {
@@ -1743,7 +2091,7 @@ export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<{ rec
     
     const end = performance.now()
     const duration_sec = (end - start) / 1000
-    logger.debug(`method=[${getReceivablesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[receivable], count=[${receivables.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    cache_receivables_logger.debug(`method=[${getReceivablesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[receivable], count=[${receivables.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, response)
     return response
 } 
@@ -1929,7 +2277,12 @@ import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
 import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
+import { FileReference } from '../entities/FileReference.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
+import { NotificationSchedule } from '../entities/NotificationSchedule.entity'
+import { NotificationType } from '../entities/NotificationType.entity'
+import { NotificationDelivery } from '../entities/NotificationDelivery.entity'
+import { LogEvent } from '../entities/LogEvent.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -1952,7 +2305,12 @@ export const AppDataSource = new DataSource({
     CacheKpiCategory,
     Receivable,
     ReceivableCollection,
-    ReceivableGroup
+    ReceivableGroup,
+    FileReference,
+    NotificationSchedule,
+    NotificationType,
+    NotificationDelivery,
+    LogEvent
   ],
   synchronize: false,
   timezone: 'Z',
@@ -1976,37 +2334,44 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\config\typeorm.logger.ts
 import { QueryRunner, Logger as TypeOrmLogger } from 'typeorm';
 import { logger } from '../utils/logger.util';
 
+const query_logger = logger.forMethod('logQuery', 'TYPEORM_QUERY')
+const query_error_logger = logger.forMethod('logQueryError', 'TYPEORM_QUERY_ERROR')
+const query_slow_logger = logger.forMethod('logQuerySlow', 'TYPEORM_QUERY_SLOW')
+const schema_logger = logger.forMethod('logSchemaBuild', 'TYPEORM_SCHEMA')
+const migration_logger = logger.forMethod('logMigration', 'TYPEORM_MIGRATION')
+const general_logger = logger.forMethod('log', 'TYPEORM_LOG')
+
 export class OneLineSqlLogger implements TypeOrmLogger {
   private enabled = process.env.DB_LOGGING === 'true';
 
   logQuery(query: string, parameters?: any[], queryRunner?: QueryRunner) {
     if (!this.enabled) return;
     const oneLine = query.replace(/\s+/g, ' ').trim()
-    logger.debug('QUERY', { query: oneLine, parameters })
+    query_logger.debug('QUERY', { query: oneLine, parameters })
   }
 
   logQueryError(error: string | Error, query: string, parameters?: any[], queryRunner?: QueryRunner) {
     if (!this.enabled) return;
-    logger.error('QUERY ERROR', { query, parameters, error })
+    query_error_logger.error('QUERY ERROR', { query, parameters, error })
   }
 
   logQuerySlow(time: number, query: string, parameters?: any[], queryRunner?: QueryRunner) {
     if (!this.enabled) return;
-    logger.warn('SLOW QUERY', { time, query, parameters })
+    query_slow_logger.warn('SLOW QUERY', { time, query, parameters })
   }
 
   logSchemaBuild(message: string, queryRunner?: QueryRunner) {
     if (!this.enabled) return;
-    logger.info('SCHEMA BUILD', { message })
+    schema_logger.info('SCHEMA BUILD', { message })
   }
   logMigration(message: string, queryRunner?: QueryRunner) {
     if (!this.enabled) return;
-    logger.info('MIGRATION', { message })
+    migration_logger.info('MIGRATION', { message })
   }
 
   log(level: 'log' | 'info' | 'warn', message: any, queryRunner?: QueryRunner) {
-    if (level === 'log' || level === 'info') logger.info(message)
-    if (level === 'warn') logger.warn(message)
+    if (level === 'log' || level === 'info') general_logger.info(message)
+    if (level === 'warn') general_logger.warn(message)
   }
 }
  
@@ -2132,13 +2497,20 @@ Api para devolver el DTO Account en JSON
 ==================================================*/
 export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingAccounts_logger = logger.forMethod(apiForGettingAccounts.name, 'ACCOUNT_LIST', auth_req.user.id)
+  const started_at = performance.now()
   try {
+    apiForGettingAccounts_logger.debug('Obteniendo cuentas')
     const accounts: DTOAccount[] = await getAccountsForApi(auth_req)
     res.json(accounts)
   } catch (error) {
-    logger.error(`${apiForGettingAccounts.name}-Error. `, parseError(error))
+    apiForGettingAccounts_logger.error('Error al listar cuentas', parseError(error))
     res.status(500).json({ error: 'Error al listar cuentas' })
   } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingAccounts_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    apiForGettingAccounts_logger.debug('Fin de la operación de listado de cuentas')
   }
 }
  
@@ -2202,10 +2574,12 @@ const buildAccountView = (body: any) => {
 }
 
 export const saveAccount: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveAccount.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveAccount_logger = logger.forMethod(saveAccount.name, 'ACCOUNT_SAVE', user_id)
+  saveAccount_logger.debug('Inicio proceso de guardado de cuenta')
+  saveAccount_logger.debug('Parametros recibidos', { body: req.body, param: req.params })
   const account_id = req.body.id ? Number(req.body.id) : undefined
   const mode: AccountFormMode = req.body.mode || 'insert'
   const repo_account = AppDataSource.getRepository(Account)
@@ -2238,7 +2612,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     let account: Account
     if (mode === 'insert') {
       account = repo_account.create({
-        user: { id: auth_req.user.id } as any,
+        user: { id: user_id } as any,
         type: req.body.type,
         name: req.body.name,
         is_active: true,
@@ -2267,7 +2641,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error('Error saving account', { user_id: auth_req.user.id, account_id, mode, error: parseError(error) })
+    saveAccount_logger.error('Error al guardaar la cuenta', { account_id, mode, error: parseError(error) })
     const validation_errors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -2276,9 +2650,10 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
       errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
   } finally {
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveAccount.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveAccount_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveAccount_logger.debug('Fin de la operación de guardado de cuenta')
   }
 }
  
@@ -2449,13 +2824,20 @@ Api para devolver el DTO Category en JSON
 ==================================================*/
 export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingCategories_logger = logger.forMethod(apiForGettingCategories.name, 'CATEGORY_LIST', auth_req.user.id)
+  const started_at = performance.now()
   try {
+    apiForGettingCategories_logger.debug('Obteniendo categorías para el usuario')
     const categories: DTOCategory[] = await getCategoriesForApi(auth_req)
     res.json(categories)
   } catch (error) {
-    logger.error(`${apiForGettingCategories.name}-Error. `, parseError(error))
+    apiForGettingCategories_logger.error('Error al listar categorías', parseError(error))
     res.status(500).json({ error: 'Error al listar categorías' })
   } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingCategories_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    apiForGettingCategories_logger.debug('Fin de la operación de listado de categorías')
   }
 } 
 ```
@@ -2525,10 +2907,12 @@ const buildCategoryView = async (auth_req: AuthRequest, body: any) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveCategory: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveCategory.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveCategory_logger = logger.forMethod(saveCategory.name, 'CATEGORY_SAVE', user_id)
+  saveCategory_logger.debug('Inicio proceso de guardado de categoría')
+  saveCategory_logger.info('Parametros recibidos', { body: req.body, param: req.params })
   const mode: CategoryFormMode = req.body.mode || 'insert'
   const category_id = Number(req.body.id)
   const category_group_id = Number(req.body.category_group_id)
@@ -2595,7 +2979,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error(`${saveCategory.name}-Error. `, { user_id: auth_req.user.id, category_id, mode, error: parseError(error), })
+    saveCategory_logger.error(`Error al guardar la categoria`, { category_id, mode, error: parseError(error), })
     const validationErrors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -2604,9 +2988,10 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
       errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
   } finally {
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveCategory.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = (ended_at - started_at) / 1000
+    saveCategory_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveCategory_logger.debug('Fin de la operación de guardado de categoría')
   }
 }
  
@@ -2822,10 +3207,10 @@ const buildCategoryGroupView = (body: any, mode: CategoryGroupFormMode) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveCategoryGroup: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveCategoryGroup.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveCategoryGroup_logger = logger.forMethod(saveCategoryGroup.name, 'CATEGORY_GROUP_SAVE', user_id)
   const category_group_id = Number(req.body.id)
   const mode: CategoryGroupFormMode = req.body.mode || 'insert'
   const repo_category_group = AppDataSource.getRepository(CategoryGroup)
@@ -2836,6 +3221,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
     mode
   }
   try {
+    saveCategoryGroup_logger.info('Parametros recibidos', { body: req.body, param: req.params })
     let existing: CategoryGroup | null = null
     if (category_group_id) {
       existing = await getCategoryGroupById(auth_req, category_group_id)
@@ -2884,7 +3270,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
     /* ============================
        Manejo de errores
     ============================ */
-    logger.error(`${saveCategoryGroup.name}-Error. `, { user_id: auth_req.user.id, category_group_id, mode, error: parseError(error), })
+    saveCategoryGroup_logger.error('Error al guardar el grupo de categoria', { user_id: auth_req.user.id, category_group_id, mode, error: parseError(error), })
     const validationErrors = error?.validationErrors || null
     return res.render('layouts/main', {
       title: getTitle(mode),
@@ -2893,9 +3279,10 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
       errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
     })
   } finally {
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveCategoryGroup.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveCategoryGroup_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveCategoryGroup_logger.debug('Fin de la operación de guardado de grupo de categoría')
   }
 }
  
@@ -2952,6 +3339,211 @@ export const validateDeleteCategoryGroup = async (category_group: CategoryGroup,
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\file-reference\file-reference.controller.ts
+```
+ 
+```ts
+import fs from 'fs/promises'
+import path from 'path'
+import { Request, RequestHandler, Response } from 'express'
+import { AppDataSource } from '../../config/typeorm.datasource'
+import { FileReference } from '../../entities/FileReference.entity'
+import {
+  fileOwnerTables,
+  FileOwnerTable,
+  getFileReferences,
+  saveFileReference,
+  syncTransactionImageCount
+} from '../../services/file-reference.service'
+import { AuthRequest } from '../../types/auth-request'
+import { parseError } from '../../utils/error.util'
+import { logger } from '../../utils/logger.util'
+
+const storagePath = () => process.env.STORAGE_PATH || path.join(process.cwd(), 'storage')
+
+const directOwnershipTables = new Set<FileOwnerTable>([
+  'accounts',
+  'categories',
+  'category_groups',
+  'payables',
+  'payable_groups',
+  'receivables',
+  'receivable_groups',
+  'transactions'
+])
+
+function parseTableName(value: string): FileOwnerTable | null {
+  return fileOwnerTables.includes(value as FileOwnerTable) ? value as FileOwnerTable : null
+}
+
+function parseRecordId(value: string): number | null {
+  const recordId = Number(value)
+  return Number.isInteger(recordId) && recordId > 0 ? recordId : null
+}
+
+async function userOwnsRecord(tableName: FileOwnerTable, recordId: number, userId: number): Promise<boolean> {
+  if (directOwnershipTables.has(tableName)) {
+    const rows = await AppDataSource.query(
+      `SELECT id FROM ${tableName} WHERE id = ? AND user_id = ? LIMIT 1`,
+      [recordId, userId]
+    )
+    return rows.length > 0
+  }
+
+  const relation = tableName === 'payable_payments'
+    ? 'payable_payments item INNER JOIN payables owner ON owner.id = item.payable_id'
+    : 'receivable_collections item INNER JOIN receivables owner ON owner.id = item.receivable_id'
+  const rows = await AppDataSource.query(
+    `SELECT item.id FROM ${relation} WHERE item.id = ? AND owner.user_id = ? LIMIT 1`,
+    [recordId, userId]
+  )
+  return rows.length > 0
+}
+
+async function userOwnsFile(reference: FileReference, userId: number): Promise<boolean> {
+  const tableName = parseTableName(reference.table_name)
+  return tableName ? userOwnsRecord(tableName, reference.record_id, userId) : false
+}
+
+function absoluteStoragePath(relativePath: string): string {
+  const root = path.resolve(storagePath())
+  const resolved = path.resolve(root, relativePath)
+  if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
+    throw new Error('Ruta de archivo inválida')
+  }
+  return resolved
+}
+
+function imageUrls(reference: FileReference) {
+  return {
+    id: reference.id,
+    original_name: reference.original_name,
+    mime_type: reference.mime_type,
+    size_bytes: reference.size_bytes,
+    created_at: reference.created_at,
+    url: `/files/item/${reference.id}`,
+    thumbnail_url: reference.thumbnail_path ? `/files/item/${reference.id}/thumbnail` : null
+  }
+}
+
+export const apiForUploadingFiles: RequestHandler = async (req: Request, res: Response) => {
+  const authRequest = req as AuthRequest
+  const apiForUploadingFiles_logger = logger.forMethod(apiForUploadingFiles.name, 'FILE_UPLOAD', authRequest.user.id)
+  try {
+    const tableName = parseTableName(req.params.tableName)
+    const recordId = parseRecordId(req.params.recordId)
+    if (tableName !== 'transactions' || !recordId) {
+      return res.status(400).json({ error: 'Solo se permiten imágenes para transacciones' })
+    }
+
+    if (!await userOwnsRecord(tableName, recordId, authRequest.user.id)) {
+      return res.status(404).json({ error: 'Registro no encontrado' })
+    }
+
+    const files = (req.files as Express.Multer.File[] | undefined) || []
+    if (files.length === 0) return res.status(400).json({ error: 'Debe enviar al menos una imagen' })
+
+    const references: FileReference[] = []
+    for (const file of files) {
+      references.push(await saveFileReference({
+        tableName,
+        recordId,
+        buffer: file.buffer,
+        originalName: file.originalname
+      }))
+    }
+    const noImages = await syncTransactionImageCount(recordId)
+
+    return res.status(201).json({
+      files: references.map(imageUrls),
+      no_images: noImages,
+      csrfToken: res.locals.csrfToken
+    })
+  } catch (error) {
+    apiForUploadingFiles_logger.error('Error', parseError(error))
+    return res.status(400).json({ error: error instanceof Error ? error.message : 'Error al guardar las imágenes' })
+  }
+}
+
+export const apiForGettingFiles: RequestHandler = async (req: Request, res: Response) => {
+  const authRequest = req as AuthRequest
+  const apiForGettingFiles_logger = logger.forMethod(apiForGettingFiles.name, 'FILE_LIST', authRequest.user.id)
+  try {
+    const tableName = parseTableName(req.params.tableName)
+    const recordId = parseRecordId(req.params.recordId)
+    if (tableName !== 'transactions' || !recordId) {
+      return res.status(400).json({ error: 'Solo se permiten imágenes para transacciones' })
+    }
+
+    if (!await userOwnsRecord(tableName, recordId, authRequest.user.id)) {
+      return res.status(404).json({ error: 'Registro no encontrado' })
+    }
+
+    const references = await getFileReferences(tableName, recordId)
+    return res.json({ files: references.map(imageUrls) })
+  } catch (error) {
+    apiForGettingFiles_logger.error('Error', parseError(error))
+    return res.status(500).json({ error: 'Error al listar las imágenes' })
+  }
+}
+
+async function findOwnedReference(req: Request): Promise<FileReference | null> {
+  const authRequest = req as AuthRequest
+  const id = parseRecordId(req.params.id)
+  if (!id) return null
+
+  const reference = await AppDataSource.getRepository(FileReference).findOneBy({ id })
+  if (!reference || !await userOwnsFile(reference, authRequest.user.id)) return null
+  return reference
+}
+
+export const apiForServingFile: RequestHandler = async (req: Request, res: Response) => {
+  const authRequest = req as AuthRequest
+  const apiForServingFile_logger = logger.forMethod(apiForServingFile.name, 'FILE_SERVE', authRequest.user.id)
+  try {
+    const reference = await findOwnedReference(req)
+    if (!reference) return res.status(404).send('Archivo no encontrado')
+
+    const relativePath = req.path.endsWith('/thumbnail')
+      ? reference.thumbnail_path
+      : reference.path
+    if (!relativePath) return res.status(404).send('Archivo no encontrado')
+
+    res.setHeader('Cache-Control', 'private, max-age=31536000, immutable')
+    return res.sendFile(absoluteStoragePath(relativePath))
+  } catch (error) {
+    apiForServingFile_logger.error('Error', parseError(error))
+    return res.status(404).send('Archivo no encontrado')
+  }
+}
+
+export const apiForDeletingFile: RequestHandler = async (req: Request, res: Response) => {
+  const authRequest = req as AuthRequest
+  const apiForDeletingFile_logger = logger.forMethod(apiForDeletingFile.name, 'FILE_DELETE', authRequest.user.id)
+  try {
+    const reference = await findOwnedReference(req)
+    if (!reference) return res.status(404).json({ error: 'Archivo no encontrado' })
+
+    const paths = [reference.path, reference.thumbnail_path]
+      .filter((filePath): filePath is string => Boolean(filePath))
+      .map(absoluteStoragePath)
+    await Promise.all(paths.map(filePath => fs.rm(filePath, { force: true })))
+    await AppDataSource.getRepository(FileReference).delete(reference.id)
+    const noImages = reference.table_name === 'transactions'
+      ? await syncTransactionImageCount(reference.record_id)
+      : null
+    return res.json({ success: true, no_images: noImages, csrfToken: res.locals.csrfToken })
+  } catch (error) {
+    apiForDeletingFile_logger.error('Error', parseError(error))
+    return res.status(500).json({ error: 'Error al eliminar la imagen' })
+  }
+}
+ 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\home\2fa.controller.ts
 ```
  
@@ -2977,12 +3569,11 @@ export const show2FA = (req: Request, res: Response) => {
 }
 
 export const verify2FA = async (req: Request, res: Response) => {
+  const pendingUserId = (req.session as any)?.pending2FAUserId
+  const verify2FA_logger = logger.forMethod(verify2FA.name, 'VERIFY_2FA', pendingUserId ?? null)
   try {
     const { code } = req.body
-    const pendingUserId = (req.session as any)?.pending2FAUserId
-
     if (!pendingUserId) return res.redirect('/login')
-
     const repo = AppDataSource.getRepository(AuthCode)
 
     const authCode = await repo.findOne({
@@ -3018,12 +3609,11 @@ export const verify2FA = async (req: Request, res: Response) => {
 
     // preserve timezone across session regeneration (otherwise it's lost)
     const preservedTimezone = (req.session as any).timezone
-
     delete (req.session as any).pending2FAUserId
 
     req.session.regenerate(err => {
       if (err) {
-        logger.error(err)
+        verify2FA_logger.error('Regeneracion de sesion fallida', parseError(err))
         return res.redirect('/login')
       }
 
@@ -3032,16 +3622,15 @@ export const verify2FA = async (req: Request, res: Response) => {
 
       req.session.save(err2 => {
         if (err2) {
-          logger.error(err2)
+          verify2FA_logger.error('Error al guardar la sesion', parseError(err2))
           return res.redirect('/login')
         }
-
         res.redirect('/home')
       })
     })
 
   } catch (error: any) {
-    logger.error('verify2FA error', parseError(error))
+    verify2FA_logger.error('Error en verificacion del 2FA', parseError(error))
     res.render(
       'pages/2fa',
       {
@@ -3060,7 +3649,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\home\home.auxil
  
 ```ts
 import { DateTime } from 'luxon'
-import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomePayableFlowSummaryCache, getHomeTrendKpiCache } from '../../cache/cache-home.service'
+import { getHomeAvailableYearsKpiCache, getHomeBalanceKpiCache, getHomeCashFlowSummaryCache, getHomePayableFlowSummaryCache, getHomeReceivableFlowSummaryCache, getHomeTrendKpiCache, getHomeCategoryKpiCache, getHomeCategoryKpiDetail, getHomeCategoryGroupKpi, getHomeCategoryGroupKpiDetail } from '../../cache/cache-home.service'
 import { AppDataSource } from "../../config/typeorm.datasource"
 import { Account } from "../../entities/Account.entity"
 import { Payable } from "../../entities/Payable.entity"
@@ -3257,7 +3846,6 @@ export const getKpisLast6MonthsBalance = async (auth_req: AuthRequest) => {
 
     income.push(row ? Number(row.income) : 0)
     expense.push(row ? Number(row.expense) : 0)
-
     cursor.setMonth(cursor.getMonth() + 1)
   }
 
@@ -3582,6 +4170,31 @@ export const getPayableSummary = async (auth_req: AuthRequest) => {
   return rows
 }
 
+export const getReceivableSummary = async (auth_req: AuthRequest) => {
+  const rows = await getHomeReceivableFlowSummaryCache(auth_req)
+  return rows
+} 
+
+export const getCategoryKpi = async (auth_req: AuthRequest) => {
+  const rows = await getHomeCategoryKpiCache(auth_req)
+  return rows
+}
+
+export const getCategoryKpiDetail = async (auth_req: AuthRequest) => {
+  const rows = await getHomeCategoryKpiDetail(auth_req)
+  return rows
+}
+
+export const getCategoryGroupKpi = async (auth_req: AuthRequest) => {
+  const rows = await getHomeCategoryGroupKpi(auth_req)
+  return rows
+}
+
+export const getCategoryGroupKpiDetail = async (auth_req: AuthRequest) => {
+  const rows = await getHomeCategoryGroupKpiDetail(auth_req)
+  return rows
+}
+
 
  
 ```
@@ -3602,7 +4215,7 @@ import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
-import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsPayable, getKpisGlobalBalance, getKpisLast6MonthsBalance, getPayableSummary, getTrendKpi } from './home.auxiliar'
+import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsPayable, getKpisGlobalBalance, getKpisLast6MonthsBalance, getPayableSummary, getTrendKpi, getReceivableSummary, getCategoryKpi, getCategoryKpiDetail, getCategoryGroupKpi, getCategoryGroupKpiDetail } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
   if ((req.session as any)?.user_id) {
@@ -3637,6 +4250,7 @@ export const routeToPageHome = async (req: Request, res: Response) => {
 }
 
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
+  const apiForValidatingLogin_logger = logger.forMethod(apiForValidatingLogin.name, 'LOGIN')
   try {
     const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
     const timezone = String(req.body.timezone || 'UTC')
@@ -3655,6 +4269,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
       if (dev_user) {
         (req.session as any).user_id = dev_user.id;
         (req.session as any).timezone = timezone
+        apiForValidatingLogin_logger.info('Modo desarrollo habilitado', { user_id: dev_user.id, timezone })
         return res.redirect('/home')
       }
     }
@@ -3678,6 +4293,8 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
        Guardar timezone en sesión
     ============================ */
     (req.session as any).timezone = timezone
+    
+    apiForValidatingLogin_logger.info('Modo produccion habilitado', { user_id: user.id, timezone })
     /* ============================
        Enviar código 2FA y guardar usuario pendiente
     ============================ */
@@ -3694,14 +4311,16 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     })
     return res.redirect('/2fa')
   } catch (error: any) {
-    logger.error(`${apiForValidatingLogin.name}-Error.`, parseError(error))
-    return res.render('pages/login', { error: 'Error interno, intenta de nuevo' })
+    apiForValidatingLogin_logger.error('Error validando inicio de sesión', parseError(error))
+    return res.render('pages/login', { error: 'Error de inicio de sesión, intenta de nuevo' })
   } finally {
   }
 }
 
 export const apiForGettingKpis: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingKpis_logger = logger.forMethod(apiForGettingKpis.name, 'HOME_KPIS', auth_req.user.id)
+  const started_at = performance.now()
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const balanceKpi = await getBalanceKpi(auth_req)
@@ -3712,13 +4331,19 @@ export const apiForGettingKpis: RequestHandler = async (req: Request, res: Respo
       trendKpi,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingKpis:', parseError(error))
-    res.json({ message: 'Error' })
+      apiForGettingKpis_logger.error('Error en apiForGettingKpis:', parseError(error))
+      res.json({ message: 'Error' })
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingKpis_logger.elapsedTime('Elapsed time', { elapsed_ms })
   }
 }
 
 export const apiForGettingCashSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingCashSummary_logger = logger.forMethod(apiForGettingCashSummary.name, 'CASH_SUMMARY', auth_req.user.id)
+  const started_at = performance.now()
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const cashSummary = await getCashSummary(auth_req)
@@ -3727,13 +4352,19 @@ export const apiForGettingCashSummary: RequestHandler = async (req: Request, res
       cashSummary,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingCashSummary:', parseError(error))
-    res.json({ message: 'Error' })
+      apiForGettingCashSummary_logger.error('Error en apiForGettingCashSummary:', parseError(error))
+      res.json({ message: 'Error' })
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingCashSummary_logger.elapsedTime('Elapsed time', { elapsed_ms })
   }
 }
 
 export const apiForGettingPayableSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingPayableSummary_logger = logger.forMethod(apiForGettingPayableSummary.name, 'PAYABLE_SUMMARY', auth_req.user.id)
+  const started_at = performance.now()
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
     const payableSummary = await getPayableSummary(auth_req)
@@ -3742,29 +4373,245 @@ export const apiForGettingPayableSummary: RequestHandler = async (req: Request, 
       payableSummary,
     })
   } catch (error) {
-    logger.error('Error en apiForGettingPayableSummary:', parseError(error))
+      apiForGettingPayableSummary_logger.error('Error en apiForGettingPayableSummary:', parseError(error))
+      res.json({ message: 'Error' })
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingPayableSummary_logger.elapsedTime('Elapsed time', { elapsed_ms })
+  }
+}
+
+export const apiForGettingReceivableSummary: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForGettingReceivableSummary_logger = logger.forMethod(apiForGettingReceivableSummary.name, 'RECEIVABLE_SUMMARY', auth_req.user.id)
+  const started_at = performance.now()
+  try {
+    const availableYearsKpi = await getAvailableYearsKpi(auth_req)
+    const receivableSummary = await getReceivableSummary(auth_req)
+    res.json({
+      availableYearsKpi,
+      receivableSummary,
+    })
+  } catch (error) {
+    apiForGettingReceivableSummary_logger.error('Error en apiForGettingReceivableSummary:', parseError(error))
     res.json({ message: 'Error' })
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingReceivableSummary_logger.elapsedTime('Elapsed time', { elapsed_ms })
+  }
+}
+
+export const apiForGettingCategoryKpi: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForGettingCategoryKpi_logger = logger.forMethod(apiForGettingCategoryKpi.name, 'CATEGORY_KPI', auth_req.user.id)
+  const started_at = performance.now()
+  try {
+    const availableYearsKpi = await getAvailableYearsKpi(auth_req)
+    const categoryKpi = await getCategoryKpi(auth_req)
+    res.json({
+      availableYearsKpi,
+      categoryKpi,
+    })
+  } catch (error) {
+      apiForGettingCategoryKpi_logger.error('Error en apiForGettingCategoryKpi:', parseError(error))
+      res.json({ message: 'Error' })
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingCategoryKpi_logger.elapsedTime('Elapsed time', { elapsed_ms })
+  }
+}
+
+export const apiForGettingCategoryKpiDetail: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForGettingCategoryKpiDetail_logger = logger.forMethod(apiForGettingCategoryKpiDetail.name, 'CATEGORY_KPI_DETAIL', auth_req.user.id)
+  const started_at = performance.now()
+  try {
+    const categoryKpiDetail = await getCategoryKpiDetail(auth_req)
+    res.json({ categoryKpiDetail })
+  } catch (error) {
+      apiForGettingCategoryKpiDetail_logger.error('Error en apiForGettingCategoryKpiDetail:', parseError(error))
+      res.json({ message: 'Error' })
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingCategoryKpiDetail_logger.elapsedTime('Elapsed time', { elapsed_ms })
+  }
+}
+
+export const apiForGettingCategoryGroupKpi: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForGettingCategoryGroupKpi_logger = logger.forMethod(apiForGettingCategoryGroupKpi.name, 'CATEGORY_GROUP_KPI', auth_req.user.id)
+  const started_at = performance.now()
+  try {
+    const categoryGroupKpi = await getCategoryGroupKpi(auth_req)
+    res.json({ categoryGroupKpi })
+  } catch (error) {
+      apiForGettingCategoryGroupKpi_logger.error('Error en apiForGettingCategoryGroupKpi:', parseError(error))
+      res.json({ message: 'Error' })
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingCategoryGroupKpi_logger.elapsedTime('Elapsed time', { elapsed_ms })
+  }
+}
+
+export const apiForGettingCategoryGroupKpiDetail: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForGettingCategoryGroupKpiDetail_logger = logger.forMethod(apiForGettingCategoryGroupKpiDetail.name, 'CATEGORY_GROUP_KPI_DETAIL', auth_req.user.id)
+  const started_at = performance.now()
+  try {
+    const categoryGroupKpiDetail = await getCategoryGroupKpiDetail(auth_req)
+    res.json({ categoryGroupKpiDetail })
+  } catch (error) {
+      apiForGettingCategoryGroupKpiDetail_logger.error('Error en apiForGettingCategoryGroupKpiDetail:', parseError(error))
+      res.json({ message: 'Error' })
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingCategoryGroupKpiDetail_logger.elapsedTime('Elapsed time', { elapsed_ms })
   }
 }
 
 export const apiForLogout: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForLogout_logger = logger.forMethod(apiForLogout.name, 'LOGOUT', auth_req.user.id)
+  const started_at = performance.now()
   try {
     req.session.destroy(err => {
       if (err) {
-        logger.error('Error destroying session:', err)
+          apiForLogout_logger.error('Error destruyendo sesión', err)
         return res.redirect('/home')
       }
-
       deleteAll(req as AuthRequest, 'home')
       res.clearCookie('connect.sid')
       return res.redirect('/login')
     })
   } catch (error) {
-    logger.error('Logout error:', parseError(error))
-    return res.redirect('/login')
+      apiForLogout_logger.error('Error cerrando sesión', parseError(error))
+      return res.redirect('/login')
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForLogout_logger.elapsedTime('Elapsed time', { elapsed_ms })
   }
 }
  
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\notification\notification.controller.ts
+```
+ 
+```ts
+import { RequestHandler } from 'express'
+import { AppDataSource } from '../../config/typeorm.datasource'
+import { NotificationSchedule } from '../../entities/NotificationSchedule.entity'
+import { NotificationType } from '../../entities/NotificationType.entity'
+import { AuthRequest } from '../../types/auth-request'
+
+const notification_key = 'weekly_balance'
+const default_schedule = { send_day: 'monday', send_time: '08:00', enabled: true }
+const days = [
+  { value: 'monday', label: 'Lunes' },
+  { value: 'tuesday', label: 'Martes' },
+  { value: 'wednesday', label: 'Miércoles' },
+  { value: 'thursday', label: 'Jueves' },
+  { value: 'friday', label: 'Viernes' },
+  { value: 'saturday', label: 'Sábado' },
+  { value: 'sunday', label: 'Domingo' },
+]
+
+const getSchedule = async (user_id: number) => {
+  return AppDataSource.getRepository(NotificationSchedule).findOne({
+    where: { user: { id: user_id }, notification_type: { key: notification_key } },
+    relations: { notification_type: true },
+  })
+}
+
+const getNotificationType = async () => {
+  return AppDataSource.getRepository(NotificationType).findOneBy({ key: notification_key, enabled: true })
+}
+
+const viewSchedule = (notification_type: NotificationType, schedule: NotificationSchedule | null) => ({
+  notification_key: notification_type.key,
+  notification_title: notification_type.name,
+  send_day: schedule?.send_day || default_schedule.send_day,
+  send_time: schedule?.send_time?.slice(0, 5) || default_schedule.send_time,
+  enabled: schedule?.enabled ?? default_schedule.enabled,
+})
+
+export const routeToNotificationsPage: RequestHandler = async (req, res) => {
+  const auth_req = req as AuthRequest
+  const notification_type = await getNotificationType()
+  if (!notification_type) return res.status(500).send('Tipo de notificación no configurado')
+  const schedule = await getSchedule(auth_req.user.id)
+  res.render('layouts/main', {
+    title: 'Notificaciones',
+    view: 'pages/notifications/index',
+    USER_ID: auth_req.user.id,
+    notification: viewSchedule(notification_type, schedule),
+    days,
+  })
+}
+
+export const routeToNotificationScheduleForm: RequestHandler = async (req, res) => {
+  const auth_req = req as AuthRequest
+  const notification_type = await getNotificationType()
+  if (!notification_type) return res.status(500).send('Tipo de notificación no configurado')
+  const schedule = await getSchedule(auth_req.user.id)
+  res.render('layouts/main', {
+    title: 'Configurar notificación',
+    view: 'pages/notifications/form',
+    USER_ID: auth_req.user.id,
+    notification: viewSchedule(notification_type, schedule),
+    days,
+    errors: {},
+  })
+}
+
+export const apiForSavingNotificationSchedule: RequestHandler = async (req, res) => {
+  const auth_req = req as AuthRequest
+  const notification_type = await getNotificationType()
+  if (!notification_type) return res.status(500).send('Tipo de notificación no configurado')
+  const send_day = String(req.body.send_day || '')
+  const send_time = String(req.body.send_time || '')
+  const timezone = String(req.body.timezone || 'UTC')
+
+  if (!days.some(day => day.value === send_day) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(send_time)) {
+    return res.status(400).render('layouts/main', {
+      title: 'Configurar notificación',
+      view: 'pages/notifications/form',
+      USER_ID: auth_req.user.id,
+      notification: { ...viewSchedule(notification_type, null), send_day, send_time, timezone },
+      days,
+      errors: { schedule: 'Selecciona un día y una hora válidos' },
+    })
+  }
+
+  const repository = AppDataSource.getRepository(NotificationSchedule)
+  let schedule = await getSchedule(auth_req.user.id)
+  if (!schedule) {
+    schedule = repository.create({
+      user: auth_req.user,
+      notification_type,
+      send_day,
+      send_time,
+      timezone,
+      enabled: true,
+    })
+  } else {
+    schedule.send_day = send_day
+    schedule.send_time = send_time
+    schedule.timezone = timezone
+  }
+  await repository.save(schedule)
+  res.redirect('/notifications')
+} 
 ```
  
 --- 
@@ -3779,7 +4626,7 @@ import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getActiveCategoriesForPayablesByUser, getPayableById, getPayablesForApi } from '../../cache/cache-payables.service'
 import { getActiveParentPayablesByUser } from '../../cache/cache-payable-groups.service'
 import { payableFormMatrix } from '../../policies/payable-form.policy'
-import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
@@ -3920,13 +4767,19 @@ Api para devolver el DTO Payable en JSON
 ==================================================*/
 export const apiForGettingPayables: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingPayables_logger = logger.forMethod(apiForGettingPayables.name, 'PAYABLE_LIST', auth_req.user.id)
+  const started_at = performance.now()
   try {
     const result = await getPayablesForApi(auth_req)
     res.json(result)
   } catch (error) {
-    logger.error(`${apiForGettingPayables.name}-Error. `, parseError(error))
+    apiForGettingPayables_logger.error('Error al listar cuentas por pagar', parseError(error))
     res.status(500).json({ error: 'Error al listar Cuentas por Pagar' })
   } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingPayables_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    apiForGettingPayables_logger.debug('Fin de la operación del listado de cuentas por pagar')
   }
 } 
 ```
@@ -4010,10 +4863,11 @@ const buildPayableView = async (auth_req: AuthRequest, body: any) => {
     Obtener cuentas activas del usuario para mostrar en el formulario 
 ============================ */
 export const savePayable: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${savePayable.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const savePayable_logger = logger.forMethod(savePayable.name, 'PAYABLE_SAVE', user_id)
+  const started_at_logger = performance.now()
   const mode: PayableFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
   const payable_id = Number(req.body.id)
@@ -4038,6 +4892,7 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
   await queryRunner.startTransaction()
 
   try {
+    savePayable_logger.info('Parametros de entrada', { body: req.body, param: req.params })
     let existing: Payable | null = null
     if (payable_id) {
       existing = await getPayableById(auth_req, payable_id)
@@ -4066,11 +4921,11 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
 
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${savePayable.name}-Error recalculando KPI Balances`, parseError(error)))
+        .catch(error => savePayable_logger.error('Error recalculando KPI balances', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${savePayable.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => savePayable_logger.error('Error recalculando KPI categorías', parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -4189,11 +5044,11 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
     if (payable.transaction) {
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, payable.transaction)        
-        .catch(error => logger.error(`${savePayable.name}-Error recalculando KPI Balance`, parseError(error)))
+        .catch(error => savePayable_logger.error('Error recalculando KPI balance', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, payable.transaction)
-        .catch(error => logger.error(`${savePayable.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => savePayable_logger.error('Error recalculando KPI categorías', parseError(error)))
     }
 
     if (return_from === 'categories' && return_category_id) {
@@ -4205,7 +5060,7 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
        Manejo de errores
     ============================ */
     await queryRunner.rollbackTransaction()
-    logger.error(`${savePayable.name}-Error. `, { user_id: auth_req.user.id, payable_id, mode, error: parseError(error), })
+    savePayable_logger.error('Error al guardar cuenta por pagar', { payable_id, mode, error: parseError(error), })
 
     let validationErrors: Record<string, string> | null = null
     switch (error?.code) {
@@ -4229,9 +5084,10 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
     })
   } finally {
     await queryRunner.release()
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${savePayable.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    savePayable_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    savePayable_logger.debug('Fin de la operación de guardado de cuenta por pagar', { user_id })
   }
 }
  
@@ -4510,10 +5366,10 @@ const buildPayableGroupView = (body: any, mode: PayableGroupFormMode) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const savePayableGroup: RequestHandler = async (req: Request, res: Response) => {
-    const start = performance.now()
-    logger.info(`${savePayableGroup.name} called`, { body: req.body, param: req.params })
+    const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const savePayableGroup_logger = logger.forMethod(savePayableGroup.name, 'PAYABLE_GROUP_SAVE', user_id)
     const payable_group_id = Number(req.body.id)
     const mode: PayableGroupFormMode = req.body.mode || 'insert'
     const repo_payable_group = AppDataSource.getRepository(PayableGroup)
@@ -4524,6 +5380,7 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
         mode
     }
     try {
+        savePayableGroup_logger.info('Inicio proceso de guardado de grupo por pagar', { body: req.body, param: req.params })
         let existing: PayableGroup | null = null
         if (payable_group_id) {
             existing = await getPayableGroupById(auth_req, payable_group_id)
@@ -4573,7 +5430,7 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
         /* ============================
            Manejo de errores
         ============================ */
-        logger.error(`${savePayableGroup.name}-Error. `, { user_id: auth_req.user.id, payable_group_id: payable_group_id, mode, error: parseError(error), })
+        savePayableGroup_logger.error('Error al guardar grupo por pagar', { payable_group_id: payable_group_id, mode, error: parseError(error), })
         const validationErrors = error?.validationErrors || null
         return res.render('layouts/main', {
             title: getTitle(mode),
@@ -4582,9 +5439,10 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
             errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         })
     } finally {
-        const end = performance.now()
-        const duration_sec = (end - start) / 1000
-        logger.debug(`${savePayableGroup.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        savePayableGroup_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        savePayableGroup_logger.debug('Fin de la operación de guardado de grupo por pagar')
     }
 }
  
@@ -4650,7 +5508,7 @@ import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getPaymentById, getPaymentsForApi, getActiveCategoriesForPayablePaymentsByUser } from '../../cache/cache-payable-payments.service'
 import { getPayableById } from '../../cache/cache-payables.service'
 import { payablePaymentFormMatrix } from '../../policies/payable-payment-form.policy'
-import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
@@ -4795,14 +5653,19 @@ Api para devolver el DTO Payable en JSON
 ==================================================*/
 export const apiForGettingPayablePayments: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
+    const apiForGettingPayablePayments_logger = logger.forMethod(apiForGettingPayablePayments.name, 'PAYABLE_PAYMENT_LIST', auth_req.user.id)
+    const started_at = performance.now()
     const payable_id = Number(req.params.payable_id)
     try {
         const payments = await getPaymentsForApi(auth_req, payable_id)
         res.json(payments)
     } catch (error) {
-        logger.error(`${apiForGettingPayablePayments.name}-Error. `, parseError(error))
+        apiForGettingPayablePayments_logger.error('Error al listar pagos', parseError(error))
         res.status(500).json({ error: 'Error al listar pagos' })
     } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        apiForGettingPayablePayments_logger.elapsedTime('Elapsed time', { elapsed_ms })
     }
 }
 
@@ -4914,10 +5777,10 @@ const buildPaymentView = async (auth_req: AuthRequest, body: any) => {
    Controller
 ============================ */
 export const savePayment: RequestHandler = async (req: Request, res: Response) => {
-    const start = performance.now()
-    logger.info(`${savePayment.name} called`, { body: req.body, param: req.params })
+    const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const savePayment_logger = logger.forMethod(savePayment.name, 'PAYABLE_PAYMENT_SAVE', user_id)
     const timezone = auth_req.timezone || 'UTC'
     const payment_id = Number(req.body.id)
     const payable_id = Number(req.body.payable_id)
@@ -4940,6 +5803,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     await queryRunner.startTransaction()
 
     try {
+        savePayment_logger.info('Inicio proceso de guardado de pago', { body: req.body, param: req.params })
         if (!payable_id) throw new Error('Cuenta por pagar es requerida')
 
         const payableRepo = queryRunner.manager.getRepository(Payable)
@@ -4980,11 +5844,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
             KpiCacheService
                 .recalculateBalanceKPIByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Balance`, parseError(error)))
+                .catch(error => savePayment_logger.error('Error recalculando KPI balance', parseError(error)))
 
             KpiCacheService
                 .recalculateCategoryKPIByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Categorías`, parseError(error)))
+                .catch(error => savePayment_logger.error('Error recalculando KPI categorías', parseError(error)))
 
                 if (return_from === 'categories' && return_category_id) {
                 return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -5104,11 +5968,11 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
 
         KpiCacheService
             .recalculateBalanceKPIByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Balance`, parseError(error)))
+            .catch(error => savePayment_logger.error('Error recalculando KPI balance', parseError(error)))
 
         KpiCacheService
             .recalculateCategoryKPIByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${savePayment.name}-Error recalculando KPI Categorías`, parseError(error)))
+            .catch(error => savePayment_logger.error('Error recalculando KPI categorías', parseError(error)))
 
             if (return_from === 'categories' && return_category_id) {
             return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -5119,7 +5983,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
             Manejo de errores
         ============================ */
         await queryRunner.rollbackTransaction()
-        logger.error(`${savePayment.name}-Error.`, { user_id: auth_req.user.id, payment_id, payable_id, mode, error: parseError(error), })
+        savePayment_logger.error('Error al guardar pago', { payment_id, payable_id, mode, error: parseError(error), })
 
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {
@@ -5130,9 +5994,10 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
         })
     } finally {
         await queryRunner.release()
-        const end = performance.now()
-        const duration_sec = (end - start) / 1000
-        logger.debug(`${savePayment.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        savePayment_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        savePayment_logger.debug('Fin de la operación de guardado de pago', { user_id })
     }
 } 
 ```
@@ -5240,7 +6105,7 @@ import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getActiveCategoriesForReceivablesByUser, getReceivableById, getReceivablesForApi } from '../../cache/cache-receivables.service'
 import { getActiveParentReceivablesByUser } from '../../cache/cache-receivable-groups.service'
-import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
@@ -5382,13 +6247,19 @@ Api para devolver el DTO Receivable en JSON
 ==================================================*/
 export const apiForGettingReceivables: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
+  const apiForGettingReceivables_logger = logger.forMethod(apiForGettingReceivables.name, 'RECEIVABLE_LIST', auth_req.user.id)
+  const started_at = performance.now()
   try {
     const result = await getReceivablesForApi(auth_req)
     res.json(result)
   } catch (error) {
-    logger.error(`${apiForGettingReceivables.name}-Error. `, parseError(error))
+    apiForGettingReceivables_logger.error('Error al listar cuentas por cobrar', parseError(error))
     res.status(500).json({ error: 'Error al listar Cuentas por Cobrar' })
   } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingReceivables_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    apiForGettingReceivables_logger.debug('Fin de la operación del listado de cuentas por cobrar')
   }
 } 
 ```
@@ -5472,10 +6343,10 @@ const buildReceivableView = async (auth_req: AuthRequest, body: any) => {
     Obtener cuentas activas del usuario para mostrar en el formulario 
 ============================ */
 export const saveReceivable: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveReceivable.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveReceivable_logger = logger.forMethod(saveReceivable.name, 'RECEIVABLE_SAVE', user_id)
   const mode: ReceivableFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
   const receivable_id = Number(req.body.id)
@@ -5500,6 +6371,7 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
   await queryRunner.startTransaction()
 
   try {
+    saveReceivable_logger.info('Inicio proceso de guardado de cuenta por cobrar', { body: req.body, param: req.params })
     let existing: Receivable | null = null
     if (receivable_id) {
       existing = await getReceivableById(auth_req, receivable_id)
@@ -5528,11 +6400,11 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
 
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveReceivable.name}-Error recalculando KPI Balances`, parseError(error)))
+        .catch(error => saveReceivable_logger.error('Error recalculando KPI balances', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveReceivable.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => saveReceivable_logger.error('Error recalculando KPI categorías', parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -5552,7 +6424,8 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
         name: req.body.name,
         note: req.body.note,
         total_amount: 0,
-        interest_paid: 0,
+        principal_received: 0,
+        interest_received: 0,
         balance: 0,
         start_date: parseLocalDateToUTC(req.body.start_date, timezone),
         receivable_group: receivable_group,
@@ -5598,13 +6471,13 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
     if (mode === 'insert') {
       if (!new_account) throw { code: 'DISBURSEMENT_REQUIRED' }
       if (!new_category) { throw { code: 'CATEGORY_NOT_FOUND' } }
-      new_account.balance += receivable.total_amount
+      new_account.balance -= receivable.total_amount
       await queryRunner.manager.save(new_account)
       receivable.disbursement_account = new_account
       receivable.category = new_category
       const transaction = queryRunner.manager.create(Transaction, {
         user: { id: auth_req.user.id } as any,
-        type: 'income',
+        type: 'expense',
         detailed_type: 'expense_for_receivable',
         amount: receivable.total_amount,
         account: new_account,
@@ -5622,15 +6495,17 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
       if (!old_account) throw { code: 'DISBURSEMENT_REQUIRED' }
       if (old_account.id === new_account.id) {
         const delta = receivable.total_amount - previous_amount
-        old_account.balance += delta
+        old_account.balance -= delta
         await queryRunner.manager.save(old_account)
       } else {
-        old_account.balance -= previous_amount
-        new_account.balance += receivable.total_amount
+        old_account.balance += previous_amount
+        new_account.balance -= receivable.total_amount
         await queryRunner.manager.save([old_account, new_account])
       }
       receivable.disbursement_account = new_account
       if (receivable.transaction?.id) {
+        receivable.transaction.type = 'expense'
+        receivable.transaction.detailed_type = 'expense_for_receivable'
         receivable.transaction.amount = receivable.total_amount
         receivable.transaction.date = receivable.start_date
         receivable.transaction.description = receivable.note || receivable.name
@@ -5651,11 +6526,11 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
     if (receivable.transaction) {
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, receivable.transaction)        
-        .catch(error => logger.error(`${saveReceivable.name}-Error recalculando KPI Balance`, parseError(error)))
+        .catch(error => saveReceivable_logger.error('Error recalculando KPI balance', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, receivable.transaction)
-        .catch(error => logger.error(`${saveReceivable.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => saveReceivable_logger.error('Error recalculando KPI categorías', parseError(error)))
     }
 
     if (return_from === 'categories' && return_category_id) {
@@ -5667,7 +6542,7 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
        Manejo de errores
     ============================ */
     await queryRunner.rollbackTransaction()
-    logger.error(`${saveReceivable.name}-Error. `, { user_id: auth_req.user.id, receivable_id, mode, error: parseError(error), })
+    saveReceivable_logger.error('Error al guardar cuenta por cobrar', { receivable_id, mode, error: parseError(error), })
 
     let validationErrors: Record<string, string> | null = null
     switch (error?.code) {
@@ -5691,9 +6566,10 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
     })
   } finally {
     await queryRunner.release()
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveReceivable.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveReceivable_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveReceivable_logger.debug('Fin de la operación de guardado de cuenta por cobrar', { user_id })
   }
 }
  
@@ -5821,7 +6697,7 @@ export const validateDeleteReceivable = async (auth_req: AuthRequest, receivable
   const paymentsCount = await receivablePaymentRepo.count({
     where: { receivable: { id: receivable.id } }
   })
-  if (paymentsCount > 0) field_errors.general = 'No se puede eliminar una cuenta con pagar con pagos registrados'
+  if (paymentsCount > 0) field_errors.general = 'No se puede eliminar una cuenta por cobrar con cobros registrados'
   return Object.keys(field_errors).length > 0 ? field_errors : null
 } 
 ```
@@ -5836,7 +6712,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\receivable-coll
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getReceivableById } from '../../cache/cache-receivables.service'
-import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
@@ -5884,7 +6760,7 @@ export const routeToPageReceivableCollection: RequestHandler = async (req, res) 
     }
     res.render('layouts/main', {
         title: 'Cobros',
-        view: 'pages/payable-receivable_collections/index',
+        view: 'pages/payable-receivable-collections/index',
         USER_ID: auth_req.user?.id || 'guest',
         RECEIVABLE_ID: receivable_id,
         receivable
@@ -5897,16 +6773,16 @@ export const routeToFormInsertReceivableCollection: RequestHandler = async (req,
     const timezone = auth_req.timezone || 'UTC'
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderReceivableCollectionForm(res, {
-        title: 'Insertar Pago',
-        view: 'pages/payable-receivable_collections/form',
+        title: 'Insertar Cobro',
+        view: 'pages/payable-receivable-collections/form',
         errors: {},
         auth_req,
         mode,
         receivable_collection: {
-            receivable_collection_date: formatDateForInputLocal(default_date, timezone),
+            collection_date: formatDateForInputLocal(default_date, timezone),
             note: '',
-            principal_paid: '0.00',
-            interest_paid: '0.00',
+            principal_collected: '0.00',
+            interest_collected: '0.00',
             category: null,
             account: null,
         },
@@ -5924,13 +6800,13 @@ export const routeToFormUpdateReceivableCollection: RequestHandler = async (req,
     }
     return renderReceivableCollectionForm(res, {
         title: 'Editar Cobro',
-        view: 'pages/payable-receivable_collections/form',
+        view: 'pages/payable-receivable-collections/form',
         errors: {},
         mode,
         auth_req,
         receivable_collection: {
             ...receivable_collection,
-            receivable_collection_date: formatDateForInputLocal(receivable_collection.collection_date, timezone)
+            collection_date: formatDateForInputLocal(receivable_collection.collection_date, timezone)
         }
     })
 }
@@ -5946,14 +6822,14 @@ export const routeToFormCloneReceivableCollection: RequestHandler = async (req, 
     }
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderReceivableCollectionForm(res, {
-        title: 'Insertar Pago',
-        view: 'pages/payable-receivable_collections/form',
+        title: 'Insertar Cobro',
+        view: 'pages/payable-receivable-collections/form',
         errors: {},
         mode,
         auth_req,
         receivable_collection: {
             ...receivable_collection,
-            receivable_collection_date: formatDateForInputLocal(default_date, timezone)
+            collection_date: formatDateForInputLocal(default_date, timezone)
         }
     })
 }
@@ -5969,13 +6845,13 @@ export const routeToFormDeleteReceivableCollection: RequestHandler = async (req,
     }
     return renderReceivableCollectionForm(res, {
         title: 'Eliminar Cobro',
-        view: 'pages/payable-receivable_collections/form',
+        view: 'pages/payable-receivable-collections/form',
         errors: {},
         mode,
         auth_req,
         receivable_collection: {
             ...receivable_collection,
-            receivable_collection_date: formatDateForInputLocal(receivable_collection.collection_date, timezone)
+            collection_date: formatDateForInputLocal(receivable_collection.collection_date, timezone)
         }
     })
 }
@@ -5985,14 +6861,20 @@ Api para devolver el DTO Payable en JSON
 ==================================================*/
 export const apiForGettingReceivableCollections: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
+    const apiForGettingReceivableCollections_logger = logger.forMethod(apiForGettingReceivableCollections.name, 'RECEIVABLE_COLLECTION_LIST', auth_req.user.id)
+    const started_at = performance.now()
     const payable_id = Number(req.params.payable_id)
     try {
         const receivable_collections = await getCollectionsForApi(auth_req, payable_id)
         res.json(receivable_collections)
     } catch (error) {
-        logger.error(`${apiForGettingReceivableCollections.name}-Error. `, parseError(error))
+        apiForGettingReceivableCollections_logger.error('Error al listar cobros', parseError(error))
         res.status(500).json({ error: 'Error al listar cobros' })
     } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        apiForGettingReceivableCollections_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        apiForGettingReceivableCollections_logger.debug('Fin de la operación del listado de cobros')
     }
 }
 
@@ -6019,6 +6901,7 @@ import { Receivable } from '../../entities/Receivable.entity';
 import { ReceivableCollection } from '../../entities/ReceivableCollection.entity';
 import { Transaction } from '../../entities/Transaction.entity';
 import { KpiCacheService } from '../../services/kpi-cache.service';
+import { getNextReceivableCollectionNumber } from '../../services/receivable-collection-number.service';
 import { AuthRequest } from '../../types/auth-request';
 import { ReceivableCollectionFormMode } from '../../types/form-view-params';
 import { parseBoolean } from '../../utils/bool.util';
@@ -6059,9 +6942,9 @@ const applyAccountDelta = (account: Account, old_total: number, new_total: numbe
 ============================ */
 const getTitle = (mode: string) => {
     switch (mode) {
-        case 'insert': return 'Registrar Pago'
-        case 'update': return 'Editar Pago'
-        case 'delete': return 'Eliminar Pago'
+        case 'insert': return 'Registrar Cobro'
+        case 'update': return 'Editar Cobro'
+        case 'delete': return 'Eliminar Cobro'
         default: return 'Indefinido'
     }
 }
@@ -6103,10 +6986,10 @@ const buildPaymentView = async (auth_req: AuthRequest, body: any) => {
    Controller
 ============================ */
 export const saveReceivableCollection: RequestHandler = async (req: Request, res: Response) => {
-    const start = performance.now()
-    logger.info(`${saveReceivableCollection.name} called`, { body: req.body, param: req.params })
+    const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const saveReceivableCollection_logger = logger.forMethod(saveReceivableCollection.name, 'RECEIVABLE_COLLECTION_SAVE', user_id)
     const timezone = auth_req.timezone || 'UTC'
     const receivableCollection_id = Number(req.body.id)
     const receivable_id = Number(req.body.receivable_id)
@@ -6129,7 +7012,8 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
     await queryRunner.startTransaction()
 
     try {
-        if (!receivable_id) throw new Error('Cuenta por pagar es requerida')
+        saveReceivableCollection_logger.info('Parametros recibido', { body: req.body, param: req.params })
+        if (!receivable_id) throw new Error('Cuenta por cobrar es requerida')
 
         const receivableRepo = queryRunner.manager.getRepository(Receivable)
         const receivableCollectionRepo = queryRunner.manager.getRepository(ReceivableCollection)
@@ -6137,18 +7021,18 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
         const accountRepo = queryRunner.manager.getRepository(Account)
 
         const receivable = await getReceivableById(auth_req, receivable_id)
-        if (!receivable) throw new Error('Cuenta por pagar no encontrada')
+        if (!receivable) throw new Error('Cuenta por cobrar no encontrada')
 
         let existing: ReceivableCollection | null = null
         if (receivableCollection_id) {
             existing = await getCollectionById(auth_req, receivableCollection_id)
-            if (!existing) throw new Error('Pago no encontrado')
+            if (!existing) throw new Error('Cobro no encontrado')
         }
         /* =========================
            DELETE
         ============================ */
         if (mode === 'delete') {
-            if (!existing) throw new Error('Pago no encontrado')
+            if (!existing) throw new Error('Cobro no encontrado')
             const errors = await validateDeleteReceivableCollection(auth_req, existing)
             if (errors) throw { validationErrors: errors }
             const total = getTotal(existing)
@@ -6169,16 +7053,16 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
 
             KpiCacheService
                 .recalculateBalanceKPIByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${saveReceivableCollection.name}-Error recalculando KPI Balance`, parseError(error)))
+                .catch(error => saveReceivableCollection_logger.error('Error recalculando KPI balance', parseError(error)))
 
             KpiCacheService
                 .recalculateCategoryKPIByTransaction(auth_req, existing.transaction)
-                .catch(error => logger.error(`${saveReceivableCollection.name}-Error recalculando KPI Categorías`, parseError(error)))
+                .catch(error => saveReceivableCollection_logger.error('Error recalculando KPI categorías', parseError(error)))
 
                 if (return_from === 'categories' && return_category_id) {
                 return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
             }
-            return res.redirect(`/receivableCollections/${receivable_id}/receivable`)
+            return res.redirect(`/receivables-collections/${receivable_id}/payable`)
         }
         /* =========================
            INSERT / UPDATE
@@ -6201,7 +7085,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
         if (mode === 'insert') {
             const principal_collected = Number(clean.principal_collected ?? clean.principal_paid ?? 0)
             const interest_collected = Number(clean.interest_collected ?? clean.interest_paid ?? 0)
-            const collection_number = 0
+            const collection_number = principal_collected > 0 ? await getNextReceivableCollectionNumber(receivable_id) : 0
 
             receivableCollection = receivableCollectionRepo.create({
                 receivable,
@@ -6214,7 +7098,7 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
                 collection_date: parseLocalDateToUTC(clean.collection_date ?? clean.payment_date ?? clean.receivableCollection_date, timezone)
             })
         } else {
-            if (!existing) throw new Error('Pago no encontrado')
+            if (!existing) throw new Error('Cobro no encontrado')
             old_receivableCollection = structuredClone(existing)
             old_principal = existing.principal_collected
             old_total = getTotal(existing)
@@ -6301,35 +7185,36 @@ export const saveReceivableCollection: RequestHandler = async (req: Request, res
 
         KpiCacheService
             .recalculateBalanceKPIByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${saveReceivableCollection.name}-Error recalculando KPI Balance`, parseError(error)))
+            .catch(error => saveReceivableCollection_logger.error('Error recalculando KPI balance', parseError(error)))
 
         KpiCacheService
             .recalculateCategoryKPIByTransaction(auth_req, trx)
-            .catch(error => logger.error(`${saveReceivableCollection.name}-Error recalculando KPI Categorías`, parseError(error)))
+            .catch(error => saveReceivableCollection_logger.error('Error recalculando KPI categorías', parseError(error)))
 
             if (return_from === 'categories' && return_category_id) {
             return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
         }
-        return res.redirect(`/receivableCollections/${receivable_id}/receivable`)
+        return res.redirect(`/receivables-collections/${receivable_id}/payable`)
     } catch (error: any) {
         /* ============================
             Manejo de errores
         ============================ */
         await queryRunner.rollbackTransaction()
-        logger.error(`${saveReceivableCollection.name}-Error.`, { user_id: auth_req.user.id, receivableCollection_id, receivable_id, mode, error: parseError(error), })
+        saveReceivableCollection_logger.error('Error al guardar cobro', { receivableCollection_id, receivable_id, mode, error: parseError(error), })
 
         const validationErrors = error?.validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         return res.render('layouts/main', {
             title: getTitle(mode),
-            view: 'pages/receivable-receivableCollections/form',
+            view: 'pages/payable-receivable-collections/form',
             ...form_state,
             errors: validationErrors
         })
     } finally {
         await queryRunner.release()
-        const end = performance.now()
-        const duration_sec = (end - start) / 1000
-        logger.debug(`${saveReceivableCollection.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        saveReceivableCollection_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        saveReceivableCollection_logger.debug('Fin de la operación de guardado de cobro', { user_id })
     }
 } 
 ```
@@ -6359,11 +7244,11 @@ export const validateSaveReceivableCollection = async (auth_req: AuthRequest, re
     let available_amount = receivableCollection.receivable.balance
     if (old_receivableCollection) available_amount += old_receivableCollection.principal_collected
     if (receivableCollection.principal_collected > available_amount) {
-        field_errors.principal_collected = 'El monto del capital supera el saldo pendiente de la cuenta por pagar'
+        field_errors.principal_collected = 'El monto del capital supera el saldo pendiente de la cuenta por cobrar'
     }
     const total_receivableCollection = receivableCollection.principal_collected + receivableCollection.interest_collected
     if (total_receivableCollection <= 0) {
-        field_errors.general = 'El monto total del pago (capital + intereses) debe ser mayor a cero'
+        field_errors.general = 'El monto total del cobro (capital + intereses) debe ser mayor a cero'
     }
     // Detectar cambios contables
     let financial_change = false
@@ -6572,10 +7457,10 @@ const buildReceivableGroupView = (body: any, mode: ReceivableGroupFormMode) => {
    Renderizar formulario de categoría para Insertar, Editar, Eliminar o Cambiar Estado
 ============================ */
 export const saveReceivableGroup: RequestHandler = async (req: Request, res: Response) => {
-    const start = performance.now()
-    logger.info(`${saveReceivableGroup.name} called`, { body: req.body, param: req.params })
+    const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const saveReceivableGroup_logger = logger.forMethod(saveReceivableGroup.name, 'RECEIVABLE_GROUP_SAVE', user_id)
     const receivable_group_id = Number(req.body.id)
     const mode: ReceivableGroupFormMode = req.body.mode || 'insert'
     const repo_receivable_group = AppDataSource.getRepository(ReceivableGroup)
@@ -6586,6 +7471,7 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
         mode
     }
     try {
+        saveReceivableGroup_logger.info('Parametros recibidos', { body: req.body, param: req.params })
         let existing: ReceivableGroup | null = null
         if (receivable_group_id) {
             existing = await getReceivableGroupById(auth_req, receivable_group_id)
@@ -6635,7 +7521,7 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
         /* ============================
            Manejo de errores
         ============================ */
-        logger.error(`${saveReceivableGroup.name}-Error. `, { user_id: auth_req.user.id, receivable_group_id: receivable_group_id, mode, error: parseError(error), })
+        saveReceivableGroup_logger.error('Error al guardar grupo por cobrar', { receivable_group_id: receivable_group_id, mode, error: parseError(error), })
         const validationErrors = error?.validationErrors || null
         return res.render('layouts/main', {
             title: getTitle(mode),
@@ -6644,9 +7530,10 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
             errors: validationErrors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.' }
         })
     } finally {
-        const end = performance.now()
-        const duration_sec = (end - start) / 1000
-        logger.debug(`${saveReceivableGroup.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        saveReceivableGroup_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        saveReceivableGroup_logger.debug('Fin de la operación de guardado de grupo por cobrar', { user_id })
     }
 }
  
@@ -6773,6 +7660,8 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
 export const apiForBatchCategorize: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
+    const apiForBatchCategorize_logger = logger.forMethod(apiForBatchCategorize.name, 'BATCH_CATEGORIZE', user_id)
+    const started_at = performance.now()
     const return_from = req.body.return_from
     const return_category_id = req.body.return_category_id ? Number(req.body.return_category_id) : null
 
@@ -6846,7 +7735,6 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
                 throw new Error('Categoría de gastos inválida')
             }
         }
-
         /* ============================================================
         5. Procesar actualización (SOLO category)
         ============================================================ */
@@ -6888,7 +7776,7 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
         return res.redirect('/transactions?saved_batch=true')
 
     } catch (error) {
-        logger.error(`${apiForBatchCategorize.name} - Error`, parseError(error))
+        apiForBatchCategorize_logger.error('Error al categorizar transacciones', parseError(error))
 
         const active_income_categories = await getActiveIncomeCategories(auth_req)
         const active_expense_categories = await getActiveExpenseCategories(auth_req)
@@ -6904,6 +7792,11 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
             errors: { general: 'Error interno del servidor' },
             USER_ID: auth_req.user?.id
         })
+    } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        apiForBatchCategorize_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        apiForBatchCategorize_logger.debug('Fin de la operación de categorización de transacciones')
     }
 
 }
@@ -7009,7 +7902,7 @@ import { getActiveCategoryById, getActiveExpenseCategories, getActiveExpenseCate
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
-import { getNextValidTransactionDate } from '../../services/next-valid-transaaction-date.service'
+import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
 import { formatDateForInputLocal } from '../../utils/date.util'
@@ -7054,8 +7947,10 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
 }
 
 export const apiForGettingTransactions: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForGettingTransactions_logger = logger.forMethod(apiForGettingTransactions.name, 'TRANSACTION_LIST', auth_req.user.id)
+  const started_at = performance.now()
   try {
-    const auth_req = req as AuthRequest
     const page = Number(auth_req.query.page) || 1
     const limit = Number(auth_req.query.limit) || 10
     const search = (auth_req.query.search as string) || ''
@@ -7100,9 +7995,13 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
 
     res.json({ items, total, page, limit, category_id: category_id })
   } catch (error) {
-    logger.error(`${apiForGettingTransactions.name}-Error. `, parseError(error))
+    apiForGettingTransactions_logger.error('Error al listar transacciones', parseError(error))
     res.status(500).json({ error: 'Error al listar transacciones' })
   } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForGettingTransactions_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    apiForGettingTransactions_logger.debug('Fin de la operación del listado de transacciones')
   }
 }
 
@@ -7298,10 +8197,10 @@ const isSavingAccount = (acc: Account | null | undefined): acc is Account & { ty
 }
 
 export const saveTransaction: RequestHandler = async (req: Request, res: Response) => {
-  const start = performance.now()
-  logger.info(`${saveTransaction.name} called`, { body: req.body, param: req.params })
+  const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
+  const saveTransaction_logger = logger.forMethod(saveTransaction.name, 'TRANSACTION_SAVE', user_id)
   const timezone = req.body.timezone || 'UTC'
   const mode: TransactionFormMode = req.body.mode || 'insert'
   const transaction_id = Number(req.body.id)
@@ -7331,6 +8230,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const repo_transaction = AppDataSource.getRepository(Transaction)
 
   try {
+    saveTransaction_logger.info('Parametros recibidos', { body: req.body, param: req.params })
     let existing: Transaction | null = null
     if (transaction_id) {
       existing = await repo_transaction.findOne({
@@ -7362,11 +8262,11 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
       KpiCacheService
         .recalculateBalanceKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Balance`, parseError(error)))
+        .catch(error => saveTransaction_logger.error('Error recalculando KPI balance', parseError(error)))
 
       KpiCacheService
         .recalculateCategoryKPIByTransaction(auth_req, existing)
-        .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Categorías`, parseError(error)))
+        .catch(error => saveTransaction_logger.error('Error recalculando KPI categorías', parseError(error)))
 
         if (return_from === 'categories' && return_category_id) {
         return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -7459,11 +8359,11 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
 
     KpiCacheService
       .recalculateBalanceKPIByTransaction(auth_req, saved_transaction)
-      .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Balance`, parseError(error)))
+      .catch(error => saveTransaction_logger.error('Error recalculando KPI balance', parseError(error)))
 
     KpiCacheService
       .recalculateCategoryKPIByTransaction(auth_req, saved_transaction)
-      .catch(error => logger.error(`${saveTransaction.name}-Error recalculando KPI Categorías`, parseError(error)))
+      .catch(error => saveTransaction_logger.error('Error recalculando KPI categorías', parseError(error)))
 
       if (return_from === 'categories' && return_category_id) {
       return res.redirect(`/transactions?category_id=${return_category_id}&from=categories`)
@@ -7475,7 +8375,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
        Manejo de errores
     ============================ */
     await query_runner.rollbackTransaction()
-    logger.error(`${saveTransaction.name}-Error. `, { user_id: auth_req.user.id, transaction_id, mode, error: parseError(error), })
+    saveTransaction_logger.error('Error al guardar transacción', { transaction_id, mode, error: parseError(error), })
 
     const validation_errors = error?.validationErrors || null
     return res.status(500).render('layouts/main', {
@@ -7491,9 +8391,10 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     })
   } finally {
     await query_runner.release()
-    const end = performance.now()
-    const duration_sec = (end - start) / 1000
-    logger.debug(`${saveTransaction.name}. user=[${user_id}], elapsedTime=[${duration_sec.toFixed(4)}]`)
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveTransaction_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveTransaction_logger.debug('Fin de la operación de guardado de transacción', { user_id })
   }
 }
  
@@ -7515,6 +8416,7 @@ import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 
 export const validateSaveTransaction = async (transaction: Transaction, auth_req: AuthRequest, old_transaction?: Transaction): Promise<Record<string, string> | null> => {
+    const validateSaveTransaction_logger = logger.forMethod(validateSaveTransaction.name, 'TRANSACTION_VALIDATE_SAVE', auth_req.user.id)
     const errors = await validate(transaction)
     const field_errors: Record<string, string> = {}
 
@@ -7630,11 +8532,12 @@ export const validateSaveTransaction = async (transaction: Transaction, auth_req
             }
         }
     }
-    logger.debug(`${validateSaveTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
+    validateSaveTransaction_logger.debug(`${validateSaveTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
     return Object.keys(field_errors).length > 0 ? field_errors : null
 }
 
 export const validateDeleteTransaction = async (transaction: Transaction, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
+    const validateDeleteTransaction_logger = logger.forMethod(validateDeleteTransaction.name, 'TRANSACTION_VALIDATE_DELETE', auth_req.user.id)
     const field_errors: Record<string, string> = {}
 
     if (!transaction.date) {
@@ -7650,11 +8553,12 @@ export const validateDeleteTransaction = async (transaction: Transaction, auth_r
         }
     }
 
-    logger.debug(`${validateDeleteTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
+    validateDeleteTransaction_logger.debug(`${validateDeleteTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
     return Object.keys(field_errors).length > 0 ? field_errors : null
 }
 
 export const validateActiveCategoryTransaction = async (transaction: Transaction, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
+    const validateActiveCategoryTransaction_logger = logger.forMethod(validateActiveCategoryTransaction.name, 'TRANSACTION_VALIDATE_CATEGORY', auth_req.user.id)
     const field_errors: Record<string, string> = {}
 
     if (!transaction.category || !transaction.category.id) {
@@ -7675,7 +8579,7 @@ export const validateActiveCategoryTransaction = async (transaction: Transaction
         field_errors.category = `La categoría "${category_name}" de esta transacción ya no está activa o no existe`
     }
 
-    logger.debug(`${validateActiveCategoryTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
+    validateActiveCategoryTransaction_logger.debug(`${validateActiveCategoryTransaction.name}-Errors: ${JSON.stringify(field_errors)}`)
     return Object.keys(field_errors).length > 0 ? field_errors : null
 } 
 ```
@@ -7828,6 +8732,12 @@ export class CacheKpiBalance {
   payables!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  receivables!: number
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
+  receivable_collections!: number
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
   payable_payments!: number
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: DecimalTransformer })
@@ -7921,6 +8831,7 @@ import { Transaction } from './Transaction.entity'
 import { User } from './User.entity'
 import { Receivable } from './Receivable.entity'
 import { ReceivableCollection } from './ReceivableCollection.entity'
+import { CategoryTypeForPayableOrReceivable } from '../types/category-type-for-payable-or-receivable'
 
 @Entity('categories')
 export class Category {
@@ -7943,7 +8854,7 @@ export class Category {
   @Column({ type: 'varchar' })
   @IsOptional()
   @IsIn(['payable', 'payable_payment', 'receivable', 'receivable_collection'], { message: 'El tipo debe ser para cuentas por cobrar o pagar' })
-  type_for_payable_or_receivable!: 'payable' | 'payable_payment' | 'receivable' | 'receivable_collection' | null
+  type_for_payable_or_receivable!: CategoryTypeForPayableOrReceivable
 
   @Column({ default: true })
   @IsBoolean({ message: 'El estado debe ser true o false' })
@@ -8005,6 +8916,231 @@ export class CategoryGroup {
   user!: User
 }
  
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\FileReference.entity.ts
+```
+ 
+```ts
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm'
+
+@Index('idx_file_references_origin', ['table_name', 'record_id'])
+@Entity('file_references')
+export class FileReference {
+
+  @PrimaryGeneratedColumn()
+  id!: number
+
+  @Column({ type: 'varchar', length: 100 })
+  table_name!: string
+
+  @Column({ type: 'int' })
+  record_id!: number
+
+  @Column({ type: 'varchar', length: 500 })
+  path!: string
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  thumbnail_path!: string | null
+
+  @Column({ type: 'varchar', length: 255 })
+  original_name!: string
+
+  @Column({ type: 'varchar', length: 100 })
+  mime_type!: string
+
+  @Column({ type: 'int', unsigned: true })
+  size_bytes!: number
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at!: Date
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\LogEvent.entity.ts
+```
+ 
+```ts
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm'
+
+@Entity('log_events')
+@Index('ix_log_events_level_occurred_at', ['level', 'occurred_at'])
+@Index('ix_log_events_event_name_occurred_at', ['event_name', 'occurred_at'])
+@Index('ix_log_events_method_name_occurred_at', ['method_name', 'occurred_at'])
+@Index('ix_log_events_user_id_occurred_at', ['user_id', 'occurred_at'])
+export class LogEvent {
+  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  id!: string
+
+  @CreateDateColumn({ type: 'timestamp', precision: 3 })
+  occurred_at!: Date
+
+  @Column({ type: 'varchar', length: 10 })
+  level!: string
+
+  @Column({ type: 'varchar', length: 100, default: 'ssrfinan-api' })
+  service!: string
+
+  @Column({ type: 'varchar', length: 150 })
+  event_name!: string
+
+  @Column({ type: 'varchar', length: 150 })
+  method_name!: string
+
+  @Column({ type: 'varchar', length: 25, nullable: true })
+  ex_event_type!: string | null
+
+  @Column({ type: 'int', nullable: true })
+  user_id!: number | null
+
+  @Column({ type: 'text' })
+  message!: string
+
+  @Column({ type: 'json', nullable: true })
+  context!: unknown | null
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\NotificationDelivery.entity.ts
+```
+ 
+```ts
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { NotificationSchedule } from './NotificationSchedule.entity'
+import { NotificationType } from './NotificationType.entity'
+import { User } from './User.entity'
+
+@Index('uq_notification_deliveries_schedule_period', ['schedule', 'period_key'], { unique: true })
+@Entity('notification_deliveries')
+export class NotificationDelivery {
+
+  @PrimaryGeneratedColumn()
+  id!: number
+
+  @ManyToOne(() => NotificationSchedule, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'schedule_id', foreignKeyConstraintName: 'fk_notification_deliveries_schedule' })
+  schedule!: NotificationSchedule
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_notification_deliveries_user' })
+  user!: User
+
+  @ManyToOne(() => NotificationType, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'notification_type_id', foreignKeyConstraintName: 'fk_notification_deliveries_type' })
+  notification_type!: NotificationType
+
+  @Column({ type: 'varchar', length: 100 })
+  period_key!: string
+
+  @Column({ type: 'varchar', length: 20, default: 'processing' })
+  status!: 'processing' | 'sent' | 'failed'
+
+  @Column({ type: 'timestamp', nullable: true })
+  sent_at!: Date | null
+
+  @Column({ type: 'text', nullable: true })
+  error_message!: string | null
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at!: Date
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updated_at!: Date
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\NotificationSchedule.entity.ts
+```
+ 
+```ts
+import { IsIn, Matches } from 'class-validator'
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { User } from './User.entity'
+import { NotificationType } from './NotificationType.entity'
+
+@Index('uq_notification_schedules_user_type', ['user', 'notification_type'], { unique: true })
+@Entity('notification_schedules')
+export class NotificationSchedule {
+
+  @PrimaryGeneratedColumn()
+  id!: number
+
+  @ManyToOne(() => User, user => user.notification_schedules, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_notification_schedules_user' })
+  user!: User
+
+  @ManyToOne(() => NotificationType, notification_type => notification_type.schedules, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'notification_type_id', foreignKeyConstraintName: 'fk_notification_schedules_type' })
+  notification_type!: NotificationType
+
+  @Column({ type: 'varchar', length: 20 })
+  @IsIn(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
+  send_day!: string
+
+  @Column({ type: 'time' })
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  send_time!: string
+
+  @Column({ type: 'varchar', length: 64, default: 'UTC' })
+  timezone!: string
+
+  @Column({ default: true })
+  enabled!: boolean
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at!: Date
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updated_at!: Date
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\NotificationType.entity.ts
+```
+ 
+```ts
+import { IsNotEmpty } from 'class-validator'
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { NotificationSchedule } from './NotificationSchedule.entity'
+
+@Entity('notification_types')
+export class NotificationType {
+
+  @PrimaryGeneratedColumn()
+  id!: number
+
+  @Column({ type: 'varchar', length: 80, unique: true })
+  @IsNotEmpty()
+  key!: string
+
+  @Column({ type: 'varchar', length: 150 })
+  @IsNotEmpty()
+  name!: string
+
+  @Column({ type: 'text', nullable: true })
+  description!: string | null
+
+  @Column({ default: true })
+  enabled!: boolean
+
+  @OneToMany(() => NotificationSchedule, schedule => schedule.notification_type)
+  schedules!: NotificationSchedule[]
+} 
 ```
  
 --- 
@@ -8455,6 +9591,9 @@ export class Transaction {
   @MaxLength(1000, { message: 'Máximo 1000 caracteres' })
   description!: string
 
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  no_images!: number
+
   @OneToOne(() => Payable, payable => payable.transaction, { nullable: true })
   payable!: Payable
 
@@ -8491,6 +9630,7 @@ import { PayableGroup } from './PayableGroup.entity'
 import { CacheKpiBalance } from './CacheKpiBalance.entity'
 import { ReceivableGroup } from './ReceivableGroup.entity'
 import { Receivable } from './Receivable.entity'
+import { NotificationSchedule } from './NotificationSchedule.entity'
 
 @Entity('users')
 //@Unique('UQ_users_email', ['email'])
@@ -8540,6 +9680,9 @@ export class User {
 
   @OneToMany(() => Receivable, receivable => receivable.user)
   receivables!: Receivable[]
+
+  @OneToMany(() => NotificationSchedule, schedule => schedule.user)
+  notification_schedules!: NotificationSchedule[]
 
 }
  
@@ -8638,19 +9781,24 @@ import { logger } from '../utils/logger.util'
 import { parseError } from '../utils/error.util'
 
 export const injectNetBalance: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
-
+    const auth_req = req as AuthRequest
+    const user_id = auth_req.user?.id
+    const injectNetBalance_logger = logger.forMethod(injectNetBalance.name, 'INJECT_NET_BALANCE', user_id ?? null)
+    const started_at = performance.now()
     try {
-        //logger.debug(`${injectNetBalance.name}-Middleware ejecutado`)
-        const auth_req = req as AuthRequest
         const user = auth_req.user
         if (!user) return next()
         const net_balance = await AccountBalanceService.getNetAvailableBalance(user.id)
         res.locals.net_balance = net_balance
-        //logger.debug(`${injectNetBalance.name}-Balance inyectado para usuario [${user.id}]=[${net_balance}]`)
         next()
     } catch (error) {
-        logger.error(`${injectNetBalance.name}-Error. `, parseError(error))
+        injectNetBalance_logger.error('Error inyectando balance neto', parseError(error))
         next(error)
+    } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        injectNetBalance_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        injectNetBalance_logger.debug('Fin de la operación de inyección de balance neto')
     }
 }
  
@@ -8670,15 +9818,57 @@ import { logger } from '../utils/logger.util'
 import { parseError } from '../utils/error.util'
 
 export const injectPayableBalance = async (req: Request, res: Response, next: NextFunction) => {
+    const auth_req = req as AuthRequest
+    const injectPayableBalance_logger = logger.forMethod(injectPayableBalance.name, 'INJECT_PAYABLE_BALANCE', auth_req.user?.id ?? null)
+    const started_at = performance.now()
     try {
-        const auth_req = req as AuthRequest
         if (!auth_req.user) return next()
         const payable_balance = await PayableBalanceService.getPendingPayableBalance(auth_req.user.id)
         res.locals.payable_balance = payable_balance
         next()
     } catch (error) {
-        logger.error(`${injectPayableBalance.name}-Error. `, parseError(error))
+        injectPayableBalance_logger.error('Error inyectando balance por pagar', parseError(error))
         next(error)
+    } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        injectPayableBalance_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        injectPayableBalance_logger.debug('Fin de la operación de inyección de balance por pagar')
+    }
+}
+ 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\middlewares\inject-receivable-balance.middleware.ts
+```
+ 
+```ts
+import { Request, Response, NextFunction } from 'express'
+import { AuthRequest } from '../types/auth-request'
+import { ReceivableBalanceService } from '../services/receivable-balance.service'
+import { logger } from '../utils/logger.util'
+import { parseError } from '../utils/error.util'
+
+export const injectReceivableBalance = async (req: Request, res: Response, next: NextFunction) => {
+    const auth_req = req as AuthRequest
+    const injectReceivableBalance_logger = logger.forMethod(injectReceivableBalance.name, 'INJECT_RECEIVABLE_BALANCE', auth_req.user?.id ?? null)
+    const started_at = performance.now()
+    try {
+        if (!auth_req.user) return next()
+        const receivable_balance = await ReceivableBalanceService.getPendingReceivableBalance(auth_req.user.id)
+        res.locals.receivable_balance = receivable_balance
+        next()
+    } catch (error) {
+        injectReceivableBalance_logger.error('Error inyectando balance por cobrar', parseError(error))
+        next(error)
+    } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        injectReceivableBalance_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        injectReceivableBalance_logger.debug('Fin de la operación de inyección de balance por cobrar')
     }
 }
  
@@ -8697,18 +9887,19 @@ import { logger } from '../utils/logger.util'
 const mustLogger = process.env.NODE_LOG_REQUESTS === 'true'
 
 export const httpLogger: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+  const httpLogger_logger = logger.forMethod(httpLogger.name, 'HTTP_REQUEST')
   const start = Date.now()
   if (!mustLogger) return next()
-  logger.debug(`${req.method} ${req.originalUrl}`, { headers: req.headers, query: req.query, body: req.body })
+  httpLogger_logger.debug(`${req.method} ${req.originalUrl}`, { headers: req.headers, query: req.query, body: req.body })
 
   res.on('finish', () => {
     const duration = Date.now() - start
-    logger.debug(`${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${duration}ms`)
+    httpLogger_logger.debug(`${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${duration}ms`)
   })
 
   res.on('close', () => {
     const duration = Date.now() - start
-    logger.debug(`${req.method} ${req.originalUrl} - Connection closed - ${duration}ms`)
+    httpLogger_logger.debug(`${req.method} ${req.originalUrl} - Connection closed - ${duration}ms`)
   })
 
   next()
@@ -8732,8 +9923,10 @@ import { parseError } from '../utils/error.util'
 
 
 export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
+  const session_user_id = (req.session as any)?.user_id
+  const sessionAuthMiddleware_logger = logger.forMethod(sessionAuthMiddleware.name, 'SESSION_AUTH', session_user_id ?? null)
+  const started_at = performance.now()
   try {
-    const session_user_id = (req.session as any)?.user_id
     if (!session_user_id) return res.redirect('/login')
 
     const user = await AppDataSource.getRepository(User).findOneBy({ id: session_user_id })
@@ -8748,8 +9941,13 @@ export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: R
 
     next()
   } catch (error) {
-    logger.error(`${sessionAuthMiddleware.name}-Error. `, parseError(error))
+    sessionAuthMiddleware_logger.error('Error autenticando sesión', parseError(error))
     return res.redirect('/login')
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    sessionAuthMiddleware_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    sessionAuthMiddleware_logger.debug('Fin de la operación de autenticación de sesión')
   }
 }
 
@@ -8973,27 +10171,27 @@ export const receivableCollectionFormMatrix: ReceivableCollectionFormMatrix = {
   insert: {
     account_id: 'editable',
     category_id: 'editable',
-    principal_paid: 'editable',
-    interest_paid: 'editable',
-    payment_date: 'editable',
+    principal_collected: 'editable',
+    interest_collected: 'editable',
+    collection_date: 'editable',
     note: 'editable'
   },
 
   update: {
     account_id: 'readonly',
     category_id: 'editable',
-    principal_paid: 'editable',
-    interest_paid: 'editable',
-    payment_date: 'editable',
+    principal_collected: 'editable',
+    interest_collected: 'editable',
+    collection_date: 'editable',
     note: 'editable'
   },
 
   delete: {
     account_id: 'readonly',
     category_id: 'readonly',
-    principal_paid: 'readonly',
-    interest_paid: 'readonly',
-    payment_date: 'readonly',
+    principal_collected: 'readonly',
+    interest_collected: 'readonly',
+    collection_date: 'readonly',
     note: 'readonly'
   }
 
@@ -9184,6 +10382,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\app.css
 @import url('./modules/transactions.css');
 @import url('./modules/dashboard.css');
 @import url('./modules/navbar.css');
+@import url('./modules/notifications.css');
 @import url('./modules/carousel.css');
 
 /* =========================
@@ -9209,7 +10408,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: var(--app-viewport-height, 100vh);
+  min-height: var(--app-viewport-height, 100vh);
   margin: 0;
   font-size: 1rem; /* base responsive */
 }
@@ -9395,6 +10595,34 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\base\breakpoints
         display: table-cell;
     }
 
+}
+
+@media (min-width: 769px) {
+    .ui-table th {
+        font-size: 0.65625rem;
+    }
+
+    .ui-table th,
+    .ui-table td {
+        padding: 0.375rem 0.75rem;
+    }
+
+    .ui-table .ui-btn,
+    .ui-table .icon-btn {
+        min-height: 1.875rem;
+        padding: 0.375rem;
+    }
+
+    .ui-table .ui-btn {
+        gap: 0.28125rem;
+        font-size: 0.65625rem;
+    }
+
+    .ui-table .ui-btn svg,
+    .ui-table .icon-btn svg {
+        width: 0.9375rem;
+        height: 0.9375rem;
+    }
 } 
 ```
  
@@ -9405,6 +10633,25 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\base\layout.css
 ```
  
 ```css
+body.app-body {
+    min-height: var(--app-viewport-height, 100vh);
+}
+
+.app-main {
+    box-sizing: border-box;
+    min-height: calc(var(--app-viewport-height, 100vh) - 3.5rem);
+}
+
+.app-body:has(.ui-page) {
+    height: var(--app-viewport-height, 100vh);
+    overflow: hidden;
+}
+
+.app-main:has(.ui-page) {
+    height: calc(var(--app-viewport-height, 100vh) - 3.5rem);
+    overflow: hidden;
+}
+
 .ui-container {
     max-width: 64rem;
     margin: 0 auto;
@@ -9414,7 +10661,8 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\base\layout.css
 .ui-page {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 1rem);
+    height: 100%;
+    min-height: 0;
 }
 
 .ui-header {
@@ -9423,9 +10671,24 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\base\layout.css
 
 .ui-scroll-area {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: 1rem;
+    overscroll-behavior: contain;
+}
+
+#mobile-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+}
+
+nav {
+    position: relative;
+    z-index: 20;
 }
 
 .hide {
@@ -9903,6 +11166,28 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\components\modal
 
 .ui-modal-btn-neutral:hover {
     background: #d1d5db
+}
+
+.category-kpi-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    color: #4b5563;
+    background: transparent;
+    cursor: pointer;
+}
+
+.category-kpi-action:hover {
+    background: #f3f4f6;
+}
+
+.category-kpi-action:focus {
+    outline: none;
 } 
 ```
  
@@ -10041,7 +11326,44 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\components\table
 .child-name {
     display: flex;
     align-items: center;
-} 
+}
+
+/* Compact style for category KPI table: reduce text by ~20% and force single-line truncation */
+#html-category-kpi-table {
+    font-size: 0.8rem;
+}
+
+#html-category-kpi-table th,
+#html-category-kpi-table td {
+    padding: 0.35rem 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#html-category-kpi-table td {
+    vertical-align: middle;
+}
+
+/* Column width distribution: Categoria 60%, Monto 30%, Cant 10% */
+#html-category-kpi-table th:nth-child(1),
+#html-category-kpi-table td:nth-child(1) {
+    width: 60%;
+    text-align: left;
+}
+
+#html-category-kpi-table th:nth-child(2),
+#html-category-kpi-table td:nth-child(2) {
+    width: 30%;
+    text-align: right;
+}
+
+#html-category-kpi-table th:nth-child(3),
+#html-category-kpi-table td:nth-child(3) {
+    width: 10%;
+    text-align: right;
+}
+ 
 ```
  
 --- 
@@ -10116,18 +11438,18 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\components\tags.
 }
 
 .tx-income {
-  background-color: var(--ui-green-100);
-  color: var(--ui-green-700);
+  background-color: #cfeedd;
+  color: #065f46;
 }
 
 .tx-expense {
-  background-color: var(--ui-red-100);
-  color: var(--ui-red-700);
+  background-color: #f7d0d0;
+  color: #991b1b;
 }
 
 .tx-transfer {
-  background-color: var(--ui-blue-100);
-  color: var(--ui-blue-700);
+  background-color: #e9defd;
+  color: #4c1d95;
 }
 
 .tag-active {
@@ -10252,6 +11574,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\carousel
   position: relative;
   width: 100%;
   padding: 0.5rem;
+  z-index: 1;
 }
 
 .home-carousel {
@@ -10279,12 +11602,12 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\carousel
 .carousel-nav {
   position: absolute;
   display: flex;
-  top: 9%;
+  top: 7%;
   transform: translateY(-50%);
-  z-index: 10;
+  z-index: 1;
   width: 40px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: 25px;
   border: 1px solid #d1d5db;
   background-color: white;
   color: #374151;
@@ -10578,7 +11901,26 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\dashboar
 }
 
 .html-cash-flow-summary-header-nav,
-.html-payable-flow-summary-header-nav {
+.html-payable-flow-summary-header-nav,
+.html-receivable-flow-summary-header-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.html-category-kpi-header-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.html-category-group-kpi-header-nav {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -10589,7 +11931,10 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\dashboar
 
 .html-balance-kpi-year-label,
 .html-cash-flow-summary-year-label,
-.html-payable-flow-summary-year-label {
+.html-payable-flow-summary-year-label,
+.html-receivable-flow-summary-year-label,
+.html-category-kpi-year-label,
+.html-category-group-kpi-year-label {
     font-size: 1rem;
     font-weight: 600;
     margin: 0;
@@ -10598,7 +11943,10 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\dashboar
 
 .html-balance-kpi-year-btn,
 .html-cash-flow-summary-year-btn,
-.html-payable-flow-summary-year-btn  {
+.html-payable-flow-summary-year-btn,
+.html-receivable-flow-summary-year-btn,
+.html-category-kpi-year-btn,
+.html-category-group-kpi-year-btn {
     width: 32px;
     height: 32px;
     border: none;
@@ -10616,22 +11964,81 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\dashboar
 
 .html-balance-kpi-year-btn:hover:not(:disabled),
 .html-cash-flow-summary-year-btn:hover:not(:disabled),
-.html-payable-flow-summary-year-btn:hover:not(:disabled)  {
+.html-payable-flow-summary-year-btn:hover:not(:disabled),
+.html-category-kpi-year-btn:hover:not(:disabled)  {
+    background: var(--ui-gray-200);
+}
+
+.html-category-group-kpi-year-btn:hover:not(:disabled) {
     background: var(--ui-gray-200);
 }
 
 .html-balance-kpi-year-btn:disabled,
 .html-cash-flow-summary-year-btn:disabled,
-.html-payable-flow-summary-year-btn:disabled  {
+.html-payable-flow-summary-year-btn:disabled,
+.html-category-kpi-year-btn:disabled,
+.html-category-group-kpi-year-btn:disabled  {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
 .html-balance-kpi-year-btn svg,
 .html-cash-flow-summary-year-btn svg,
-.html-payable-flow-summary-year-btn svg {
+.html-payable-flow-summary-year-btn svg,
+.html-category-kpi-year-btn svg,
+.html-category-group-kpi-year-btn svg {
     width: 18px;
     height: 18px;
+}
+
+.kpi-detail-header {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 32px 32px;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.kpi-detail-header h2 {
+    min-width: 0;
+    margin: 0;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.kpi-detail-nav,
+.kpi-detail-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ui-gray-100);
+    color: var(--ui-gray-700);
+    cursor: pointer;
+}
+
+.kpi-detail-nav:hover:not(:disabled),
+.kpi-detail-close:hover {
+    background: var(--ui-gray-200);
+}
+
+.kpi-detail-nav:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.kpi-detail-nav svg {
+    width: 18px;
+    height: 18px;
+}
+
+.kpi-detail-close svg {
+    width: 16px;
+    height: 16px;
 }
 
 .ui-kpi-row {
@@ -10652,6 +12059,133 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\dashboar
     flex: 0 0 auto;
     text-align: right;
     min-width: 20px;
+}
+
+/* Category KPI table layout and responsive column widths */
+#html-category-kpi-table {
+    font-size: 0.8rem;
+    table-layout: fixed;
+    background: var(--ui-white);
+}
+
+#html-category-kpi-table th,
+#html-category-kpi-table td {
+    padding: 0.35rem 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#html-category-kpi-table thead th {
+    background: var(--ui-blue-50);
+    color: var(--ui-blue-700);
+    border-bottom: 2px solid var(--ui-blue-200);
+    font-weight: 600;
+}
+
+#html-category-kpi-table tbody tr:nth-child(odd) {
+    background: var(--ui-white);
+}
+
+#html-category-kpi-table tbody tr:nth-child(even) {
+    background: #f4f8ff;
+}
+
+#html-category-kpi-table tbody tr:hover {
+    background: var(--ui-blue-100);
+}
+
+#html-category-kpi-table tbody td {
+    color: var(--ui-gray-700);
+    border-bottom-color: #e6edf7;
+}
+
+#html-category-kpi-table tbody td:first-child {
+    color: var(--ui-gray-900);
+    font-weight: 500;
+}
+
+#html-category-kpi-table tbody td:nth-child(2),
+#html-category-kpi-table tbody td:nth-child(3) {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+
+/* Column width distribution: Categoria 45%, Monto 25%, Cant 15%, Accion 15% */
+#html-category-kpi-table th:nth-child(1),
+#html-category-kpi-table td:nth-child(1) {
+    width: 45%;
+    text-align: left;
+}
+
+#html-category-kpi-table th:nth-child(2),
+#html-category-kpi-table td:nth-child(2) {
+    width: 25%;
+    text-align: right;
+}
+
+#html-category-kpi-table th:nth-child(3),
+#html-category-kpi-table td:nth-child(3) {
+    width: 15%;
+    text-align: right;
+}
+
+#html-category-kpi-table th:nth-child(4),
+#html-category-kpi-table td:nth-child(4) {
+    width: 15%;
+    text-align: center;
+    overflow: visible;
+}
+
+#html-category-group-kpi-table {
+    font-size: 0.8rem;
+    table-layout: fixed;
+    background: var(--ui-white);
+}
+
+#html-category-group-kpi-table th,
+#html-category-group-kpi-table td {
+    padding: 0.35rem 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#html-category-group-kpi-table thead th {
+    background: var(--ui-blue-50);
+    color: var(--ui-blue-700);
+    border-bottom: 2px solid var(--ui-blue-200);
+    font-weight: 600;
+}
+
+#html-category-group-kpi-table tbody tr:nth-child(odd) { background: var(--ui-white); }
+#html-category-group-kpi-table tbody tr:nth-child(even) { background: #f4f8ff; }
+#html-category-group-kpi-table tbody tr:hover { background: var(--ui-blue-100); }
+#html-category-group-kpi-table tbody td {
+    color: var(--ui-gray-700);
+    border-bottom-color: #e6edf7;
+    vertical-align: middle;
+}
+#html-category-group-kpi-table tbody td:first-child {
+    color: var(--ui-gray-900);
+    font-weight: 500;
+}
+#html-category-group-kpi-table tbody td:nth-child(2),
+#html-category-group-kpi-table tbody td:nth-child(3) {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+#html-category-group-kpi-table th:nth-child(1),
+#html-category-group-kpi-table td:nth-child(1) { width: 45%; text-align: left; }
+#html-category-group-kpi-table th:nth-child(2),
+#html-category-group-kpi-table td:nth-child(2) { width: 25%; text-align: right; }
+#html-category-group-kpi-table th:nth-child(3),
+#html-category-group-kpi-table td:nth-child(3) { width: 15%; text-align: right; }
+#html-category-group-kpi-table th:nth-child(4),
+#html-category-group-kpi-table td:nth-child(4) {
+    width: 15%;
+    text-align: center;
+    overflow: visible;
 } 
 ```
  
@@ -10707,6 +12241,107 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\navbar.c
 .navbar-payable_balance:hover {
     opacity: 0.9;
     transform: translateY(-1px);
+}
+
+.navbar-receivable_balance {
+    display: inline-block;
+    margin-left: 12px;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #16a34a;
+    border: 1px solid #15803d;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+
+.navbar-receivable_balance:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\notifications.css
+```
+ 
+```css
+.notifications-mobile {
+    display: none;
+}
+
+.notification-card-title,
+.notification-form-title {
+    margin: 0 0 1rem;
+    color: var(--ui-gray-900);
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.notification-details {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0 0 1.25rem;
+}
+
+.notification-details div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.notification-details dt {
+    color: var(--ui-gray-600);
+}
+
+.notification-details dd {
+    margin: 0;
+    font-weight: 600;
+}
+
+.notification-form {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    background: var(--ui-white);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.notification-form select,
+.notification-form input {
+    min-height: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border: 1px solid var(--ui-gray-300);
+    border-radius: 0.25rem;
+}
+
+.notification-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.form-error {
+    color: var(--ui-red-700, #b91c1c);
+}
+
+@media (max-width: 768px) {
+    .notifications-mobile {
+        display: flex;
+        flex-direction: column;
+        padding: 8px;
+    }
+
+    .notification-card .ui-card-body {
+        padding: 1rem;
+    }
 } 
 ```
  
@@ -11155,15 +12790,59 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\transact
 }
 
 .transaction-card.income {
-    background: var(--ui-green-50);
+    background: #eafaf1;
+    border-color: #cfe8d8;
 }
 
 .transaction-card.expense {
-    background: var(--ui-red-50);
+    background: #fdf1f1;
+    border-color: #f2caca;
 }
 
 .transaction-card.transfer {
-    background: var(--ui-purple-50);
+    background: #f0eaff;
+    border-color: #d8c8f6;
+}
+
+/* Origin badge */
+.tx-origin {
+        display: inline-block;
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-weight: 600;
+        line-height: 1;
+        margin-right: 6px;
+}
+
+.tx-origin.payable {
+        background: var(--ui-yellow-100);
+        color: var(--ui-yellow-800);
+        border: 1px solid rgba(218, 165, 32, 0.2);
+}
+
+.tx-origin.receivable {
+        background: var(--ui-teal-100);
+        color: var(--ui-teal-700);
+        border: 1px solid rgba(20, 170, 140, 0.2);
+}
+
+.ui-table .tx-origin {
+    display: block;
+    width: fit-content;
+    margin: 4px 0 0;
+}
+
+.transaction-card .card-account .tx-origin {
+    margin: 0 0 4px;
+}
+
+/* Small adjustments for mobile */
+@media (max-width: 768px) {
+    .tx-origin {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
 }
 
 .transaction-card .card-header {
@@ -11301,6 +12980,129 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\css\modules\transact
   color: var(--ui-gray-700);
 
   border-top: 1px solid var(--ui-gray-200);
+}
+
+.transaction-images-btn.has-images {
+    color: var(--ui-blue-600);
+}
+
+.transaction-images-btn.no-images {
+    color: var(--ui-gray-500);
+    background: var(--ui-gray-100);
+}
+
+.transaction-images-modal-content {
+    width: min(92vw, 760px);
+    max-height: 92vh;
+    overflow: auto;
+}
+
+.transaction-images-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.transaction-images-viewer {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 320px;
+}
+
+.transaction-images-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 300px;
+    padding: 0;
+    border: 0;
+    background: var(--ui-gray-50);
+    cursor: zoom-in;
+}
+
+.transaction-images-preview img {
+    display: block;
+    width: 100%;
+    max-height: 52vh;
+    object-fit: contain;
+    transition: max-height 0.2s ease;
+}
+
+.transaction-images-preview.is-enlarged {
+    cursor: zoom-out;
+}
+
+.transaction-images-preview.is-enlarged img {
+    max-height: 78vh;
+}
+
+.transaction-images-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--ui-gray-200);
+    border-radius: 999px;
+    background: var(--ui-white);
+    cursor: pointer;
+}
+
+.transaction-images-nav:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.transaction-images-nav svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.transaction-images-empty,
+.transaction-images-counter {
+    color: var(--ui-gray-500);
+    text-align: center;
+}
+
+.transaction-images-empty {
+    padding: 3rem 1rem;
+}
+
+.transaction-images-counter {
+    min-height: 1.5rem;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.transaction-images-actions {
+    justify-content: flex-end;
+    border-top: 1px solid var(--ui-gray-200);
+    padding-top: 1rem;
+}
+
+@media (max-width: 600px) {
+    .transaction-images-modal-content {
+        width: calc(100vw - 1rem);
+        padding: 1rem;
+    }
+
+    .transaction-images-viewer {
+        grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+        min-height: 240px;
+    }
+
+    .transaction-images-preview {
+        min-height: 220px;
+    }
+
+    .transaction-images-nav {
+        width: 2rem;
+        height: 2rem;
+    }
 } 
 ```
  
@@ -11311,6 +13113,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\account-for
 ```
  
 ```js
+(() => {
 /*
   category-form.js
 
@@ -11334,6 +13137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     El submit es tradicional (POST) y el backend controla el flujo.
   */
 })
+})()
  
 ```
  
@@ -11344,6 +13148,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\autocomplet
 ```
  
 ```js
+(() => {
 document.addEventListener('DOMContentLoaded', () => {
     initAutocompletes()
 })
@@ -11529,6 +13334,9 @@ function formatBalance(value) {
     const number_value = Number(value) || 0
     return number_value.toFixed(2)
 }
+
+window.setupAutocomplete = setupAutocomplete
+})()
  
 ```
  
@@ -11539,6 +13347,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\category-fo
 ```
  
 ```js
+(() => {
 document.addEventListener('DOMContentLoaded', () => {
   // ============================
   // Toggle "Es categoría padre"
@@ -11615,6 +13424,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   })
 })
+})()
  
 ```
  
@@ -11625,16 +13435,20 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\category-gr
 ```
  
 ```js
+(() => {
+
+})()
  
 ```
  
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\loan-form.js
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\payable-form.js
 ```
  
 ```js
+(() => {
 document.addEventListener('DOMContentLoaded', () => {
   const checkbox = document.getElementById('is-parent-checkbox')
   if (!checkbox) return
@@ -11720,18 +13534,20 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   })
 })
+})()
  
 ```
  
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\loan-payment-form.js
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\payable-payment-form.js
 ```
  
 ```js
+(() => {
 /*
-  category-form.js
+  payable-payment-form.js
 
   Archivo intencionalmente vacío de lógica.
   Este formulario es procesado completamente por el backend.
@@ -11753,6 +13569,7 @@ document.addEventListener('DOMContentLoaded', () => {
     El submit es tradicional (POST) y el backend controla el flujo.
   */
 })
+})()
  
 ```
  
@@ -11763,6 +13580,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\forms\transaction
 ```
  
 ```js
+(() => {
 document.addEventListener('DOMContentLoaded', () => {
   const originalType = document.getElementById('original-transaction-type')?.value || ''
 
@@ -11881,7 +13699,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // volver a inicializar SOLO este autocomplete
     // revisar la invocación global de setupAutocomplete en "src/public/js/forms/autocomplete-form.js" para evitar conflictos
-    setupAutocomplete(categoryAutocomplete)
+    window.setupAutocomplete(categoryAutocomplete)
   }
 
   function reloadAccountAutocomplete() {
@@ -11897,7 +13715,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hidden_el.value = ''
     panel_el.innerHTML = ''
 
-    setupAutocomplete(accountAutocomplete)
+    window.setupAutocomplete(accountAutocomplete)
   }
 
   radios.forEach(radio => {
@@ -11913,6 +13731,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateVisibility(checked.value)
   }
 })
+})()
  
 ```
  
@@ -12162,10 +13981,6 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\helpers\icon-help
 ```
  
 ```js
-/* ============================
-   Íconos SVG reutilizables
-============================ */
-
 /* Insertar / Nuevo */
 function iconInsert() {
     return `
@@ -12274,10 +14089,6 @@ function iconRefresh() {
   `
 }
 
-/* ============================
-   Flechas navegación
-============================ */
-
 /* Flecha derecha (siguiente / avanzar) */
 function iconArrowRight({ size = 4, color = 'currentColor' } = {}) {
     return `
@@ -12296,6 +14107,16 @@ function iconArrowLeft({ size = 4, color = 'currentColor' } = {}) {
       viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round"
         d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+  `
+}
+
+function iconClose() {
+    return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 6 6 18M6 6l12 12"/>
     </svg>
   `
 }
@@ -12322,10 +14143,6 @@ function iconChevronClose() {
   `;
 }
 
-/* ============================
-   Iconos transferencia
-============================ */
-
 /* Origen (sale dinero) */
 function iconTransferOut() {
   return iconArrowLeft({ size: 3, color: '#dc2626' })
@@ -12336,6 +14153,7 @@ function iconTransferIn() {
   return iconArrowRight({ size: 3, color: '#16a34a' })
 }
 
+/* Carousel previo */
 function iconCarouselPrev() {
   return `
     <svg width="20" height="20" viewBox="0 0 24 24"
@@ -12346,6 +14164,7 @@ function iconCarouselPrev() {
   `
 }
 
+/* Carasouel avanza */
 function iconCarouselNext() {
   return `
     <svg width="20" height="20" viewBox="0 0 24 24"
@@ -12367,10 +14186,12 @@ function iconGroup({ size = 4, color = 'currentColor' } = {}) {
   `
 }
 
+/* Icono agrupado */
 function iconGrouped() {
   return iconGroup({ size: 3, color: '#1c1fdb' })
 }
 
+/* Icono tendecia sube */
 function iconTrendUp() {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
@@ -12382,6 +14203,7 @@ function iconTrendUp() {
   `
 }
 
+/* Icono tendencia baja */
 function iconTrendDown() {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
@@ -12389,6 +14211,45 @@ function iconTrendDown() {
       stroke-linecap="round" stroke-linejoin="round">
       <polyline points="3 7 9 13 13 9 21 17"/>
       <polyline points="14 17 21 17 21 10"/>
+    </svg>
+  `
+}
+
+/* Imagen disponible */
+function iconImage() {
+    return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <path d="m21 15-5-5L5 21"/>
+    </svg>
+  `
+}
+
+/* Sin imágenes */
+function iconImageOff() {
+    return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <path d="m21 15-5-5L5 21"/>
+      <path d="m3 3 18 18"/>
+    </svg>
+  `
+}
+
+/* Más acciones */
+function iconMoreHorizontal() {
+    return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="currentColor" width="20" height="20" aria-hidden="true">
+      <circle cx="5" cy="12" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="19" cy="12" r="2"/>
     </svg>
   `
 } 
@@ -12716,10 +14577,22 @@ function categoryTypeForPayableTag(type) {
           Cuentas por Pagar
         </div>
       `
-    case 'payment':
+    case 'payable_payment':
       return `
         <div class="tx-tag ">
-          Pagos por Cuentas por Pagar
+          Cuentas por Pagar
+        </div>
+      `
+    case 'receivable':
+      return `
+        <div class="tx-tag">
+          Cuentas por Cobrar
+        </div>
+      `
+    case 'receivable_collection':
+      return `
+        <div class="tx-tag">
+          Cobros
         </div>
       `
     default:
@@ -12733,10 +14606,41 @@ function categoryTypeForPayableTag(type) {
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\helpers\viewport-height-helper.js
+```
+ 
+```js
+(function initializeViewportHeight() {
+  const storageKey = 'ssrfinan.viewport.height.v1'
+  const root = document.documentElement
+  const currentHeight = Math.round(window.innerHeight)
+  const isValidHeight = value => Number.isFinite(value) && value >= 320 && value <= 10000
+
+  if (window.APP_VIEWPORT_RESET === true) {
+    sessionStorage.removeItem(storageKey)
+  }
+
+  const storedHeight = Number(sessionStorage.getItem(storageKey))
+  const viewportHeight = isValidHeight(storedHeight) ? storedHeight : currentHeight
+
+  if (!isValidHeight(storedHeight)) {
+    sessionStorage.setItem(storageKey, String(viewportHeight))
+  }
+
+  window.APP_VIEWPORT_HEIGHT = viewportHeight
+  root.style.setProperty('--app-viewport-height', `${viewportHeight}px`)
+})()
+ 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\accounts-index.js
 ```
  
 ```js
+(() => {
 /* ============================================================================
 1. Constantes globales
 2. Variables de estado
@@ -13161,6 +15065,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 })
+
+window.goToAccountUpdate = goToAccountUpdate
+window.goToAccountDelete = goToAccountDelete
+window.goToAccountUpdateStatus = goToAccountUpdateStatus
+window.selectAccountCard = selectAccountCard
+})()
  
 ```
  
@@ -13171,6 +15081,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\batch-cat
 ```
  
 ```js
+(() => {
 /* ============================================================================
 1. Datos iniciales desde el servidor
 ============================================================================ */
@@ -13198,7 +15109,17 @@ const mobileContainer = document.getElementById('batch-categorize-mobile')
 /* ============================================================================
 4. Utils
 ============================================================================ */
-function rowClassByType(type) {
+function rowClassByType(transactionOrType) {
+  if (!transactionOrType) return ''
+
+  let type = ''
+
+  if (typeof transactionOrType === 'string') {
+    type = transactionOrType
+  } else {
+    type = transactionOrType.type || ''
+  }
+
   if (type === 'income') return 'income'
   if (type === 'expense') return 'expense'
   if (type === 'transfer') return 'transfer'
@@ -13221,7 +15142,7 @@ function renderRow(transaction) {
   const date = formatDate(transaction.date)
 
   return `
-    <tr class="${rowClassByType(transaction.type)}">
+    <tr class="${rowClassByType(transaction)}">
       <td class="ui-td col-left">${date}</td>
       <td class="ui-td col-left col-sm">${transactionTypeTag(transaction.type)}</td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
@@ -13258,7 +15179,7 @@ function renderCard(transaction) {
   const date = formatDate(transaction.date)
 
   return `
-    <div class="transaction-card ${rowClassByType(transaction.type)}">
+    <div class="transaction-card ${rowClassByType(transaction)}">
       <div class="card-header">
         <div class="card-datetime">
           <span class="card-date">${date}</span>
@@ -13483,6 +15404,7 @@ if (cancelBtn) {
 }
 
 
+})()
  
 ```
  
@@ -13493,6 +15415,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\categorie
 ```
  
 ```js
+(() => {
 /* ============================================================================
 1. Constantes globales
 2. Variables de estado
@@ -14068,6 +15991,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 })
+
+window.toggleCategoryGroupCollapse = toggleCategoryGroupCollapse
+window.goToCategoryUpdateStatus = goToCategoryUpdateStatus
+window.goToCategoryUpdate = goToCategoryUpdate
+window.goToCategoryDelete = goToCategoryDelete
+window.goToCategoryList = goToCategoryList
+window.selectCategoryCard = selectCategoryCard
+window.goToCategoryGroupUpdate = goToCategoryGroupUpdate
+window.goToCategoryGroupDelete = goToCategoryGroupDelete
+})()
  
 ```
  
@@ -14078,12 +16011,16 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\home-inde
 ```
  
 ```js
+(() => {
 /* ============================
    Constantes globales
 ============================ */
 const CARD_IDS = [
+    'html-category-kpi',
     'html-balance-kpi',
     'html-cash-flow-summary',
+    'html-payable-flow-summary',
+    'html-receivable-flow-summary',
 ]
 
 const KPI_CONFIG = [
@@ -14093,12 +16030,12 @@ const KPI_CONFIG = [
     { key: 'expenses', label: 'Egresos', color: 'red', trend: true },
     { key: 'payables', label: 'Cuentas por Pagar', color: 'green', trend: true },
     { key: 'payable_payments', label: 'Pagos', color: 'red', trend: true },
+    { key: 'receivables', label: 'Cuentas por Cobrar', color: 'red', trend: true },
+    { key: 'receivable_collections', label: 'Cobros', color: 'green', trend: true },
     { key: 'savings', label: 'Ahorros', color: 'green', trend: true },
     { key: 'withdrawals', label: 'Retiros', color: 'red', trend: true },
     { key: 'total_inflows', label: 'Total Ingresos', color: 'green', trend: true },
     { key: 'total_outflows', label: 'Total Egresos', color: 'red', trend: true },
-    //{ key: 'principal_breakdown', label: 'Desglose Capital', color: 'green', trend: true },
-    //{ key: 'interest_breakdown', label: 'Desglose Interes', color: 'red', trend: true },
     { key: 'net_cash_flow', label: 'Neto', color: 'blue', trend: true },
 ]
 
@@ -14107,10 +16044,18 @@ const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
 const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
 const CASH_FLOW_YEAR_STATE_KEY = `home.cash.flow.year.${window.USER_ID}`
 const PAYABLE_FLOW_YEAR_STATE_KEY = `home.payable.flow.year.${window.USER_ID}`
+const RECEIVABLE_FLOW_YEAR_STATE_KEY = `home.receivable.flow.year.${window.USER_ID}`
+const CATEGORY_KPI_YEAR_STATE_KEY = `home.category.year.${window.USER_ID}`
+const CATEGORY_TABLE_SCROLL_KEY = `home.category.table.scroll.${window.USER_ID}`
+const CATEGORY_SORT_KEY = `home.category.sort.${window.USER_ID}`
+const CATEGORY_GROUP_KPI_YEAR_STATE_KEY = `home.category.group.year.${window.USER_ID}`
+const CATEGORY_GROUP_TABLE_SCROLL_KEY = `home.category.group.table.scroll.${window.USER_ID}`
+const CATEGORY_GROUP_SORT_KEY = `home.category.group.sort.${window.USER_ID}`
 
 const labelForKpi = 'KPIs'
 const labelForTrendBalance = 'Balances'
-const labelForTrendPayable = 'Cuentas por Pagar'
+const labelForTrendPayable = 'Por Pagar'
+const labelForTrendReceivable = 'Por Cobrar'
 
 let kpi_years = []
 let kpi_year_index = 0
@@ -14118,12 +16063,23 @@ let cash_flow_year_index = 0
 let cashFlowChart = null
 let payable_flow_year_index = 0
 let payableFlowChart = null
+let receivable_flow_year_index = 0
+let receivableFlowChart = null
+let category_year_index = 0
+let lastCategoryRows = []
+let categoryKpiDetailChart = null
+let categoryKpiDetailItem = null
+let categoryKpiDetailYear = 0
+let category_group_year_index = 0
+let lastCategoryGroupRows = []
+let categoryGroupKpiDetailChart = null
+let categoryGroupKpiDetailItem = null
+let categoryGroupKpiDetailYear = 0
 
 /* ============================
    DOM Ready
 ============================ */
 document.addEventListener('DOMContentLoaded', async () => {
-    // Inicializar los Cards
     const savedState = loadFilters(CARD_STATE_KEY) || {}
     CARD_IDS.forEach(id => {
         const body = document.getElementById(id)
@@ -14137,46 +16093,98 @@ document.addEventListener('DOMContentLoaded', async () => {
     const carousel_next = document.getElementById('carousel-next')
     if (carousel_prev) carousel_prev.innerHTML = iconCarouselPrev()
     if (carousel_next) carousel_next.innerHTML = iconCarouselNext()
+
     const kpi_prev = document.getElementById('html-balance-kpi-prev')
     const kpi_next = document.getElementById('html-balance-kpi-next')
     if (kpi_prev) kpi_prev.innerHTML = iconCarouselPrev()
     if (kpi_next) kpi_next.innerHTML = iconCarouselNext()
+
+    const category_prev = document.getElementById('html-category-kpi-prev')
+    const category_next = document.getElementById('html-category-kpi-next')
+    if (category_prev) category_prev.innerHTML = iconCarouselPrev()
+    if (category_next) category_next.innerHTML = iconCarouselNext()
+
+    const category_group_prev = document.getElementById('html-category-group-kpi-prev')
+    const category_group_next = document.getElementById('html-category-group-kpi-next')
+    if (category_group_prev) category_group_prev.innerHTML = iconCarouselPrev()
+    if (category_group_next) category_group_next.innerHTML = iconCarouselNext()
+
     const cash_prev = document.getElementById('html-cash-flow-summary-prev')
     const cash_next = document.getElementById('html-cash-flow-summary-next')
     if (cash_prev) cash_prev.innerHTML = iconCarouselPrev()
     if (cash_next) cash_next.innerHTML = iconCarouselNext()
+
     const payable_prev = document.getElementById('html-payable-flow-summary-prev')
     const payable_next = document.getElementById('html-payable-flow-summary-next')
     if (payable_prev) payable_prev.innerHTML = iconCarouselPrev()
     if (payable_next) payable_next.innerHTML = iconCarouselNext()
 
+    const receivable_prev = document.getElementById('html-receivable-flow-summary-prev')
+    const receivable_next = document.getElementById('html-receivable-flow-summary-next')
+    if (receivable_prev) receivable_prev.innerHTML = iconCarouselPrev()
+    if (receivable_next) receivable_next.innerHTML = iconCarouselNext()
+
+    ;['category-kpi-detail', 'category-group-kpi-detail'].forEach(id => {
+        const prev = document.getElementById(`${id}-prev`)
+        const next = document.getElementById(`${id}-next`)
+        const close = document.getElementById(`${id}-close`)
+        if (prev) prev.innerHTML = iconCarouselPrev()
+        if (next) next.innerHTML = iconCarouselNext()
+        if (close) close.innerHTML = iconClose()
+    })
+
     // Inicializar el Html para KPIs
     renderBalanceKpiHtml()
-    // Invocar desde el backend
+    updateLabelForBalanceKpi(0)
+    updateLabelForCashFlowSumm(0)
+    updateLabelForPayableFlowSumm(0)
+    updateLabelForReceivableFlowSumm(0)
+
     try {
         const res_kpi = await fetch('/kpis', { credentials: 'same-origin' })
         if (!res_kpi.ok) throw new Error('No autorizado')
         const { availableYearsKpi, } = await res_kpi.json()
 
-        // Inicializar navegación año
         kpi_years = availableYearsKpi || [0]
         const savedYearRawKpi = loadFilters(KPI_YEAR_STATE_KEY)
         const savedYearRawCashFlow = loadFilters(CASH_FLOW_YEAR_STATE_KEY)
         const savedYearKpi = savedYearRawKpi !== null ? Number(savedYearRawKpi) : null
         const savedYearCashFlow = savedYearRawCashFlow !== null ? Number(savedYearRawCashFlow) : null
+        const savedYearRawCategory = loadFilters(CATEGORY_KPI_YEAR_STATE_KEY)
+        const savedYearCategory = savedYearRawCategory !== null ? Number(savedYearRawCategory) : null
+        const savedYearRawCategoryGroup = loadFilters(CATEGORY_GROUP_KPI_YEAR_STATE_KEY)
+        const savedYearCategoryGroup = savedYearRawCategoryGroup !== null ? Number(savedYearRawCategoryGroup) : null
+
         kpi_year_index = kpi_years.includes(savedYearKpi) ? kpi_years.indexOf(savedYearKpi) : 0
         cash_flow_year_index = kpi_years.includes(savedYearCashFlow) ? kpi_years.indexOf(savedYearCashFlow) : 0
+        category_year_index = kpi_years.includes(savedYearCategory) ? kpi_years.indexOf(savedYearCategory) : 0
+        category_group_year_index = kpi_years.includes(savedYearCategoryGroup) ? kpi_years.indexOf(savedYearCategoryGroup) : 0
         const current_year_kpi = kpi_years[kpi_year_index]
         const current_year_cash_flow = kpi_years[cash_flow_year_index]
+        const current_year_category = kpi_years[category_year_index]
+        const current_year_category_group = kpi_years[category_group_year_index]
 
         const savedYearRawPayableFlow = loadFilters(PAYABLE_FLOW_YEAR_STATE_KEY)
         const savedYearPayableFlow = savedYearRawPayableFlow !== null ? Number(savedYearRawPayableFlow) : null
         payable_flow_year_index = kpi_years.includes(savedYearPayableFlow) ? kpi_years.indexOf(savedYearPayableFlow) : 0
         const current_year_payable_flow = kpi_years[payable_flow_year_index]
 
+        const savedYearRawReceivableFlow = loadFilters(RECEIVABLE_FLOW_YEAR_STATE_KEY)
+        const savedYearReceivableFlow = savedYearRawReceivableFlow !== null ? Number(savedYearRawReceivableFlow) : null
+        receivable_flow_year_index = kpi_years.includes(savedYearReceivableFlow) ? kpi_years.indexOf(savedYearReceivableFlow) : 0
+        const current_year_receivable_flow = kpi_years[receivable_flow_year_index]
+
         updateLabelForBalanceKpi(current_year_kpi)
         initYearNavForBalanceKpi()
         await changeYearForBalanceKpi()
+
+        updateLabelForCategory(current_year_category)
+        initYearNavForCategory()
+        await changeYearForCategory()
+
+        updateLabelForCategoryGroup(current_year_category_group)
+        initYearNavForCategoryGroup()
+        await changeYearForCategoryGroup()
 
         updateLabelForCashFlowSumm(current_year_cash_flow)
         await changeYearForCashFlowSumm()
@@ -14186,15 +16194,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         await changeYearForPayableFlowSumm()
         initYearNavForPayableFlowSumm()
 
+        updateLabelForReceivableFlowSumm(current_year_receivable_flow)
+        await changeYearForReceivableFlowSumm()
+        initYearNavForReceivableFlowSumm()
+
         initHomeCarousel()
+        adjustCategoryTableHeight()
+        adjustCategoryGroupTableHeight()
+
+        window.addEventListener('resize', adjustCategoryTableHeight)
+        window.addEventListener('resize', adjustCategoryGroupTableHeight)
     } catch (err) {
         console.error('Error cargando dashboard', err)
     }
 })
 
-/* ============================
-   KPI Balance Section
-============================ */
+function adjustCategoryTableHeight() {
+    const carousel = document.querySelector('.home-carousel')
+    const wrapper = document.getElementById('html-category-kpi-body')
+    const slide = wrapper ? wrapper.closest('.home-slide') : null
+    if (!wrapper) return
+
+    const carouselH = carousel ? carousel.clientHeight : (slide ? slide.clientHeight : window.APP_VIEWPORT_HEIGHT)
+
+    let headerH = 0
+    if (slide) {
+        const hdr = slide.querySelector('.ui-card-header')
+        headerH = hdr ? hdr.offsetHeight : 0
+    }
+
+    const portion = 0.6 // 60% of carousel height
+    let desired = Math.floor(carouselH * portion) - headerH
+    const MIN = 140
+    const MAX = Math.floor(window.APP_VIEWPORT_HEIGHT * 0.8)
+    if (desired < MIN) desired = MIN
+    if (desired > MAX) desired = MAX
+
+    wrapper.style.height = desired + 'px'
+}
+
+function adjustCategoryGroupTableHeight() {
+    const carousel = document.querySelector('.home-carousel')
+    const wrapper = document.getElementById('html-category-group-kpi-body')
+    const slide = wrapper ? wrapper.closest('.home-slide') : null
+    if (!wrapper) return
+
+    const carouselH = carousel ? carousel.clientHeight : (slide ? slide.clientHeight : window.APP_VIEWPORT_HEIGHT)
+    const header = slide?.querySelector('.ui-card-header')
+    let desired = Math.floor(carouselH * 0.6) - (header ? header.offsetHeight : 0)
+    const min = 140
+    const max = Math.floor(window.APP_VIEWPORT_HEIGHT * 0.8)
+    if (desired < min) desired = min
+    if (desired > max) desired = max
+    wrapper.style.height = desired + 'px'
+}
+
 function renderBalanceKpiHtml() {
     const container = document.getElementById('html-balance-kpi')
     let html = ''
@@ -14233,7 +16287,22 @@ function renderBalanceKpiHtml() {
 }
 
 function renderKpis(year, balanceKpi, trendKpi) {
-    const fields = ['incomes', 'expenses', 'payables', 'payable_payments', 'savings', 'withdrawals', 'total_inflows', 'total_outflows', 'net_cash_flow', 'net_savings', 'available_balance', 'principal_breakdown', 'interest_breakdown']
+    const fields = [
+        'incomes',
+        'expenses',
+        'payables',
+        'payable_payments',
+        'receivables',
+        'receivable_collections',
+        'savings', 'withdrawals',
+        'total_inflows',
+        'total_outflows',
+        'net_cash_flow',
+        'net_savings',
+        'available_balance',
+        'principal_breakdown',
+        'interest_breakdown'
+    ]
     fields.forEach(field => {
         const el = document.getElementById(`html-balance-kpi-${field.replace(/_/g, '-')}`)
         if (el) el.textContent = (balanceKpi[field] ?? 0).toFixed(2)
@@ -14252,6 +16321,23 @@ function renderKpis(year, balanceKpi, trendKpi) {
             el_trend.style.display = 'none'
             el_arrow.style.display = 'none'
         }
+    })
+}
+
+function renderReceivableFlowSummChart(data) {
+    const ctx = document.getElementById('receivableFlowChart').getContext('2d')
+    if (receivableFlowChart) receivableFlowChart.destroy()
+    receivableFlowChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [
+                { label: 'Por Cobrar', data: data.total_receivables, tension: 0.35 },
+                { label: 'Cobros', data: data.total_receivable_collections, tension: 0.35 },
+                { label: 'Balances', data: data.net_balance, borderDash: [6, 4], tension: 0.35 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
     })
 }
 
@@ -14299,14 +16385,10 @@ function updateYearNavForBalanceKpi() {
     nextBtn.disabled = kpi_year_index <= 0
 }
 
-/* ============================
-   Cash Flow Summary Section
-============================ */
 function renderCashFlowSummChart(data) {
     const ctx = document.getElementById('cashFlowChart').getContext('2d')
-
+    
     if (cashFlowChart) cashFlowChart.destroy()
-
     cashFlowChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -14325,15 +16407,14 @@ function renderPayableFlowSummChart(data) {
     const ctx = document.getElementById('payableFlowChart').getContext('2d')
 
     if (payableFlowChart) payableFlowChart.destroy()
-
     payableFlowChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
             datasets: [
-                { label: 'Cuentas por Pagar', data: data.total_payables, tension: 0.35 },
+                { label: 'Por Pagar', data: data.total_payables, tension: 0.35 },
                 { label: 'Pagos', data: data.total_payable_payments, tension: 0.35 },
-                { label: 'Balance', data: data.net_payable_balance, borderDash: [6, 4], tension: 0.35 }
+                { label: 'Balances', data: data.net_payable_balance, borderDash: [6, 4], tension: 0.35 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -14351,7 +16432,6 @@ async function changeYearForCashFlowSumm() {
     if (!res.ok) return
 
     const { cashSummary } = await res.json()
-
     renderCashFlowSummChart(cashSummary)
 }
 
@@ -14366,8 +16446,21 @@ async function changeYearForPayableFlowSumm() {
     if (!res.ok) return
 
     const { payableSummary } = await res.json()
-
     renderPayableFlowSummChart(payableSummary)
+}
+
+async function changeYearForReceivableFlowSumm() {
+    const year = kpi_years[receivable_flow_year_index]
+
+    saveFilters(RECEIVABLE_FLOW_YEAR_STATE_KEY, year)
+    updateLabelForReceivableFlowSumm(year)
+    updateYearNavForReceivableFlowSumm()
+
+    const res = await fetch(`/receivable-summary?year_period_for_payable_summ=${year}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+
+    const { receivableSummary } = await res.json()
+    renderReceivableFlowSummChart(receivableSummary)
 }
 
 function initYearNavForCashFlowSumm() {
@@ -14416,26 +16509,59 @@ function initYearNavForPayableFlowSumm() {
     updateYearNavForPayableFlowSumm()
 }
 
+function initYearNavForReceivableFlowSumm() {
+    const prevBtn = document.getElementById('html-receivable-flow-summary-prev')
+    const nextBtn = document.getElementById('html-receivable-flow-summary-next')
+
+    if (!prevBtn || !nextBtn) return
+
+    prevBtn.addEventListener('click', async () => {
+        if (receivable_flow_year_index < kpi_years.length - 1) {
+            receivable_flow_year_index++
+            await changeYearForReceivableFlowSumm()
+        }
+    })
+
+    nextBtn.addEventListener('click', async () => {
+        if (receivable_flow_year_index > 0) {
+            receivable_flow_year_index--
+            await changeYearForReceivableFlowSumm()
+        }
+    })
+
+    updateYearNavForReceivableFlowSumm()
+}
+
 function updateLabelForCashFlowSumm(year) {
     const label = document.getElementById('html-cash-flow-summary-year-label')
     if (!label) return
-
     label.textContent = year === 0 ? `${labelForTrendBalance} - Todos` : `${labelForTrendBalance} - ${year}`
 }
 
 function updateLabelForPayableFlowSumm(year) {
     const label = document.getElementById('html-payable-flow-summary-year-label')
     if (!label) return
-
     label.textContent = year === 0 ? `${labelForTrendPayable} - Todos` : `${labelForTrendPayable} - ${year}`
+}
+
+function updateLabelForReceivableFlowSumm(year) {
+    const label = document.getElementById('html-receivable-flow-summary-year-label')
+    if (!label) return
+    label.textContent = year === 0 ? `${labelForTrendReceivable} - Todos` : `${labelForTrendReceivable} - ${year}`
+}
+
+function updateYearNavForReceivableFlowSumm() {
+    const prevBtn = document.getElementById('html-receivable-flow-summary-prev')
+    const nextBtn = document.getElementById('html-receivable-flow-summary-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.disabled = receivable_flow_year_index >= kpi_years.length - 1
+    nextBtn.disabled = receivable_flow_year_index <= 0
 }
 
 function updateYearNavForCashFlowSumm() {
     const prevBtn = document.getElementById('html-cash-flow-summary-prev')
     const nextBtn = document.getElementById('html-cash-flow-summary-next')
-
     if (!prevBtn || !nextBtn) return
-
     prevBtn.disabled = cash_flow_year_index >= kpi_years.length - 1
     nextBtn.disabled = cash_flow_year_index <= 0
 }
@@ -14443,16 +16569,471 @@ function updateYearNavForCashFlowSumm() {
 function updateYearNavForPayableFlowSumm() {
     const prevBtn = document.getElementById('html-payable-flow-summary-prev')
     const nextBtn = document.getElementById('html-payable-flow-summary-next')
-
     if (!prevBtn || !nextBtn) return
-
     prevBtn.disabled = payable_flow_year_index >= kpi_years.length - 1
     nextBtn.disabled = payable_flow_year_index <= 0
 }
 
-/* ============================
-   Carousel Event Section
-============================ */
+function initYearNavForCategory() {
+    const prevBtn = document.getElementById('html-category-kpi-prev')
+    const nextBtn = document.getElementById('html-category-kpi-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.addEventListener('click', async () => {
+        if (category_year_index < kpi_years.length - 1) {
+            category_year_index++
+            await changeYearForCategory()
+        }
+    })
+    nextBtn.addEventListener('click', async () => {
+        if (category_year_index > 0) {
+            category_year_index--
+            await changeYearForCategory()
+        }
+    })
+    updateYearNavForCategory()
+}
+
+async function changeYearForCategory() {
+    const year = kpi_years[category_year_index]
+    saveFilters(CATEGORY_KPI_YEAR_STATE_KEY, year)
+    updateLabelForCategory(year)
+    updateYearNavForCategory()
+
+    const res = await fetch(`/category-kpi?year_period_for_kpi=${year}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const { categoryKpi } = await res.json()
+    lastCategoryRows = categoryKpi || []
+    renderCategoryKpiTable(lastCategoryRows)
+
+    const wrapper = document.getElementById('html-category-kpi-body')
+    if (wrapper) {
+        const saved = loadFilters(CATEGORY_TABLE_SCROLL_KEY)
+        if (saved && typeof saved.scrollTop === 'number') {
+            wrapper.scrollTop = saved.scrollTop
+        }
+        wrapper.addEventListener('scroll', () => {
+            saveFilters(CATEGORY_TABLE_SCROLL_KEY, { scrollTop: wrapper.scrollTop })
+        })
+    }
+}
+
+function updateLabelForCategory(year) {
+    const label = document.getElementById('html-category-kpi-year-label')
+    if (!label) return
+    label.textContent = year === 0 ? `Categorías - Todos` : `Categorías - ${year}`
+}
+
+function updateYearNavForCategory() {
+    const prevBtn = document.getElementById('html-category-kpi-prev')
+    const nextBtn = document.getElementById('html-category-kpi-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.disabled = category_year_index >= kpi_years.length - 1
+    nextBtn.disabled = category_year_index <= 0
+}
+
+function renderCategoryKpiTable(rows) {
+    const tbody = document.getElementById('html-category-kpi-tbody')
+    if (!tbody) return
+    tbody.innerHTML = ''
+    const sort = loadCategorySort()
+    const sorted = applyCategorySort(rows || [], sort)
+    setupCategoryHeaderHandlers()
+
+    sorted.forEach(r => {
+        const tr = document.createElement('tr')
+        const ccell = document.createElement('td')
+        ccell.textContent = r.cat_name || ''
+        const amount = document.createElement('td')
+        amount.textContent = Number(r.amount || 0).toFixed(2)
+        const tcount = document.createElement('td')
+        tcount.textContent = String(r.transaction_count || 0)
+        const action = document.createElement('td')
+        const detailButton = document.createElement('button')
+        detailButton.type = 'button'
+        detailButton.className = 'category-kpi-action'
+        detailButton.title = 'Ver estadística'
+        detailButton.setAttribute('aria-label', `Ver estadística de ${r.cat_name || 'categoría'}`)
+        detailButton.innerHTML = iconMoreHorizontal()
+        detailButton.addEventListener('click', () => {
+            detailButton.blur()
+            openCategoryKpiDetail(r)
+        })
+        action.appendChild(detailButton)
+        tr.appendChild(ccell)
+        tr.appendChild(amount)
+        tr.appendChild(tcount)
+        tr.appendChild(action)
+        tbody.appendChild(tr)
+    })
+
+    updateCategoryHeaderIndicators(sort)
+}
+
+function getCategoryDetailPeriods() {
+    return [...new Set(kpi_years.filter(year => year > 0))].sort((a, b) => a - b).concat(0)
+}
+
+function updateCategoryDetailNavigation(prefix, selectedYear) {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(selectedYear)
+    const prev = document.getElementById(`${prefix}-prev`)
+    const next = document.getElementById(`${prefix}-next`)
+    if (prev) prev.disabled = index <= 0
+    if (next) next.disabled = index < 0 || index >= periods.length - 1
+}
+
+function buildCategoryDetailSeries(rows, year) {
+    const monthLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    if (year > 0) {
+        const byMonth = new Map(rows.map(row => [Number(row.month_period), Number(row.amount || 0)]))
+        return {
+            labels: monthLabels,
+            values: monthLabels.map((_, index) => byMonth.get(index + 1) || 0)
+        }
+    }
+
+    const byYear = new Map(rows.map(row => [Number(row.year_period), Number(row.amount || 0)]))
+    const years = [...byYear.keys()]
+    if (!years.length) return { labels: [], values: [] }
+    const firstYear = Math.min(...years)
+    const lastYear = Math.max(...years)
+    const labels = Array.from({ length: lastYear - firstYear + 1 }, (_, index) => String(firstYear + index))
+    return {
+        labels,
+        values: labels.map(label => byYear.get(Number(label)) || 0)
+    }
+}
+
+async function openCategoryKpiDetail(category, selectedYear = kpi_years[category_year_index]) {
+    const modal = document.getElementById('category-kpi-detail-modal')
+    const title = document.getElementById('category-kpi-detail-title')
+    if (!modal || !title || !category?.category_id) return
+
+    categoryKpiDetailItem = category
+    categoryKpiDetailYear = selectedYear
+    title.textContent = `${category.cat_name || 'Categoría'} - ${selectedYear === 0 ? 'Todos' : selectedYear}`
+    updateCategoryDetailNavigation('category-kpi-detail', selectedYear)
+    const query = new URLSearchParams({
+        category_id: String(category.category_id),
+        year_period_for_kpi: String(selectedYear)
+    })
+    const res = await fetch(`/category-kpi-detail?${query}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const { categoryKpiDetail } = await res.json()
+    const { labels, values } = buildCategoryDetailSeries(categoryKpiDetail, selectedYear)
+    const ctx = document.getElementById('category-kpi-detail-chart')?.getContext('2d')
+    if (!ctx) return
+    if (categoryKpiDetailChart) categoryKpiDetailChart.destroy()
+    categoryKpiDetailChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Monto',
+                data: values,
+                tension: 0.35,
+                fill: false,
+                borderColor: '#16a34a',
+                backgroundColor: '#16a34a',
+                pointBackgroundColor: '#16a34a',
+                pointBorderColor: '#16a34a'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            scales: { y: { beginAtZero: true } }
+        }
+    })
+    modal.classList.remove('hidden')
+}
+
+function closeCategoryKpiDetail() {
+    document.getElementById('category-kpi-detail-modal')?.classList.add('hidden')
+}
+
+document.getElementById('category-kpi-detail-close')?.addEventListener('click', closeCategoryKpiDetail)
+document.getElementById('category-kpi-detail-modal')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) closeCategoryKpiDetail()
+})
+document.getElementById('category-kpi-detail-prev')?.addEventListener('click', () => {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(categoryKpiDetailYear)
+    if (categoryKpiDetailItem && index > 0) openCategoryKpiDetail(categoryKpiDetailItem, periods[index - 1])
+})
+document.getElementById('category-kpi-detail-next')?.addEventListener('click', () => {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(categoryKpiDetailYear)
+    if (categoryKpiDetailItem && index >= 0 && index < periods.length - 1) openCategoryKpiDetail(categoryKpiDetailItem, periods[index + 1])
+})
+
+function initYearNavForCategoryGroup() {
+    const prevBtn = document.getElementById('html-category-group-kpi-prev')
+    const nextBtn = document.getElementById('html-category-group-kpi-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.addEventListener('click', async () => {
+        if (category_group_year_index < kpi_years.length - 1) {
+            category_group_year_index++
+            await changeYearForCategoryGroup()
+        }
+    })
+    nextBtn.addEventListener('click', async () => {
+        if (category_group_year_index > 0) {
+            category_group_year_index--
+            await changeYearForCategoryGroup()
+        }
+    })
+    updateYearNavForCategoryGroup()
+}
+
+async function changeYearForCategoryGroup() {
+    const year = kpi_years[category_group_year_index]
+    saveFilters(CATEGORY_GROUP_KPI_YEAR_STATE_KEY, year)
+    updateLabelForCategoryGroup(year)
+    updateYearNavForCategoryGroup()
+
+    const res = await fetch(`/category-group-kpi?year_period_for_kpi=${year}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const { categoryGroupKpi } = await res.json()
+    lastCategoryGroupRows = categoryGroupKpi || []
+    renderCategoryGroupKpiTable(lastCategoryGroupRows)
+
+    const wrapper = document.getElementById('html-category-group-kpi-body')
+    if (wrapper) {
+        const saved = loadFilters(CATEGORY_GROUP_TABLE_SCROLL_KEY)
+        if (saved && typeof saved.scrollTop === 'number') wrapper.scrollTop = saved.scrollTop
+        wrapper.onscroll = () => saveFilters(CATEGORY_GROUP_TABLE_SCROLL_KEY, { scrollTop: wrapper.scrollTop })
+    }
+}
+
+function updateLabelForCategoryGroup(year) {
+    const label = document.getElementById('html-category-group-kpi-year-label')
+    if (label) label.textContent = year === 0 ? 'Grupo Categorías - Todos' : `Grupo Categorías - ${year}`
+}
+
+function updateYearNavForCategoryGroup() {
+    const prevBtn = document.getElementById('html-category-group-kpi-prev')
+    const nextBtn = document.getElementById('html-category-group-kpi-next')
+    if (!prevBtn || !nextBtn) return
+    prevBtn.disabled = category_group_year_index >= kpi_years.length - 1
+    nextBtn.disabled = category_group_year_index <= 0
+}
+
+function renderCategoryGroupKpiTable(rows) {
+    const tbody = document.getElementById('html-category-group-kpi-tbody')
+    if (!tbody) return
+    tbody.innerHTML = ''
+    const sort = loadCategoryGroupSort()
+    setupCategoryGroupHeaderHandlers()
+    applyCategoryGroupSort(rows || [], sort).forEach(row => {
+        const tr = document.createElement('tr')
+        const name = document.createElement('td')
+        name.textContent = row.cat_group_name || ''
+        const amount = document.createElement('td')
+        amount.textContent = Number(row.amount || 0).toFixed(2)
+        const count = document.createElement('td')
+        count.textContent = String(row.transaction_count || 0)
+        const action = document.createElement('td')
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'category-kpi-action'
+        button.title = 'Ver estadística'
+        button.setAttribute('aria-label', `Ver estadística de ${row.cat_group_name || 'grupo'}`)
+        button.innerHTML = iconMoreHorizontal()
+        button.addEventListener('click', () => {
+            button.blur()
+            openCategoryGroupKpiDetail(row)
+        })
+        action.appendChild(button)
+        tr.append(name, amount, count, action)
+        tbody.appendChild(tr)
+    })
+    updateCategoryGroupHeaderIndicators(sort)
+}
+
+async function openCategoryGroupKpiDetail(group, selectedYear = kpi_years[category_group_year_index]) {
+    const modal = document.getElementById('category-group-kpi-detail-modal')
+    const title = document.getElementById('category-group-kpi-detail-title')
+    if (!modal || !title || !group?.category_group_id) return
+    categoryGroupKpiDetailItem = group
+    categoryGroupKpiDetailYear = selectedYear
+    title.textContent = `${group.cat_group_name || 'Grupo Categoría'} - ${selectedYear === 0 ? 'Todos' : selectedYear}`
+    updateCategoryDetailNavigation('category-group-kpi-detail', selectedYear)
+    const query = new URLSearchParams({
+        category_group_id: String(group.category_group_id),
+        year_period_for_kpi: String(selectedYear)
+    })
+    const res = await fetch(`/category-group-kpi-detail?${query}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const { categoryGroupKpiDetail } = await res.json()
+    const { labels, values } = buildCategoryDetailSeries(categoryGroupKpiDetail, selectedYear)
+    const ctx = document.getElementById('category-group-kpi-detail-chart')?.getContext('2d')
+    if (!ctx) return
+    if (categoryGroupKpiDetailChart) categoryGroupKpiDetailChart.destroy()
+    categoryGroupKpiDetailChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Monto',
+                data: values,
+                tension: 0.35,
+                fill: false,
+                borderColor: '#16a34a',
+                backgroundColor: '#16a34a',
+                pointBackgroundColor: '#16a34a',
+                pointBorderColor: '#16a34a'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, scales: { y: { beginAtZero: true } } }
+    })
+    modal.classList.remove('hidden')
+}
+
+function closeCategoryGroupKpiDetail() {
+    document.getElementById('category-group-kpi-detail-modal')?.classList.add('hidden')
+}
+
+document.getElementById('category-group-kpi-detail-close')?.addEventListener('click', closeCategoryGroupKpiDetail)
+document.getElementById('category-group-kpi-detail-modal')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) closeCategoryGroupKpiDetail()
+})
+document.getElementById('category-group-kpi-detail-prev')?.addEventListener('click', () => {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(categoryGroupKpiDetailYear)
+    if (categoryGroupKpiDetailItem && index > 0) openCategoryGroupKpiDetail(categoryGroupKpiDetailItem, periods[index - 1])
+})
+document.getElementById('category-group-kpi-detail-next')?.addEventListener('click', () => {
+    const periods = getCategoryDetailPeriods()
+    const index = periods.indexOf(categoryGroupKpiDetailYear)
+    if (categoryGroupKpiDetailItem && index >= 0 && index < periods.length - 1) openCategoryGroupKpiDetail(categoryGroupKpiDetailItem, periods[index + 1])
+})
+
+function loadCategoryGroupSort() {
+    const raw = loadFilters(CATEGORY_GROUP_SORT_KEY)
+    return raw?.key ? raw : { key: 'amount', dir: 'desc' }
+}
+
+function saveCategoryGroupSort(sort) {
+    saveFilters(CATEGORY_GROUP_SORT_KEY, sort)
+}
+
+function applyCategoryGroupSort(rows, sort) {
+    const key = sort?.key || 'amount'
+    const dir = sort?.dir === 'asc' ? 1 : -1
+    return [...rows].sort((a, b) => {
+        if (key === 'cat_group_name') return dir * String(a[key] || '').localeCompare(String(b[key] || ''), undefined, { sensitivity: 'base' })
+        const va = Number(a[key] || 0)
+        const vb = Number(b[key] || 0)
+        return va === vb ? 0 : dir * (va > vb ? 1 : -1)
+    })
+}
+
+function toggleCategoryGroupSort(key) {
+    const current = loadCategoryGroupSort()
+    const next = { key, dir: current.key === key && current.dir === 'desc' ? 'asc' : (key === 'cat_group_name' ? 'asc' : 'desc') }
+    saveCategoryGroupSort(next)
+    renderCategoryGroupKpiTable(lastCategoryGroupRows)
+}
+
+function setupCategoryGroupHeaderHandlers() {
+    const ths = document.getElementById('html-category-group-kpi-table')?.querySelectorAll('thead th')
+    if (!ths || ths.length < 4) return
+    const mapping = ['cat_group_name', 'amount', 'transaction_count']
+    ths.forEach((th, index) => {
+        th.style.cursor = index < mapping.length ? 'pointer' : 'default'
+        th.onclick = index < mapping.length ? () => toggleCategoryGroupSort(mapping[index]) : null
+    })
+}
+
+function updateCategoryGroupHeaderIndicators(sort) {
+    const ths = document.getElementById('html-category-group-kpi-table')?.querySelectorAll('thead th')
+    if (!ths) return
+    const labels = ['Grupo Categoría', 'Monto', 'Cant.', 'Acción']
+    const mapping = ['cat_group_name', 'amount', 'transaction_count']
+    ths.forEach((th, index) => {
+        let label = labels[index]
+        if (sort?.key === mapping[index]) label += sort.dir === 'asc' ? ' ▲' : ' ▼'
+        th.textContent = label
+    })
+}
+
+function loadCategorySort() {
+    const raw = loadFilters(CATEGORY_SORT_KEY)
+    if (!raw || !raw.key) return { key: 'amount', dir: 'desc' }
+    return raw
+}
+
+function saveCategorySort(sort) {
+    saveFilters(CATEGORY_SORT_KEY, sort)
+}
+
+function applyCategorySort(rows, sort) {
+    if (!Array.isArray(rows)) return []
+    const key = sort?.key || 'amount'
+    const dir = sort?.dir === 'asc' ? 1 : -1
+    const copy = [...rows]
+    copy.sort((a, b) => {
+        const va = a[key]
+        const vb = b[key]
+        if (key === 'cat_name') {
+            return dir * String(va || '').localeCompare(String(vb || ''), undefined, { sensitivity: 'base' })
+        }
+        const na = Number(va || 0)
+        const nb = Number(vb || 0)
+        if (na === nb) return 0
+        return dir * (na > nb ? 1 : -1)
+    })
+    return copy
+}
+
+function toggleCategorySort(key) {
+    const current = loadCategorySort()
+    let next = { key, dir: 'desc' }
+    if (current.key === key) {
+        next.dir = current.dir === 'asc' ? 'desc' : 'asc'
+    } else {
+        next.dir = key === 'cat_name' ? 'asc' : 'desc'
+    }
+    saveCategorySort(next)
+    renderCategoryKpiTable(lastCategoryRows)
+}
+
+function setupCategoryHeaderHandlers() {
+    const table = document.getElementById('html-category-kpi-table')
+    if (!table) return
+    const ths = table.querySelectorAll('thead th')
+    if (!ths || ths.length < 4) return
+
+    const mapping = ['cat_name', 'amount', 'transaction_count']
+    ths.forEach((th, idx) => {
+        if (idx >= mapping.length) {
+            th.style.cursor = 'default'
+            th.onclick = null
+            return
+        }
+        th.style.cursor = 'pointer'
+        th.onclick = () => toggleCategorySort(mapping[idx])
+    })
+}
+
+function updateCategoryHeaderIndicators(sort) {
+    const table = document.getElementById('html-category-kpi-table')
+    if (!table) return
+    const ths = table.querySelectorAll('thead th')
+    const labels = ['Categoría', 'Monto', 'Cant.', 'Acción']
+    ths.forEach((th, idx) => {
+        const mapping = ['cat_name', 'amount', 'transaction_count']
+        const key = mapping[idx]
+        let label = labels[idx]
+        if (sort && sort.key === key) {
+            label += sort.dir === 'asc' ? ' ▲' : ' ▼'
+        }
+        th.textContent = label
+    })
+}
+
 function toggleCard(id) {
     const body = document.getElementById(id)
     const icon = document.getElementById(`icon-${id}`)
@@ -14504,6 +17085,10 @@ function scrollCarouselPrev() {
     if (!carousel) return
     carousel.scrollBy({ left: -carousel.clientWidth * 0.8, behavior: 'smooth' })
 }
+
+window.scrollCarouselNext = scrollCarouselNext
+window.scrollCarouselPrev = scrollCarouselPrev
+})()
  
 ```
  
@@ -14514,6 +17099,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\payable-p
 ```
  
 ```js
+(() => {
 /* ============================================================================
 1. Constantes globales
 2. Variables de estado
@@ -14895,6 +17481,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 })
+
+window.goToPaymentUpdate = goToPaymentUpdate
+window.goToPaymentClone = goToPaymentClone
+window.goToPaymentDelete = goToPaymentDelete
+window.selectPaymentCard = selectPaymentCard
+})()
  
 ```
  
@@ -14905,6 +17497,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\payables-
 ```
  
 ```js
+(() => {
 /* ============================================================================
 1. Constantes globales
 2. Variables de estado
@@ -14936,6 +17529,7 @@ const COLLAPSE_KEY = `payables.collapse.${window.USER_ID}`
 2. Variables de estado
 ========================================================= */
 let allPayables = []
+let groupTotals = []
 
 /* ============================
    Layout detection
@@ -14991,8 +17585,8 @@ function togglePayableGroupCollapse(groupId) {
 }
 
 function getGroupPendingTotal(group_id) {
-  if (!window.groupTotals) return 0
-  const group = window.groupTotals.find(g => g.payable_group_id === group_id)
+  if (!groupTotals) return 0
+  const group = groupTotals.find(g => g.payable_group_id === group_id)
   return group ? group.total_balance : 0
 }
 
@@ -15330,7 +17924,7 @@ async function loadPayables() {
   const res = await fetch(API_BASE)
   const data = await res.json()
   allPayables = data.payables || []
-  window.groupTotals = data.group_totals || []
+  groupTotals = data.group_totals || []
 
   const cachedText = loadFilters(FILTER_KEY)
   const cachedStatus = loadFilters(STATUS_FILTER_KEY)
@@ -15548,6 +18142,571 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 })
 
+window.togglePayableGroupCollapse = togglePayableGroupCollapse
+window.goToPayableUpdate = goToPayableUpdate
+window.goToPayableDelete = goToPayableDelete
+window.goToPayableView = goToPayableView
+window.selectPayableCard = selectPayableCard
+window.goToPayableGroupUpdate = goToPayableGroupUpdate
+window.goToPayableGroupDelete = goToPayableGroupDelete
+
+})()
+ 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\receivable-collections-index.js
+```
+ 
+```js
+(() => {
+const API_BASE = '/receivables-collections/list/'
+let allCollections = []
+
+const searchInput = document.getElementById('search-input')
+const clearBtn = document.getElementById('clear-search-btn')
+const tableBody = document.getElementById('receivable-collections-table')
+const mobileContainer = document.getElementById('receivable-collections-mobile')
+
+function getLayoutMode() {
+  const w = window.innerWidth
+  if (w >= 1024) return 'desktop'
+  if (w >= 769) return 'tablet'
+  return 'mobile'
+}
+
+let currentLayout = getLayoutMode()
+
+function debounce(fn, delay) {
+  let t
+  return (...args) => {
+    clearTimeout(t)
+    t = setTimeout(() => fn(...args), delay)
+  }
+}
+
+function loadCollections() {
+  fetch(`${API_BASE}${window.RECEIVABLE_ID}/payable`)
+    .then(res => res.json())
+    .then(data => {
+      allCollections = data || []
+      applyFilters()
+    })
+    .catch(err => console.error('Error loading receivable collections', err))
+}
+
+function getSearchText() {
+  return (searchInput?.value || '').toLowerCase()
+}
+
+function applyFilters() {
+  const searchText = getSearchText()
+  const filtered = allCollections.filter(collection => {
+    const haystack = `${collection.note || ''} ${collection.account ? collection.account.name : ''} ${collection.category ? collection.category.name : ''}`.toLowerCase()
+    return haystack.includes(searchText)
+  })
+
+  render(filtered)
+}
+
+function renderTable(data) {
+  if (!tableBody) return
+  if (!data.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="ui-td col-center text-gray-500">No se encontraron cobros</td>
+      </tr>
+    `
+    return
+  }
+  tableBody.innerHTML = data.map(renderRow).join('')
+}
+
+function renderCards(data) {
+  if (!mobileContainer) return
+  mobileContainer.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="ui-empty">No se encontraron cobros</div>`
+}
+
+function render(data) {
+  if (window.innerWidth <= 768) {
+    // mobile
+    renderCards(data)
+    if (tableBody) tableBody.innerHTML = ''
+  } else {
+    // desktop / tablet
+    renderTable(data)
+    if (mobileContainer) mobileContainer.innerHTML = ''
+  }
+}
+
+function renderRow(collection) {
+  return `
+    <tr id="receivable-collection-${collection.id}">
+      <td class="ui-td col-left">${formatDateTime(collection.collection_date).date}</td>
+      <td class="ui-td col-right">${amountBox(collection.principal_received)}</td>
+      <td class="ui-td col-right">${amountBox(collection.interest_received)}</td>
+      <td class="ui-td col-left">${collection.account ? collection.account.name : '-'}</td>
+      <td class="ui-td col-left">${collection.category ? collection.category.name : '-'}</td>
+      <td class="ui-td col-left">${collectionLabel(collection)}</td>
+      <td class="ui-td col-center">
+        <div class="icon-actions">
+          <button class="icon-btn edit" onclick="goToCollectionUpdate(${collection.id})">${iconEdit()}<span class="ui-btn-text">Editar</span></button>
+          <button class="icon-btn delete" onclick="goToCollectionDelete(${collection.id})">${iconDelete()}<span class="ui-btn-text">Eliminar</span></button>
+        </div>
+      </td>
+    </tr>
+  `
+}
+
+function renderCard(collection) {
+  return `
+    <div class="payable-card">
+      <div class="card-header">
+        <div class="card-datetime">
+          <div class="card-title">Cobro</div>
+        </div>
+
+        <div class="card-actions">
+          <button class="icon-btn edit" onclick="event.stopPropagation(); goToCollectionUpdate(${collection.id})">${iconEdit()}</button>
+          <button class="icon-btn delete" onclick="event.stopPropagation(); goToCollectionDelete(${collection.id})">${iconDelete()}</button>
+        </div>
+      </div>
+
+      <div class="card-body payment-amounts">
+        <div class="amount-item">
+          <div class="amount-label">Capital</div>
+          <div class="amount-value">${amountBox(collection.principal_received)}</div>
+        </div>
+
+        <div class="amount-item">
+          <div class="amount-label">Interés</div>
+          <div class="amount-value">${amountBox(collection.interest_received)}</div>
+        </div>
+
+        <div class="amount-item">
+          <div class="amount-label">Total</div>
+          <div class="amount-value">${amountBox(Number(collection.principal_received) + Number(collection.interest_received))}</div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <div class="footer-left">
+          <div class="footer-account">${collection.account ? collection.account.name : '-'}</div>
+          <div class="footer-category">${collection.category ? collection.category.name : '-'}</div>
+        </div>
+
+        <div class="footer-right">
+          <span class="footer-label">Cobro No.</span>
+          <span class="footer-number">${collectionLabel(collection)}</span>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function collectionLabel(collection) {
+  const principal = Number(collection.principal_received || 0)
+  const collNumber = Number(collection.collection_number || 0)
+  if (principal > 0 && collNumber > 0) return `${numberBox(collNumber)}`
+  return 'No Aplica'
+}
+
+function bindEvents() {
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce(() => applyFilters(), 200))
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      if (searchInput) searchInput.value = ''
+      applyFilters()
+    })
+  }
+}
+
+window.goToCollectionUpdate = function (id) { window.location.href = `/receivables-collections/update/${id}` }
+window.goToCollectionDelete = function (id) { window.location.href = `/receivables-collections/delete/${id}` }
+
+bindEvents()
+loadCollections()
+
+window.addEventListener('resize', () => {
+  const nextLayout = getLayoutMode()
+  if (nextLayout !== currentLayout) {
+    currentLayout = nextLayout
+    applyFilters()
+  }
+})
+})()
+ 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\receivables-index.js
+```
+ 
+```js
+(() => {
+const API_BASE = '/receivables/list'
+const FILTER_KEY = `receivables.filters.${window.USER_ID}`
+const SELECTED_KEY = `receivables.selected.${window.USER_ID}`
+const SCROLL_KEY = `receivables.scroll.${window.USER_ID}`
+const COLLAPSE_KEY = `receivables.collapse.${window.USER_ID}`
+
+let allReceivables = []
+let groupTotals = []
+
+function getLayoutMode() {
+  const w = window.innerWidth
+  if (w >= 1024) return 'desktop'
+  if (w >= 769) return 'tablet'
+  return 'mobile'
+}
+
+let currentLayout = getLayoutMode()
+
+const searchInput = document.getElementById('search-input')
+const clearBtn = document.getElementById('clear-search-btn')
+const searchBtn = document.getElementById('search-btn')
+const tableBody = document.getElementById('receivables-table')
+const scrollContainer = document.querySelector('.ui-scroll-area')
+const mobileContainer = document.getElementById('receivables-mobile')
+
+const newBtn = document.querySelector('[data-btn="new"]')
+const insertModal = document.getElementById('insert-modal')
+const insertModalContent = document.getElementById('insert-modal-content')
+const insertGroupBtn = document.getElementById('insert-group')
+const insertChildBtn = document.getElementById('insert-child')
+const closeInsertModalBtn = document.getElementById('close-modal')
+
+function debounce(fn, delay) {
+  let t
+  return (...args) => {
+    clearTimeout(t)
+    t = setTimeout(() => fn(...args), delay)
+  }
+}
+
+function loadFilters() {
+  try {
+    return JSON.parse(localStorage.getItem(FILTER_KEY) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function saveFilters(value) {
+  localStorage.setItem(FILTER_KEY, JSON.stringify(value))
+}
+
+function isReceivableGroupCollapsed(groupId) {
+  const state = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '{}') || {}
+  return !!state[groupId]
+}
+
+function toggleReceivableGroupCollapse(groupId) {
+  const state = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '{}') || {}
+  state[groupId] = !state[groupId]
+  localStorage.setItem(COLLAPSE_KEY, JSON.stringify(state))
+  applyAllFilters()
+}
+
+function getGroupPendingTotal(group_id) {
+  if (!groupTotals) return 0
+  const g = groupTotals.find(x => x.receivable_group_id === group_id)
+  return g ? g.total_balance : 0
+}
+
+function getParentBackgroundColor(index, total) {
+  if (total <= 1) return 'hsl(210, 40%, 96%)'
+
+  const startLightness = 96
+  const endLightness = 88
+  const step = (startLightness - endLightness) / (total - 1)
+
+  const lightness = startLightness - (step * index)
+
+  return `hsl(140, 35%, ${lightness}%)`
+}
+
+function getSearchText() {
+  const filters = loadFilters()
+  return (filters.search || '').toLowerCase()
+}
+
+function renderRow(receivable) {
+  const { date, weekday } = formatDateTime(receivable.start_date || new Date())
+  const group_id = receivable.receivable_group ? receivable.receivable_group.id : null
+  if (group_id && isReceivableGroupCollapsed(group_id)) return ''
+
+  const rowClass = receivable.is_active ? '' : 'bg-red-50'
+  return `
+    <tr id="receivable-${receivable.id}" class="${rowClass}">
+      <td class="ui-td col-left">
+        <div class="child-cell">
+          <span class="child-indent"></span>
+          <div class="payable-name-block">
+            <div class="payable-name">${receivable.name}</div>
+            <div class="payable-date">${date} · ${weekday}</div>
+          </div>
+        </div>
+      </td>
+      <td class="ui-td col-right">${amountBox(receivable.total_amount)}</td>
+      <td class="ui-td col-right">${amountBox(receivable.principal_received)}</td>
+      <td class="ui-td col-right">${amountBox(receivable.interest_received)}</td>
+      <td class="ui-td col-right">${amountBox(receivable.balance)}</td>
+      <td class="ui-td col-left">${statusTag(receivable.is_active)}</td>
+      <td class="ui-td col-left">${receivable.disbursement_account ? receivable.disbursement_account.name : '-'}</td>
+      <td class="ui-td col-left">${receivable.category ? receivable.category.name : '-'}</td>
+      <td class="ui-td col-center">
+        <div class="icon-actions">
+          <button class="icon-btn edit" onclick="goToReceivableUpdate(${receivable.id})">${iconEdit()}<span class="ui-btn-text">Editar</span></button>
+          <button class="icon-btn delete" onclick="goToReceivableDelete(${receivable.id})">${iconDelete()}<span class="ui-btn-text">Eliminar</span></button>
+          <button class="icon-btn" onclick="goToReceivableView(${receivable.id})">${iconList()}<span class="ui-btn-text">Cobros</span></button>
+        </div>
+      </td>
+    </tr>
+  `
+}
+
+function renderCard(receivable) {
+  const group_id = receivable.receivable_group ? receivable.receivable_group.id : null
+  if (group_id && isReceivableGroupCollapsed(group_id)) return ''
+
+  return `
+    <div class="payable-card ${receivable.is_active ? '' : 'inactive'}" data-id="${receivable.id}">
+      <div class="card-header">
+        <div class="card-title">${receivable.name}</div>
+        <div class="card-actions">
+          <button class="icon-btn edit" onclick="event.stopPropagation(); goToReceivableUpdate(${receivable.id})">${iconEdit()}</button>
+          <button class="icon-btn delete" onclick="event.stopPropagation(); goToReceivableDelete(${receivable.id})">${iconDelete()}</button>
+          <button class="icon-btn" onclick="event.stopPropagation(); goToReceivableView(${receivable.id})">${iconList()}</button>
+        </div>
+      </div>
+      <div class="card-balance">${amountBox(receivable.balance)}</div>
+      <div class="card-sub payable-amounts">
+        <div class="payable-amount-item"><div class="payable-amount-title">Monto</div><div class="payable-amount-value">${amountBox(receivable.total_amount)}</div></div>
+        <div class="payable-amount-item"><div class="payable-amount-title">Capital</div><div class="payable-amount-value">${amountBox(receivable.principal_received)}</div></div>
+        <div class="payable-amount-item"><div class="payable-amount-title">Interés</div><div class="payable-amount-value">${amountBox(receivable.interest_received)}</div></div>
+      </div>
+      <div class="card-footer">
+        <div class="card-tags">
+          <div class="tag-line">${statusTag(receivable.is_active)}</div>
+          <div class="tag-line">${receivable.disbursement_account ? receivable.disbursement_account.name : '-'}</div>
+          <div class="tag-line">${receivable.category ? receivable.category.name : '-'}</div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function applyAllFilters() {
+  const searchText = getSearchText()
+  const filtered = allReceivables.filter(receivable => {
+    const haystack = `${receivable.name} ${receivable.category ? receivable.category.name : ''} ${receivable.disbursement_account ? receivable.disbursement_account.name : ''}`.toLowerCase()
+    return haystack.includes(searchText)
+  })
+
+  render(filtered)
+}
+
+function loadReceivables() {
+  fetch(API_BASE)
+    .then(res => res.json())
+    .then(data => {
+      allReceivables = data.receivables || []
+      groupTotals = data.group_totals || []
+      applyAllFilters()
+    })
+    .catch(err => console.error('Error loading receivables', err))
+}
+
+function updateSearchValue() {
+  const filters = loadFilters()
+  if (searchInput) searchInput.value = filters.search || ''
+}
+
+function bindEvents() {
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce(event => {
+      const filters = loadFilters()
+      filters.search = event.target.value
+      saveFilters(filters)
+      applyAllFilters()
+    }, 200))
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      const filters = loadFilters()
+      filters.search = ''
+      saveFilters(filters)
+      updateSearchValue()
+      applyAllFilters()
+    })
+  }
+
+  window.addEventListener('resize', () => {
+    const nextLayout = getLayoutMode()
+    if (nextLayout !== currentLayout) {
+      currentLayout = nextLayout
+      applyAllFilters()
+    }
+  })
+}
+
+/* Modal for insert (group or child) */
+function openModal() { if (insertModal) insertModal.classList.remove('hidden') }
+function closeModal() { if (insertModal) insertModal.classList.add('hidden') }
+
+if (newBtn) newBtn.addEventListener('click', (e) => { e.preventDefault(); openModal() })
+if (closeInsertModalBtn) closeInsertModalBtn.addEventListener('click', () => closeModal())
+if (insertGroupBtn) insertGroupBtn.addEventListener('click', () => { location.href = '/receivables-groups/insert' })
+if (insertChildBtn) insertChildBtn.addEventListener('click', () => { location.href = '/receivables/insert' })
+if (insertModal) insertModal.addEventListener('click', (e) => { if (!insertModalContent?.contains(e.target)) insertModal.classList.add('hidden') })
+
+function restoreScroll() {
+  const saved = JSON.parse(localStorage.getItem(SCROLL_KEY) || '{}')
+  if (!saved?.y || !scrollContainer) return
+  requestAnimationFrame(() => { scrollContainer.scrollTop = saved.y })
+}
+
+scrollContainer?.addEventListener('scroll', () => {
+  const state = JSON.parse(localStorage.getItem(SCROLL_KEY) || '{}') || {}
+  state.y = scrollContainer.scrollTop
+  localStorage.setItem(SCROLL_KEY, JSON.stringify(state))
+})
+
+function renderTable(data) {
+  if (!data.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="9" class="ui-td col-center text-gray-500">
+          No se encontraron Cuentas por Cobrar
+        </td>
+      </tr>
+    `
+    restoreScroll()
+    return
+  }
+
+  const groupsMap = new Map()
+
+  data.forEach(r => {
+    const group = r.receivable_group || { id: 0, name: 'Sin grupo' }
+    if (!groupsMap.has(group.id)) {
+      groupsMap.set(group.id, { group, items: [] })
+    }
+    groupsMap.get(group.id).items.push(r)
+  })
+
+  const html = Array.from(groupsMap.values()).map(entry => {
+    const group = entry.group
+    const items = entry.items
+    const collapsed = isReceivableGroupCollapsed(group.id)
+    const pending = getGroupPendingTotal(group.id)
+
+    const groupRow = `
+      <tr class="parent-row">
+        <td class="ui-td col-left">
+          <div class="group-cell">
+            <button class="group-toggle" onclick="toggleReceivableGroupCollapse(${group.id})">
+              ${collapsed ? iconChevronOpen() : iconChevronClose()}
+            </button>
+            <span class="group-name">${group.name}</span>
+          </div>
+        </td>
+        <td class="ui-td col-right group-pending" colspan="3">
+          Pendiente: ${amountBox(pending)}
+        </td>
+        <td class="ui-td col-right" colspan="5">
+          <div class="icon-actions">
+            <button class="icon-btn edit" onclick="goToReceivableGroupUpdate(${group.id})">${iconEdit()}<span class="ui-btn-text">Editar</span></button>
+            <button class="icon-btn delete" onclick="goToReceivableGroupDelete(${group.id})">${iconDelete()}<span class="ui-btn-text">Eliminar</span></button>
+          </div>
+        </td>
+      </tr>
+    `
+
+    const rows = collapsed ? '' : items.map(i => renderRow(i)).join('')
+    return groupRow + rows
+  }).join('')
+
+  tableBody.innerHTML = html
+  restoreScroll()
+}
+
+function renderCards(data) {
+  const container = document.getElementById('receivables-mobile')
+  if (!container) return
+
+  const groupsMap = new Map()
+  data.forEach(r => {
+    const group = r.receivable_group || { id: 0, name: 'Sin grupo' }
+    if (!groupsMap.has(group.id)) {
+      groupsMap.set(group.id, { group, items: [] })
+    }
+    groupsMap.get(group.id).items.push(r)
+  })
+
+  const groups = Array.from(groupsMap.values())
+  const totalParents = groups.length
+
+  const html = groups.map((entry, index) => {
+    const group = entry.group
+    const items = entry.items
+    const collapsed = isReceivableGroupCollapsed(group.id)
+    const bgColor = getParentBackgroundColor(index, totalParents)
+    const pending = getGroupPendingTotal(group.id)
+
+    const cards = collapsed ? '' : items.map(i => renderCard(i)).join('')
+
+    return `
+      <div class="payable-group ${collapsed ? 'collapsed' : ''}" style="background:${bgColor};">
+        <div class="payable-group-header">
+          <div class="payables-group-header-left">
+            <button onclick="toggleReceivableGroupCollapse(${group.id})">
+              ${collapsed ? iconChevronOpen() : iconChevronClose()}
+            </button>
+          </div>
+          <div class="payables-group-center">
+            <span class="payables-group-title">${group.name}</span>
+            <span class="payables-group-pending">Pendiente: ${amountBox(pending)}</span>
+          </div>
+          <div class="payables-group-actions">
+            <button class="icon-btn edit" onclick="event.stopPropagation();goToReceivableGroupUpdate(${group.id})">${iconEdit()}</button>
+            <button class="icon-btn delete" onclick="event.stopPropagation();goToReceivableGroupDelete(${group.id})">${iconDelete()}</button>
+          </div>
+        </div>
+        <div class="payable-group-body">${cards}</div>
+      </div>
+    `
+  }).join('')
+
+  container.innerHTML = html
+}
+
+function render(data) {
+  window.innerWidth <= 768 ? renderCards(data) : renderTable(data)
+}
+
+window.goToReceivableUpdate = function (id) { window.location.href = `/receivables/update/${id}` }
+window.goToReceivableDelete = function (id) { window.location.href = `/receivables/delete/${id}` }
+window.goToReceivableView = function (id) { window.location.href = `/receivables-collections/${id}/payable` }
+window.goToReceivableGroupUpdate = function (id) { window.location.href = `/receivables-groups/update/${id}` }
+window.goToReceivableGroupDelete = function (id) { window.location.href = `/receivables-groups/delete/${id}` }
+window.toggleReceivableGroupCollapse = toggleReceivableGroupCollapse
+
+bindEvents()
+updateSearchValue()
+loadReceivables()
+})()
  
 ```
  
@@ -15558,6 +18717,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\transacti
 ```
  
 ```js
+(() => {
 /* ============================================================================
    1. Constantes batch (NO colisionan con las existentes)
 ============================================================================ */
@@ -15747,6 +18907,11 @@ window.batchStartCategorize = batchStartCategorize
 window.batchAcceptCategorize = batchAcceptCategorize
 window.batchCancelCategorize = batchCancelCategorize
 window.batchRestoreState = batchRestoreState
+window.batchGetState = batchGetState
+window.batchApplyUi = batchApplyUi
+window.batchToggleActionButtons = batchToggleActionButtons
+window.batchRestoreSelection = batchRestoreSelection
+})()
  
 ```
  
@@ -15757,6 +18922,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\public\js\indexes\transacti
 ```
  
 ```js
+(() => {
 /* ============================================================================
 1. Constantes globales
 ============================================================================ */
@@ -15776,6 +18942,12 @@ let currentPage = 1
 let currentSearch = ''
 let totalPages = 1
 let allItems = []
+let transactionImagesState = {
+  transactionId: null,
+  files: [],
+  currentIndex: 0,
+  enlarged: false
+}
 
 /* ============================
    Layout detection (AGREGADO)
@@ -15798,6 +18970,18 @@ const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('transactions-table')
 const table = document.querySelector('.ui-table')
+const transactionImagesModal = document.getElementById('transaction-images-modal')
+const transactionImagesViewer = document.getElementById('transaction-images-viewer')
+const transactionImagesEmpty = document.getElementById('transaction-images-empty')
+const transactionImagesCurrent = document.getElementById('transaction-images-current')
+const transactionImagesPreview = document.getElementById('transaction-images-preview')
+const transactionImagesCounter = document.getElementById('transaction-images-counter')
+const transactionImagesPrev = document.getElementById('transaction-images-prev')
+const transactionImagesNext = document.getElementById('transaction-images-next')
+const transactionImagesInput = document.getElementById('transaction-images-input')
+const transactionImagesInsert = document.getElementById('transaction-images-insert')
+const transactionImagesDelete = document.getElementById('transaction-images-delete')
+const transactionImagesClose = document.getElementById('transaction-images-close')
 
 /* ============================================================================
 4. Utils generales
@@ -15810,17 +18994,47 @@ function debounce(fn, delay) {
   }
 }
 
-function rowClassByType(type) {
+function rowClassByType(transactionOrType) {
+  // Accept either a transaction object or a bare type string
+  if (!transactionOrType) return ''
+
+  let type = ''
+
+  if (typeof transactionOrType === 'string') {
+    type = transactionOrType
+  } else {
+    type = transactionOrType.type || ''
+  }
+
   if (type === 'income') return 'income'
   if (type === 'expense') return 'expense'
   if (type === 'transfer') return 'transfer'
   return ''
 }
 
+function moduleOriginClass(transaction) {
+  const dt = transaction?.detailed_type || ''
+  if (dt.includes('payable')) return 'payable'
+  if (dt.includes('receivable')) return 'receivable'
+  return ''
+}
+
 function isBatchActive() {
-  if (typeof batchGetState !== 'function') return false
-  const state = batchGetState()
+  if (typeof window.batchGetState !== 'function') return false
+  const state = window.batchGetState()
   return !!state?.active
+}
+
+function isModuleManaged(transaction) {
+  const dt = transaction?.detailed_type || ''
+  return dt.includes('payable') || dt.includes('receivable')
+}
+
+function moduleOriginLabel(transaction) {
+  const dt = transaction?.detailed_type || ''
+  if (dt.includes('payable')) return 'Modulo de Pagos'
+  if (dt.includes('receivable')) return 'Modulo de Cobros'
+  return ''
 }
 
 /* ============================================================================
@@ -15849,6 +19063,20 @@ function showTransactionCardDetail(id) {
   document
     .getElementById(`transaction-card-detail-${id}`)
     ?.classList.remove('hidden')
+}
+
+function transactionImagesButton(transaction) {
+  const hasImages = Number(transaction.no_images) > 0
+  return `
+    <button
+      class="icon-btn transaction-images-btn ${hasImages ? 'has-images' : 'no-images'}"
+      type="button"
+      title="${hasImages ? 'Ver imágenes' : 'Sin imágenes'}"
+      aria-label="${hasImages ? 'Ver imágenes' : 'Sin imágenes'}"
+      onclick="event.stopPropagation(); openTransactionImages(${transaction.id})">
+      ${hasImages ? iconImage() : iconImageOff()}
+    </button>
+  `
 }
 
 function renderTable(data) {
@@ -15893,6 +19121,154 @@ function renderCards(data) {
   }
 }
 
+function updateTransactionImageCount(transactionId, count) {
+  const transaction = allItems.find(item => item.id === transactionId)
+  if (transaction) transaction.no_images = count
+  render(allItems)
+}
+
+function renderTransactionImageModal() {
+  const { files, currentIndex, enlarged } = transactionImagesState
+  const file = files[currentIndex]
+  const hasFiles = files.length > 0
+
+  transactionImagesEmpty.classList.toggle('hidden', hasFiles)
+  transactionImagesViewer.classList.toggle('hidden', !hasFiles)
+  transactionImagesDelete.disabled = !hasFiles
+  transactionImagesPreview.classList.toggle('is-enlarged', enlarged)
+
+  if (!file) {
+    transactionImagesCurrent.removeAttribute('src')
+    transactionImagesCounter.textContent = ''
+    transactionImagesPrev.disabled = true
+    transactionImagesNext.disabled = true
+    return
+  }
+
+  transactionImagesCurrent.src = enlarged ? file.url : (file.thumbnail_url || file.url)
+  transactionImagesCounter.textContent = `${currentIndex + 1} de ${files.length}`
+  transactionImagesPrev.disabled = files.length < 2
+  transactionImagesNext.disabled = files.length < 2
+  transactionImagesPrev.innerHTML = iconCarouselPrev()
+  transactionImagesNext.innerHTML = iconCarouselNext()
+}
+
+function closeTransactionImages() {
+  transactionImagesModal.classList.add('hidden')
+  transactionImagesState = { transactionId: null, files: [], currentIndex: 0, enlarged: false }
+}
+
+async function openTransactionImages(transactionId) {
+  try {
+    const response = await fetch(`/files/transactions/${transactionId}`)
+    if (!response.ok) throw new Error('No fue posible cargar las imágenes')
+
+    const data = await response.json()
+    transactionImagesState = {
+      transactionId,
+      files: data.files || [],
+      currentIndex: 0,
+      enlarged: false
+    }
+    transactionImagesModal.classList.remove('hidden')
+    renderTransactionImageModal()
+  } catch (error) {
+    console.error('Error cargando imágenes:', error)
+    alert('No fue posible cargar las imágenes de la transacción.')
+  }
+}
+
+async function uploadTransactionImages() {
+  const files = Array.from(transactionImagesInput.files || [])
+  const transactionId = transactionImagesState.transactionId
+  if (!files.length || !transactionId) return
+
+  const formData = new FormData()
+  files.forEach(file => formData.append('images', file))
+
+  try {
+    const response = await fetch(`/files/transactions/${transactionId}`, {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': window.CSRF_TOKEN },
+      body: formData
+    })
+    const data = await response.json().catch(() => ({}))
+    if (data.csrfToken) window.CSRF_TOKEN = data.csrfToken
+    if (!response.ok) throw new Error(data.error || 'Error al insertar imágenes')
+
+    transactionImagesState.files = [...transactionImagesState.files, ...(data.files || [])]
+    transactionImagesState.currentIndex = Math.max(0, transactionImagesState.files.length - 1)
+    updateTransactionImageCount(transactionId, transactionImagesState.files.length)
+    renderTransactionImageModal()
+  } catch (error) {
+    console.error('Error insertando imágenes:', error)
+    alert(error.message || 'No fue posible insertar las imágenes.')
+  } finally {
+    transactionImagesInput.value = ''
+  }
+}
+
+async function deleteCurrentTransactionImage() {
+  const { files, currentIndex, transactionId } = transactionImagesState
+  const file = files[currentIndex]
+  if (!file || !transactionId || !confirm('¿Eliminar esta imagen?')) return
+
+  try {
+    const response = await fetch(`/files/item/${file.id}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-Token': window.CSRF_TOKEN }
+    })
+    const data = await response.json().catch(() => ({}))
+    if (data.csrfToken) window.CSRF_TOKEN = data.csrfToken
+    if (!response.ok) throw new Error(data.error || 'Error al eliminar la imagen')
+
+    transactionImagesState.files.splice(currentIndex, 1)
+    transactionImagesState.currentIndex = Math.min(currentIndex, transactionImagesState.files.length - 1)
+    transactionImagesState.enlarged = false
+    updateTransactionImageCount(transactionId, transactionImagesState.files.length)
+    renderTransactionImageModal()
+  } catch (error) {
+    console.error('Error eliminando imagen:', error)
+    alert(error.message || 'No fue posible eliminar la imagen.')
+  }
+}
+
+transactionImagesPrev.addEventListener('click', () => {
+  const total = transactionImagesState.files.length
+  if (total > 1) {
+    transactionImagesState.currentIndex = (transactionImagesState.currentIndex - 1 + total) % total
+    transactionImagesState.enlarged = false
+    renderTransactionImageModal()
+  }
+})
+
+transactionImagesNext.addEventListener('click', () => {
+  const total = transactionImagesState.files.length
+  if (total > 1) {
+    transactionImagesState.currentIndex = (transactionImagesState.currentIndex + 1) % total
+    transactionImagesState.enlarged = false
+    renderTransactionImageModal()
+  }
+})
+
+transactionImagesPreview.addEventListener('click', () => {
+  if (transactionImagesState.files.length) {
+    transactionImagesState.enlarged = !transactionImagesState.enlarged
+    renderTransactionImageModal()
+  }
+})
+
+transactionImagesInsert.addEventListener('click', () => transactionImagesInput.click())
+transactionImagesInput.addEventListener('change', uploadTransactionImages)
+transactionImagesDelete.addEventListener('click', deleteCurrentTransactionImage)
+transactionImagesClose.addEventListener('click', closeTransactionImages)
+transactionImagesModal.addEventListener('click', closeTransactionImages)
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !transactionImagesModal.classList.contains('hidden')) {
+    closeTransactionImages()
+  }
+})
+
 /* ============================================================================
 6. Render Desktop / Mobile
 ============================================================================ */
@@ -15913,13 +19289,16 @@ function renderRow(transaction) {
   }
 
   return `
-    <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction.type)}">
+    <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction)}">
       <td class="px-4 py-2 text-center col-nowrap">
         <div>${date}</div>
         <div class="text-xs text-gray-600">${time}</div>
         <div class="text-xs text-gray-600">${weekday}</div>
       </td>
-      <td class="ui-td col-left">${transactionTypeTag(transaction.type)}</td>
+      <td class="ui-td col-left">
+        ${transactionTypeTag(transaction.type)}
+        ${isModuleManaged(transaction) ? `<span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>` : ''}
+      </td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
       <td class="ui-td col-left col-nowrap">
         ${transaction.type === 'transfer'
@@ -15988,13 +19367,16 @@ function renderRow(transaction) {
             >
           ` : ''}
 
-          <button 
-            class="icon-btn edit" 
-            title="Editar"
-            onclick="goToRouteUpdate('${action_name}', ${action_id})">
-            ${iconEdit()}
-            <span class="ui-btn-text">Editar</span>
-          </button>
+          ${!isModuleManaged(transaction) ? `
+            <button 
+              class="icon-btn edit" 
+              title="Editar"
+              onclick="goToRouteUpdate('${action_name}', ${action_id})">
+              ${iconEdit()}
+              <span class="ui-btn-text">Editar</span>
+            </button>
+          ` : ''}
+
           <button 
             class="icon-btn clone" 
             title="Clonar"
@@ -16002,13 +19384,19 @@ function renderRow(transaction) {
             ${iconClone()}
             <span class="ui-btn-text">Clonar</span>
           </button>
-          <button 
-            class="icon-btn delete" 
-            title="Eliminar"
-            onclick="goToRouteDelete('${action_name}', ${action_id})">
-            ${iconDelete()}
-            <span class="ui-btn-text">Eliminar</span>
-          </button>
+
+          ${!isModuleManaged(transaction) ? `
+            <button 
+              class="icon-btn delete" 
+              title="Eliminar"
+              onclick="goToRouteDelete('${action_name}', ${action_id})">
+              ${iconDelete()}
+              <span class="ui-btn-text">Eliminar</span>
+            </button>
+          ` : ''}
+
+          ${transactionImagesButton(transaction)}
+
         </div>
       </td>
     </tr> 
@@ -16039,7 +19427,7 @@ function renderCard(transaction) {
 
   return `
     <div 
-      class="transaction-card ${rowClassByType(transaction.type)}"
+      class="transaction-card ${rowClassByType(transaction)}"
       data-id="${transaction.id}"
       onclick="selectTransactionCard(event, ${transaction.id})">
 
@@ -16060,27 +19448,33 @@ function renderCard(transaction) {
             >
           ` : ''}
 
-          <button 
-            class="icon-btn edit"
-            onclick="event.stopPropagation(); goToRouteUpdate('${action_name}', ${action_id})">
-            ${iconEdit()}
-          </button>
+          ${!isModuleManaged(transaction) ? `
+            <button 
+              class="icon-btn edit"
+              onclick="event.stopPropagation(); goToRouteUpdate('${action_name}', ${action_id})">
+              ${iconEdit()}
+            </button>
+          ` : ''}
           <button 
             class="icon-btn clone"
             onclick="event.stopPropagation(); goToRouteClone('${action_name}', ${action_id})">
             ${iconClone()}
           </button>
-          <button  
-            class="icon-btn delete"
-            onclick="event.stopPropagation(); goToRouteDelete('${action_name}', ${action_id})">
-            ${iconDelete()}
-          </button>
+          ${!isModuleManaged(transaction) ? `
+            <button  
+              class="icon-btn delete"
+              onclick="event.stopPropagation(); goToRouteDelete('${action_name}', ${action_id})">
+              ${iconDelete()}
+            </button>
+          ` : ''}
+          ${transactionImagesButton(transaction)}
         </div>
       </div>
 
       <div class="card-content">
         <div class="card-info">
           <div class="card-account">
+            ${isModuleManaged(transaction) ? `<span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>` : ''}
             ${transaction.type === 'transfer'
       ? `
                 <div class="grouped-icon-line">
@@ -16197,9 +19591,9 @@ async function loadTransactions(page = 1) {
     updatePaginationInfo()
 
     if (isBatchActive()) {
-      if (typeof batchApplyUi === 'function') batchApplyUi(true)
-      if (typeof batchToggleActionButtons === 'function') batchToggleActionButtons(true)
-      if (typeof batchRestoreSelection === 'function') batchRestoreSelection()
+      if (typeof window.batchApplyUi === 'function') window.batchApplyUi(true)
+      if (typeof window.batchToggleActionButtons === 'function') window.batchToggleActionButtons(true)
+      if (typeof window.batchRestoreSelection === 'function') window.batchRestoreSelection()
     }
   } catch (error) {
     console.error('Error cargando transacciones:', error)
@@ -16392,8 +19786,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTransactions(currentPage)
 
   if (SAVED_BATCH) {
-    if (typeof batchRestoreState === 'function') {
-      batchRestoreState()
+    if (typeof window.batchRestoreState === 'function') {
+      window.batchRestoreState()
     }
 
     if (window.history.replaceState) {
@@ -16411,13 +19805,21 @@ document.addEventListener('DOMContentLoaded', () => {
       render(allItems)
 
       if (isBatchActive()) {
-        batchApplyUi(true)
-        batchToggleActionButtons(true)
-        batchRestoreSelection()
+        window.batchApplyUi(true)
+        window.batchToggleActionButtons(true)
+        window.batchRestoreSelection()
       }
     }
   })
-}) 
+})
+
+window.openTransactionImages = openTransactionImages
+window.goToRouteUpdate = goToRouteUpdate
+window.goToRouteClone = goToRouteClone
+window.goToRouteDelete = goToRouteDelete
+window.selectTransactionCard = selectTransactionCard
+})()
+ 
 ```
  
 --- 
@@ -16537,6 +19939,40 @@ export default router
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\file-reference.route.ts
+```
+ 
+```ts
+import { Router } from 'express'
+import multer from 'multer'
+import {
+  apiForDeletingFile,
+  apiForGettingFiles,
+  apiForServingFile,
+  apiForUploadingFiles
+} from '../controllers/file-reference/file-reference.controller'
+
+const router = Router()
+const configuredSize = Number(process.env.MAX_IMAGE_SIZE_MB || 10) * 1024 * 1024
+const maxImageSize = Number.isFinite(configuredSize) && configuredSize > 0 ? configuredSize : 10 * 1024 * 1024
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { files: 10, fileSize: maxImageSize }
+})
+
+router.get('/item/:id/thumbnail', apiForServingFile)
+router.get('/item/:id', apiForServingFile)
+router.delete('/item/:id', apiForDeletingFile)
+router.post('/:tableName/:recordId', upload.array('images', 10), apiForUploadingFiles)
+router.get('/:tableName/:recordId', apiForGettingFiles)
+
+export default router
+ 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\home.route.ts
 ```
  
@@ -16545,7 +19981,12 @@ import { Router } from 'express'
 import {
     apiForGettingCashSummary,
     apiForGettingKpis,
+    apiForGettingCategoryKpi,
+    apiForGettingCategoryKpiDetail,
+    apiForGettingCategoryGroupKpi,
+    apiForGettingCategoryGroupKpiDetail,
     apiForGettingPayableSummary,
+    apiForGettingReceivableSummary,
     apiForLogout,
     apiForValidatingLogin,
     routeToPageHome,
@@ -16572,12 +20013,40 @@ protectedSubRouter.get('/logout', apiForLogout)
 protectedSubRouter.get('/kpis', apiForGettingKpis)
 protectedSubRouter.get('/cash-summary', apiForGettingCashSummary)
 protectedSubRouter.get('/payable-summary', apiForGettingPayableSummary)
+protectedSubRouter.get('/receivable-summary', apiForGettingReceivableSummary)
+protectedSubRouter.get('/category-kpi', apiForGettingCategoryKpi)
+protectedSubRouter.get('/category-kpi-detail', apiForGettingCategoryKpiDetail)
+protectedSubRouter.get('/category-group-kpi', apiForGettingCategoryGroupKpi)
+protectedSubRouter.get('/category-group-kpi-detail', apiForGettingCategoryGroupKpiDetail)
 protectedSubRouter.get('/home', routeToPageHome)
 
 router.use(protectedSubRouter)
 
 export default router
  
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\notification.route.ts
+```
+ 
+```ts
+import { Router } from 'express'
+import {
+  apiForSavingNotificationSchedule,
+  routeToNotificationScheduleForm,
+  routeToNotificationsPage
+} from '../controllers/notification/notification.controller'
+
+const router = Router()
+
+router.get('/', routeToNotificationsPage)
+router.get('/schedule', routeToNotificationScheduleForm)
+router.post('/schedule', apiForSavingNotificationSchedule)
+
+export default router 
 ```
  
 --- 
@@ -16683,6 +20152,83 @@ export default router
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\receivable-collection.route.ts
+```
+ 
+```ts
+import { Router } from 'express'
+import { apiForGettingReceivableCollections, apiForSavingAccount, routeToFormCloneReceivableCollection, routeToFormDeleteReceivableCollection, routeToFormInsertReceivableCollection, routeToFormUpdateReceivableCollection, routeToPageReceivableCollection } from '../controllers/receivable-collection/receivable-collection.controller'
+
+const router = Router()
+
+/*Eventos de acción */
+router.get('/list/:payable_id/payable', apiForGettingReceivableCollections)
+router.post('/', apiForSavingAccount)
+
+/*Eventos de enrutamiento */
+router.get('/:id/payable', routeToPageReceivableCollection)
+router.get('/insert/:payable_id', routeToFormInsertReceivableCollection)
+router.get('/update/:id', routeToFormUpdateReceivableCollection)
+router.get('/clone/:id', routeToFormCloneReceivableCollection)
+router.get('/delete/:id', routeToFormDeleteReceivableCollection)
+
+export default router
+ 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\receivable-group.route.ts
+```
+ 
+```ts
+import { Router } from 'express'
+import { apiForSavingReceivableGroup, routeToFormDeleteReceivableGroup, routeToFormInsertReceivableGroup, routeToFormUpdateReceivableGroup } from '../controllers/receivable-group/receivable-group.controller'
+
+const router = Router()
+
+/*Eventos de acción */
+router.post('/', apiForSavingReceivableGroup)
+
+/*Eventos de enrutamiento */
+router.get('/insert', routeToFormInsertReceivableGroup)
+router.get('/update/:id', routeToFormUpdateReceivableGroup)
+router.get('/delete/:id', routeToFormDeleteReceivableGroup)
+
+export default router 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\receivable.route.ts
+```
+ 
+```ts
+import { Router } from "express"
+import { apiForGettingReceivables, apiForSavingReceivable, routeToFormCloneReceivable, routeToFormDeleteReceivable, routeToFormInsertReceivable, routeToFormUpdateReceivable, routeToPageReceivable } from "../controllers/receivable/receivable.controller"
+
+const router = Router()
+
+/*Eventos de acción */
+router.get('/list', apiForGettingReceivables)
+router.post('/', apiForSavingReceivable)
+
+/*Eventos de enrutamiento */
+router.get('/', routeToPageReceivable)
+router.get('/insert', routeToFormInsertReceivable)
+router.get('/update/:id', routeToFormUpdateReceivable)
+router.get('/clone/:id', routeToFormCloneReceivable)
+router.get('/delete/:id', routeToFormDeleteReceivable)
+router.get('/:id/payable', routeToPageReceivable)
+
+export default router 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\transaction.route.ts
 ```
  
@@ -16724,6 +20270,208 @@ export default router
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\schedulers\notification.scheduler.ts
+```
+ 
+```ts
+import { DateTime } from 'luxon'
+import { AppDataSource } from '../config/typeorm.datasource'
+import { NotificationDelivery } from '../entities/NotificationDelivery.entity'
+import { NotificationSchedule } from '../entities/NotificationSchedule.entity'
+import { sendWeeklyBalanceMail } from '../services/send-weekly-balance-mail.service'
+import { logger } from '../utils/logger.util'
+import { parseError } from '../utils/error.util'
+import { LogEvent } from '../entities/LogEvent.entity'
+
+const scheduler_interval = process.env.SCHEDULER_INTERVAL_IN_SECONDS ? parseInt(process.env.SCHEDULER_INTERVAL_IN_SECONDS, 10) : 60
+const scheduler_interval_ms = scheduler_interval * 1000
+
+let scheduler_running = false
+let log_retention_running = false
+let last_log_retention_at = 0
+
+const process_schedule_logger = logger.forMethod('processSchedule', 'NOTIFICATION_PROCESS')
+const notification_scheduler_logger = logger.forMethod('processNotificationSchedules', 'NOTIFICATION_SCHEDULES')
+const log_retention_logger = logger.forMethod('processLogRetention', 'LOG_PURGE')
+const scheduler_start_logger = logger.forMethod('startNotificationScheduler', 'NOTIFICATION_SCHEDULER')
+
+const log_retention_interval = process.env.LOG_RETENTION_INTERVAL_IN_DAYS ? parseInt(process.env.LOG_RETENTION_INTERVAL_IN_DAYS, 10) : 1
+const log_retention_interval_ms =  log_retention_interval * 24 * 60 * 60 * 1000
+
+const day_values: Record<number, string> = {
+  1: 'monday',
+  2: 'tuesday',
+  3: 'wednesday',
+  4: 'thursday',
+  5: 'friday',
+  6: 'saturday',
+  7: 'sunday',
+}
+
+const isDue = (schedule: NotificationSchedule, now: DateTime): boolean => {
+  const local_now = now.setZone(schedule.timezone || 'UTC')
+  const [hour, minute] = schedule.send_time.slice(0, 5).split(':').map(Number)
+  return day_values[local_now.weekday] === schedule.send_day && local_now.hour === hour && local_now.minute === minute
+}
+
+const getPeriodKey = (schedule: NotificationSchedule, now: DateTime): string => {
+  const local_now = now.setZone(schedule.timezone || 'UTC')
+  return `${schedule.notification_type.key}:${local_now.startOf('week').toISODate()}`
+}
+
+const claimDelivery = async (schedule: NotificationSchedule, period_key: string): Promise<NotificationDelivery | null> => {
+  const repository = AppDataSource.getRepository(NotificationDelivery)
+  const existing_delivery = await repository.findOne({ where: { schedule: { id: schedule.id }, period_key }, })
+
+  if (existing_delivery?.status === 'sent' || existing_delivery?.status === 'processing') return null
+
+  if (existing_delivery) {
+    existing_delivery.status = 'processing'
+    existing_delivery.error_message = null
+    existing_delivery.sent_at = null
+    return repository.save(existing_delivery)
+  }
+
+  const delivery = repository.create({
+    schedule,
+    user: schedule.user,
+    notification_type: schedule.notification_type,
+    period_key,
+    status: 'processing',
+    sent_at: null,
+    error_message: null,
+  })
+
+  try {
+    return await repository.save(delivery)
+  } catch (error: any) {
+    if (error?.code === 'ER_DUP_ENTRY') return null
+    throw error
+  }
+}
+
+const processSchedule = async (schedule: NotificationSchedule, now: DateTime): Promise<void> => {
+  const period_key = getPeriodKey(schedule, now)
+  const existing_delivery = await AppDataSource.getRepository(NotificationDelivery).findOne({
+    where: { schedule: { id: schedule.id }, period_key },
+  })
+
+  if (!isDue(schedule, now) && existing_delivery?.status !== 'failed') return
+
+  const delivery = await claimDelivery(schedule, period_key)
+  if (!delivery) return
+
+  const repository = AppDataSource.getRepository(NotificationDelivery)
+  try {
+    await sendWeeklyBalanceMail(schedule.user, schedule.timezone)
+    delivery.status = 'sent'
+    delivery.sent_at = new Date()
+    await repository.save(delivery)
+  } catch (error) {
+    delivery.status = 'failed'
+    delivery.error_message = parseError(error).message
+    await repository.save(delivery)
+    process_schedule_logger.error(`Error procesando ${period_key}`, parseError(error))
+  }
+}
+
+export async function processNotificationSchedules(): Promise<void> {
+  if (scheduler_running) return
+  scheduler_running = true
+
+  try {
+    const schedules = await AppDataSource.getRepository(NotificationSchedule).find({
+      where: {
+        enabled: true,
+        notification_type: { enabled: true },
+      },
+      relations: {
+        user: true,
+        notification_type: true,
+      },
+    })
+    const now = DateTime.utc()
+    await Promise.all(schedules.map(schedule => processSchedule(schedule, now)))
+  } catch (error) {
+    notification_scheduler_logger.error('Error consultando programaciones', parseError(error))
+  } finally {
+    scheduler_running = false
+  }
+}
+
+export async function processLogRetention(): Promise<void> {
+  if (log_retention_running || Date.now() - last_log_retention_at < log_retention_interval_ms) return
+  log_retention_running = true
+  try {
+    const repository = AppDataSource.getRepository(LogEvent)
+    const retention_days = Number(process.env.LOG_RETENTION_MAX_DAYS || 30)
+    const max_size_mb = Number(process.env.LOG_RETENTION_MAX_SIZE_IN_MB || 10)
+    const max_size_bytes = max_size_mb * 1024 * 1024
+    const cutoff = DateTime.utc().minus({ days: retention_days }).toJSDate()
+
+    const getTableSize = async (): Promise<number> => {
+      const result = await repository.query(`
+        SELECT COALESCE(data_length, 0) + COALESCE(index_length, 0) AS size_bytes
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE() AND table_name = 'log_events'
+      `) as Array<{ size_bytes: number | string }>
+      return Number(result[0]?.size_bytes || 0)
+    }
+
+    const initial_size_bytes = await getTableSize()
+    const oldest_result = await repository.query(
+      'SELECT MIN(occurred_at) AS oldest_occurred_at FROM log_events'
+    ) as Array<{ oldest_occurred_at: Date | string | null }>
+    const oldest_occurred_at = oldest_result[0]?.oldest_occurred_at
+      ? new Date(oldest_result[0].oldest_occurred_at)
+      : null
+    const purge_by_age = oldest_occurred_at !== null && oldest_occurred_at < cutoff
+    const purge_by_size = initial_size_bytes >= max_size_bytes
+
+    let deleted_by_age = 0
+    if (purge_by_age || purge_by_size) {
+      const delete_result = await repository.createQueryBuilder().delete().from(LogEvent)
+        .where('occurred_at < :cutoff', { cutoff })
+        .execute()
+      deleted_by_age = delete_result.affected || 0
+      if (deleted_by_age > 0) await repository.query('OPTIMIZE TABLE log_events')
+    }
+
+    const final_size_bytes = await getTableSize()
+
+    last_log_retention_at = Date.now()
+    if (purge_by_age || purge_by_size) {
+      log_retention_logger.info('Logs purgados con exito', {
+        purge_reason: purge_by_age && purge_by_size ? 'AGE_AND_SIZE' : purge_by_age ? 'AGE' : 'SIZE',
+        retention_days,
+        max_size_mb,
+        initial_size_mb: Number((initial_size_bytes / 1024 / 1024).toFixed(4)),
+        deleted_by_age,
+        final_size_mb: Number((final_size_bytes / 1024 / 1024).toFixed(4)),
+        oldest_occurred_at,
+      })
+    }
+  } catch (error) {
+    log_retention_logger.error('Error ejecutando retención', parseError(error))
+  } finally {
+    log_retention_running = false
+  }
+}
+
+export function startNotificationScheduler(): NodeJS.Timeout {
+  const interval = setInterval(() => {
+    void processNotificationSchedules()
+  }, scheduler_interval_ms)
+  void processNotificationSchedules()
+  void processLogRetention()
+  scheduler_start_logger.info('Programador iniciado')
+  return interval
+} 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\account-balance.service.ts
 ```
  
@@ -16744,12 +20492,160 @@ export class AccountBalanceService {
             .andWhere('account.type IN (:...types)', { types: ['cash', 'bank'] })
             .getRawOne()
 
-        logger.info(`${AccountBalanceService.getNetAvailableBalance.name}. `, `Net available balance for user ${user_id}: ${result.total}`)
         return Number(result?.total ?? 0)
     }
 
 }
  
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\file-reference.service.ts
+```
+ 
+```ts
+import fs from 'fs/promises'
+import path from 'path'
+import sharp from 'sharp'
+import { AppDataSource } from '../config/typeorm.datasource'
+import { FileReference } from '../entities/FileReference.entity'
+import { Transaction } from '../entities/Transaction.entity'
+import { logger } from '../utils/logger.util'
+
+export const fileOwnerTables = [
+  'accounts',
+  'categories',
+  'category_groups',
+  'payables',
+  'payable_groups',
+  'payable_payments',
+  'receivables',
+  'receivable_groups',
+  'receivable_collections',
+  'transactions'
+] as const
+
+export type FileOwnerTable = typeof fileOwnerTables[number]
+
+export interface SaveFileReferenceInput {
+  tableName: FileOwnerTable
+  recordId: number
+  buffer: Buffer
+  originalName: string
+}
+
+const storagePath = () => process.env.STORAGE_PATH || path.join(process.cwd(), 'storage')
+
+const imageFormats = new Map([
+  ['avif', { extension: '.avif', mimeType: 'image/avif' }],
+  ['gif', { extension: '.gif', mimeType: 'image/gif' }],
+  ['jpeg', { extension: '.jpg', mimeType: 'image/jpeg' }],
+  ['png', { extension: '.png', mimeType: 'image/png' }],
+  ['webp', { extension: '.webp', mimeType: 'image/webp' }]
+])
+
+function getMaximumImageSize(): number {
+  const megabytes = Number(process.env.MAX_IMAGE_SIZE_MB || 10)
+  return (Number.isFinite(megabytes) && megabytes > 0 ? megabytes : 10) * 1024 * 1024
+}
+
+function getSafeOriginalName(originalName: string): string {
+  const safeName = path.basename(originalName).replace(/[^a-zA-Z0-9._ -]/g, '_')
+  return (safeName || 'image').slice(0, 255)
+}
+
+async function inspectImage(buffer: Buffer): Promise<{ extension: string, mimeType: string, thumbnail: Buffer }> {
+  if (buffer.length === 0) {
+    throw new Error('El archivo de imagen está vacío')
+  }
+
+  if (buffer.length > getMaximumImageSize()) {
+    throw new Error('La imagen supera el tamaño máximo permitido')
+  }
+
+  const metadata = await sharp(buffer).metadata()
+  const format = metadata.format ? imageFormats.get(metadata.format) : undefined
+  if (!format) {
+    throw new Error('Solo se permiten imágenes AVIF, GIF, JPEG, PNG o WebP')
+  }
+
+  const thumbnail = await sharp(buffer)
+    .resize({ width: 400, withoutEnlargement: true })
+    .webp({ quality: 80 })
+    .toBuffer()
+
+  return { ...format, thumbnail }
+}
+
+export async function saveFileReference(input: SaveFileReferenceInput): Promise<FileReference> {
+  const saveFileReference_logger = logger.forMethod(saveFileReference.name, 'SAVE_FILE_REFERENCE', null)
+  const started_at = performance.now()
+  if (!Number.isInteger(input.recordId) || input.recordId <= 0) {
+    throw new Error('El id del registro debe ser un entero positivo')
+  }
+
+  const image = await inspectImage(input.buffer)
+  const repository = AppDataSource.getRepository(FileReference)
+  const reference = repository.create({
+    table_name: input.tableName,
+    record_id: input.recordId,
+    path: '',
+    thumbnail_path: null,
+    original_name: getSafeOriginalName(input.originalName),
+    mime_type: image.mimeType,
+    size_bytes: input.buffer.length
+  })
+  const savedReference = await repository.save(reference)
+  const fileName = `${savedReference.id}-${input.tableName}${image.extension}`
+  const thumbnailFileName = `${savedReference.id}-${input.tableName}-thumb.webp`
+  const relativePath = path.join('images', input.tableName, fileName)
+  const relativeThumbnailPath = path.join('images', input.tableName, thumbnailFileName)
+  const absolutePath = path.join(storagePath(), relativePath)
+  const absoluteThumbnailPath = path.join(storagePath(), relativeThumbnailPath)
+
+  try {
+    await fs.mkdir(path.dirname(absolutePath), { recursive: true })
+    await fs.writeFile(absolutePath, input.buffer)
+    await fs.writeFile(absoluteThumbnailPath, image.thumbnail)
+    savedReference.path = relativePath.split(path.sep).join('/')
+    savedReference.thumbnail_path = relativeThumbnailPath.split(path.sep).join('/')
+    const result = await repository.save(savedReference)
+    if (input.tableName === 'transactions') {
+      await syncTransactionImageCount(input.recordId)
+    }
+    return result
+  } catch (error) {
+    saveFileReference_logger.error('Error guardando referencia de archivo', { error: error instanceof Error ? error.message : String(error) })
+    await Promise.allSettled([
+      fs.rm(absolutePath, { force: true }),
+      fs.rm(absoluteThumbnailPath, { force: true }),
+      repository.delete(savedReference.id)
+    ])
+    throw error
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    saveFileReference_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    saveFileReference_logger.debug('Fin de la operación de guardado de referencia de archivo')
+  }
+}
+
+export async function getFileReferences(tableName: FileOwnerTable, recordId: number): Promise<FileReference[]> {
+  return AppDataSource.getRepository(FileReference).find({
+    where: { table_name: tableName, record_id: recordId },
+    order: { created_at: 'ASC', id: 'ASC' }
+  })
+}
+
+export async function syncTransactionImageCount(transactionId: number): Promise<number> {
+  const count = await AppDataSource.getRepository(FileReference).count({
+    where: { table_name: 'transactions', record_id: transactionId }
+  })
+  await AppDataSource.getRepository(Transaction).update(transactionId, { no_images: count })
+  return count
+} 
 ```
  
 --- 
@@ -16765,7 +20661,8 @@ import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { AuthRequest } from '../types/auth-request'
 import { formatDateForInputLocal } from '../utils/date.util'
 import { parseError } from '../utils/error.util'
-import { logger } from '../utils/logger.util'
+import { logger as root_logger } from '../utils/logger.util'
+
 
 function money(n: number) {
   return Number(n.toFixed(2))
@@ -16781,7 +20678,9 @@ SELECT
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'income_for_payable' THEN t.amount ELSE 0 END), 0) AS payables,
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'payment_for_payable' THEN t.amount ELSE 0 END), 0) AS payable_payments,
   COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'saving' THEN t.amount ELSE 0 END), 0) AS savings,
-  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'withdrawal' THEN t.amount ELSE 0 END), 0) AS withdrawals,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'collection_for_receivable' THEN t.amount ELSE 0 END), 0) AS receivable_collections,
+  COALESCE(SUM(CASE WHEN COALESCE(NULLIF(t.detailed_type, ''), t.type) = 'expense_for_receivable' THEN t.amount ELSE 0 END), 0) AS receivable_disbursements
  FROM transactions t
 WHERE t.user_id = ?
   AND (? IS NULL OR t.date >= ?)
@@ -16814,8 +20713,10 @@ export class KpiCacheService {
    PARA RECALCULAR EL KPI DE BALANCE DEL MES ACTUAL Y TOTAL
   ============================ */
   private static async recalculateCurrMonthBalanceKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
+    const started_at = performance.now()
 
     const user_id = auth_req.user.id
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
     const timezone = auth_req.timezone || 'UTC'
 
     try {
@@ -16827,7 +20728,7 @@ export class KpiCacheService {
       const start_date = new Date(formatDateForInputLocal(start_local, timezone))
       const end_date = new Date(formatDateForInputLocal(end_local, timezone))
 
-      logger.debug('KPI_DATE_RANGE', { user_id, period_year, period_month, timezone, start_local, end_local, start_date, end_date })
+      kpi_cache_logger.debug('KPI_DATE_RANGE', { user_id, period_year, period_month, timezone, start_local, end_local, start_date, end_date })
 
       const result = await AppDataSource.manager.query(query_base, [
         user_id,
@@ -16841,7 +20742,7 @@ export class KpiCacheService {
 
       const r = result[0]
 
-      logger.debug('KPI_QUERY_RESULT', { user_id, period_year, period_month, timezone, start_date, end_date, result: r })
+      kpi_cache_logger.debug('KPI_QUERY_RESULT', { user_id, period_year, period_month, timezone, start_date, end_date, result: r })
 
       const incomes = Number(r.incomes || 0)
       const expenses = Number(r.expenses || 0)
@@ -16849,9 +20750,12 @@ export class KpiCacheService {
       const payable_payments = Number(r.payable_payments || 0)
       const savings = Number(r.savings || 0)
       const withdrawals = Number(r.withdrawals || 0)
+      const receivable_collections = Number(r.receivable_collections || 0)
+      const receivable_disbursements = Number(r.receivable_disbursements || 0)
 
-      const total_inflows = money(incomes + payables)
-      const total_outflows = money(expenses + payable_payments)
+      // Include receivable flows: collections are inflows, disbursements are outflows
+      const total_inflows = money(incomes + payables + receivable_collections)
+      const total_outflows = money(expenses + payable_payments + receivable_disbursements)
       const net_cash_flow = money(total_inflows - total_outflows)
       const net_savings = money(savings - withdrawals)
       const available_balance = money(net_cash_flow - net_savings)
@@ -16862,7 +20766,7 @@ export class KpiCacheService {
         where: { user: { id: user_id }, period_year, period_month },
         relations: ['user']
       })
-      logger.debug('KPI_COMPARE', { period_year, period_month, old_available_balance: existing?.available_balance, old_incomes: existing?.incomes, old_expenses: existing?.expenses, old_payables: existing?.payables, old_payablePayments: existing?.payable_payments, old_savings: existing?.savings, old_withdrawals: existing?.withdrawals, new_available_balance: available_balance, new_incomes: incomes, new_expenses: expenses, new_payables: payables, new_payablePayments: payable_payments, new_savings: savings, new_withdrawals: withdrawals })
+      kpi_cache_logger.debug('KPI_COMPARE', { period_year, period_month, old_available_balance: existing?.available_balance, old_incomes: existing?.incomes, old_expenses: existing?.expenses, old_payables: existing?.payables, old_payablePayments: existing?.payable_payments, old_savings: existing?.savings, old_withdrawals: existing?.withdrawals, new_available_balance: available_balance, new_incomes: incomes, new_expenses: expenses, new_payables: payables, new_payablePayments: payable_payments, new_savings: savings, new_withdrawals: withdrawals })
 
       const payload = {
         incomes,
@@ -16870,6 +20774,8 @@ export class KpiCacheService {
         savings,
         withdrawals,
         payables,
+        receivables: receivable_disbursements,
+        receivable_collections,
         payable_payments,
         total_inflows,
         total_outflows,
@@ -16879,7 +20785,7 @@ export class KpiCacheService {
         principal_breakdown: 0,
         interest_breakdown: 0
       }
-      logger.debug('KPI_MONTH_AFTER', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
+      kpi_cache_logger.debug('KPI_MONTH_AFTER', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
 
       if (existing) {
         await repo.update({ id: existing.id }, payload)
@@ -16891,15 +20797,22 @@ export class KpiCacheService {
           ...payload
         })
       }
-      logger.debug('KPI_MONTH_BEFORE', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
-      logger.info(`KPI MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
+      kpi_cache_logger.debug('KPI_MONTH_BEFORE', { user_id, period_year, period_month, incomes, expenses, payables, payable_payments, savings, withdrawals, available_balance })
+      kpi_cache_logger.info(`KPI MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
 
     } catch (error: any) {
-      logger.error('Error recalculando KPI mes', parseError(error))
+      kpi_cache_logger.error('Error recalculando KPI mes', parseError(error))
+    } finally {
+      const ended_at = performance.now()
+      const elapsed_ms = ended_at - started_at
+      kpi_cache_logger.elapsedTime('Elapsed time', { elapsed_ms })
+      kpi_cache_logger.debug('Fin de la operación de recálculo del KPI del mes actual')
     }
   }
 
   private static async recalculateAllBalanceKPI(user_id: number, timezone: string) {
+    const started_at = performance.now()
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
 
     try {
 
@@ -16940,9 +20853,12 @@ export class KpiCacheService {
         const payable_payments = Number(r.payable_payments || 0)
         const savings = Number(r.savings || 0)
         const withdrawals = Number(r.withdrawals || 0)
+        const receivable_collections = Number(r.receivable_collections || 0)
+        const receivable_disbursements = Number(r.receivable_disbursements || 0)
 
-        const total_inflows = money(incomes + payables)
-        const total_outflows = money(expenses + payable_payments)
+        // Include receivable flows in inflows/outflows
+        const total_inflows = money(incomes + payables + receivable_collections)
+        const total_outflows = money(expenses + payable_payments + receivable_disbursements)
         const net_cash_flow = money(total_inflows - total_outflows)
         const net_savings = money(savings - withdrawals)
         const available_balance = money(net_cash_flow - net_savings)
@@ -16956,6 +20872,8 @@ export class KpiCacheService {
           savings,
           withdrawals,
           payables,
+          receivables: receivable_disbursements,
+          receivable_collections,
           payable_payments,
           total_inflows,
           total_outflows,
@@ -16967,15 +20885,22 @@ export class KpiCacheService {
         })
       }
 
-      logger.info(`KPI FULL REBUILD user=${user_id}`)
+      kpi_cache_logger.info(`KPI FULL REBUILD user=${user_id}`)
 
     } catch (error) {
-      logger.error('Error en recalculateAllBalanceKPI', parseError(error))
+      kpi_cache_logger.error('Error en recalculateAllBalanceKPI', parseError(error))
+    } finally {
+      const ended_at = performance.now()
+      const elapsed_ms = ended_at - started_at
+      kpi_cache_logger.elapsedTime('Elapsed time', { elapsed_ms })
+      kpi_cache_logger.debug('Fin de la operación de recálculo completo del KPI de balance')
     }
   }
 
-    static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
-    logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
+  static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', auth_req.user.id)
+    kpi_cache_logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
+    const started_at = performance.now()
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
@@ -16983,7 +20908,7 @@ export class KpiCacheService {
     try {
 
       if (!transaction?.date) {
-        logger.warn('recalculateBalanceKPIByTransaction sin transaction.date')
+        kpi_cache_logger.warn('recalculateBalanceKPIByTransaction sin transaction.date')
         return
       }
 
@@ -16997,16 +20922,21 @@ export class KpiCacheService {
 
       const is_current_period = trx_year === current_year && trx_month === current_month
 
-      logger.debug('KPI_PERIOD_RAW', { trx_id: transaction.id, trx_date: transaction.date })
+      kpi_cache_logger.debug('KPI_PERIOD_RAW', { trx_id: transaction.id, trx_date: transaction.date })
       if (is_current_period) {
         await this.recalculateCurrMonthBalanceKPI(auth_req, trx_year, trx_month)
       } else {
         await this.recalculateAllBalanceKPI(user_id, timezone)
       }
 
-      logger.debug('KPI recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
+      kpi_cache_logger.debug('KPI recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
     } catch (error: any) {
-      logger.error('Error en recalculateBalanceKPIByTransaction', parseError(error))
+      kpi_cache_logger.error('Error en recalculateBalanceKPIByTransaction', parseError(error))
+    } finally {
+      const ended_at = performance.now()
+      const elapsed_ms = ended_at - started_at
+      kpi_cache_logger.elapsedTime('Elapsed time', { elapsed_ms })
+      kpi_cache_logger.debug('Fin de la operación de recálculo del KPI de balance por transacción')
     }
   }
 
@@ -17015,6 +20945,8 @@ export class KpiCacheService {
   ============================ */
   private static async recalculateCurrMonthCategoryKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
     const user_id = auth_req.user.id
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
+    const started_at = performance.now()
     const timezone = auth_req.timezone || 'UTC'
 
     try {
@@ -17046,13 +20978,20 @@ export class KpiCacheService {
         })
       }
 
-      logger.info(`KPI CATEGORIAS MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
+      kpi_cache_logger.info(`KPI CATEGORIAS MES recalculado user=${user_id} periodo=${period_month}/${period_year}`)
     } catch (error: any) {
-      logger.error('Error recalculando KPI categorías mes', parseError(error))
+      kpi_cache_logger.error('Error recalculando KPI categorías mes', parseError(error))
+    } finally {
+      const ended_at = performance.now()
+      const elapsed_ms = ended_at - started_at
+      kpi_cache_logger.elapsedTime('Elapsed time', { elapsed_ms })
+      kpi_cache_logger.debug('Fin de la operación de recálculo del KPI de categorías del mes actual')
     }
   }
 
   private static async recalculateAllCategoryKPI(user_id: number, timezone: string) {
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
+    const started_at = performance.now()
     try {
       const repo = AppDataSource.getRepository(CacheKpiCategory)
 
@@ -17093,21 +21032,28 @@ export class KpiCacheService {
         }
       }
 
-      logger.info(`KPI CATEGORIAS FULL REBUILD user=${user_id}`)
+      kpi_cache_logger.info(`KPI CATEGORIAS FULL REBUILD user=${user_id}`)
     } catch (error) {
-      logger.error('Error en recalculateAllCategoryKPI', parseError(error))
+      kpi_cache_logger.error('Error en recalculateAllCategoryKPI', parseError(error))
+    } finally {
+      const ended_at = performance.now()
+      const elapsed_ms = ended_at - started_at
+      kpi_cache_logger.elapsedTime('Elapsed time', { elapsed_ms })
+      kpi_cache_logger.debug('Fin de la operación de recálculo completo del KPI de categorías')
     }
   }
 
   static async recalculateCategoryKPIByTransaction(auth_req: AuthRequest, transaction: any) {
-    logger.debug('recalculateCategoryKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, timezone: auth_req.timezone })
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', auth_req.user.id)
+    kpi_cache_logger.debug('recalculateCategoryKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, timezone: auth_req.timezone })
+    const started_at = performance.now()
 
     const user_id = auth_req.user.id
     const timezone = auth_req.timezone || 'UTC'
 
     try {
       if (!transaction?.date) {
-        logger.warn('recalculateCategoryKPIByTransaction sin transaction.date')
+        kpi_cache_logger.warn('recalculateCategoryKPIByTransaction sin transaction.date')
         return
       }
 
@@ -17127,9 +21073,14 @@ export class KpiCacheService {
         await this.recalculateAllCategoryKPI(user_id, timezone)
       }
 
-      logger.debug('KPI CATEGORÍAS recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
+      kpi_cache_logger.debug('KPI CATEGORÍAS recalculado por transacción', { trx_year, trx_month, current_year, current_month, is_current_period })
     } catch (error: any) {
-      logger.error('Error en recalculateCategoryKPIByTransaction', parseError(error))
+      kpi_cache_logger.error('Error en recalculateCategoryKPIByTransaction', parseError(error))
+    } finally {
+      const ended_at = performance.now()
+      const elapsed_ms = ended_at - started_at
+      kpi_cache_logger.elapsedTime('Elapsed time', { elapsed_ms })
+      kpi_cache_logger.debug('Fin de la operación de recálculo del KPI de categorías por transacción')
     }
   }
 
@@ -17141,7 +21092,7 @@ export class KpiCacheService {
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\next-valid-transaaction-date.service.ts
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\next-valid-transaction-date.service.ts
 ```
  
 ```ts
@@ -17190,10 +21141,16 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\payable-balance.se
 ```ts
 import { AppDataSource } from '../config/typeorm.datasource'
 import { Payable } from '../entities/Payable.entity'
+import { cache } from '../cache/cache.service'
+import { cacheKeys } from '../cache/cache-key.service'
 
 export class PayableBalanceService {
 
   static async getPendingPayableBalance(user_id: number): Promise<number> {
+    const key = cacheKeys.payableBalanceByUser(user_id)
+    const cached = cache.get(key)
+    if (cached !== undefined) return Number(cached)
+
     const result = await AppDataSource
       .getRepository(Payable)
       .createQueryBuilder('payable')
@@ -17202,7 +21159,9 @@ export class PayableBalanceService {
       .andWhere('payable.is_active = :is_active', { is_active: true })
       .getRawOne()
 
-    return Number(result?.total ?? 0)
+    const total = Number(result?.total ?? 0)
+    cache.set(key, total)
+    return total
   }
 
 }
@@ -17242,12 +21201,81 @@ export const getNextPayablePaymentNumber = async (payable_id: number): Promise<n
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\receivable-balance.service.ts
+```
+ 
+```ts
+import { AppDataSource } from '../config/typeorm.datasource'
+import { Receivable } from '../entities/Receivable.entity'
+import { cache } from '../cache/cache.service'
+import { cacheKeys } from '../cache/cache-key.service'
+
+export class ReceivableBalanceService {
+
+  static async getPendingReceivableBalance(user_id: number): Promise<number> {
+    const key = cacheKeys.receivableBalanceByUser(user_id)
+    const cached = cache.get(key)
+    if (cached !== undefined) return Number(cached)
+
+    const result = await AppDataSource
+      .getRepository(Receivable)
+      .createQueryBuilder('receivable')
+      .select('COALESCE(SUM(receivable.balance), 0)', 'total')
+      .where('receivable.user_id = :user_id', { user_id })
+      .andWhere('receivable.is_active = :is_active', { is_active: true })
+      .getRawOne()
+
+    const total = Number(result?.total ?? 0)
+    cache.set(key, total)
+    return total
+  }
+
+}
+ 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\receivable-collection-number.service.ts
+```
+ 
+```ts
+import { AppDataSource } from "../config/typeorm.datasource"
+import { ReceivableCollection } from "../entities/ReceivableCollection.entity"
+
+/* =========================================================
+Obtener siguiente número de cobro para una Cuenta por Cobrar
+========================================================= */
+
+export const getNextReceivableCollectionNumber = async (receivable_id: number): Promise<number> => {
+
+  const last_collection = await AppDataSource
+    .getRepository(ReceivableCollection)
+    .createQueryBuilder('p')
+    .where('p.receivable_id = :receivable_id', { receivable_id })
+    .andWhere('p.collection_number > 0')
+    .orderBy('p.collection_number', 'DESC')
+    .getOne()
+
+  if (!last_collection?.collection_number) return 1
+
+  return last_collection.collection_number + 1
+}
+ 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\send-2fa-mail.service.ts
 ```
  
 ```ts
 import nodemailer from 'nodemailer'
-import { logger } from '../utils/logger.util'
+import { logger as root_logger } from '../utils/logger.util'
+
+const send_2fa_mail_logger = root_logger.forMethod('send2FACodeByEmail', 'SEND_2FA_MAIL')
 import { parseError } from '../utils/error.util'
 
 const transporter = nodemailer.createTransport({
@@ -17258,6 +21286,7 @@ const transporter = nodemailer.createTransport({
 })
 
 export async function send2FACodeMail(to: string, name: string, code: string): Promise<void> {
+    const started_at = performance.now()
     try {
         await transporter.sendMail({
             from: process.env.MAIL_FROM,
@@ -17273,8 +21302,13 @@ export async function send2FACodeMail(to: string, name: string, code: string): P
       `
         })
     } catch (error) {
-        logger.error('[MAIL] Error enviando correo 2FA', parseError(error))
+        send_2fa_mail_logger.error('[MAIL] Error enviando correo 2FA', parseError(error))
         throw error
+    } finally {
+        const ended_at = performance.now()
+        const elapsed_ms = ended_at - started_at
+        send_2fa_mail_logger.elapsedTime('Elapsed time', { elapsed_ms })
+        send_2fa_mail_logger.debug('Fin de la operación de envío de correo 2FA')
     }
 }
  
@@ -17292,10 +21326,12 @@ import { AppDataSource } from '../config/typeorm.datasource'
 import { AuthCode } from '../entities/AuthCode.entity'
 import { User } from '../entities/User.entity'
 import { generateNumericCode, hashCode } from '../utils/auth-code.util'
-import { logger } from '../utils/logger.util'
+import { logger as root_logger } from '../utils/logger.util'
+
 import { send2FACodeMail } from './send-2fa-mail.service'
 
 export async function send2FACode(user: User): Promise<void> {
+    const send_2fa_logger = root_logger.forMethod('send2FACode', 'SEND_2FA', user.id)
     const repo = AppDataSource.getRepository(AuthCode)
 
     await repo.delete({ user: { id: user.id }, used_at: IsNull() })
@@ -17310,9 +21346,301 @@ export async function send2FACode(user: User): Promise<void> {
 
     await repo.save(authCode)
     await send2FACodeMail(user.email, user.name, code)
-    logger.info(`[2FA] Código enviado por correo a [${user.email}], codigo: [${code}]`)
+    send_2fa_logger.info(`[2FA] Código enviado por correo a [${user.email}], codigo: [${code}]`)
 }
  
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\send-weekly-balance-mail.service.ts
+```
+ 
+```ts
+import nodemailer from 'nodemailer'
+import { User } from '../entities/User.entity'
+import { parseError } from '../utils/error.util'
+import { logger as root_logger } from '../utils/logger.util'
+
+import { buildWeeklyBalanceMail } from './weekly-balance-mail.service'
+
+const transporter = nodemailer.createTransport({
+  host: process.env.MAIL_HOST,
+  port: Number(process.env.MAIL_PORT),
+  secure: process.env.MAIL_SECURE === 'true',
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+})
+
+export async function sendWeeklyBalanceMail(user: User, timezone = 'UTC'): Promise<void> {
+  const weekly_balance_mail_logger = root_logger.forMethod('sendWeeklyBalanceMail', 'SEND_WEEKLY_BALANCE_MAIL', user.id)
+  const started_at = performance.now()
+
+  try {
+    const mail = await buildWeeklyBalanceMail(user, timezone)
+
+    await transporter.sendMail({
+      from: process.env.MAIL_FROM,
+      to: user.email,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      attachments: [{
+        filename: 'balances-todos.png',
+        content: mail.chart,
+        cid: 'weekly-balances-chart',
+      }],
+    })
+
+    weekly_balance_mail_logger.info(`[MAIL] Resumen semanal enviado a [${user.email}]`)
+  } catch (error) {
+    weekly_balance_mail_logger.error(`[MAIL] Error enviando resumen semanal a [${user.email}]`, parseError(error))
+    throw error
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    weekly_balance_mail_logger.elapsedTime('Elapsed time', { elapsed_ms })
+    weekly_balance_mail_logger.debug('Fin de la operación de envío de resumen semanal')
+  } 
+} 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\services\weekly-balance-mail.service.ts
+```
+ 
+```ts
+import { DateTime } from 'luxon'
+import sharp from 'sharp'
+import { AppDataSource } from '../config/typeorm.datasource'
+import { getHomeCashFlowSummaryCache } from '../cache/cache-home.service'
+import { Account } from '../entities/Account.entity'
+import { AuthRequest } from '../types/auth-request'
+import { User } from '../entities/User.entity'
+import { AccountBalanceService } from './account-balance.service'
+import { PayableBalanceService } from './payable-balance.service'
+import { ReceivableBalanceService } from './receivable-balance.service'
+
+export interface WeeklyBalanceMail {
+  subject: string
+  text: string
+  html: string
+  chart: Buffer
+}
+
+const weekly_balance_subject = 'App Contable - Resumen Semanal de Balances'
+const subject_weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+const subject_months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+interface WeeklyBalanceSummary {
+  user_name: string
+  generated_at: string
+  available_balance: number
+  receivable_balance: number
+  payable_balance: number
+  net_balance: number
+  accounts: Array<{
+    name: string
+    type: string
+    balance: number
+  }>
+}
+
+const escapeHtml = (value: string): string => {
+  const entities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  }
+  return value.replace(/[&<>"']/g, character => entities[character])
+}
+
+const formatAmount = (amount: number): string => amount.toLocaleString('es-ES', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const formatAccountType = (type: string): string => ({
+  cash: 'Efectivo',
+  bank: 'Banco',
+  card: 'Tarjeta',
+  saving: 'Ahorro',
+}[type] || type)
+
+const formatSubjectDate = (timezone: string): string => {
+  const date = DateTime.now().setZone(timezone || 'UTC')
+  return `${subject_weekdays[date.weekday - 1]} ${date.day}/${subject_months[date.month - 1]}/${date.year}`
+}
+
+const escapeXml = (value: string): string => escapeHtml(value)
+
+const buildChartSvg = (labels: string[], datasets: Array<{ label: string, values: number[], color: string }>): string => {
+  const width = 900
+  const height = 420
+  const padding = { top: 54, right: 32, bottom: 62, left: 72 }
+  const chart_width = width - padding.left - padding.right
+  const chart_height = height - padding.top - padding.bottom
+  const values = datasets.reduce((all, dataset) => all.concat(dataset.values), [] as number[])
+  const maximum = Math.max(...values, 0)
+  const minimum = Math.min(...values, 0)
+  const range = maximum - minimum || 1
+  const x = (index: number) => padding.left + (labels.length <= 1 ? chart_width / 2 : index * chart_width / (labels.length - 1))
+  const y = (value: number) => padding.top + (maximum - value) * chart_height / range
+  const points = (values_for_dataset: number[]) => values_for_dataset.map((value, index) => `${x(index)},${y(value)}`).join(' ')
+  const label_step = Math.max(1, Math.ceil(labels.length / 12))
+  const grid_lines = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
+    const value = maximum - range * ratio
+    const line_y = padding.top + chart_height * ratio
+    return `<line x1="${padding.left}" y1="${line_y}" x2="${width - padding.right}" y2="${line_y}" stroke="#e5e7eb"/><text x="${padding.left - 10}" y="${line_y + 4}" text-anchor="end" font-size="12" fill="#6b7280">${escapeXml(formatAmount(value))}</text>`
+  }).join('')
+  const x_labels = labels.map((label, index) => index % label_step === 0
+    ? `<text x="${x(index)}" y="${height - 28}" text-anchor="middle" font-size="12" fill="#6b7280">${escapeXml(label)}</text>`
+    : '').join('')
+  const legend = datasets.map((dataset, index) => {
+    const legend_x = padding.left + index * 160
+    return `<line x1="${legend_x}" y1="24" x2="${legend_x + 22}" y2="24" stroke="${dataset.color}" stroke-width="3"/><text x="${legend_x + 30}" y="28" font-size="13" fill="#374151">${escapeXml(dataset.label)}</text>`
+  }).join('')
+  const lines = datasets.map(dataset => `<polyline points="${points(dataset.values)}" fill="none" stroke="${dataset.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`).join('')
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <rect width="100%" height="100%" fill="#ffffff"/>
+    <text x="${padding.left}" y="20" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Flujo de balances - Todos</text>
+    ${legend}
+    ${grid_lines}
+    ${lines}
+    ${x_labels}
+  </svg>`
+}
+
+const buildCashFlowChart = async (user: User): Promise<Buffer> => {
+  const auth_req = {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      created_at: user.created_at,
+    },
+    query: { year_period_for_cash_summ: 0 },
+  } as unknown as AuthRequest
+  const summary = await getHomeCashFlowSummaryCache(auth_req)
+  const svg = buildChartSvg(summary.labels, [
+    { label: 'Ingresos', values: summary.total_inflows, color: '#16a34a' },
+    { label: 'Egresos', values: summary.total_outflows, color: '#dc2626' },
+    { label: 'Neto', values: summary.net_cash_flow, color: '#2563eb' },
+  ])
+  return sharp(Buffer.from(svg)).png().toBuffer()
+}
+
+const getSummary = async (user: User, timezone: string): Promise<WeeklyBalanceSummary> => {
+  const account_repo = AppDataSource.getRepository(Account)
+  const accounts = await account_repo.find({
+    where: { user: { id: user.id }, is_active: true },
+    order: { name: 'ASC' },
+  })
+
+  const available_balance = await AccountBalanceService.getNetAvailableBalance(user.id)
+  const receivable_balance = await ReceivableBalanceService.getPendingReceivableBalance(user.id)
+  const payable_balance = await PayableBalanceService.getPendingPayableBalance(user.id)
+  const generated_at = DateTime.now().setZone(timezone || 'UTC').toFormat('dd/LL/yyyy HH:mm')
+
+  return {
+    user_name: user.name,
+    generated_at,
+    available_balance,
+    receivable_balance,
+    payable_balance,
+    net_balance: available_balance + receivable_balance - payable_balance,
+    accounts: accounts.map(account => ({
+      name: account.name,
+      type: formatAccountType(account.type),
+      balance: Number(account.balance),
+    })),
+  }
+}
+
+const renderText = (summary: WeeklyBalanceSummary): string => {
+  const account_lines = summary.accounts.length
+    ? summary.accounts.map(account => `- ${account.name} (${account.type}): ${formatAmount(account.balance)}`).join('\n')
+    : '- No hay cuentas activas.'
+
+  return `Resumen semanal de balances
+
+Hola ${summary.user_name},
+
+Este es tu resumen de balances generado el ${summary.generated_at}.
+
+BALANCE GENERAL
+Disponible: ${formatAmount(summary.available_balance)}
+Por cobrar: ${formatAmount(summary.receivable_balance)}
+Por pagar: ${formatAmount(summary.payable_balance)}
+Balance neto: ${formatAmount(summary.net_balance)}
+
+CUENTAS ACTIVAS
+${account_lines}
+
+Este correo fue generado automáticamente por SSR Finan.`
+}
+
+const renderHtml = (summary: WeeklyBalanceSummary): string => {
+  const account_rows = summary.accounts.length
+    ? summary.accounts.map(account => `
+      <tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(account.name)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;">${escapeHtml(account.type)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatAmount(account.balance)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="3" style="padding:10px 12px;color:#6b7280;">No hay cuentas activas.</td></tr>'
+
+  return `<!doctype html>
+<html lang="es">
+  <body style="margin:0;background:#f3f4f6;color:#1f2937;font-family:Arial,sans-serif;">
+    <div style="max-width:620px;margin:0 auto;padding:28px 16px;">
+      <div style="background:#2563eb;color:#ffffff;padding:20px 24px;">
+        <h1 style="margin:0;font-size:22px;">${weekly_balance_subject}</h1>
+      </div>
+      <div style="background:#ffffff;padding:24px;">
+        <p>Hola <strong>${escapeHtml(summary.user_name)}</strong>,</p>
+        <p style="color:#6b7280;">Resumen generado el ${escapeHtml(summary.generated_at)}.</p>
+        <h2 style="font-size:16px;margin:28px 0 12px;">Balances históricos</h2>
+        <img src="cid:weekly-balances-chart" alt="Gráfico histórico de balances" style="display:block;width:100%;height:auto;">
+        <h2 style="font-size:16px;margin:28px 0 12px;">Balance general</h2>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;">Disponible</td><td style="padding:8px 0;text-align:right;font-weight:bold;">${formatAmount(summary.available_balance)}</td></tr>
+          <tr><td style="padding:8px 0;">Por cobrar</td><td style="padding:8px 0;text-align:right;font-weight:bold;">${formatAmount(summary.receivable_balance)}</td></tr>
+          <tr><td style="padding:8px 0;">Por pagar</td><td style="padding:8px 0;text-align:right;font-weight:bold;">${formatAmount(summary.payable_balance)}</td></tr>
+          <tr><td style="padding:12px 0;border-top:2px solid #2563eb;font-weight:bold;">Balance neto</td><td style="padding:12px 0;border-top:2px solid #2563eb;text-align:right;font-weight:bold;color:#2563eb;">${formatAmount(summary.net_balance)}</td></tr>
+        </table>
+        <h2 style="font-size:16px;margin:28px 0 12px;">Cuentas activas</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead><tr style="background:#f9fafb;text-align:left;"><th style="padding:10px 12px;">Cuenta</th><th style="padding:10px 12px;">Tipo</th><th style="padding:10px 12px;text-align:right;">Balance</th></tr></thead>
+          <tbody>${account_rows}
+          </tbody>
+        </table>
+        <p style="margin:28px 0 0;color:#6b7280;font-size:12px;">Este correo fue generado automáticamente por SSR Finan.</p>
+      </div>
+    </div>
+  </body>
+</html>`
+}
+
+export async function buildWeeklyBalanceMail(user: User, timezone = 'UTC'): Promise<WeeklyBalanceMail> {
+  const summary = await getSummary(user, timezone)
+  const chart = await buildCashFlowChart(user)
+
+  return {
+    subject: `${weekly_balance_subject} - ${formatSubjectDate(timezone)}`,
+    text: renderText(summary),
+    html: renderHtml(summary),
+    chart,
+  }
+} 
 ```
  
 --- 
@@ -17339,6 +21667,21 @@ export interface AuthRequest extends Request {
   timezone?: string
   role?: RoleUser
 } 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\types\category-type-for-payable-or-receivable.ts
+```
+ 
+```ts
+export type CategoryTypeForPayableOrReceivable =
+    'payable' |
+    'payable_payment' |
+    'receivable' |
+    'receivable_collection' |
+    null 
 ```
  
 --- 
@@ -17570,45 +21913,169 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\utils\logger.util.ts
  
 ```ts
 import 'dotenv/config'
-import { formatDateForInputLocal, formatDateForSystemLocal } from './date.util'
+import { formatDateForSystemLocal } from './date.util'
 
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
+export interface LogDetails {
+  event_name: string
+  method_name?: string
+  ex_event_type?: string
+  user_id?: number | null
+  message: string
+  context?: unknown
+}
+export interface LogEventInput {
+  occurred_at: Date
+  level: LogLevel
+  service: string
+  event_name: string
+  method_name: string
+  ex_event_type: string | null
+  user_id: number | null
+  message: string
+  context?: unknown
+}
+
+type LogEventSink = (events: LogEventInput[]) => Promise<void>
+
+type ScopedLogger = {
+  debug: (message: string, context?: unknown) => void
+  info: (message: string, context?: unknown) => void
+  warn: (message: string, context?: unknown) => void
+  error: (message: string, context?: unknown) => void
+  elapsedTime: (message: string, context?: unknown) => void
+}
 
 const LEVELS: Record<LogLevel, number> = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 }
-
 const COLORS: Record<LogLevel, string> = {
-  DEBUG: '\x1b[34m', // azul
-  INFO: '\x1b[32m',  // verde 
-  WARN: '\x1b[33m',  // amarillo
-  ERROR: '\x1b[31m'  // rojo
+  DEBUG: '\x1b[34m',
+  INFO: '\x1b[32m',
+  WARN: '\x1b[33m',
+  ERROR: '\x1b[31m',
 }
 const RESET_COLOR = '\x1b[0m'
+
 class Logger {
   private currentLevel: number
+  private readonly databaseLevel: number
+  private readonly queue: LogEventInput[] = []
+  private sink: LogEventSink | null = null
+  private flush_timer: NodeJS.Timeout | null = null
+  private flushing = false
 
   constructor() {
     const envLevel = (process.env.NODE_LOG_LEVEL || 'DEBUG').toUpperCase() as LogLevel
     this.currentLevel = LEVELS[envLevel] ?? 0
+    const database_level = (process.env.NODE_LOG_DB_LEVEL || 'ERROR').toUpperCase() as LogLevel
+    this.databaseLevel = LEVELS[database_level] ?? LEVELS.ERROR
   }
 
   private shouldLog(level: LogLevel) {
     return LEVELS[level] >= this.currentLevel
   }
 
-  private format(level: LogLevel, message: string, meta?: any) {
+  private serialize(value: unknown): unknown {
+    if (value === undefined) return undefined
+    try {
+      return JSON.parse(JSON.stringify(value))
+    } catch {
+      return { message: 'Unserializable log metadata', value: String(value) }
+    }
+  }
+
+  private extractUserId(details: LogDetails, context: unknown): number | null {
+    const candidate = details.user_id ?? (context && typeof context === 'object' && 'user_id' in context
+      ? (context as { user_id?: unknown }).user_id
+      : undefined)
+    if (typeof candidate === 'number' && Number.isInteger(candidate) && candidate > 0) return candidate
+    if (typeof candidate === 'string' && /^\d+$/.test(candidate)) return Number(candidate)
+    return null
+  }
+
+  private scheduleFlush() {
+    if (this.flush_timer || this.flushing || !this.sink) return
+    this.flush_timer = setTimeout(() => {
+      this.flush_timer = null
+      void this.flush()
+    }, Number(process.env.NODE_LOG_FLUSH_INTERVAL_MS || 5000))
+  }
+
+  private normalizeDetails(message_or_details: string | LogDetails, meta?: unknown): LogDetails {
+    if (typeof message_or_details !== 'string') return message_or_details
+
+    const function_match = message_or_details.match(/^(?:method=\[([^\]]+)\]|([^\s.-]+))(?:(?:-Error| called|\s-\sError).*)?$/i)
+    const tagged_match = message_or_details.match(/^\[([^\]]+)\]/)
+    const event_name = function_match?.[1] || function_match?.[2] || tagged_match?.[1] || 'APPLICATION'
+    return { event_name, message: message_or_details, context: meta }
+  }
+
+  private write(level: LogLevel, message_or_details: string | LogDetails, meta?: unknown, forceDatabase = false) {
+    const details = this.normalizeDetails(message_or_details, meta)
     const timestamp = formatDateForSystemLocal(new Date())
-    const metaString = meta ? ` - ${JSON.stringify(meta)}` : ''
-    return `[${timestamp}] [${level}] ${message}${metaString}`
+    const serialized_meta = details.context === undefined ? undefined : this.serialize(details.context)
+    const meta_string = serialized_meta === undefined ? '' : ` - ${JSON.stringify(serialized_meta)}`
+    const output = `${COLORS[level]}[${timestamp}] [${level}] ${details.message}${meta_string}${RESET_COLOR}\n`
+    if (level === 'WARN' || level === 'ERROR') process.stderr.write(output)
+    else process.stdout.write(output)
+
+    if (this.sink && (forceDatabase || LEVELS[level] >= this.databaseLevel)) {
+      const max_queue = Number(process.env.NODE_LOG_MAX_QUEUE || 2000)
+      if (this.queue.length < max_queue) {
+        this.queue.push({
+          occurred_at: new Date(),
+          level,
+          service: process.env.NODE_LOG_SERVICE || 'ssrfinan-api',
+          event_name: details.event_name.slice(0, 150),
+          method_name: details.method_name?.slice(0, 150) || 'unknown',
+          ex_event_type: details.ex_event_type?.slice(0, 25) || null,
+          user_id: this.extractUserId(details, serialized_meta),
+          message: details.message,
+          context: serialized_meta,
+        })
+        this.scheduleFlush()
+      }
+    }
   }
 
-  private color(level: LogLevel, msg: string) {
-    return `${COLORS[level]}${msg}${RESET_COLOR}`
+  setDatabaseSink(sink: LogEventSink) {
+    this.sink = sink
+    this.scheduleFlush()
   }
 
-  debug(message: string, meta?: any) { if (this.shouldLog('DEBUG')) console.log(this.color('DEBUG', this.format('DEBUG', message, meta))) }
-  info(message: string, meta?: any) { if (this.shouldLog('INFO')) console.log(this.color('INFO', this.format('INFO', message, meta))) }
-  warn(message: string, meta?: any) { if (this.shouldLog('WARN')) console.warn(this.color('WARN', this.format('WARN', message, meta))) }
-  error(message: string, meta?: any) { if (this.shouldLog('ERROR')) console.error(this.color('ERROR', this.format('ERROR', message, meta))) }
+  forMethod(method_name: string, event_name = 'APPLICATION', user_id: number | null = null): ScopedLogger {
+    return {
+      debug: (message, context) => this.debug({ event_name, method_name, user_id, message, context }),
+      info: (message, context) => this.info({ event_name, method_name, user_id, message, context }),
+      warn: (message, context) => this.warn({ event_name, method_name, user_id, message, context }),
+      error: (message, context) => this.error({ event_name, method_name, user_id, message, context }),
+      elapsedTime: (message, context) => this.elapsedTime({ event_name, method_name, user_id, message, context }),
+    }
+  }
+
+  async flush() {
+    if (!this.sink || this.flushing || this.queue.length === 0) return
+    this.flushing = true
+    const batch = this.queue.splice(0, Number(process.env.NODE_LOG_BATCH_SIZE || 50))
+    try {
+      await this.sink(batch)
+    } catch {
+      this.queue.unshift(...batch)
+    } finally {
+      this.flushing = false
+      if (this.queue.length > 0) this.scheduleFlush()
+    }
+  }
+
+  debug(message: string | LogDetails, meta?: unknown) { if (this.shouldLog('DEBUG')) this.write('DEBUG', message, meta) }
+  info(message: string | LogDetails, meta?: unknown) { if (this.shouldLog('INFO')) this.write('INFO', message, meta) }
+  warn(message: string | LogDetails, meta?: unknown) { if (this.shouldLog('WARN')) this.write('WARN', message, meta) }
+  error(message: string | LogDetails, meta?: unknown) { if (this.shouldLog('ERROR')) this.write('ERROR', message, meta) }
+  elapsedTime(message: string | LogDetails, meta?: unknown) {
+    const details = typeof message === 'string'
+      ? { event_name: 'APPLICATION', message, context: meta, ex_event_type: 'ELAPSED_TIME' }
+      : { ...message, ex_event_type: 'ELAPSED_TIME' }
+    this.write('INFO', details, undefined, true)
+  }
 }
 
 export const logger = new Logger() 
@@ -17773,15 +22240,16 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\layouts\main.ejs
     <link rel="stylesheet" href="/css/output.css">
 
     <!-- Helper globales -->
+    <script src="/js/helpers/viewport-height-helper.js"></script>
     <script src="/js/helpers/logger-helper.js"></script>
     <script src="/js/helpers/storage-helper.js"></script>
     <script src="/js/helpers/timezone-helper.js"></script>
     <script src="/js/vendor/chart.js/global/chart.umd.js"></script>
-    <script src="/js/vendor/lunox/global/luxon.min.js"></script>
+    <script src="/js/vendor/luxon/global/luxon.min.js"></script>
 
 </head>
 
-<body class="bg-gray-100 min-h-screen">
+<body class="app-body bg-gray-100 min-h-screen">
 
     <!-- Overlay global (bloqueo de pantalla) -->
     <div id="overlay" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center">
@@ -17797,7 +22265,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\layouts\main.ejs
 
     <%- include('../partials/navbar') %>
 
-        <main class="max-w-7xl mx-auto px-2 py-3 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
+        <main class="app-main max-w-7xl mx-auto px-2 py-3 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
             <%- include('../' + view) %>
         </main>
         <script src="/js/helpers/message-box-helper.js"></script>
@@ -17821,9 +22289,10 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\2fa.ejs
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verificación</title>
   <link rel="stylesheet" href="/css/ui-login.css">
+  <script src="/js/helpers/viewport-height-helper.js"></script>
 </head>
 
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="viewport-session-page bg-gray-100 flex items-center justify-center min-h-screen">
 
   <div class="login-container p-6 bg-white rounded shadow-md w-96">
     <h1 class="text-2xl mb-4">Verificación en dos pasos</h1>
@@ -17886,7 +22355,13 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\home.ejs
   window.USER_ID = "<%= USER_ID %>"
 </script>
 
-<h1 class="ui-title">Dashboard</h1>
+<div class="max-w-6xl mx-auto ui-page home-page">
+
+  <div class="ui-header">
+    <h1 class="ui-title">Dashboard</h1>
+  </div>
+
+  <div class="ui-scroll-area">
 
 <!-- ============================
      CAROUSEL CONTAINER CON CONTROLES
@@ -17899,7 +22374,63 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\home.ejs
        CARD: KPIs GLOBALES
   ============================= -->
   <div class="home-carousel">
+    <!-- ============================
+    CATEGORIES KPI (NEW SLIDE)
+    ============================ -->
+    <div class="ui-card home-slide">
 
+      <div class="ui-card-header html-category-kpi-header-nav">
+        <button id="html-category-kpi-prev" class="html-category-kpi-year-btn"></button>
+        <h2 id="html-category-kpi-year-label" class="html-category-kpi-year-label">
+          Categorías
+        </h2>
+        <button id="html-category-kpi-next" class="html-category-kpi-year-btn"></button>
+      </div>
+
+      <div id="html-category-kpi" class="ui-card-body">
+        <div id="html-category-kpi-body" style="overflow:auto;">
+          <table class="ui-table" id="html-category-kpi-table">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th>Monto</th>
+                <th>Cant.</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="html-category-kpi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card home-slide">
+      <div class="ui-card-header html-category-group-kpi-header-nav">
+        <button id="html-category-group-kpi-prev" class="html-category-group-kpi-year-btn"></button>
+        <h2 id="html-category-group-kpi-year-label" class="html-category-group-kpi-year-label">
+          Grupo Categorías
+        </h2>
+        <button id="html-category-group-kpi-next" class="html-category-group-kpi-year-btn"></button>
+      </div>
+
+      <div id="html-category-group-kpi" class="ui-card-body">
+        <div id="html-category-group-kpi-body" style="overflow:auto;">
+          <table class="ui-table" id="html-category-group-kpi-table">
+            <thead>
+              <tr>
+                <th>Grupo Categoría</th>
+                <th>Monto</th>
+                <th>Cant.</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="html-category-group-kpi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    
 
     <!-- ============================
     KPI BALANCES
@@ -17958,11 +22489,62 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\home.ejs
       </div>
     </div>
 
+    <!-- ============================
+    RECEIVABLE FLOW SUMMARY
+    ============================= -->
+    <div class="ui-card home-slide">
+
+      <div class="ui-card-header html-receivable-flow-summary-header-nav">
+        <button id="html-receivable-flow-summary-prev" class="html-receivable-flow-summary-year-btn"></button>
+        <h2 id="html-receivable-flow-summary-year-label" class="html-receivable-flow-summary-year-label">
+          Tendencia Cuentas por Cobrar
+        </h2>
+        <button id="html-receivable-flow-summary-next" class="html-receivable-flow-summary-year-btn"></button>
+      </div>
+
+      <div id="html-receivable-flow-summary" class="ui-card-body">
+        <div style="height: 280px;">
+          <canvas id="receivableFlowChart"></canvas>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <button id="carousel-next" class="carousel-nav carousel-nav-next" onclick="scrollCarouselNext()" title="Siguiente">
   </button>
 
+</div>
+
+<div id="category-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-kpi-detail-title">
+  <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
+    <div class="kpi-detail-header">
+      <button id="category-kpi-detail-prev" type="button" class="kpi-detail-nav" aria-label="Periodo anterior" title="Periodo anterior"></button>
+      <h2 id="category-kpi-detail-title" class="text-lg font-semibold"></h2>
+      <button id="category-kpi-detail-next" type="button" class="kpi-detail-nav" aria-label="Periodo siguiente" title="Periodo siguiente"></button>
+      <button id="category-kpi-detail-close" type="button" class="kpi-detail-close" aria-label="Cerrar" title="Cerrar"></button>
+    </div>
+    <div style="height: 300px;">
+      <canvas id="category-kpi-detail-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="category-group-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-group-kpi-detail-title">
+  <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
+    <div class="kpi-detail-header">
+      <button id="category-group-kpi-detail-prev" type="button" class="kpi-detail-nav" aria-label="Periodo anterior" title="Periodo anterior"></button>
+      <h2 id="category-group-kpi-detail-title" class="text-lg font-semibold"></h2>
+      <button id="category-group-kpi-detail-next" type="button" class="kpi-detail-nav" aria-label="Periodo siguiente" title="Periodo siguiente"></button>
+      <button id="category-group-kpi-detail-close" type="button" class="kpi-detail-close" aria-label="Cerrar" title="Cerrar"></button>
+    </div>
+    <div style="height: 300px;">
+      <canvas id="category-group-kpi-detail-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+  </div>
 </div>
 
 <script src="/js/helpers/icon-helper.js"></script>
@@ -17984,9 +22566,11 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\login.ejs
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login</title>
   <link rel="stylesheet" href="/css/ui-login.css">
+  <script>window.APP_VIEWPORT_RESET = true</script>
+  <script src="/js/helpers/viewport-height-helper.js"></script>
 </head>
 
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="viewport-session-page bg-gray-100 flex items-center justify-center min-h-screen">
 
   <div class="login-container p-6 bg-white rounded shadow-md w-96">
     <h1 class="text-2xl mb-4">Iniciar sesión</h1>
@@ -18349,7 +22933,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\categories\form
     <!-- Tipo de categoría -->
     <% if (!isHidden('type_for_payable_or_receivable')) { %>
     <div class="mb-4">
-      <label class="block font-medium mb-1">Tipo de categoría para Cuentas por Pagar</label>
+      <label class="block font-medium mb-1">Tipo de Cuenta por Pagar o Cobrar</label>
 
       <div class="flex gap-6">
         <label class="flex items-center gap-1">
@@ -18360,7 +22944,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\categories\form
             <%= category?.type_for_payable_or_receivable === 'payable' ? 'checked' : '' %>
             <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
           >
-          Para Cuentas por Pagar
+        Cuentas por Pagar
         </label>
 
         <label class="flex items-center gap-1">
@@ -18371,7 +22955,29 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\categories\form
             <%= category?.type_for_payable_or_receivable === 'payable_payment' ? 'checked' : '' %>
             <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
           >
-          Para Pagos
+          Pagos
+        </label>
+
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type_for_payable_or_receivable"
+            value="receivable"
+            <%= category?.type_for_payable_or_receivable === 'receivable' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
+          >
+          Cuentas por Cobrar
+        </label>
+
+        <label class="flex items-center gap-1">
+          <input
+            type="radio"
+            name="type_for_payable_or_receivable"
+            value="receivable_collection"
+            <%= category?.type_for_payable_or_receivable === 'receivable_collection' ? 'checked' : '' %>
+            <%= isReadOnly('type_for_payable_or_receivable') ? 'disabled' : '' %>
+          >
+          Cobros
         </label>
 
         <label class="flex items-center gap-1">
@@ -18684,6 +23290,94 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\category-groups
 </div>
 
  
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\notifications\form.ejs
+```
+ 
+```ejs
+<div class="max-w-xl mx-auto ui-page">
+  <div class="ui-header">
+    <h1 class="ui-title">Configurar notificación</h1>
+  </div>
+
+  <form method="post" action="/notifications/schedule" class="ui-form notification-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <h2 class="notification-form-title"><%= notification.notification_title %></h2>
+
+    <% if (errors.schedule) { %>
+      <p class="form-error"><%= errors.schedule %></p>
+    <% } %>
+
+    <label for="send_day">Día de envío</label>
+    <select id="send_day" name="send_day" required>
+      <% days.forEach(day => { %>
+        <option value="<%= day.value %>" <%= notification.send_day === day.value ? 'selected' : '' %>><%= day.label %></option>
+      <% }) %>
+    </select>
+
+    <label for="send_time">Hora de envío</label>
+    <input id="send_time" name="send_time" type="time" value="<%= notification.send_time %>" required>
+
+    <div class="notification-form-actions">
+      <a href="/notifications" class="ui-btn">Cancelar</a>
+      <button type="submit" class="ui-btn ui-btn-primary">Guardar</button>
+    </div>
+  </form>
+</div> 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\notifications\index.ejs
+```
+ 
+```ejs
+<div class="max-w-4xl mx-auto ui-page notifications-page">
+  <div class="ui-header">
+    <h1 class="ui-title">Notificaciones</h1>
+  </div>
+
+  <div class="ui-scroll-area">
+    <div class="notifications-mobile">
+      <article class="ui-card notification-card">
+        <div class="ui-card-body">
+          <h2 class="notification-card-title"><%= notification.notification_title %></h2>
+          <dl class="notification-details">
+            <div><dt>Día de envío</dt><dd><%= days.find(day => day.value === notification.send_day).label %></dd></div>
+            <div><dt>Hora de envío</dt><dd><%= notification.send_time %></dd></div>
+          </dl>
+          <a href="/notifications/schedule" class="ui-btn ui-btn-primary">Editar</a>
+        </div>
+      </article>
+    </div>
+
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th>Notificación</th>
+            <th>Día de envío</th>
+            <th>Hora de envío</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><%= notification.notification_title %></td>
+            <td><%= days.find(day => day.value === notification.send_day).label %></td>
+            <td><%= notification.send_time %></td>
+            <td><a href="/notifications/schedule" class="ui-btn ui-btn-primary">Configurar horario</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div> 
 ```
  
 --- 
@@ -19100,6 +23794,204 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\payable-payment
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\payable-receivable-collections\form.ejs
+```
+ 
+```ejs
+<%
+  const rules = receivable_collection_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'readonly'
+%>
+
+<%
+const cancel_url = context?.from === 'categories' && context?.category_id
+  ? `/transactions?from=categories&category_id=${context.category_id}`
+  : `/receivables-collections/${receivable_id || payable_id || ''}/payable`
+%>
+
+<script>
+  window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
+</script>
+
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6">
+    <%=
+      mode === 'insert' ? 'Insertar Cobro' :
+      mode === 'update' ? 'Editar Cobro' :
+      mode === 'delete' ? 'Eliminar Cobro' :
+      ''
+    %>
+  </h1>
+
+  <form method="post" action="/receivables-collections">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <% if (errors?.general) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors.general %>
+      </div>
+    <% } %>
+
+    <input type="hidden" name="id" value="<%= receivable_collection?.id || '' %>">
+    <input type="hidden" name="receivable_id" value="<%= receivable_id || payable_id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
+    <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
+    <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
+
+    <% if (!isHidden('account_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Cuenta</label>
+      <div class="autocomplete" data-items='<%- JSON.stringify(account_list) %>' data-default-id="<%= receivable_collection?.account?.id || '' %>" data-placeholder="-- Escoja una cuenta --">
+        <input type="text" class="autocomplete-input" autocomplete="off" value="<%= receivable_collection?.account?.name || '' %>" <%= isReadOnly('account_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="account_id" value="<%= receivable_collection?.account?.id || '' %>">
+        <% if (!isReadOnly('account_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      <% if (errors?.account) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.account %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('category_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Categoría</label>
+      <div class="autocomplete" data-items='<%- JSON.stringify(active_expense_category_list) %>' data-default-id="<%= receivable_collection?.category?.id || '' %>" data-placeholder="-- Escoja una categoría --">
+        <input type="text" class="autocomplete-input" autocomplete="off" value="<%= receivable_collection?.category?.name || '' %>" <%= isReadOnly('category_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="category_id" value="<%= receivable_collection?.category?.id || '' %>">
+        <% if (!isReadOnly('category_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      <% if (errors?.category) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('principal_collected')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Monto Capital</label>
+      <input type="number" step="0.01" min="0" name="principal_collected" class="w-full border rounded px-3 py-2" value="<%= receivable_collection?.principal_collected || '0.00' %>" <%= isReadOnly('principal_collected') ? 'readonly' : '' %> required>
+      <% if (errors?.principal_collected) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.principal_collected %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('interest_collected')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Interés</label>
+      <input type="number" step="0.01" min="0" name="interest_collected" class="w-full border rounded px-3 py-2" value="<%= receivable_collection?.interest_collected || '0.00' %>" <%= isReadOnly('interest_collected') ? 'readonly' : '' %>>
+      <% if (errors?.interest_collected) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.interest_collected %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('collection_date')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Fecha de Cobro</label>
+      <input type="datetime-local" name="collection_date" class="w-full border rounded px-3 py-2" value="<%= receivable_collection?.collection_date || '' %>" <%= isReadOnly('collection_date') ? 'readonly' : '' %> required>
+      <% if (errors?.collection_date) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.collection_date %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('note')) { %>
+    <div class="mb-6">
+      <label class="block font-medium mb-1">Nota</label>
+      <textarea name="note" rows="3" class="w-full border rounded px-3 py-2" <%= isReadOnly('note') ? 'readonly' : '' %>><%= receivable_collection?.note || '' %></textarea>
+    </div>
+    <% } %>
+
+    <div class="flex justify-end gap-2">
+      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+      <% if (mode === 'delete') { %>
+        <button class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
+      <% } else { %>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<script src="/js/forms/autocomplete-form.js"></script>
+ 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\payable-receivable-collections\index.ejs
+```
+ 
+```ejs
+<script>
+  window.USER_ID = "<%= USER_ID %>"
+  window.RECEIVABLE_ID = "<%= RECEIVABLE_ID %>"
+</script>
+
+<div class="max-w-6xl mx-auto ui-page">
+  <div class="ui-header">
+    <h1 class="ui-title">Cobros – <%= receivable.name %></h1>
+
+    <div class="ui-toolbar">
+      <%- include('../../partials/btn-back', {
+        href: '/receivables',
+        title: 'Volver a Cuentas por Cobrar',
+        text: 'Volver'
+      }) %>
+
+      <%- include('../../partials/btn-new', {
+        href: `/receivables-collections/insert/${receivable.id}`,
+        title: 'Nuevo cobro',
+        text: 'Nuevo',
+        data_btn: 'new'
+      }) %>
+
+      <%- include('../../partials/search-box', {
+        placeholder: 'Buscar cobros...'
+      }) %>
+    </div>
+  </div>
+
+  <div class="ui-scroll-area">
+    <div id="receivable-collections-mobile" class="receivable-collections-mobile"></div>
+
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Fecha</th>
+            <th class="ui-th col-left">Monto</th>
+            <th class="ui-th col-left">Interés</th>
+            <th class="ui-th col-left">Cuenta</th>
+            <th class="ui-th col-left">Categoría</th>
+            <th class="ui-th col-left">No. Cobro</th>
+            <th class="ui-th col-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="receivable-collections-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="/js/indexes/receivable-collections-index.js"></script>
+<script src="/js/helpers/icon-helper.js"></script>
+<script src="/js/helpers/amount-helper.js"></script>
+<script src="/js/helpers/type-tags-helper.js"></script>
+<script src="/js/helpers/format-datetime-helper.js"></script>
+ 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\payables\form.ejs
 ```
  
@@ -19441,6 +24333,325 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\payables\index.
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\receivable-groups\form.ejs
+```
+ 
+```ejs
+<%
+  const rules = receivable_group_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'readonly'
+  const isEditable = field => rules[field] === 'editable'
+%>
+
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6">
+    <%= 
+      mode === 'insert' ? 'Insertar Grupo Cuentas por Cobrar' :
+      mode === 'update' ? 'Editar Grupo Cuentas por Cobrar' :
+      mode === 'delete' ? 'Eliminar Grupo Cuentas por Cobrar' :
+      mode
+    %>
+  </h1>
+
+  <form method="post" action="/receivables-groups/">
+    <!-- Token CSRF -->
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <!-- Error general -->
+    <% if (errors?.general) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors.general %>
+      </div>
+    <% } %>
+
+    <!-- ID y acción -->
+    <input type="hidden" name="id" value="<%= receivable_group?.id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
+
+    <!-- Nombre -->
+    <% if (!isHidden('name')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Nombre</label>
+      <input
+        type="text"
+        name="name"
+        class="w-full border rounded px-3 py-2"
+        value="<%= receivable_group?.name || '' %>"
+        <%= isReadOnly('name') ? 'readonly' : '' %>
+        required
+      >
+      <% if (errors?.name) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <!-- Estado (solo activar / inactivar) -->
+    <% if (!isHidden('is_active')) { %>
+      <div class="mb-6">
+        <label class="block font-medium mb-1">Estado</label>
+        <select 
+          name="is_active" 
+          class="w-full border rounded px-3 py-2"
+          <%= isReadOnly('is_active') ? 'disabled' : '' %>
+        >
+          <option value="true" <%= receivable_group?.is_active ? 'selected' : '' %>>Activar</option>
+          <option value="false" <%= !receivable_group?.is_active ? 'selected' : '' %>>Inactivar</option>
+        </select>
+        <% if (errors?.is_active) { %>
+          <p class="text-red-600 text-sm mt-1"><%= errors.is_active %></p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <!-- Acciones -->
+    <div class="flex justify-end gap-2">
+      <a 
+        href="/receivables" 
+        class="px-4 py-2 bg-gray-200 rounded">
+        Cancelar
+      </a>
+
+      <% if (mode === 'delete') { %>
+        <button 
+          class="px-4 py-2 bg-red-600 text-white rounded" 
+          onclick="this.form.action.value='delete'">
+          Eliminar
+        </button>
+      <% } else { %>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">
+          Guardar
+        </button>
+      <% } %>
+    </div>
+  </form>
+</div>
+ 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\receivables\form.ejs
+```
+ 
+```ejs
+<%
+  const rules = receivable_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'readonly'
+%>
+
+<%
+const cancel_url = context?.from === 'categories' && context?.category_id
+  ? `/transactions?from=categories&category_id=${context.category_id}`
+  : '/receivables'
+%>
+
+<script>
+  window.TRANSACTIONS_CONTEXT = JSON.parse('<%- JSON.stringify(context || {}) %>');
+</script>
+
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6">
+    <%=
+      mode === 'insert' ? 'Insertar Cuenta por Cobrar' :
+      mode === 'update' ? 'Editar Cuenta por Cobrar' :
+      mode === 'delete' ? 'Eliminar Cuenta por Cobrar' :
+      ''
+    %>
+  </h1>
+
+  <form method="post" action="/receivables/">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <% if (errors?.general) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors.general %>
+      </div>
+    <% } %>
+
+    <input type="hidden" name="id" value="<%= receivable?.id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
+    <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
+    <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
+
+    <% if (!isHidden('name')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Nombre</label>
+      <input type="text" name="name" class="w-full border rounded px-3 py-2" value="<%= receivable?.name || '' %>" <%= isReadOnly('name') ? 'readonly' : '' %> required>
+      <% if (errors?.name) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('total_amount')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Monto total</label>
+      <input type="number" step="0.01" name="total_amount" class="w-full border rounded px-3 py-2" value="<%= receivable?.total_amount || '0.00' %>" <%= isReadOnly('total_amount') ? 'readonly' : '' %> required>
+      <% if (errors?.total_amount) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.total_amount %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('start_date')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Fecha inicio</label>
+      <input type="datetime-local" name="start_date" class="w-full border rounded px-3 py-2" value="<%= receivable?.start_date || '' %>" <%= isReadOnly('start_date') ? 'readonly' : '' %> required>
+      <% if (errors?.start_date) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.start_date %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('receivable_group_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Grupo de Cuentas por Cobrar</label>
+      <div class="autocomplete" data-items='<%- JSON.stringify(receivable_group_list) %>' data-default-id="<%= receivable?.receivable_group?.id || '' %>" data-placeholder="-- Escoja una opción --">
+        <input type="text" class="autocomplete-input" autocomplete="off" value="<%= receivable?.receivable_group?.name || '' %>" <%= isReadOnly('receivable_group_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="receivable_group_id" value="<%= receivable?.receivable_group?.id || '' %>">
+        <% if (!isReadOnly('receivable_group_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      <% if (errors?.receivable_group) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.receivable_group %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('disbursement_account_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Cuenta de desembolso</label>
+      <div class="autocomplete" data-items='<%- JSON.stringify(disbursement_account_list) %>' data-default-id="<%= receivable?.disbursement_account?.id || '' %>" data-placeholder="-- Escoja una opción --">
+        <input type="text" class="autocomplete-input" autocomplete="off" value="<%= receivable?.disbursement_account?.name || '' %>" <%= isReadOnly('disbursement_account_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="disbursement_account_id" value="<%= receivable?.disbursement_account?.id || '' %>">
+        <% if (!isReadOnly('disbursement_account_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      <% if (errors?.disbursement_account) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.disbursement_account %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('category_id')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Categoría</label>
+      <div class="autocomplete" data-items='<%- JSON.stringify(active_income_category_list) %>' data-default-id="<%= receivable?.category?.id || '' %>" data-placeholder="-- Escoja una opción --">
+        <input type="text" class="autocomplete-input" autocomplete="off" value="<%= receivable?.category?.name || '' %>" <%= isReadOnly('category_id') ? 'readonly' : '' %>>
+        <input type="hidden" class="autocomplete-hidden" name="category_id" value="<%= receivable?.category?.id || '' %>">
+        <% if (!isReadOnly('category_id')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+      <% if (errors?.category) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.category %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (!isHidden('note')) { %>
+    <div class="mb-6">
+      <label class="block font-medium mb-1">Nota</label>
+      <textarea name="note" rows="3" class="w-full border rounded px-3 py-2" <%= isReadOnly('note') ? 'readonly' : '' %>><%= receivable?.note || '' %></textarea>
+    </div>
+    <% } %>
+
+    <div class="flex justify-end gap-2">
+      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+      <% if (mode === 'delete') { %>
+        <button class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
+      <% } else { %>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<script src="/js/forms/autocomplete-form.js"></script>
+ 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\receivables\index.ejs
+```
+ 
+```ejs
+<script>
+  window.USER_ID = "<%= USER_ID %>"
+</script>
+
+<div class="max-w-6xl mx-auto ui-page">
+  <div class="ui-header">
+    <h1 class="ui-title">Cuentas por Cobrar</h1>
+
+    <div class="ui-toolbar">
+      <%- include('../../partials/btn-new', {
+        href: '#',
+        title: 'Nueva cuenta por cobrar',
+        text: 'Nuevo',
+        data_btn: 'new'
+      }) %>
+
+      <%- include('../../partials/search-box', {
+        placeholder: 'Buscar cuentas por cobrar...'
+      }) %>
+
+    <!-- Modal Insertar -->
+    <%- include('../../partials/ui-modal',{
+      modal_id:'insert-modal',
+      title:'¿Qué desea insertar?',
+      buttons:[
+        {id:'insert-group', text:'Grupo de Cuentas por Cobrar', variant:'ui-modal-btn-primary'},
+        {id:'insert-child', text:'Cuenta por Cobrar Hija', variant:'ui-modal-btn-success'},
+        {id:'close-modal', text:'Cancelar', variant:'ui-modal-btn-neutral'}
+      ]
+    }) %>
+    </div>
+  </div>
+
+  <div class="ui-scroll-area">
+    <div id="receivables-mobile" class="receivables-mobile"></div>
+
+    <div class="ui-table-wrapper">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Nombre</th>
+            <th class="ui-th col-left">Monto</th>
+            <th class="ui-th col-left">Capital</th>
+            <th class="ui-th col-left">Interés</th>
+            <th class="ui-th col-left">Saldo</th>
+            <th class="ui-th col-left">Estado</th>
+            <th class="ui-th col-left">Cuenta</th>
+            <th class="ui-th col-left">Categoría</th>
+            <th class="ui-th col-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="receivables-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="/js/indexes/receivables-index.js"></script>
+<script src="/js/helpers/icon-helper.js"></script>
+<script src="/js/helpers/amount-helper.js"></script>
+<script src="/js/helpers/type-tags-helper.js"></script>
+<script src="/js/helpers/format-datetime-helper.js"></script>
+ 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\transactions\batch-categorize.ejs
 ```
  
@@ -19466,6 +24677,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\transactions\ba
 </script>
 
 <form id="batch-categorize-form" method="POST" action="/transactions/batch-categorize">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
   <input type="hidden" name="return_from" value="<%= context?.from || '' %>">
   <input type="hidden" name="return_category_id" value="<%= context?.category_id || '' %>">
@@ -19900,6 +25112,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\transactions\in
 ```ejs
 <script>
   window.USER_ID = "<%= USER_ID %>"
+  window.CSRF_TOKEN = "<%= csrfToken %>"
 </script>
 
 <script>
@@ -19995,6 +25208,30 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\transactions\in
       </table>
     </div>
 
+  </div>
+</div>
+
+<div id="transaction-images-modal" class="ui-modal hidden" role="dialog" aria-modal="true">
+  <div class="transaction-images-modal-content" onclick="event.stopPropagation()">
+    <div id="transaction-images-empty" class="transaction-images-empty hidden">
+      No hay imágenes para esta transacción.
+    </div>
+
+    <div id="transaction-images-viewer" class="transaction-images-viewer hidden">
+      <button id="transaction-images-prev" class="transaction-images-nav" type="button" title="Imagen anterior" aria-label="Imagen anterior"></button>
+      <button id="transaction-images-preview" class="transaction-images-preview" type="button" title="Ampliar imagen" aria-label="Ampliar imagen">
+        <img id="transaction-images-current" alt="Imagen de la transacción">
+      </button>
+      <button id="transaction-images-next" class="transaction-images-nav" type="button" title="Siguiente imagen" aria-label="Siguiente imagen"></button>
+    </div>
+
+    <div id="transaction-images-counter" class="transaction-images-counter"></div>
+    <div class="transaction-images-actions">
+      <input id="transaction-images-input" type="file" accept="image/avif,image/gif,image/jpeg,image/png,image/webp" multiple hidden>
+      <button id="transaction-images-insert" class="ui-modal-btn ui-modal-btn-success" type="button">Insertar</button>
+      <button id="transaction-images-delete" class="ui-modal-btn ui-modal-btn-primary" type="button" disabled>Eliminar</button>
+      <button id="transaction-images-close" class="ui-modal-btn ui-modal-btn-neutral" type="button">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -20266,6 +25503,12 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\partials\navbar.ejs
       </span>
     <% } %>
 
+    <% if (typeof receivable_balance !== 'undefined') { %>
+      <span class="navbar-receivable_balance">
+      <%= receivable_balance.toFixed(2) %>
+      </span>
+    <% } %>
+
     <!-- Botón hamburguesa (solo móvil) -->
     <button
       id="mobile-menu-btn"
@@ -20287,6 +25530,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\partials\navbar.ejs
       <li><a href="/transactions" class="hover:underline">Transacciones</a></li>
       <li><a href="/payables" class="hover:underline">Cuentas por Pagar</a></li>
       <li><a href="/receivables" class="hover:underline">Cuentas por Cobrar</a></li>
+      <li><a href="/notifications" class="hover:underline">Notificaciones</a></li>
       <li><a href="/logout" class="hover:underline">Cerrar Sesión</a></li>
     </ul>
   </div>
@@ -20302,6 +25546,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\partials\navbar.ejs
     <li><a href="/transactions" class="block py-2">Transacciones</a></li>
     <li><a href="/payables" class="block py-2">Cuentas por Pagar</a></li>
     <li><a href="/receivables" class="block py-2">Cuentas por Cobrar</a></li>
+    <li><a href="/notifications" class="block py-2">Notificaciones</a></li>
     <li><a href="/logout" class="block py-2">Cerrar Sesión</a></li>
   </ul>
 </nav>

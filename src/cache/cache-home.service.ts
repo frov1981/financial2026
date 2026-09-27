@@ -161,7 +161,12 @@ export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Prom
   const duration_sec = (end - start) / 1000
   cache_home_logger.debug(`method=[${getHomeAvailableYearsKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   const years = rows.map(r => Number(r.year))
-  const f_year = [0, ...years]
+  const f_year = years.length
+    ? [0, ...Array.from(
+      { length: Math.max(new Date().getFullYear(), ...years) - Math.min(...years) + 1 },
+      (_, index) => Math.max(new Date().getFullYear(), ...years) - index
+    )]
+    : [0]
   cache_home_logger.info(`${getHomeAvailableYearsKpiCache.name}. Años disponibles: `, { f_year })
   cache.set(cache_key, f_year)
   return f_year

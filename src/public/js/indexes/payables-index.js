@@ -1,3 +1,4 @@
+(() => {
 /* ============================================================================
 1. Constantes globales
 2. Variables de estado
@@ -29,6 +30,7 @@ const COLLAPSE_KEY = `payables.collapse.${window.USER_ID}`
 2. Variables de estado
 ========================================================= */
 let allPayables = []
+let groupTotals = []
 
 /* ============================
    Layout detection
@@ -84,8 +86,8 @@ function togglePayableGroupCollapse(groupId) {
 }
 
 function getGroupPendingTotal(group_id) {
-  if (!window.groupTotals) return 0
-  const group = window.groupTotals.find(g => g.payable_group_id === group_id)
+  if (!groupTotals) return 0
+  const group = groupTotals.find(g => g.payable_group_id === group_id)
   return group ? group.total_balance : 0
 }
 
@@ -423,7 +425,7 @@ async function loadPayables() {
   const res = await fetch(API_BASE)
   const data = await res.json()
   allPayables = data.payables || []
-  window.groupTotals = data.group_totals || []
+  groupTotals = data.group_totals || []
 
   const cachedText = loadFilters(FILTER_KEY)
   const cachedStatus = loadFilters(STATUS_FILTER_KEY)
@@ -641,3 +643,12 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 })
 
+window.togglePayableGroupCollapse = togglePayableGroupCollapse
+window.goToPayableUpdate = goToPayableUpdate
+window.goToPayableDelete = goToPayableDelete
+window.goToPayableView = goToPayableView
+window.selectPayableCard = selectPayableCard
+window.goToPayableGroupUpdate = goToPayableGroupUpdate
+window.goToPayableGroupDelete = goToPayableGroupDelete
+
+})()
