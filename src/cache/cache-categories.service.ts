@@ -1,21 +1,11 @@
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
+import type { DTOCategory } from "../dto/dto";
 import { Category } from "../entities/Category.entity";
 import { AuthRequest } from "../types/auth-request";
-import { CategoryTypeForPayableOrReceivable } from "../types/category-type-for-payable-or-receivable";
 import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-
-export type DTOCategory = {
-    id: number
-    name: string
-    type: 'income' | 'expense'
-    type_for_payable_or_receivable: CategoryTypeForPayableOrReceivable
-    is_active: boolean
-    category_group: { id: number, name: string } | null
-    transactions_count: number
-}
 
 const getCategoriesBase = async (user_id: number): Promise<Category[]> => {
     const cache_key = cacheKeys.categoriesByUser(user_id)

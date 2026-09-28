@@ -8,12 +8,11 @@ import {
     apiForGettingCategoryGroupKpiDetail,
     apiForGettingPayableSummary,
     apiForGettingReceivableSummary,
-    apiForLogout,
-    apiForValidatingLogin,
     routeToPageHome,
     routeToPageLogin,
     routeToPageRoot
 } from '../controllers/home/home.controller'
+import { apiForLogout, apiForValidatingLogin } from '../controllers/2fa/2fa.controller'
 import { injectNetBalance } from '../middlewares/inject-net-balance.middleware'
 import { sessionAuthMiddleware } from '../middlewares/session-auth.middleware'
 import { loginLimiter } from '../config/rate-limiter'

@@ -1,5 +1,6 @@
 import { Request, RequestHandler, Response } from 'express'
-import { DTOCategory, getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
+import { getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
+import type { DTOCategory } from '../../dto/dto'
 import { getActiveCategoryGroup } from '../../cache/cache-category-groups.service'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
 import { AuthRequest } from '../../types/auth-request'

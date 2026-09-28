@@ -8,6 +8,7 @@ import { User } from './User.entity'
 import { Receivable } from './Receivable.entity'
 import { ReceivableCollection } from './ReceivableCollection.entity'
 import { CategoryTypeForPayableOrReceivable } from '../types/category-type-for-payable-or-receivable'
+import { CategoryType } from '../types/category-type'
 
 @Entity('categories')
 export class Category {
@@ -25,7 +26,7 @@ export class Category {
 
   @Column({ type: 'varchar' })
   @IsIn(['income', 'expense'], { message: 'El tipo debe ser income o expense' })
-  type!: 'income' | 'expense'
+  type!: CategoryType
 
   @Column({ type: 'varchar' })
   @IsOptional()

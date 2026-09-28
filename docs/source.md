@@ -185,20 +185,12 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-accounts.servic
 ```ts
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
+import type { DTOAccount } from "../dto/dto";
 import { Account } from "../entities/Account.entity";
 import { AuthRequest } from "../types/auth-request";
+import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-import { logger as root_logger } from '../utils/logger.util';
-
-export type DTOAccount = {
-    id: number
-    name: string
-    type: string
-    balance: number
-    is_active: boolean
-    transaction_count: number
-}
 
 const getAccountsBase = async (user_id: number): Promise<Account[]> => {
     const cache_key = cacheKeys.accountsByUser(user_id)
@@ -343,22 +335,12 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-categories.serv
 ```ts
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
+import type { DTOCategory } from "../dto/dto";
 import { Category } from "../entities/Category.entity";
 import { AuthRequest } from "../types/auth-request";
-import { CategoryTypeForPayableOrReceivable } from "../types/category-type-for-payable-or-receivable";
 import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-
-export type DTOCategory = {
-    id: number
-    name: string
-    type: 'income' | 'expense'
-    type_for_payable_or_receivable: CategoryTypeForPayableOrReceivable
-    is_active: boolean
-    category_group: { id: number, name: string } | null
-    transactions_count: number
-}
 
 const getCategoriesBase = async (user_id: number): Promise<Category[]> => {
     const cache_key = cacheKeys.categoriesByUser(user_id)
@@ -581,33 +563,25 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { CacheKpiBalance } from "../entities/CacheKpiBalance.entity";
 import { CacheKpiCategory } from "../entities/CacheKpiCategory.entity";
+import type {
+  DTOHomeCashFlowSummary,
+  DTOHomeCategoryGroupKpi,
+  DTOHomeCategoryGroupKpiDetail,
+  DTOHomeCategoryKpi,
+  DTOHomeCategoryKpiDetail,
+  DTOHomeKpiBalance,
+  DTOHomeKpiTrend,
+  DTOHomePayableFlowSummary,
+  DTOHomeReceivableFlowSummary,
+  DTOHomeTrendResponse,
+  DTOHomeTrendValue
+} from "../dto/dto";
 import { AuthRequest } from "../types/auth-request";
 import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
-import { cache } from "./cache.service";
+import { cache } from "./cache.service"; 
 
-type CashFlowSummary = {
-  labels: string[]
-  total_inflows: number[]
-  total_outflows: number[]
-  net_cash_flow: number[]
-}
-
-type PayableFlowSummary = {
-  labels: string[]
-  total_payables: number[]
-  total_payable_payments: number[]
-  net_balance: number[]
-}
-
-type ReceivableFlowSummary = {
-  labels: string[]
-  total_receivables: number[]
-  total_receivable_collections: number[]
-  net_balance: number[]
-}
-
-const base_kpi = {
+const base_kpi: DTOHomeKpiBalance = {
   incomes: 0,
   expenses: 0,
   payables: 0,
@@ -626,18 +600,6 @@ const base_kpi = {
   is_populate: 0
 }
 
-type KpiBalance = typeof base_kpi
-
-type TrendValue = {
-  diff: number
-  percent: number
-  direction: 'up' | 'down' | 'equal'
-} | null
-
-type KpiTrend = {
-  [K in keyof KpiBalance]: TrendValue
-}
-
 const buildAuthReq = (auth_req: AuthRequest, year: number, month: number): AuthRequest => {
   return {
     ...auth_req,
@@ -649,12 +611,12 @@ const buildAuthReq = (auth_req: AuthRequest, year: number, month: number): AuthR
   } as unknown as AuthRequest
 }
 
-export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promise<KpiBalance> => {
+export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promise<DTOHomeKpiBalance> => {
   const user_id = auth_req.user.id
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   const month = Number(auth_req.query.month_period_for_kpi || 0)
   const cache_key = cacheKeys.homeBalanceKpiAccum(user_id, year, month)
-  const cached = cache.get<KpiBalance>(cache_key)
+  const cached = cache.get<DTOHomeKpiBalance>(cache_key)
   if (cached !== undefined) return cached
   const years = await getHomeAvailableYearsKpiCache(auth_req)
   const real_years = years.filter(y => y !== 0)
@@ -669,8 +631,8 @@ export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promis
     return current
   }
   const prev_req = buildAuthReq(auth_req, year - 1, 0)
-  const prev: KpiBalance = await getHomeKpisCacheAccumulated(prev_req)
-  const result: KpiBalance = {
+  const prev: DTOHomeKpiBalance = await getHomeKpisCacheAccumulated(prev_req)
+  const result: DTOHomeKpiBalance = {
     incomes: prev.incomes + current.incomes,
     expenses: prev.expenses + current.expenses,
     savings: prev.savings + current.savings,
@@ -691,7 +653,7 @@ export const getHomeKpisCacheAccumulated = async (auth_req: AuthRequest): Promis
   cache.set(cache_key, result)
   return result
 }
-const calcTrend = (key: string, current: number, previous: number): TrendValue => {
+const calcTrend = (key: string, current: number, previous: number): DTOHomeTrendValue => {
   // If previous is zero and current is also zero, there's no trend to show
   if (previous === 0 && current === 0) return null
 
@@ -704,18 +666,18 @@ const calcTrend = (key: string, current: number, previous: number): TrendValue =
   const percent = previous === 0 ? null : Number(((diff / previous) * 100).toFixed(2))
   return {
     diff,
-    percent: percent as any,
+    percent,
     direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'equal'
   }
 }
 
-const calcTrendObject = (current: KpiBalance, previous: KpiBalance): KpiTrend => {
-  const result = {} as KpiTrend
+const calcTrendObject = (current: DTOHomeKpiBalance, previous: DTOHomeKpiBalance): DTOHomeKpiTrend => {
+  const result = {} as DTOHomeKpiTrend
   for (const key in current) {
     if (key === 'is_populate') continue
-    const curr = current[key as keyof KpiBalance]
-    const prev = previous[key as keyof KpiBalance]
-    result[key as keyof KpiBalance] = calcTrend(key, curr, prev)
+    const current_value = current[key as keyof DTOHomeKpiBalance]
+    const previous_value = previous[key as keyof DTOHomeKpiBalance]
+    result[key as keyof DTOHomeKpiTrend] = calcTrend(key, current_value, previous_value)
   }
   return result
 }
@@ -751,13 +713,13 @@ export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Prom
   return f_year
 }
 
-export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<KpiBalance> => {
+export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<DTOHomeKpiBalance> => {
   const user_id = auth_req.user.id
   const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const year_period_for_kpi = Number(auth_req.query.year_period_for_kpi || 0)
   const month_period_for_kpi = Number(auth_req.query.month_period_for_kpi || 0)
   const cache_key = cacheKeys.homeBalanceKpi(user_id, year_period_for_kpi, month_period_for_kpi)
-  const cached = cache.get<KpiBalance>(cache_key)
+  const cached = cache.get<DTOHomeKpiBalance>(cache_key)
   if (cached !== undefined) return cached
   const repo = AppDataSource.getRepository(CacheKpiBalance)
   const start = performance.now()
@@ -770,7 +732,7 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
   cache_home_logger.debug(`method=[${getHomeBalanceKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-balance], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
   if (!rows.length) return base_kpi
 
-  const result: KpiBalance = rows.reduce((acc, row) => {
+  const result: DTOHomeKpiBalance = rows.reduce((acc, row) => {
     acc.incomes += Number(row.incomes)
     acc.expenses += Number(row.expenses)
     acc.receivables += Number(row.receivables || 0)
@@ -793,7 +755,7 @@ export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<Kpi
   return result
 }
 
-export const getHomeTrendKpiCache = async (auth_req: AuthRequest) => {
+export const getHomeTrendKpiCache = async (auth_req: AuthRequest): Promise<DTOHomeTrendResponse> => {
   const user_id = auth_req.user.id
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   const month = Number(auth_req.query.month_period_for_kpi || 0)
@@ -801,12 +763,12 @@ export const getHomeTrendKpiCache = async (auth_req: AuthRequest) => {
     return { current: base_kpi, previous: null, trend: null }
   }
   const cache_key = cacheKeys.homeTrendKpi(user_id, year, month)
-  const cached = cache.get(cache_key)
+  const cached = cache.get<DTOHomeTrendResponse>(cache_key)
   if (cached !== undefined) return cached
   const years = await getHomeAvailableYearsKpiCache(auth_req)
   const real_years = years.filter(y => y !== 0)
   if (!real_years.length) {
-    const result = { current: base_kpi, previous: null, trend: null }
+    const result: DTOHomeTrendResponse = { current: base_kpi, previous: null, trend: null }
     cache.set(cache_key, result)
     return result
   }
@@ -818,19 +780,19 @@ export const getHomeTrendKpiCache = async (auth_req: AuthRequest) => {
     return result
   }
   const prev_req = buildAuthReq(auth_req, year - 1, 0)
-  const previous: KpiBalance = await getHomeBalanceKpiCache(prev_req)
+  const previous: DTOHomeKpiBalance = await getHomeBalanceKpiCache(prev_req)
   const trend = calcTrendObject(current, previous)
-  const result = { current, previous, trend }
+  const result: DTOHomeTrendResponse = { current, previous, trend }
   cache.set(cache_key, result)
   return result
 }
 
-export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promise<CashFlowSummary> => {
+export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promise<DTOHomeCashFlowSummary> => {
   const user_id = auth_req.user.id
   const year = Number(auth_req.query.year_period_for_cash_summ || 0)
 
   const cache_key = cacheKeys.homeCashFlowSummary(user_id, year)
-  const cached = cache.get<CashFlowSummary>(cache_key)
+  const cached = cache.get<DTOHomeCashFlowSummary>(cache_key)
   if (cached !== undefined) return cached
 
   const labels: string[] = []
@@ -850,7 +812,7 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
 
       for (let month = 1; month <= 12; month++) {
         const kpi_key = cacheKeys.homeBalanceKpi(user_id, y, month)
-        let kpi = cache.get<KpiBalance>(kpi_key)
+        let kpi = cache.get<DTOHomeKpiBalance>(kpi_key)
 
         if (!kpi) {
           const req = buildAuthReq(auth_req, y, month)
@@ -883,7 +845,7 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
     }
   }
 
-  const result: CashFlowSummary = {
+  const result: DTOHomeCashFlowSummary = {
     labels,
     total_inflows,
     total_outflows,
@@ -894,12 +856,12 @@ export const getHomeCashFlowSummaryCache = async (auth_req: AuthRequest): Promis
   return result
 }
 
-export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Promise<PayableFlowSummary> => {
+export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Promise<DTOHomePayableFlowSummary> => {
   const user_id = auth_req.user.id
   const year = Number(auth_req.query.year_period_for_payable_summ || 0)
 
   const cache_key = cacheKeys.homePayableFlowSummary(user_id, year)
-  const cached = cache.get<PayableFlowSummary>(cache_key)
+  const cached = cache.get<DTOHomePayableFlowSummary>(cache_key)
   if (cached !== undefined) return cached
 
   const labels: string[] = []
@@ -920,7 +882,7 @@ export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Pro
 
       for (let month = 1; month <= 12; month++) {
         const kpi_key = cacheKeys.homeBalanceKpi(user_id, y, month)
-        let kpi = cache.get<KpiBalance>(kpi_key)
+        let kpi = cache.get<DTOHomeKpiBalance>(kpi_key)
 
         if (!kpi) {
           const req = buildAuthReq(auth_req, y, month)
@@ -943,7 +905,7 @@ export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Pro
 
     for (let month = 1; month <= 12; month++) {
       const kpi_key = cacheKeys.homeBalanceKpi(user_id, year, month)
-      const kpi = cache.get<KpiBalance>(kpi_key)
+      const kpi = cache.get<DTOHomeKpiBalance>(kpi_key)
 
       labels.push(month_labels[month - 1])
       total_payables.push(kpi?.payables ?? 0)
@@ -952,7 +914,7 @@ export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Pro
     }
   }
 
-  const result: PayableFlowSummary = {
+  const result: DTOHomePayableFlowSummary = {
     labels,
     total_payables,
     total_payable_payments,
@@ -963,12 +925,12 @@ export const getHomePayableFlowSummaryCache = async (auth_req: AuthRequest): Pro
   return result
 }
 
-export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): Promise<ReceivableFlowSummary> => {
+export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): Promise<DTOHomeReceivableFlowSummary> => {
   const user_id = auth_req.user.id
   const year = Number(auth_req.query.year_period_for_payable_summ || 0)
 
   const cache_key = cacheKeys.homeReceivableFlowSummary(user_id, year)
-  const cached = cache.get<ReceivableFlowSummary>(cache_key)
+  const cached = cache.get<DTOHomeReceivableFlowSummary>(cache_key)
   if (cached !== undefined) return cached
 
   const labels: string[] = []
@@ -989,7 +951,7 @@ export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): 
 
       for (let month = 1; month <= 12; month++) {
         const kpi_key = cacheKeys.homeBalanceKpi(user_id, y, month)
-        let kpi = cache.get<any>(kpi_key)
+        let kpi = cache.get<DTOHomeKpiBalance>(kpi_key)
 
         if (!kpi) {
           const req = buildAuthReq(auth_req, y, month)
@@ -1012,7 +974,7 @@ export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): 
 
     for (let month = 1; month <= 12; month++) {
       const kpi_key = cacheKeys.homeBalanceKpi(user_id, year, month)
-      const kpi = cache.get<any>(kpi_key)
+      const kpi = cache.get<DTOHomeKpiBalance>(kpi_key)
 
       labels.push(month_labels[month - 1])
       total_receivables.push(kpi?.receivables ?? 0)
@@ -1021,7 +983,7 @@ export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): 
     }
   }
 
-  const result: ReceivableFlowSummary = {
+  const result: DTOHomeReceivableFlowSummary = {
     labels,
     total_receivables,
     total_receivable_collections,
@@ -1032,12 +994,12 @@ export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): 
   return result
 }
 
-export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
+export const getHomeCategoryKpiCache = async (auth_req: AuthRequest): Promise<DTOHomeCategoryKpi[]> => {
   const user_id = auth_req.user.id
   const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   const cache_key = cacheKeys.homeCategoryKpi(user_id, year)
-  const cached = cache.get<any[]>(cache_key)
+  const cached = cache.get<DTOHomeCategoryKpi[]>(cache_key)
   if (cached !== undefined) return cached
 
   const repo = AppDataSource.getRepository(CacheKpiCategory)
@@ -1059,12 +1021,19 @@ export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
   qb.groupBy('cg.id, cg.name, cat.id, cat.name')
   qb.orderBy('cg.name, cat.name')
 
-  const rows = await qb.getRawMany()
+  const rows = await qb.getRawMany<{
+    category_group_id: number | string | null
+    category_id: number | string | null
+    cat_group_name: string | null
+    cat_name: string | null
+    amount: number | string | null
+    transaction_count: number | string | null
+  }>()
   const end = performance.now()
   const duration_sec = (end - start) / 1000
   cache_home_logger.debug(`method=[${getHomeCategoryKpiCache.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[cache-kpi-categories], count=[${rows.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
 
-  const result = rows.map((r: any) => ({
+  const result: DTOHomeCategoryKpi[] = rows.map(r => ({
     category_group_id: Number(r.category_group_id),
     category_id: Number(r.category_id),
     cat_group_name: String(r.cat_group_name || ''),
@@ -1077,7 +1046,7 @@ export const getHomeCategoryKpiCache = async (auth_req: AuthRequest) => {
   return result
 }
 
-export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest) => {
+export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest): Promise<DTOHomeCategoryKpiDetail[]> => {
   const user_id = auth_req.user.id
   const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
   const category_id = Number(auth_req.query.category_id || 0)
@@ -1085,7 +1054,7 @@ export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest) => {
   if (!category_id) return []
 
   const cache_key = cacheKeys.homeCategoryKpiDetail(user_id, year, category_id)
-  const cached = cache.get<any[]>(cache_key)
+  const cached = cache.get<DTOHomeCategoryKpiDetail[]>(cache_key)
   if (cached !== undefined) return cached
 
   const repo = AppDataSource.getRepository(CacheKpiCategory)
@@ -1109,11 +1078,16 @@ export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest) => {
     .groupBy(year === 0 ? 'k.year_period' : 'k.year_period, k.month_period')
     .orderBy('k.year_period', 'ASC')
     .addOrderBy(year === 0 ? 'k.year_period' : 'k.month_period', 'ASC')
-    .getRawMany()
+    .getRawMany<{
+      year_period: number | string
+      month_period?: number | string | null
+      amount: number | string | null
+      transaction_count: number | string | null
+    }>()
 
-  const result = rows.map((row: any) => ({
+  const result: DTOHomeCategoryKpiDetail[] = rows.map(row => ({
     year_period: Number(row.year_period),
-    month_period: Number(row.month_period),
+    month_period: row.month_period == null ? null : Number(row.month_period),
     amount: Number(row.amount || 0),
     transaction_count: Number(row.transaction_count || 0)
   }))
@@ -1124,7 +1098,7 @@ export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest) => {
   }
 
   const byMonth = new Map(result.map(row => [row.month_period, row]))
-  const resultWithAllMonths = Array.from({ length: 12 }, (_, index) => byMonth.get(index + 1) || ({
+  const resultWithAllMonths: DTOHomeCategoryKpiDetail[] = Array.from({ length: 12 }, (_, index) => byMonth.get(index + 1) || ({
     year_period: year,
     month_period: index + 1,
     amount: 0,
@@ -1135,11 +1109,11 @@ export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest) => {
   return resultWithAllMonths
 }
 
-export const getHomeCategoryGroupKpi = async (auth_req: AuthRequest) => {
+export const getHomeCategoryGroupKpi = async (auth_req: AuthRequest): Promise<DTOHomeCategoryGroupKpi[]> => {
   const user_id = auth_req.user.id
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   const cache_key = cacheKeys.homeCategoryGroupKpi(user_id, year)
-  const cached = cache.get<any[]>(cache_key)
+  const cached = cache.get<DTOHomeCategoryGroupKpi[]>(cache_key)
   if (cached !== undefined) return cached
 
   const repo = AppDataSource.getRepository(CacheKpiCategory)
@@ -1156,9 +1130,14 @@ export const getHomeCategoryGroupKpi = async (auth_req: AuthRequest) => {
   const rows = await query
     .groupBy('cg.id, cg.name')
     .orderBy('cg.name', 'ASC')
-    .getRawMany()
+    .getRawMany<{
+      category_group_id: number | string | null
+      cat_group_name: string | null
+      amount: number | string | null
+      transaction_count: number | string | null
+    }>()
 
-  const result = rows.map((row: any) => ({
+  const result: DTOHomeCategoryGroupKpi[] = rows.map(row => ({
     category_group_id: Number(row.category_group_id),
     cat_group_name: String(row.cat_group_name || ''),
     amount: Number(row.amount || 0),
@@ -1168,14 +1147,14 @@ export const getHomeCategoryGroupKpi = async (auth_req: AuthRequest) => {
   return result
 }
 
-export const getHomeCategoryGroupKpiDetail = async (auth_req: AuthRequest) => {
+export const getHomeCategoryGroupKpiDetail = async (auth_req: AuthRequest): Promise<DTOHomeCategoryGroupKpiDetail[]> => {
   const user_id = auth_req.user.id
   const group_id = Number(auth_req.query.category_group_id || 0)
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   if (!group_id) return []
 
   const cache_key = cacheKeys.homeCategoryGroupKpiDetail(user_id, year, group_id)
-  const cached = cache.get<any[]>(cache_key)
+  const cached = cache.get<DTOHomeCategoryGroupKpiDetail[]>(cache_key)
   if (cached !== undefined) return cached
 
   const repo = AppDataSource.getRepository(CacheKpiCategory)
@@ -1196,11 +1175,16 @@ export const getHomeCategoryGroupKpiDetail = async (auth_req: AuthRequest) => {
     .groupBy(year === 0 ? 'k.year_period' : 'k.year_period, k.month_period')
     .orderBy('k.year_period', 'ASC')
     .addOrderBy(year === 0 ? 'k.year_period' : 'k.month_period', 'ASC')
-    .getRawMany()
+    .getRawMany<{
+      year_period: number | string
+      month_period?: number | string | null
+      amount: number | string | null
+      transaction_count: number | string | null
+    }>()
 
-  const result = rows.map((row: any) => ({
+  const result: DTOHomeCategoryGroupKpiDetail[] = rows.map(row => ({
     year_period: Number(row.year_period),
-    month_period: Number(row.month_period),
+    month_period: row.month_period == null ? null : Number(row.month_period),
     amount: Number(row.amount || 0),
     transaction_count: Number(row.transaction_count || 0)
   }))
@@ -1210,7 +1194,7 @@ export const getHomeCategoryGroupKpiDetail = async (auth_req: AuthRequest) => {
   }
 
   const byMonth = new Map(result.map(row => [row.month_period, row]))
-  const resultWithAllMonths = Array.from({ length: 12 }, (_, index) => byMonth.get(index + 1) || ({
+  const resultWithAllMonths: DTOHomeCategoryGroupKpiDetail[] = Array.from({ length: 12 }, (_, index) => byMonth.get(index + 1) || ({
     year_period: year,
     month_period: index + 1,
     amount: 0,
@@ -1439,23 +1423,11 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\cache\cache-payable-payment
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { PayablePayment } from "../entities/PayablePayment.entity"
+import type { DTOPayablePayment } from "../dto/dto"
 import { AuthRequest } from "../types/auth-request"
 import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
-
-export type DTOPayablePayment = {
-    id: number
-    payment_number: number
-    principal_paid: number
-    interest_paid: number
-    payment_date: Date
-    note: string | null
-    created_at: Date
-    account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    payable: { id: number, name: string } | null
-}
 
 const getPaymentsBase = async (user_id: number): Promise<PayablePayment[]> => {
     const cache_key = cacheKeys.payablePaymentsByUser(user_id)
@@ -1556,33 +1528,11 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { Payable } from "../entities/Payable.entity";
+import type { DTOPayable, DTOPayableGroupTotal, DTOPayablesResponse } from "../dto/dto";
 import { AuthRequest } from "../types/auth-request";
 import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-
-type DTOPayable = {
-    id: number
-    name: string
-    total_amount: number
-    principal_paid: number
-    interest_paid: number
-    balance: number
-    start_date: Date
-    end_date: Date | null
-    is_active: boolean
-    created_at: Date
-    note: string | null
-    disbursement_account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    payable_group: { id: number, name: string } | null
-}
-
-type DTOPayableGroupTotal = {
-    payable_group_id: number
-    payable_group_name: string
-    total_balance: number
-}
 
 const getPayablesBase = async (user_id: number): Promise<Payable[]> => {
     const cache_key = cacheKeys.payablesByUser(user_id)
@@ -1663,11 +1613,11 @@ export const getInactivePayables = async (auth_req: AuthRequest): Promise<Payabl
     return inactive_payables
 }
 
-export const getPayablesForApi = async (auth_req: AuthRequest): Promise<{ payables: DTOPayable[], group_totals: DTOPayableGroupTotal[] }> => {
+export const getPayablesForApi = async (auth_req: AuthRequest): Promise<DTOPayablesResponse> => {
     const user_id = auth_req.user.id
     const cache_payables_logger = root_logger.forMethod('getPayablesForApi', 'CACHE_PAYABLES', user_id)
     const cache_key = cacheKeys.payablesByUserForApi(user_id)
-    const cached_payables = cache.get<{ payables: DTOPayable[], group_totals: DTOPayableGroupTotal[] }>(cache_key)
+    const cached_payables = cache.get<DTOPayablesResponse>(cache_key)
     if (cached_payables !== undefined) {
         return cached_payables
     }
@@ -1740,23 +1690,11 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { ReceivableCollection } from "../entities/ReceivableCollection.entity"
+import type { DTOReceivableCollection } from "../dto/dto"
 import { AuthRequest } from "../types/auth-request"
 import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
-
-export type DTOReceivableCollection = {
-    id: number
-    collection_number: number
-    principal_received: number
-    interest_received: number
-    collection_date: Date
-    note: string | null
-    created_at: Date
-    account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    receivable: { id: number, name: string } | null
-}
 
 const getCollectionsBase = async (user_id: number): Promise<ReceivableCollection[]> => {
     const cache_key = cacheKeys.receivableCollectionsByUser(user_id)
@@ -1924,33 +1862,11 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { Receivable } from "../entities/Receivable.entity";
+import type { DTOReceivable, DTOReceivableGroupTotal, DTOReceivablesResponse } from "../dto/dto";
 import { AuthRequest } from "../types/auth-request";
 import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-
-type DTOReceivable = {
-    id: number
-    name: string
-    total_amount: number
-    principal_received: number
-    interest_received: number
-    balance: number
-    start_date: Date
-    end_date: Date | null
-    is_active: boolean
-    created_at: Date
-    note: string | null
-    disbursement_account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    receivable_group: { id: number, name: string } | null
-}
-
-type DTOReceivableGroupTotal = {
-    receivable_group_id: number
-    receivable_group_name: string
-    total_balance: number
-}
 
 const getReceivablesBase = async (user_id: number): Promise<Receivable[]> => {
     const cache_key = cacheKeys.receivablesByUser(user_id)
@@ -2031,11 +1947,11 @@ export const getInactiveReceivables = async (auth_req: AuthRequest): Promise<Rec
     return inactive_receivables
 }
 
-export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<{ receivables: DTOReceivable[], group_totals: DTOReceivableGroupTotal[] }> => {
+export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<DTOReceivablesResponse> => {
     const user_id = auth_req.user.id
     const cache_receivables_logger = root_logger.forMethod('getReceivablesForApi', 'CACHE_RECEIVABLES', user_id)
     const cache_key = cacheKeys.receivablesByUserForApi(user_id)
-    const cached_receivables = cache.get<{ receivables: DTOReceivable[], group_totals: DTOReceivableGroupTotal[] }>(cache_key)
+    const cached_receivables = cache.get<DTOReceivablesResponse>(cache_key)
     if (cached_receivables !== undefined) {
         return cached_receivables
     }
@@ -2400,12 +2316,194 @@ run()
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\2fa\2fa.auxiliar.ts
+```
+ 
+```ts
+import { Request } from 'express'
+
+export const saveSession = (req: Request): Promise<void> => new Promise((resolve, reject) => {
+  req.session.save(error => {
+    if (error) reject(error)
+    else resolve()
+  })
+})
+
+export const regenerateSession = (req: Request): Promise<void> => new Promise((resolve, reject) => {
+  req.session.regenerate(error => {
+    if (error) reject(error)
+    else resolve()
+  })
+}) 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\2fa\2fa.controller.ts
+```
+ 
+```ts
+import bcrypt from 'bcryptjs'
+import { Request, RequestHandler, Response } from 'express'
+import { IsNull, MoreThan } from 'typeorm'
+import { deleteAll } from '../../cache/cache-key.service'
+import { AppDataSource } from '../../config/typeorm.datasource'
+import { AuthCode } from '../../entities/AuthCode.entity'
+import { User } from '../../entities/User.entity'
+import { send2FACode } from '../../services/send-2fa.service'
+import { AuthRequest } from '../../types/auth-request'
+import { compareCode } from '../../utils/auth-code.util'
+import { parseError } from '../../utils/error.util'
+import { logger } from '../../utils/logger.util'
+import { regenerateSession, saveSession } from './2fa.auxiliar'
+
+export const show2FA = (req: Request, res: Response) => {
+  if (!req.session.pending2FAUserId) {
+    return res.redirect('/login')
+  }
+
+  res.render('pages/2fa/form', { error: null })
+}
+
+export const verify2FA = async (req: Request, res: Response) => {
+  const pendingUserId = req.session.pending2FAUserId
+  const verify2FA_logger = logger.forMethod(verify2FA.name, 'VERIFY_2FA', pendingUserId ?? null)
+  try {
+    const { code } = req.body
+    if (!pendingUserId) return res.redirect('/login')
+    const repo = AppDataSource.getRepository(AuthCode)
+
+    const authCode = await repo.findOne({
+      where: {
+        user: { id: pendingUserId },
+        used_at: IsNull(),
+        expires_at: MoreThan(new Date())
+      },
+      relations: ['user']
+    })
+
+    if (!authCode) {
+      return res.render('pages/2fa/form', { error: 'Código inválido o expirado' })
+    }
+
+    const isValid = await compareCode(code, authCode.code_hash)
+    if (!isValid) {
+      authCode.attempts += 1
+      await repo.save(authCode)
+      return res.render('pages/2fa/form', { error: 'Código incorrecto' })
+    }
+
+    authCode.used_at = new Date()
+    await repo.save(authCode)
+
+    const preservedTimezone = req.session.timezone
+    delete req.session.pending2FAUserId
+
+    try {
+      await regenerateSession(req)
+    } catch (error) {
+      verify2FA_logger.error('Regeneracion de sesion fallida', parseError(error))
+      return res.redirect('/login')
+    }
+
+    req.session.user_id = pendingUserId
+    req.session.timezone = preservedTimezone
+
+    try {
+      await saveSession(req)
+    } catch (error) {
+      verify2FA_logger.error('Error al guardar la sesion', parseError(error))
+      return res.redirect('/login')
+    }
+
+    return res.redirect('/home')
+  } catch (error) {
+    verify2FA_logger.error('Error en verificacion del 2FA', parseError(error))
+    return res.render('pages/2fa/form', { error: 'Error validando el código' })
+  }
+}
+
+export const apiForValidatingLogin = async (req: Request, res: Response) => {
+  const apiForValidatingLogin_logger = logger.forMethod(apiForValidatingLogin.name, 'LOGIN')
+  try {
+    const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
+    const timezone = String(req.body.timezone || 'UTC')
+    if (process.env.NODE_SKIP_LOGIN === 'true') {
+      const user_repo = AppDataSource.getRepository(User)
+      const dev_user = await user_repo.findOne({
+        where: { id: Number(process.env.DEV_USER_ID) || 1 },
+        select: selected_fields
+      })
+      if (dev_user) {
+        req.session.user_id = dev_user.id
+        req.session.timezone = timezone
+        apiForValidatingLogin_logger.info('Modo desarrollo habilitado', { user_id: dev_user.id, timezone })
+        return res.redirect('/home')
+      }
+    }
+
+    const { username, password } = req.body
+    const user_repo = AppDataSource.getRepository(User)
+    const user = await user_repo.findOne({
+      where: { name: username },
+      select: selected_fields
+    })
+    if (!user) {
+      return res.render('pages/login/form', { error: 'Usuario no encontrado' })
+    }
+    const valid_password = await bcrypt.compare(password, user.password_hash)
+    if (!valid_password) {
+      return res.render('pages/login/form', { error: 'Contraseña incorrecta' })
+    }
+
+    req.session.timezone = timezone
+    apiForValidatingLogin_logger.info('Modo produccion habilitado', { user_id: user.id, timezone })
+    await send2FACode(user)
+    req.session.pending2FAUserId = user.id
+    await saveSession(req)
+    return res.redirect('/2fa')
+  } catch (error) {
+    apiForValidatingLogin_logger.error('Error validando inicio de sesión', parseError(error))
+    return res.render('pages/login/form', { error: 'Error de inicio de sesión, intenta de nuevo' })
+  }
+}
+
+export const apiForLogout: RequestHandler = async (req: Request, res: Response) => {
+  const auth_req = req as AuthRequest
+  const apiForLogout_logger = logger.forMethod(apiForLogout.name, 'LOGOUT', auth_req.user.id)
+  const started_at = performance.now()
+  try {
+    req.session.destroy(err => {
+      if (err) {
+        apiForLogout_logger.error('Error destruyendo sesión', err)
+        return res.redirect('/home')
+      }
+      deleteAll(auth_req, 'home')
+      res.clearCookie('connect.sid')
+      return res.redirect('/login')
+    })
+  } catch (error) {
+    apiForLogout_logger.error('Error cerrando sesión', parseError(error))
+    return res.redirect('/login')
+  } finally {
+    const ended_at = performance.now()
+    const elapsed_ms = ended_at - started_at
+    apiForLogout_logger.elapsedTime('Elapsed time', { elapsed_ms })
+  }
+} 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\account\account.controller.ts
 ```
  
 ```ts
 import { Request, RequestHandler, Response } from 'express'
-import { DTOAccount, getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
+import { getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
+import type { DTOAccount } from '../../dto/dto'
 import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
@@ -2727,7 +2825,8 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\category\catego
  
 ```ts
 import { Request, RequestHandler, Response } from 'express'
-import { DTOCategory, getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
+import { getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
+import type { DTOCategory } from '../../dto/dto'
 import { getActiveCategoryGroup } from '../../cache/cache-category-groups.service'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
 import { AuthRequest } from '../../types/auth-request'
@@ -3544,106 +3643,6 @@ export const apiForDeletingFile: RequestHandler = async (req: Request, res: Resp
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\home\2fa.controller.ts
-```
- 
-```ts
-import { Request, Response } from 'express'
-import { IsNull, MoreThan } from 'typeorm'
-import { AppDataSource } from '../../config/typeorm.datasource'
-import { AuthCode } from '../../entities/AuthCode.entity'
-import { compareCode } from '../../utils/auth-code.util'
-import { logger } from '../../utils/logger.util'
-import { parseError } from '../../utils/error.util'
-
-export const show2FA = (req: Request, res: Response) => {
-  if (!(req.session as any)?.pending2FAUserId) {
-    return res.redirect('/login')
-  }
-
-  res.render(
-    'pages/2fa',
-    {
-      error: null
-    })
-}
-
-export const verify2FA = async (req: Request, res: Response) => {
-  const pendingUserId = (req.session as any)?.pending2FAUserId
-  const verify2FA_logger = logger.forMethod(verify2FA.name, 'VERIFY_2FA', pendingUserId ?? null)
-  try {
-    const { code } = req.body
-    if (!pendingUserId) return res.redirect('/login')
-    const repo = AppDataSource.getRepository(AuthCode)
-
-    const authCode = await repo.findOne({
-      where: {
-        user: { id: pendingUserId },
-        used_at: IsNull(),
-        expires_at: MoreThan(new Date())
-      },
-      relations: ['user']
-    })
-
-    if (!authCode) {
-      return res.render(
-        'pages/2fa',
-        {
-          error: 'Código inválido o expirado'
-        })
-    }
-
-    const isValid = await compareCode(code, authCode.code_hash)
-    if (!isValid) {
-      authCode.attempts += 1
-      await repo.save(authCode)
-      return res.render(
-        'pages/2fa',
-        {
-          error: 'Código incorrecto'
-        })
-    }
-
-    authCode.used_at = new Date()
-    await repo.save(authCode)
-
-    // preserve timezone across session regeneration (otherwise it's lost)
-    const preservedTimezone = (req.session as any).timezone
-    delete (req.session as any).pending2FAUserId
-
-    req.session.regenerate(err => {
-      if (err) {
-        verify2FA_logger.error('Regeneracion de sesion fallida', parseError(err))
-        return res.redirect('/login')
-      }
-
-      ; (req.session as any).user_id = pendingUserId
-      ; (req.session as any).timezone = preservedTimezone
-
-      req.session.save(err2 => {
-        if (err2) {
-          verify2FA_logger.error('Error al guardar la sesion', parseError(err2))
-          return res.redirect('/login')
-        }
-        res.redirect('/home')
-      })
-    })
-
-  } catch (error: any) {
-    verify2FA_logger.error('Error en verificacion del 2FA', parseError(error))
-    res.render(
-      'pages/2fa',
-      {
-        error: 'Error validando el código'
-      })
-  }
-}
- 
-```
- 
---- 
- 
-```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\home\home.auxiliar.ts
 ```
  
@@ -4206,12 +4205,9 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\controllers\home\home.contr
 ```
  
 ```ts
-import bcrypt from 'bcryptjs'
 import { Request, RequestHandler, Response } from 'express'
-import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { User } from '../../entities/User.entity'
-import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
@@ -4225,7 +4221,7 @@ export const routeToPageRoot = (req: Request, res: Response) => {
 }
 
 export const routeToPageLogin = (req: Request, res: Response) => {
-  res.render('pages/login', { error: null })
+  res.render('pages/login/form', { error: null })
 }
 
 export const routeToPageHome = async (req: Request, res: Response) => {
@@ -4243,78 +4239,10 @@ export const routeToPageHome = async (req: Request, res: Response) => {
     'layouts/main',
     {
       title: 'Inicio',
-      view: 'pages/home',
+      view: 'pages/home/index',
       USER_ID: user?.id || 'guest',
       user,
     })
-}
-
-export const apiForValidatingLogin = async (req: Request, res: Response) => {
-  const apiForValidatingLogin_logger = logger.forMethod(apiForValidatingLogin.name, 'LOGIN')
-  try {
-    const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
-    const timezone = String(req.body.timezone || 'UTC')
-    /* ============================
-       Modo Skip Login (Desarrollo)
-       Si existe la variable de entorno NODE_SKIP_LOGIN=true, se omite la validación de usuario y contraseña.
-       Se busca un usuario de desarrollo por ID (definido en DEV_USER_ID) y se inicia sesión con ese usuario.
-       Esto permite a los desarrolladores saltarse el proceso de login durante el desarrollo.
-    ============================ */
-    if (process.env.NODE_SKIP_LOGIN === 'true') {
-      const user_repo = AppDataSource.getRepository(User)
-      const dev_user = await user_repo.findOne({
-        where: { id: Number(process.env.DEV_USER_ID) || 1 },
-        select: selected_fields
-      })
-      if (dev_user) {
-        (req.session as any).user_id = dev_user.id;
-        (req.session as any).timezone = timezone
-        apiForValidatingLogin_logger.info('Modo desarrollo habilitado', { user_id: dev_user.id, timezone })
-        return res.redirect('/home')
-      }
-    }
-    /* ============================
-       Login Produccion
-    ============================ */
-    const { username, password } = req.body
-    const user_repo = AppDataSource.getRepository(User)
-    const user = await user_repo.findOne({
-      where: { name: username },
-      select: selected_fields
-    })
-    if (!user) {
-      return res.render('pages/login', { error: 'Usuario no encontrado' })
-    }
-    const valid_password = await bcrypt.compare(password, user.password_hash)
-    if (!valid_password) {
-      return res.render('pages/login', { error: 'Contraseña incorrecta' })
-    }
-    /* ============================
-       Guardar timezone en sesión
-    ============================ */
-    (req.session as any).timezone = timezone
-    
-    apiForValidatingLogin_logger.info('Modo produccion habilitado', { user_id: user.id, timezone })
-    /* ============================
-       Enviar código 2FA y guardar usuario pendiente
-    ============================ */
-    await send2FACode(user);
-    (req.session as any).pending2FAUserId = user.id
-    /* ============================
-       Persistir sesión
-    ============================ */
-    await new Promise<void>((resolve, reject) => {
-      req.session.save(err => {
-        if (err) reject(err)
-        else resolve()
-      })
-    })
-    return res.redirect('/2fa')
-  } catch (error: any) {
-    apiForValidatingLogin_logger.error('Error validando inicio de sesión', parseError(error))
-    return res.render('pages/login', { error: 'Error de inicio de sesión, intenta de nuevo' })
-  } finally {
-  }
 }
 
 export const apiForGettingKpis: RequestHandler = async (req: Request, res: Response) => {
@@ -4475,29 +4403,6 @@ export const apiForGettingCategoryGroupKpiDetail: RequestHandler = async (req: R
   }
 }
 
-export const apiForLogout: RequestHandler = async (req: Request, res: Response) => {
-  const auth_req = req as AuthRequest
-  const apiForLogout_logger = logger.forMethod(apiForLogout.name, 'LOGOUT', auth_req.user.id)
-  const started_at = performance.now()
-  try {
-    req.session.destroy(err => {
-      if (err) {
-          apiForLogout_logger.error('Error destruyendo sesión', err)
-        return res.redirect('/home')
-      }
-      deleteAll(req as AuthRequest, 'home')
-      res.clearCookie('connect.sid')
-      return res.redirect('/login')
-    })
-  } catch (error) {
-      apiForLogout_logger.error('Error cerrando sesión', parseError(error))
-      return res.redirect('/login')
-  } finally {
-    const ended_at = performance.now()
-    const elapsed_ms = ended_at - started_at
-    apiForLogout_logger.elapsedTime('Elapsed time', { elapsed_ms })
-  }
-}
  
 ```
  
@@ -8587,6 +8492,204 @@ export const validateActiveCategoryTransaction = async (transaction: Transaction
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\dto\dto.ts
+```
+ 
+```ts
+import { CategoryType } from '../types/category-type'
+import { CategoryTypeForPayableOrReceivable } from '../types/category-type-for-payable-or-receivable'
+
+export type DTOAccount = {
+    id: number
+    name: string
+    type: string
+    balance: number
+    is_active: boolean
+    transaction_count: number
+}
+
+export type DTOCategory = {
+    id: number
+    name: string
+    type: CategoryType
+    type_for_payable_or_receivable: CategoryTypeForPayableOrReceivable
+    is_active: boolean
+    category_group: { id: number, name: string } | null
+    transactions_count: number
+}
+
+export type DTOPayable = {
+    id: number
+    name: string
+    total_amount: number
+    principal_paid: number
+    interest_paid: number
+    balance: number
+    start_date: Date
+    end_date: Date | null
+    is_active: boolean
+    created_at: Date
+    note: string | null
+    disbursement_account: { id: number, name: string } | null
+    category: { id: number, name: string } | null
+    payable_group: { id: number, name: string } | null
+}
+
+export type DTOPayableGroupTotal = {
+    payable_group_id: number
+    payable_group_name: string
+    total_balance: number
+}
+
+export type DTOPayablesResponse = {
+    payables: DTOPayable[]
+    group_totals: DTOPayableGroupTotal[]
+}
+
+export type DTOPayablePayment = {
+    id: number
+    payment_number: number
+    principal_paid: number
+    interest_paid: number
+    payment_date: Date
+    note: string | null
+    created_at: Date
+    account: { id: number, name: string } | null
+    category: { id: number, name: string } | null
+    payable: { id: number, name: string } | null
+}
+
+export type DTOReceivable = {
+    id: number
+    name: string
+    total_amount: number
+    principal_received: number
+    interest_received: number
+    balance: number
+    start_date: Date
+    end_date: Date | null
+    is_active: boolean
+    created_at: Date
+    note: string | null
+    disbursement_account: { id: number, name: string } | null
+    category: { id: number, name: string } | null
+    receivable_group: { id: number, name: string } | null
+}
+
+export type DTOReceivableGroupTotal = {
+    receivable_group_id: number
+    receivable_group_name: string
+    total_balance: number
+}
+
+export type DTOReceivablesResponse = {
+    receivables: DTOReceivable[]
+    group_totals: DTOReceivableGroupTotal[]
+}
+
+export type DTOReceivableCollection = {
+    id: number
+    collection_number: number
+    principal_received: number
+    interest_received: number
+    collection_date: Date
+    note: string | null
+    created_at: Date
+    account: { id: number, name: string } | null
+    category: { id: number, name: string } | null
+    receivable: { id: number, name: string } | null
+}
+
+export type DTOHomeCashFlowSummary = {
+    labels: string[]
+    total_inflows: number[]
+    total_outflows: number[]
+    net_cash_flow: number[]
+}
+
+export type DTOHomePayableFlowSummary = {
+    labels: string[]
+    total_payables: number[]
+    total_payable_payments: number[]
+    net_balance: number[]
+}
+
+export type DTOHomeReceivableFlowSummary = {
+    labels: string[]
+    total_receivables: number[]
+    total_receivable_collections: number[]
+    net_balance: number[]
+}
+
+export type DTOHomeKpiBalance = {
+    incomes: number
+    expenses: number
+    payables: number
+    receivables: number
+    receivable_collections: number
+    payable_payments: number
+    savings: number
+    withdrawals: number
+    total_inflows: number
+    total_outflows: number
+    net_cash_flow: number
+    net_savings: number
+    available_balance: number
+    principal_breakdown: number
+    interest_breakdown: number
+    is_populate: number
+}
+
+export type DTOHomeTrendValue = {
+    diff: number
+    percent: number | null
+    direction: 'up' | 'down' | 'equal'
+} | null
+
+export type DTOHomeKpiTrend = {
+    [K in Exclude<keyof DTOHomeKpiBalance, 'is_populate'>]: DTOHomeTrendValue
+}
+
+export type DTOHomeTrendResponse = {
+    current: DTOHomeKpiBalance
+    previous: DTOHomeKpiBalance | null
+    trend: DTOHomeKpiTrend | null
+}
+
+export type DTOHomeCategoryKpi = {
+    category_group_id: number
+    category_id: number
+    cat_group_name: string
+    cat_name: string
+    amount: number
+    transaction_count: number
+}
+
+export type DTOHomeCategoryKpiDetail = {
+    year_period: number
+    month_period: number | null
+    amount: number
+    transaction_count: number
+}
+
+export type DTOHomeCategoryGroupKpi = {
+    category_group_id: number
+    cat_group_name: string
+    amount: number
+    transaction_count: number
+}
+
+export type DTOHomeCategoryGroupKpiDetail = {
+    year_period: number
+    month_period: number | null
+    amount: number
+    transaction_count: number
+} 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\entities\Account.entity.ts
 ```
  
@@ -8832,6 +8935,7 @@ import { User } from './User.entity'
 import { Receivable } from './Receivable.entity'
 import { ReceivableCollection } from './ReceivableCollection.entity'
 import { CategoryTypeForPayableOrReceivable } from '../types/category-type-for-payable-or-receivable'
+import { CategoryType } from '../types/category-type'
 
 @Entity('categories')
 export class Category {
@@ -8849,7 +8953,7 @@ export class Category {
 
   @Column({ type: 'varchar' })
   @IsIn(['income', 'expense'], { message: 'El tipo debe ser income o expense' })
-  type!: 'income' | 'expense'
+  type!: CategoryType
 
   @Column({ type: 'varchar' })
   @IsOptional()
@@ -10501,6 +10605,191 @@ p {
   input, button {
     font-size: 1rem; /* asegura legibilidad */
     padding: 0.6rem;
+  }
+}
+
+.login-page {
+  --login-blue: #2563eb;
+  --login-blue-dark: #1d4ed8;
+  --login-blue-light: #60a5fa;
+  --login-ink: #1f2937;
+  --login-muted: #6b7280;
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  min-height: var(--app-viewport-height, 100dvh);
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  overflow-x: hidden;
+  color: var(--login-ink);
+  background-color: #eff6ff;
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  font-family: "Aptos", "Trebuchet MS", sans-serif;
+}
+
+.login-page * {
+  box-sizing: border-box;
+}
+
+.login-shell {
+  width: min(100%, 440px);
+  margin: auto;
+  animation: login-enter 420ms ease-out both;
+}
+
+.login-page .login-panel {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  gap: 0;
+  overflow: hidden;
+  padding: 40px 36px 36px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 22px 58px rgba(37, 99, 235, 0.1);
+}
+
+.login-panel::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--login-blue-dark) 0%, var(--login-blue) 58%, var(--login-blue-light) 100%);
+  content: "";
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.login-page .login-brand {
+  margin: 0 0 8px;
+  color: var(--login-blue-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.login-page .login-header h1 {
+  margin: 0;
+  color: var(--login-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.login-page .login-intro {
+  margin: 9px 0 28px;
+  color: #6c7a72;
+  font-size: 0.95rem;
+}
+
+.login-page .login-error {
+  margin: 0 0 18px;
+  padding: 11px 14px;
+  border: 1px solid #edcaca;
+  border-radius: 6px;
+  background: #fff4f2;
+  color: #a33e37;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.login-page .login-form {
+  gap: 18px;
+}
+
+.login-page .login-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-page .login-field label {
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.login-page .login-input {
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #f8fbff;
+  color: var(--login-ink);
+  text-align: center;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.login-page .login-input:focus {
+  border-color: var(--login-blue);
+  outline: none;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.login-page .login-submit {
+  min-height: 48px;
+  margin-top: 4px;
+  border-radius: 6px;
+  background: var(--login-blue);
+  color: #fff;
+  font-size: 0.98rem;
+  font-weight: 700;
+  transition: background-color 140ms ease, transform 140ms ease;
+}
+
+.login-page .login-submit:hover {
+  background: var(--login-blue-dark);
+  transform: translateY(-1px);
+}
+
+.login-page .login-submit:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 3px;
+}
+
+@keyframes login-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-page .login-panel {
+    padding: 34px 24px 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-shell {
+    animation: none;
+  }
+
+  .login-page .login-input,
+  .login-page .login-submit {
+    transition: none;
   }
 }
  
@@ -19864,7 +20153,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\routes\auth.route.ts
  
 ```ts
 import { Router } from 'express'
-import { show2FA, verify2FA } from '../controllers/home/2fa.controller'
+import { show2FA, verify2FA } from '../controllers/2fa/2fa.controller'
 import { twoFALimiter } from '../config/rate-limiter'
 
 const router = Router()
@@ -19987,12 +20276,11 @@ import {
     apiForGettingCategoryGroupKpiDetail,
     apiForGettingPayableSummary,
     apiForGettingReceivableSummary,
-    apiForLogout,
-    apiForValidatingLogin,
     routeToPageHome,
     routeToPageLogin,
     routeToPageRoot
 } from '../controllers/home/home.controller'
+import { apiForLogout, apiForValidatingLogin } from '../controllers/2fa/2fa.controller'
 import { injectNetBalance } from '../middlewares/inject-net-balance.middleware'
 import { sessionAuthMiddleware } from '../middlewares/session-auth.middleware'
 import { loginLimiter } from '../config/rate-limiter'
@@ -20283,20 +20571,25 @@ import { logger } from '../utils/logger.util'
 import { parseError } from '../utils/error.util'
 import { LogEvent } from '../entities/LogEvent.entity'
 
-const scheduler_interval = process.env.SCHEDULER_INTERVAL_IN_SECONDS ? parseInt(process.env.SCHEDULER_INTERVAL_IN_SECONDS, 10) : 60
-const scheduler_interval_ms = scheduler_interval * 1000
+const hour_in_ms = 60 * 60 * 1000
+const notification_interval_in_hours = process.env.SCHEDULER_SEND_NOTIFICATIONS_INTERVAL_IN_HOURS
+  ? parseInt(process.env.SCHEDULER_SEND_NOTIFICATIONS_INTERVAL_IN_HOURS, 10)
+  : 1
+const notification_interval_ms = notification_interval_in_hours * hour_in_ms
+const scheduler_timezone = process.env.SCHEDULER_TIMEZONE || 'America/Guayaquil'
+const log_retention_at = process.env.SCHEDULER_DELETE_LOGS_AT || '01:00'
+const [log_retention_hour, log_retention_minute] = log_retention_at.split(':').map(Number)
 
 let scheduler_running = false
 let log_retention_running = false
-let last_log_retention_at = 0
+let last_log_retention_day: string | null = null
+let last_notification_check_at: Date | null = null
+let log_retention_timer: NodeJS.Timeout | null = null
 
-const process_schedule_logger = logger.forMethod('processSchedule', 'NOTIFICATION_PROCESS')
-const notification_scheduler_logger = logger.forMethod('processNotificationSchedules', 'NOTIFICATION_SCHEDULES')
-const log_retention_logger = logger.forMethod('processLogRetention', 'LOG_PURGE')
-const scheduler_start_logger = logger.forMethod('startNotificationScheduler', 'NOTIFICATION_SCHEDULER')
-
-const log_retention_interval = process.env.LOG_RETENTION_INTERVAL_IN_DAYS ? parseInt(process.env.LOG_RETENTION_INTERVAL_IN_DAYS, 10) : 1
-const log_retention_interval_ms =  log_retention_interval * 24 * 60 * 60 * 1000
+const process_schedule_logger = logger.forMethod('processSchedule', 'SCHEDULER_WEEKLY_NOTIFICATION')
+const notification_scheduler_logger = logger.forMethod('processNotificationSchedules', 'SCHEDULER_WEEKLY_NOTIFICATION')
+const log_retention_logger = logger.forMethod('processLogRetention', 'SCHEDULER_LOG_RETENTION')
+const scheduler_start_logger = logger.forMethod('startNotificationScheduler', 'SCHEDULER_STARTUP')
 
 const day_values: Record<number, string> = {
   1: 'monday',
@@ -20308,10 +20601,23 @@ const day_values: Record<number, string> = {
   7: 'sunday',
 }
 
-const isDue = (schedule: NotificationSchedule, now: DateTime): boolean => {
-  const local_now = now.setZone(schedule.timezone || 'UTC')
+const isDue = (schedule: NotificationSchedule, checked_after: Date, now: DateTime): boolean => {
+  const timezone = schedule.timezone || 'UTC'
+  const local_checked_after = DateTime.fromJSDate(checked_after).setZone(timezone)
+  const local_now = now.setZone(timezone)
   const [hour, minute] = schedule.send_time.slice(0, 5).split(':').map(Number)
-  return day_values[local_now.weekday] === schedule.send_day && local_now.hour === hour && local_now.minute === minute
+  let scheduled_day = local_checked_after.startOf('day')
+  const last_day = local_now.startOf('day')
+
+  while (scheduled_day.toMillis() <= last_day.toMillis()) {
+    if (day_values[scheduled_day.weekday] === schedule.send_day) {
+      const scheduled_at = scheduled_day.set({ hour, minute, second: 0, millisecond: 0 })
+      if (scheduled_at.toMillis() > local_checked_after.toMillis() && scheduled_at.toMillis() <= local_now.toMillis()) return true
+    }
+    scheduled_day = scheduled_day.plus({ days: 1 })
+  }
+
+  return false
 }
 
 const getPeriodKey = (schedule: NotificationSchedule, now: DateTime): string => {
@@ -20350,34 +20656,51 @@ const claimDelivery = async (schedule: NotificationSchedule, period_key: string)
   }
 }
 
-const processSchedule = async (schedule: NotificationSchedule, now: DateTime): Promise<void> => {
+const processSchedule = async (schedule: NotificationSchedule, checked_after: Date, now: DateTime): Promise<void> => {
   const period_key = getPeriodKey(schedule, now)
   const existing_delivery = await AppDataSource.getRepository(NotificationDelivery).findOne({
     where: { schedule: { id: schedule.id }, period_key },
   })
 
-  if (!isDue(schedule, now) && existing_delivery?.status !== 'failed') return
+  if (!isDue(schedule, checked_after, now) && existing_delivery?.status !== 'failed') return
 
   const delivery = await claimDelivery(schedule, period_key)
   if (!delivery) return
 
   const repository = AppDataSource.getRepository(NotificationDelivery)
+  let delivery_status = 'failed'
+  process_schedule_logger.info('Inicio de envío de notificación semanal', {
+    period_key,
+    schedule_id: schedule.id,
+    user_id: schedule.user.id,
+  })
   try {
     await sendWeeklyBalanceMail(schedule.user, schedule.timezone)
     delivery.status = 'sent'
     delivery.sent_at = new Date()
     await repository.save(delivery)
+    delivery_status = 'sent'
   } catch (error) {
     delivery.status = 'failed'
     delivery.error_message = parseError(error).message
     await repository.save(delivery)
     process_schedule_logger.error(`Error procesando ${period_key}`, parseError(error))
+  } finally {
+    process_schedule_logger.info('Fin de envío de notificación semanal', {
+      period_key,
+      schedule_id: schedule.id,
+      user_id: schedule.user.id,
+      status: delivery_status,
+    })
   }
 }
 
 export async function processNotificationSchedules(): Promise<void> {
-  if (scheduler_running) return
+  if (scheduler_running || (last_notification_check_at && Date.now() - last_notification_check_at.getTime() < notification_interval_ms)) return
   scheduler_running = true
+  const now = DateTime.utc()
+  const checked_after = last_notification_check_at ?? now.minus({ milliseconds: notification_interval_ms }).toJSDate()
+  let check_completed = false
 
   try {
     const schedules = await AppDataSource.getRepository(NotificationSchedule).find({
@@ -20390,70 +20713,47 @@ export async function processNotificationSchedules(): Promise<void> {
         notification_type: true,
       },
     })
-    const now = DateTime.utc()
-    await Promise.all(schedules.map(schedule => processSchedule(schedule, now)))
+    await Promise.all(schedules.map(schedule => processSchedule(schedule, checked_after, now)))
+    check_completed = true
   } catch (error) {
     notification_scheduler_logger.error('Error consultando programaciones', parseError(error))
   } finally {
+    if (check_completed) last_notification_check_at = now.toJSDate()
     scheduler_running = false
   }
 }
 
 export async function processLogRetention(): Promise<void> {
-  if (log_retention_running || Date.now() - last_log_retention_at < log_retention_interval_ms) return
+  const local_now = DateTime.now().setZone(scheduler_timezone)
+  const retention_day = local_now.toISODate()
+  if (log_retention_running || !retention_day || retention_day === last_log_retention_day) return
+  if (local_now.hour < log_retention_hour || (local_now.hour === log_retention_hour && local_now.minute < log_retention_minute)) return
+
   log_retention_running = true
+  last_log_retention_day = retention_day
+  let retention_status = 'completed'
   try {
+    log_retention_logger.info('Inicio de retención de logs')
     const repository = AppDataSource.getRepository(LogEvent)
     const retention_days = Number(process.env.LOG_RETENTION_MAX_DAYS || 30)
-    const max_size_mb = Number(process.env.LOG_RETENTION_MAX_SIZE_IN_MB || 10)
-    const max_size_bytes = max_size_mb * 1024 * 1024
     const cutoff = DateTime.utc().minus({ days: retention_days }).toJSDate()
 
-    const getTableSize = async (): Promise<number> => {
-      const result = await repository.query(`
-        SELECT COALESCE(data_length, 0) + COALESCE(index_length, 0) AS size_bytes
-        FROM information_schema.tables
-        WHERE table_schema = DATABASE() AND table_name = 'log_events'
-      `) as Array<{ size_bytes: number | string }>
-      return Number(result[0]?.size_bytes || 0)
-    }
+    const delete_result = await repository.createQueryBuilder().delete().from(LogEvent)
+      .where('occurred_at < :cutoff', { cutoff })
+      .execute()
+    const deleted_count = delete_result.affected || 0
+    if (deleted_count > 0) await repository.query('OPTIMIZE TABLE log_events')
 
-    const initial_size_bytes = await getTableSize()
-    const oldest_result = await repository.query(
-      'SELECT MIN(occurred_at) AS oldest_occurred_at FROM log_events'
-    ) as Array<{ oldest_occurred_at: Date | string | null }>
-    const oldest_occurred_at = oldest_result[0]?.oldest_occurred_at
-      ? new Date(oldest_result[0].oldest_occurred_at)
-      : null
-    const purge_by_age = oldest_occurred_at !== null && oldest_occurred_at < cutoff
-    const purge_by_size = initial_size_bytes >= max_size_bytes
-
-    let deleted_by_age = 0
-    if (purge_by_age || purge_by_size) {
-      const delete_result = await repository.createQueryBuilder().delete().from(LogEvent)
-        .where('occurred_at < :cutoff', { cutoff })
-        .execute()
-      deleted_by_age = delete_result.affected || 0
-      if (deleted_by_age > 0) await repository.query('OPTIMIZE TABLE log_events')
-    }
-
-    const final_size_bytes = await getTableSize()
-
-    last_log_retention_at = Date.now()
-    if (purge_by_age || purge_by_size) {
-      log_retention_logger.info('Logs purgados con exito', {
-        purge_reason: purge_by_age && purge_by_size ? 'AGE_AND_SIZE' : purge_by_age ? 'AGE' : 'SIZE',
-        retention_days,
-        max_size_mb,
-        initial_size_mb: Number((initial_size_bytes / 1024 / 1024).toFixed(4)),
-        deleted_by_age,
-        final_size_mb: Number((final_size_bytes / 1024 / 1024).toFixed(4)),
-        oldest_occurred_at,
-      })
-    }
+    log_retention_logger.info('Retención de logs completada', {
+      retention_days,
+      deleted_count,
+      cutoff,
+    })
   } catch (error) {
+    retention_status = 'failed'
     log_retention_logger.error('Error ejecutando retención', parseError(error))
   } finally {
+    log_retention_logger.info('Fin de retención de logs', { status: retention_status })
     log_retention_running = false
   }
 }
@@ -20461,9 +20761,18 @@ export async function processLogRetention(): Promise<void> {
 export function startNotificationScheduler(): NodeJS.Timeout {
   const interval = setInterval(() => {
     void processNotificationSchedules()
-  }, scheduler_interval_ms)
+  }, notification_interval_ms)
   void processNotificationSchedules()
-  void processLogRetention()
+  const scheduleNextLogRetention = () => {
+    const now = DateTime.now().setZone(scheduler_timezone)
+    let next_run = now.set({ hour: log_retention_hour, minute: log_retention_minute, second: 0, millisecond: 0 })
+    if (next_run.toMillis() <= now.toMillis()) next_run = next_run.plus({ days: 1 })
+
+    log_retention_timer = setTimeout(() => {
+      void processLogRetention().finally(scheduleNextLogRetention)
+    }, Math.max(0, next_run.toMillis() - Date.now()))
+  }
+  scheduleNextLogRetention()
   scheduler_start_logger.info('Programador iniciado')
   return interval
 } 
@@ -20716,7 +21025,7 @@ export class KpiCacheService {
     const started_at = performance.now()
 
     const user_id = auth_req.user.id
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', user_id)
     const timezone = auth_req.timezone || 'UTC'
 
     try {
@@ -20812,7 +21121,7 @@ export class KpiCacheService {
 
   private static async recalculateAllBalanceKPI(user_id: number, timezone: string) {
     const started_at = performance.now()
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', user_id)
 
     try {
 
@@ -20898,7 +21207,7 @@ export class KpiCacheService {
   }
 
   static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', auth_req.user.id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', auth_req.user.id)
     kpi_cache_logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
     const started_at = performance.now()
 
@@ -20945,7 +21254,7 @@ export class KpiCacheService {
   ============================ */
   private static async recalculateCurrMonthCategoryKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
     const user_id = auth_req.user.id
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', user_id)
     const started_at = performance.now()
     const timezone = auth_req.timezone || 'UTC'
 
@@ -20990,7 +21299,7 @@ export class KpiCacheService {
   }
 
   private static async recalculateAllCategoryKPI(user_id: number, timezone: string) {
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', user_id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', user_id)
     const started_at = performance.now()
     try {
       const repo = AppDataSource.getRepository(CacheKpiCategory)
@@ -21044,7 +21353,7 @@ export class KpiCacheService {
   }
 
   static async recalculateCategoryKPIByTransaction(auth_req: AuthRequest, transaction: any) {
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'KPI_CACHE', auth_req.user.id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', auth_req.user.id)
     kpi_cache_logger.debug('recalculateCategoryKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, timezone: auth_req.timezone })
     const started_at = performance.now()
 
@@ -21687,6 +21996,16 @@ export type CategoryTypeForPayableOrReceivable =
 --- 
  
 ```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\types\category-type.ts
+```
+ 
+```ts
+export type CategoryType = 'income' | 'expense' 
+```
+ 
+--- 
+ 
+```text
 FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\types\express-mysql-session.d.ts
 ```
  
@@ -22278,7 +22597,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\layouts\main.ejs
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\2fa.ejs
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\2fa\form.ejs
 ```
  
 ```ejs
@@ -22332,7 +22651,7 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\2fa.ejs
 --- 
  
 ```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\about.ejs
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\about\index.ejs
 ```
  
 ```ejs
@@ -22342,276 +22661,6 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\about.ejs
   Aplicación construida con SSR, TypeScript y TypeORM.
 </p>
  
-```
- 
---- 
- 
-```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\home.ejs
-```
- 
-```ejs
-<script>
-  window.USER_ID = "<%= USER_ID %>"
-</script>
-
-<div class="max-w-6xl mx-auto ui-page home-page">
-
-  <div class="ui-header">
-    <h1 class="ui-title">Dashboard</h1>
-  </div>
-
-  <div class="ui-scroll-area">
-
-<!-- ============================
-     CAROUSEL CONTAINER CON CONTROLES
-============================= -->
-<div class="carousel-container">
-  <button id="carousel-prev" class="carousel-nav carousel-nav-prev" onclick="scrollCarouselPrev()"
-    title="Anterior"></button>
-
-  <!-- ============================
-       CARD: KPIs GLOBALES
-  ============================= -->
-  <div class="home-carousel">
-    <!-- ============================
-    CATEGORIES KPI (NEW SLIDE)
-    ============================ -->
-    <div class="ui-card home-slide">
-
-      <div class="ui-card-header html-category-kpi-header-nav">
-        <button id="html-category-kpi-prev" class="html-category-kpi-year-btn"></button>
-        <h2 id="html-category-kpi-year-label" class="html-category-kpi-year-label">
-          Categorías
-        </h2>
-        <button id="html-category-kpi-next" class="html-category-kpi-year-btn"></button>
-      </div>
-
-      <div id="html-category-kpi" class="ui-card-body">
-        <div id="html-category-kpi-body" style="overflow:auto;">
-          <table class="ui-table" id="html-category-kpi-table">
-            <thead>
-              <tr>
-                <th>Categoría</th>
-                <th>Monto</th>
-                <th>Cant.</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody id="html-category-kpi-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="ui-card home-slide">
-      <div class="ui-card-header html-category-group-kpi-header-nav">
-        <button id="html-category-group-kpi-prev" class="html-category-group-kpi-year-btn"></button>
-        <h2 id="html-category-group-kpi-year-label" class="html-category-group-kpi-year-label">
-          Grupo Categorías
-        </h2>
-        <button id="html-category-group-kpi-next" class="html-category-group-kpi-year-btn"></button>
-      </div>
-
-      <div id="html-category-group-kpi" class="ui-card-body">
-        <div id="html-category-group-kpi-body" style="overflow:auto;">
-          <table class="ui-table" id="html-category-group-kpi-table">
-            <thead>
-              <tr>
-                <th>Grupo Categoría</th>
-                <th>Monto</th>
-                <th>Cant.</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody id="html-category-group-kpi-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    
-
-    <!-- ============================
-    KPI BALANCES
-    ============================= -->
-    <div class="ui-card home-slide">
-
-      <div class="ui-card-header html-balance-kpi-header-nav">
-        <button id="html-balance-kpi-prev" class="html-balance-kpi-year-btn"></button>
-        <h2 id="html-balance-kpi-year-label" class="html-balance-kpi-year-label">
-          KPIs Balances
-        </h2>
-        <button id="html-balance-kpi-next" class="html-balance-kpi-year-btn"></button>
-      </div>
-
-      <div id="html-balance-kpi" class="ui-card-body">
-      </div>
-    </div>
-
-    <!-- ============================
-    CASH FLOW SUMMARY
-    ============================= -->
-    <div class="ui-card home-slide">
-
-      <div class="ui-card-header html-cash-flow-summary-header-nav">
-        <button id="html-cash-flow-summary-prev" class="html-cash-flow-summary-year-btn"></button>
-        <h2 id="html-cash-flow-summary-year-label" class="html-cash-flow-summary-year-label">
-          Tendencia Saldos
-        </h2>
-        <button id="html-cash-flow-summary-next" class="html-cash-flow-summary-year-btn"></button>
-      </div>
-
-      <div id="html-cash-flow-summary" class="ui-card-body">
-        <div style="height: 280px;">
-          <canvas id="cashFlowChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============================
-    PAYABLE FLOW SUMMARY
-    ============================= -->
-    <div class="ui-card home-slide">
-
-      <div class="ui-card-header html-payable-flow-summary-header-nav">
-        <button id="html-payable-flow-summary-prev" class="html-payable-flow-summary-year-btn"></button>
-        <h2 id="html-payable-flow-summary-year-label" class="html-payable-flow-summary-year-label">
-          Tendencia Cuentas por Pagar
-        </h2>
-        <button id="html-payable-flow-summary-next" class="html-payable-flow-summary-year-btn"></button>
-      </div>
-
-      <div id="html-payable-flow-summary" class="ui-card-body">
-        <div style="height: 280px;">
-          <canvas id="payableFlowChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============================
-    RECEIVABLE FLOW SUMMARY
-    ============================= -->
-    <div class="ui-card home-slide">
-
-      <div class="ui-card-header html-receivable-flow-summary-header-nav">
-        <button id="html-receivable-flow-summary-prev" class="html-receivable-flow-summary-year-btn"></button>
-        <h2 id="html-receivable-flow-summary-year-label" class="html-receivable-flow-summary-year-label">
-          Tendencia Cuentas por Cobrar
-        </h2>
-        <button id="html-receivable-flow-summary-next" class="html-receivable-flow-summary-year-btn"></button>
-      </div>
-
-      <div id="html-receivable-flow-summary" class="ui-card-body">
-        <div style="height: 280px;">
-          <canvas id="receivableFlowChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <button id="carousel-next" class="carousel-nav carousel-nav-next" onclick="scrollCarouselNext()" title="Siguiente">
-  </button>
-
-</div>
-
-<div id="category-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-kpi-detail-title">
-  <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
-    <div class="kpi-detail-header">
-      <button id="category-kpi-detail-prev" type="button" class="kpi-detail-nav" aria-label="Periodo anterior" title="Periodo anterior"></button>
-      <h2 id="category-kpi-detail-title" class="text-lg font-semibold"></h2>
-      <button id="category-kpi-detail-next" type="button" class="kpi-detail-nav" aria-label="Periodo siguiente" title="Periodo siguiente"></button>
-      <button id="category-kpi-detail-close" type="button" class="kpi-detail-close" aria-label="Cerrar" title="Cerrar"></button>
-    </div>
-    <div style="height: 300px;">
-      <canvas id="category-kpi-detail-chart"></canvas>
-    </div>
-  </div>
-</div>
-
-<div id="category-group-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-group-kpi-detail-title">
-  <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
-    <div class="kpi-detail-header">
-      <button id="category-group-kpi-detail-prev" type="button" class="kpi-detail-nav" aria-label="Periodo anterior" title="Periodo anterior"></button>
-      <h2 id="category-group-kpi-detail-title" class="text-lg font-semibold"></h2>
-      <button id="category-group-kpi-detail-next" type="button" class="kpi-detail-nav" aria-label="Periodo siguiente" title="Periodo siguiente"></button>
-      <button id="category-group-kpi-detail-close" type="button" class="kpi-detail-close" aria-label="Cerrar" title="Cerrar"></button>
-    </div>
-    <div style="height: 300px;">
-      <canvas id="category-group-kpi-detail-chart"></canvas>
-    </div>
-  </div>
-</div>
-
-  </div>
-</div>
-
-<script src="/js/helpers/icon-helper.js"></script>
-<script src="/js/indexes/home-index.js"></script> 
-```
- 
---- 
- 
-```text
-FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\login.ejs
-```
- 
-```ejs
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
-  <link rel="stylesheet" href="/css/ui-login.css">
-  <script>window.APP_VIEWPORT_RESET = true</script>
-  <script src="/js/helpers/viewport-height-helper.js"></script>
-</head>
-
-<body class="viewport-session-page bg-gray-100 flex items-center justify-center min-h-screen">
-
-  <div class="login-container p-6 bg-white rounded shadow-md w-96">
-    <h1 class="text-2xl mb-4">Iniciar sesión</h1>
-
-    <% if (error) { %>
-      <p class="text-red-500 mb-4">
-        <%= error %>
-      </p>
-      <% } %>
-
-        <form method="POST" action="/login" class="flex flex-col gap-4">
-          <!-- Token CSRF -->
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          
-          <div class="flex flex-col">
-            <label>Usuario:</label>
-            <input type="text" name="username" required class="border p-2 rounded">
-          </div>
-
-          <div class="flex flex-col">
-            <label>Contraseña:</label>
-            <input type="password" name="password" required class="border p-2 rounded">
-          </div>
-
-          <!-- Timezone del navegador -->
-          <input type="hidden" name="timezone" id="timezone_input">
-
-          <button type="submit" class="bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
-            Ingresar
-          </button>
-        </form>
-  </div>
-
-  <script>
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    document.getElementById('timezone_input').value = timezone
-  </script>
-
-</body>
-
-</html> 
 ```
  
 --- 
@@ -23290,6 +23339,274 @@ FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\category-groups
 </div>
 
  
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\home\index.ejs
+```
+ 
+```ejs
+<script>
+  window.USER_ID = "<%= USER_ID %>"
+</script>
+
+<div class="max-w-6xl mx-auto ui-page home-page">
+
+  <div class="ui-header">
+    <h1 class="ui-title">Dashboard</h1>
+  </div>
+
+  <div class="ui-scroll-area">
+
+<!-- ============================
+     CAROUSEL CONTAINER CON CONTROLES
+============================= -->
+<div class="carousel-container">
+  <button id="carousel-prev" class="carousel-nav carousel-nav-prev" onclick="scrollCarouselPrev()"
+    title="Anterior"></button>
+
+  <!-- ============================
+       CARD: KPIs GLOBALES
+  ============================= -->
+  <div class="home-carousel">
+    <!-- ============================
+    CATEGORIES KPI (NEW SLIDE)
+    ============================ -->
+    <div class="ui-card home-slide">
+
+      <div class="ui-card-header html-category-kpi-header-nav">
+        <button id="html-category-kpi-prev" class="html-category-kpi-year-btn"></button>
+        <h2 id="html-category-kpi-year-label" class="html-category-kpi-year-label">
+          Categorías
+        </h2>
+        <button id="html-category-kpi-next" class="html-category-kpi-year-btn"></button>
+      </div>
+
+      <div id="html-category-kpi" class="ui-card-body">
+        <div id="html-category-kpi-body" style="overflow:auto;">
+          <table class="ui-table" id="html-category-kpi-table">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th>Monto</th>
+                <th>Cant.</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="html-category-kpi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card home-slide">
+      <div class="ui-card-header html-category-group-kpi-header-nav">
+        <button id="html-category-group-kpi-prev" class="html-category-group-kpi-year-btn"></button>
+        <h2 id="html-category-group-kpi-year-label" class="html-category-group-kpi-year-label">
+          Grupo Categorías
+        </h2>
+        <button id="html-category-group-kpi-next" class="html-category-group-kpi-year-btn"></button>
+      </div>
+
+      <div id="html-category-group-kpi" class="ui-card-body">
+        <div id="html-category-group-kpi-body" style="overflow:auto;">
+          <table class="ui-table" id="html-category-group-kpi-table">
+            <thead>
+              <tr>
+                <th>Grupo Categoría</th>
+                <th>Monto</th>
+                <th>Cant.</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="html-category-group-kpi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    
+
+    <!-- ============================
+    KPI BALANCES
+    ============================= -->
+    <div class="ui-card home-slide">
+
+      <div class="ui-card-header html-balance-kpi-header-nav">
+        <button id="html-balance-kpi-prev" class="html-balance-kpi-year-btn"></button>
+        <h2 id="html-balance-kpi-year-label" class="html-balance-kpi-year-label">
+          KPIs Balances
+        </h2>
+        <button id="html-balance-kpi-next" class="html-balance-kpi-year-btn"></button>
+      </div>
+
+      <div id="html-balance-kpi" class="ui-card-body">
+      </div>
+    </div>
+
+    <!-- ============================
+    CASH FLOW SUMMARY
+    ============================= -->
+    <div class="ui-card home-slide">
+
+      <div class="ui-card-header html-cash-flow-summary-header-nav">
+        <button id="html-cash-flow-summary-prev" class="html-cash-flow-summary-year-btn"></button>
+        <h2 id="html-cash-flow-summary-year-label" class="html-cash-flow-summary-year-label">
+          Tendencia Saldos
+        </h2>
+        <button id="html-cash-flow-summary-next" class="html-cash-flow-summary-year-btn"></button>
+      </div>
+
+      <div id="html-cash-flow-summary" class="ui-card-body">
+        <div style="height: 280px;">
+          <canvas id="cashFlowChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+    PAYABLE FLOW SUMMARY
+    ============================= -->
+    <div class="ui-card home-slide">
+
+      <div class="ui-card-header html-payable-flow-summary-header-nav">
+        <button id="html-payable-flow-summary-prev" class="html-payable-flow-summary-year-btn"></button>
+        <h2 id="html-payable-flow-summary-year-label" class="html-payable-flow-summary-year-label">
+          Tendencia Cuentas por Pagar
+        </h2>
+        <button id="html-payable-flow-summary-next" class="html-payable-flow-summary-year-btn"></button>
+      </div>
+
+      <div id="html-payable-flow-summary" class="ui-card-body">
+        <div style="height: 280px;">
+          <canvas id="payableFlowChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+    RECEIVABLE FLOW SUMMARY
+    ============================= -->
+    <div class="ui-card home-slide">
+
+      <div class="ui-card-header html-receivable-flow-summary-header-nav">
+        <button id="html-receivable-flow-summary-prev" class="html-receivable-flow-summary-year-btn"></button>
+        <h2 id="html-receivable-flow-summary-year-label" class="html-receivable-flow-summary-year-label">
+          Tendencia Cuentas por Cobrar
+        </h2>
+        <button id="html-receivable-flow-summary-next" class="html-receivable-flow-summary-year-btn"></button>
+      </div>
+
+      <div id="html-receivable-flow-summary" class="ui-card-body">
+        <div style="height: 280px;">
+          <canvas id="receivableFlowChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <button id="carousel-next" class="carousel-nav carousel-nav-next" onclick="scrollCarouselNext()" title="Siguiente">
+  </button>
+
+</div>
+
+<div id="category-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-kpi-detail-title">
+  <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
+    <div class="kpi-detail-header">
+      <button id="category-kpi-detail-prev" type="button" class="kpi-detail-nav" aria-label="Periodo anterior" title="Periodo anterior"></button>
+      <h2 id="category-kpi-detail-title" class="text-lg font-semibold"></h2>
+      <button id="category-kpi-detail-next" type="button" class="kpi-detail-nav" aria-label="Periodo siguiente" title="Periodo siguiente"></button>
+      <button id="category-kpi-detail-close" type="button" class="kpi-detail-close" aria-label="Cerrar" title="Cerrar"></button>
+    </div>
+    <div style="height: 300px;">
+      <canvas id="category-kpi-detail-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="category-group-kpi-detail-modal" class="ui-modal hidden" role="dialog" aria-modal="true" aria-labelledby="category-group-kpi-detail-title">
+  <div class="ui-modal-content" style="max-width: 720px; width: calc(100% - 2rem);">
+    <div class="kpi-detail-header">
+      <button id="category-group-kpi-detail-prev" type="button" class="kpi-detail-nav" aria-label="Periodo anterior" title="Periodo anterior"></button>
+      <h2 id="category-group-kpi-detail-title" class="text-lg font-semibold"></h2>
+      <button id="category-group-kpi-detail-next" type="button" class="kpi-detail-nav" aria-label="Periodo siguiente" title="Periodo siguiente"></button>
+      <button id="category-group-kpi-detail-close" type="button" class="kpi-detail-close" aria-label="Cerrar" title="Cerrar"></button>
+    </div>
+    <div style="height: 300px;">
+      <canvas id="category-group-kpi-detail-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+  </div>
+</div>
+
+<script src="/js/helpers/icon-helper.js"></script>
+<script src="/js/indexes/home-index.js"></script> 
+```
+ 
+--- 
+ 
+```text
+FILE: C:\Users\Dell\Documents\Proyectos\ssrfinan\src\views\pages\login\form.ejs
+```
+ 
+```ejs
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión</title>
+  <link rel="stylesheet" href="/css/ui-login.css">
+  <script>window.APP_VIEWPORT_RESET = true</script>
+  <script src="/js/helpers/viewport-height-helper.js"></script>
+</head>
+
+<body class="viewport-session-page login-page">
+  <main class="login-shell">
+    <section class="login-container login-panel" aria-labelledby="login-title">
+      <header class="login-header">
+        <p class="login-brand">App Contable</p>
+        <h1 id="login-title">Iniciar sesión</h1>
+        <p class="login-intro">Acceso a tu cuenta</p>
+      </header>
+
+      <% if (error) { %>
+        <p class="login-error" role="alert"><%= error %></p>
+      <% } %>
+
+      <form method="POST" action="/login" class="login-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="login-field">
+          <label for="login-username">Usuario</label>
+          <input id="login-username" class="login-input" type="text" name="username" autocomplete="username" required>
+        </div>
+
+        <div class="login-field">
+          <label for="login-password">Contraseña</label>
+          <input id="login-password" class="login-input" type="password" name="password" autocomplete="current-password" required>
+        </div>
+
+        <input type="hidden" name="timezone" id="timezone_input">
+
+        <button type="submit" class="login-submit">Ingresar</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    document.getElementById('timezone_input').value = timezone
+  </script>
+</body>
+
+</html> 
 ```
  
 --- 

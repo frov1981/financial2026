@@ -1,19 +1,11 @@
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
+import type { DTOAccount } from "../dto/dto";
 import { Account } from "../entities/Account.entity";
 import { AuthRequest } from "../types/auth-request";
+import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-import { logger as root_logger } from '../utils/logger.util';
-
-export type DTOAccount = {
-    id: number
-    name: string
-    type: string
-    balance: number
-    is_active: boolean
-    transaction_count: number
-}
 
 const getAccountsBase = async (user_id: number): Promise<Account[]> => {
     const cache_key = cacheKeys.accountsByUser(user_id)

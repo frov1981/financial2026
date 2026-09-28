@@ -2,33 +2,11 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { Payable } from "../entities/Payable.entity";
+import type { DTOPayable, DTOPayableGroupTotal, DTOPayablesResponse } from "../dto/dto";
 import { AuthRequest } from "../types/auth-request";
 import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-
-type DTOPayable = {
-    id: number
-    name: string
-    total_amount: number
-    principal_paid: number
-    interest_paid: number
-    balance: number
-    start_date: Date
-    end_date: Date | null
-    is_active: boolean
-    created_at: Date
-    note: string | null
-    disbursement_account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    payable_group: { id: number, name: string } | null
-}
-
-type DTOPayableGroupTotal = {
-    payable_group_id: number
-    payable_group_name: string
-    total_balance: number
-}
 
 const getPayablesBase = async (user_id: number): Promise<Payable[]> => {
     const cache_key = cacheKeys.payablesByUser(user_id)
@@ -109,11 +87,11 @@ export const getInactivePayables = async (auth_req: AuthRequest): Promise<Payabl
     return inactive_payables
 }
 
-export const getPayablesForApi = async (auth_req: AuthRequest): Promise<{ payables: DTOPayable[], group_totals: DTOPayableGroupTotal[] }> => {
+export const getPayablesForApi = async (auth_req: AuthRequest): Promise<DTOPayablesResponse> => {
     const user_id = auth_req.user.id
     const cache_payables_logger = root_logger.forMethod('getPayablesForApi', 'CACHE_PAYABLES', user_id)
     const cache_key = cacheKeys.payablesByUserForApi(user_id)
-    const cached_payables = cache.get<{ payables: DTOPayable[], group_totals: DTOPayableGroupTotal[] }>(cache_key)
+    const cached_payables = cache.get<DTOPayablesResponse>(cache_key)
     if (cached_payables !== undefined) {
         return cached_payables
     }

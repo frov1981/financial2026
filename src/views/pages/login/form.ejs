@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión</title>
+  <link rel="stylesheet" href="/css/ui-login.css">
+  <script>window.APP_VIEWPORT_RESET = true</script>
+  <script src="/js/helpers/viewport-height-helper.js"></script>
+</head>
+
+<body class="viewport-session-page login-page">
+  <main class="login-shell">
+    <section class="login-container login-panel" aria-labelledby="login-title">
+      <header class="login-header">
+        <p class="login-brand">App Contable</p>
+        <h1 id="login-title">Iniciar sesión</h1>
+        <p class="login-intro">Acceso a tu cuenta</p>
+      </header>
+
+      <% if (error) { %>
+        <p class="login-error" role="alert"><%= error %></p>
+      <% } %>
+
+      <form method="POST" action="/login" class="login-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="login-field">
+          <label for="login-username">Usuario</label>
+          <input id="login-username" class="login-input" type="text" name="username" autocomplete="username" required>
+        </div>
+
+        <div class="login-field">
+          <label for="login-password">Contraseña</label>
+          <input id="login-password" class="login-input" type="password" name="password" autocomplete="current-password" required>
+        </div>
+
+        <input type="hidden" name="timezone" id="timezone_input">
+
+        <button type="submit" class="login-submit">Ingresar</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    document.getElementById('timezone_input').value = timezone
+  </script>
+</body>
+
+</html>

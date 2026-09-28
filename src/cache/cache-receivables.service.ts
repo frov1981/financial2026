@@ -2,33 +2,11 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
 import { Receivable } from "../entities/Receivable.entity";
+import type { DTOReceivable, DTOReceivableGroupTotal, DTOReceivablesResponse } from "../dto/dto";
 import { AuthRequest } from "../types/auth-request";
 import { logger as root_logger } from '../utils/logger.util';
 import { cacheKeys } from "./cache-key.service";
 import { cache } from "./cache.service";
-
-type DTOReceivable = {
-    id: number
-    name: string
-    total_amount: number
-    principal_received: number
-    interest_received: number
-    balance: number
-    start_date: Date
-    end_date: Date | null
-    is_active: boolean
-    created_at: Date
-    note: string | null
-    disbursement_account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    receivable_group: { id: number, name: string } | null
-}
-
-type DTOReceivableGroupTotal = {
-    receivable_group_id: number
-    receivable_group_name: string
-    total_balance: number
-}
 
 const getReceivablesBase = async (user_id: number): Promise<Receivable[]> => {
     const cache_key = cacheKeys.receivablesByUser(user_id)
@@ -109,11 +87,11 @@ export const getInactiveReceivables = async (auth_req: AuthRequest): Promise<Rec
     return inactive_receivables
 }
 
-export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<{ receivables: DTOReceivable[], group_totals: DTOReceivableGroupTotal[] }> => {
+export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<DTOReceivablesResponse> => {
     const user_id = auth_req.user.id
     const cache_receivables_logger = root_logger.forMethod('getReceivablesForApi', 'CACHE_RECEIVABLES', user_id)
     const cache_key = cacheKeys.receivablesByUserForApi(user_id)
-    const cached_receivables = cache.get<{ receivables: DTOReceivable[], group_totals: DTOReceivableGroupTotal[] }>(cache_key)
+    const cached_receivables = cache.get<DTOReceivablesResponse>(cache_key)
     if (cached_receivables !== undefined) {
         return cached_receivables
     }

@@ -1,23 +1,11 @@
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { PayablePayment } from "../entities/PayablePayment.entity"
+import type { DTOPayablePayment } from "../dto/dto"
 import { AuthRequest } from "../types/auth-request"
 import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
-
-export type DTOPayablePayment = {
-    id: number
-    payment_number: number
-    principal_paid: number
-    interest_paid: number
-    payment_date: Date
-    note: string | null
-    created_at: Date
-    account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    payable: { id: number, name: string } | null
-}
 
 const getPaymentsBase = async (user_id: number): Promise<PayablePayment[]> => {
     const cache_key = cacheKeys.payablePaymentsByUser(user_id)

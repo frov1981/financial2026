@@ -1,5 +1,6 @@
 import { Request, RequestHandler, Response } from 'express'
-import { DTOAccount, getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
+import { getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
+import type { DTOAccount } from '../../dto/dto'
 import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'

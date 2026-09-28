@@ -1,9 +1,6 @@
-import bcrypt from 'bcryptjs'
 import { Request, RequestHandler, Response } from 'express'
-import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { User } from '../../entities/User.entity'
-import { send2FACode } from '../../services/send-2fa.service'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
@@ -17,7 +14,7 @@ export const routeToPageRoot = (req: Request, res: Response) => {
 }
 
 export const routeToPageLogin = (req: Request, res: Response) => {
-  res.render('pages/login', { error: null })
+  res.render('pages/login/form', { error: null })
 }
 
 export const routeToPageHome = async (req: Request, res: Response) => {
@@ -35,78 +32,10 @@ export const routeToPageHome = async (req: Request, res: Response) => {
     'layouts/main',
     {
       title: 'Inicio',
-      view: 'pages/home',
+      view: 'pages/home/index',
       USER_ID: user?.id || 'guest',
       user,
     })
-}
-
-export const apiForValidatingLogin = async (req: Request, res: Response) => {
-  const apiForValidatingLogin_logger = logger.forMethod(apiForValidatingLogin.name, 'LOGIN')
-  try {
-    const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
-    const timezone = String(req.body.timezone || 'UTC')
-    /* ============================
-       Modo Skip Login (Desarrollo)
-       Si existe la variable de entorno NODE_SKIP_LOGIN=true, se omite la validación de usuario y contraseña.
-       Se busca un usuario de desarrollo por ID (definido en DEV_USER_ID) y se inicia sesión con ese usuario.
-       Esto permite a los desarrolladores saltarse el proceso de login durante el desarrollo.
-    ============================ */
-    if (process.env.NODE_SKIP_LOGIN === 'true') {
-      const user_repo = AppDataSource.getRepository(User)
-      const dev_user = await user_repo.findOne({
-        where: { id: Number(process.env.DEV_USER_ID) || 1 },
-        select: selected_fields
-      })
-      if (dev_user) {
-        (req.session as any).user_id = dev_user.id;
-        (req.session as any).timezone = timezone
-        apiForValidatingLogin_logger.info('Modo desarrollo habilitado', { user_id: dev_user.id, timezone })
-        return res.redirect('/home')
-      }
-    }
-    /* ============================
-       Login Produccion
-    ============================ */
-    const { username, password } = req.body
-    const user_repo = AppDataSource.getRepository(User)
-    const user = await user_repo.findOne({
-      where: { name: username },
-      select: selected_fields
-    })
-    if (!user) {
-      return res.render('pages/login', { error: 'Usuario no encontrado' })
-    }
-    const valid_password = await bcrypt.compare(password, user.password_hash)
-    if (!valid_password) {
-      return res.render('pages/login', { error: 'Contraseña incorrecta' })
-    }
-    /* ============================
-       Guardar timezone en sesión
-    ============================ */
-    (req.session as any).timezone = timezone
-    
-    apiForValidatingLogin_logger.info('Modo produccion habilitado', { user_id: user.id, timezone })
-    /* ============================
-       Enviar código 2FA y guardar usuario pendiente
-    ============================ */
-    await send2FACode(user);
-    (req.session as any).pending2FAUserId = user.id
-    /* ============================
-       Persistir sesión
-    ============================ */
-    await new Promise<void>((resolve, reject) => {
-      req.session.save(err => {
-        if (err) reject(err)
-        else resolve()
-      })
-    })
-    return res.redirect('/2fa')
-  } catch (error: any) {
-    apiForValidatingLogin_logger.error('Error validando inicio de sesión', parseError(error))
-    return res.render('pages/login', { error: 'Error de inicio de sesión, intenta de nuevo' })
-  } finally {
-  }
 }
 
 export const apiForGettingKpis: RequestHandler = async (req: Request, res: Response) => {
@@ -267,26 +196,3 @@ export const apiForGettingCategoryGroupKpiDetail: RequestHandler = async (req: R
   }
 }
 
-export const apiForLogout: RequestHandler = async (req: Request, res: Response) => {
-  const auth_req = req as AuthRequest
-  const apiForLogout_logger = logger.forMethod(apiForLogout.name, 'LOGOUT', auth_req.user.id)
-  const started_at = performance.now()
-  try {
-    req.session.destroy(err => {
-      if (err) {
-          apiForLogout_logger.error('Error destruyendo sesión', err)
-        return res.redirect('/home')
-      }
-      deleteAll(req as AuthRequest, 'home')
-      res.clearCookie('connect.sid')
-      return res.redirect('/login')
-    })
-  } catch (error) {
-      apiForLogout_logger.error('Error cerrando sesión', parseError(error))
-      return res.redirect('/login')
-  } finally {
-    const ended_at = performance.now()
-    const elapsed_ms = ended_at - started_at
-    apiForLogout_logger.elapsedTime('Elapsed time', { elapsed_ms })
-  }
-}

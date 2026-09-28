@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { show2FA, verify2FA } from '../controllers/home/2fa.controller'
+import { show2FA, verify2FA } from '../controllers/2fa/2fa.controller'
 import { twoFALimiter } from '../config/rate-limiter'
 
 const router = Router()

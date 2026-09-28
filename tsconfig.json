@@ -11,5 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "typeRoots": ["./node_modules/@types", "./types"]
   },
+  "ts-node": {
+    "files": true
+  },
   "include": ["src"]
 }

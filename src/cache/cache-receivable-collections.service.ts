@@ -2,23 +2,11 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { ReceivableCollection } from "../entities/ReceivableCollection.entity"
+import type { DTOReceivableCollection } from "../dto/dto"
 import { AuthRequest } from "../types/auth-request"
 import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
 import { cache } from "./cache.service"
-
-export type DTOReceivableCollection = {
-    id: number
-    collection_number: number
-    principal_received: number
-    interest_received: number
-    collection_date: Date
-    note: string | null
-    created_at: Date
-    account: { id: number, name: string } | null
-    category: { id: number, name: string } | null
-    receivable: { id: number, name: string } | null
-}
 
 const getCollectionsBase = async (user_id: number): Promise<ReceivableCollection[]> => {
     const cache_key = cacheKeys.receivableCollectionsByUser(user_id)
