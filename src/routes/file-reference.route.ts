@@ -8,7 +8,7 @@ import {
 } from '../controllers/file-reference/file-reference.controller'
 
 const router = Router()
-const configuredSize = Number(process.env.MAX_IMAGE_SIZE_MB || 10) * 1024 * 1024
+const configuredSize = Number(process.env.STORAGE_MAX_IMAGE_SIZE_MB || 10) * 1024 * 1024
 const maxImageSize = Number.isFinite(configuredSize) && configuredSize > 0 ? configuredSize : 10 * 1024 * 1024
 const upload = multer({
   storage: multer.memoryStorage(),

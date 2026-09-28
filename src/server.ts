@@ -25,7 +25,7 @@ AppDataSource.initialize().then(() => {
   })
 
   const ormLimit = process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT, 10) : 3
-  const sessionLimit = process.env.SESSION_DB_CONNECTION_LIMIT ? parseInt(process.env.SESSION_DB_CONNECTION_LIMIT, 10) : 1
+  const sessionLimit = process.env.DB_SESSION_CONNECTION_LIMIT ? parseInt(process.env.DB_SESSION_CONNECTION_LIMIT, 10) : 1
   const estimatedTotal = ormLimit + sessionLimit
 
   server_startup_logger.info('Limites de conexion configurado', { ormLimit, sessionLimit, estimatedTotal })

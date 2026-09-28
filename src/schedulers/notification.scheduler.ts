@@ -171,7 +171,7 @@ export async function processLogRetention(): Promise<void> {
   try {
     log_retention_logger.info('Inicio de retención de logs')
     const repository = AppDataSource.getRepository(LogEvent)
-    const retention_days = Number(process.env.LOG_RETENTION_MAX_DAYS || 30)
+    const retention_days = Number(process.env.SCHEDULER_LOG_RETENTION_MAX_DAYS || 30)
     const cutoff = DateTime.utc().minus({ days: retention_days }).toJSDate()
 
     const delete_result = await repository.createQueryBuilder().delete().from(LogEvent)

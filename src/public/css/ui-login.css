@@ -216,6 +216,11 @@ p {
   font-weight: 600;
 }
 
+.login-page .login-hint {
+  color: var(--login-muted);
+  font-size: 0.8rem;
+}
+
 .login-page .login-input {
   height: 48px;
   padding: 0 14px;

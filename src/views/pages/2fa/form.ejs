@@ -3,42 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verificación</title>
+  <title>Verificación 2FA</title>
   <link rel="stylesheet" href="/css/ui-login.css">
+  <script>window.APP_VIEWPORT_RESET = true</script>
   <script src="/js/helpers/viewport-height-helper.js"></script>
 </head>
 
-<body class="viewport-session-page bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="viewport-session-page login-page">
+  <main class="login-shell">
+    <section class="login-container login-panel" aria-labelledby="twofa-title">
+      <header class="login-header">
+        <p class="login-brand">App Contable</p>
+        <h1 id="twofa-title">Verificación en dos pasos</h1>
+        <p class="login-intro">Ingresa el código enviado a tu correo</p>
+      </header>
 
-  <div class="login-container p-6 bg-white rounded shadow-md w-96">
-    <h1 class="text-2xl mb-4">Verificación en dos pasos</h1>
+      <% if (error) { %>
+        <p class="login-error" role="alert"><%= error %></p>
+      <% } %>
 
-    <p class="mb-4 text-sm text-gray-600">
-      Ingresa el código enviado a tu correo
-    </p>
+      <form method="POST" action="/2fa" class="login-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-    <% if (error) { %>
-      <p class="text-red-500 mb-4"><%= error %></p>
-    <% } %>
+        <div class="login-field">
+          <label for="twofa-code">Código de verificación</label>
+          <input
+            id="twofa-code"
+            class="login-input"
+            type="text"
+            name="code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            required
+            aria-describedby="twofa-hint"
+          >
+          <span id="twofa-hint" class="login-hint">Código de 6 dígitos</span>
+        </div>
 
-    <form method="POST" action="/2fa" class="flex flex-col gap-4">
-      <!-- Token CSRF -->
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      
-      <input
-        type="text"
-        name="code"
-        maxlength="6"
-        required
-        class="border p-2 rounded text-center tracking-widest"
-        placeholder="Código 6 dígitos"
-      />
-
-      <button type="submit" class="bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
-        Verificar
-      </button>
-    </form>
-  </div>
-
+        <button type="submit" class="login-submit">Verificar</button>
+      </form>
+    </section>
+  </main>
 </body>
 </html>

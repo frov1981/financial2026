@@ -39,7 +39,7 @@ const imageFormats = new Map([
 ])
 
 function getMaximumImageSize(): number {
-  const megabytes = Number(process.env.MAX_IMAGE_SIZE_MB || 10)
+  const megabytes = Number(process.env.STORAGE_MAX_IMAGE_SIZE_MB || 10)
   return (Number.isFinite(megabytes) && megabytes > 0 ? megabytes : 10) * 1024 * 1024
 }
 

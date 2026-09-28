@@ -86,7 +86,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
     if (process.env.NODE_SKIP_LOGIN === 'true') {
       const user_repo = AppDataSource.getRepository(User)
       const dev_user = await user_repo.findOne({
-        where: { id: Number(process.env.DEV_USER_ID) || 1 },
+        where: { id: Number(process.env.NODE_DEV_USER_ID) || 1 },
         select: selected_fields
       })
       if (dev_user) {
