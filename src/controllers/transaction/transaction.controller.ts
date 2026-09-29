@@ -1,6 +1,8 @@
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts, getActiveAccountsForTransfer, getActiveAccountsForTransferIncludeCurrentAccount, getActiveAccountsIncludeCurrentAccount } from '../../cache/cache-accounts.service'
 import { getActiveCategoryById, getActiveExpenseCategories, getActiveExpenseCategoriesIncludeCurrentCategory, getActiveIncomeCategories, getActiveIncomeCategoriesIncludeCurrentCategory, getCategoryById } from '../../cache/cache-categories.service'
+import { cacheKeys, deleteTransactionFilterCache } from '../../cache/cache-key.service'
+import { cache } from '../../cache/cache.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
@@ -55,10 +57,17 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
   try {
     const page = Number(auth_req.query.page) || 1
     const limit = Number(auth_req.query.limit) || 10
-    const search = (auth_req.query.search as string) || ''
+    const search = ((auth_req.query.search as string) || '').trim()
     const skip = (page - 1) * limit
     const user_id = auth_req.user.id
     const category_id = Number(auth_req.query.category_id) || null
+    if (!search) deleteTransactionFilterCache(user_id)
+    const cache_key = cacheKeys.transactionsPage(user_id, page, limit, category_id, search)
+    const cached_response = cache.get<{ items: Transaction[], total: number, page: number, limit: number, category_id: number | null }>(cache_key)
+    if (cached_response !== undefined) {
+      res.json(cached_response)
+      return
+    }
 
     const qb = AppDataSource
       .getRepository(Transaction)
@@ -95,7 +104,9 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .take(limit)
       .getManyAndCount()
 
-    res.json({ items, total, page, limit, category_id: category_id })
+    const response = { items, total, page, limit, category_id }
+    cache.set(cache_key, response)
+    res.json(response)
   } catch (error) {
     apiForGettingTransactions_logger.error('Error al listar transacciones', parseError(error))
     res.status(500).json({ error: 'Error al listar transacciones' })

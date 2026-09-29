@@ -1,5 +1,7 @@
 <script>
   window.USER_ID = "<%= USER_ID %>"
+  window.PENDING_PAYABLE_BALANCE = "<%= typeof payable_balance !== 'undefined' ? payable_balance : 0 %>"
+  window.PENDING_RECEIVABLE_BALANCE = "<%= typeof receivable_balance !== 'undefined' ? receivable_balance : 0 %>"
 </script>
 
 <div class="max-w-6xl mx-auto ui-page home-page">
@@ -13,7 +15,7 @@
 <!-- ============================
      CAROUSEL CONTAINER CON CONTROLES
 ============================= -->
-<div class="carousel-container">
+<div class="carousel-container carousel-loading">
   <button id="carousel-prev" class="carousel-nav carousel-nav-prev" onclick="scrollCarouselPrev()"
     title="Anterior"></button>
 

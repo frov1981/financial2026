@@ -41,6 +41,13 @@ export const cacheKeys = {
   receivableCollectionsByCollection: (user_id: number, payment_id: number) => `receivable_collection_user_${user_id}_collection_${payment_id}`,
   receivableCollectionsByCollectionForApi: (user_id: number, payable_id: number) => `receivable_collection_api_user_${user_id}_collection_${payable_id}`,
   receivableCollectionsByCollectionPrefix: (user_id: number) => `receivable_collection_api_user_${user_id}_collection_`,
+  /*Transactions*/
+  transactionsByUserPrefix: (user_id: number) => `transactions_user_${user_id}_`,
+  transactionsPage: (user_id: number, page: number, limit: number, category_id: number | null, search: string) => {
+    const category_key = category_id ? `_category_${category_id}` : ''
+    const filter_key = search ? `_filter_${encodeURIComponent(search)}` : ''
+    return `transactions_user_${user_id}_page_${page}_limit_${limit}${category_key}${filter_key}`
+  },
   /*Home*/
   homeAvailableYearsKpi: (user_id: number) => `home_available_years_kpi_user_${user_id}`,
   homeBalanceKpi: (user_id: number, year: number, month: number) => `home_balance_kpi_user_${user_id}_year_${year}_month_${month}`,
@@ -109,6 +116,12 @@ const delByPrefix = (prefix: string) => {
   return cache.del(keys_to_delete)
 }
 
+export const deleteTransactionFilterCache = (user_id: number): number => {
+  const prefix = cacheKeys.transactionsByUserPrefix(user_id)
+  const filtered_keys = cache.keys().filter(key => key.startsWith(prefix) && key.includes('_filter_'))
+  return cache.del(filtered_keys)
+}
+
 export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const user_id = auth_req.user.id
   const cache_key_logger = root_logger.forMethod('deleteAll', 'CACHE_KEYS', user_id)
@@ -120,6 +133,7 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const deleted_category_group_kpi_detail = delByPrefix(cacheKeys.homeCategoryGroupKpiDetailPrefix(user_id))
   const deleted_payments = delByPrefix(cacheKeys.payablePaymentsByPayablePrefix(user_id))
   const deleted_receivable_collections = delByPrefix(cacheKeys.receivableCollectionsByCollectionPrefix(user_id))
+  const deleted_transactions = delByPrefix(cacheKeys.transactionsByUserPrefix(user_id))
   const deleted_payable_balance = cache.del(cacheKeys.payableBalanceByUser(user_id))
   const deleted_receivable_balance = cache.del(cacheKeys.receivableBalanceByUser(user_id))
   const deleted_kpis_accum = delByPrefix(cacheKeys.homeBalanceKpiAccumPrefix(user_id))
@@ -127,5 +141,5 @@ export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const deleted_cash_flow_summary = delByPrefix(cacheKeys.homeCashFlowSummaryPrefix(user_id))
   const deleted_payable_flow_summary = delByPrefix(cacheKeys.homePayableFlowSummaryPrefix(user_id))
   const deleted_receivable_flow_summary = delByPrefix(cacheKeys.homeReceivableFlowSummaryPrefix(user_id))
-  cache_key_logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], categoryKpiDeleted=[${deleted_category_kpi}], categoryKpiDetailDeleted=[${deleted_category_kpi_detail}], categoryGroupKpiDeleted=[${deleted_category_group_kpi}], categoryGroupKpiDetailDeleted=[${deleted_category_group_kpi_detail}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], payableBalanceDeleted=[${deleted_payable_balance}], receivableBalanceDeleted=[${deleted_receivable_balance}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}], receivableFlowSummary=[${deleted_receivable_flow_summary}]`)
+  cache_key_logger.debug(`Delete Cache All. user=[${user_id}], keysDeleted=[${deleted}], kpisDeleted=[${deleted_kpis}], categoryKpiDeleted=[${deleted_category_kpi}], categoryKpiDetailDeleted=[${deleted_category_kpi_detail}], categoryGroupKpiDeleted=[${deleted_category_group_kpi}], categoryGroupKpiDetailDeleted=[${deleted_category_group_kpi_detail}], kpisAccumDeleted=[${deleted_kpis_accum}], trendDeleted=[${deleted_trend}], paymentsDeleted=[${deleted_payments}], receivableCollectionsDeleted=[${deleted_receivable_collections}], transactionsDeleted=[${deleted_transactions}], payableBalanceDeleted=[${deleted_payable_balance}], receivableBalanceDeleted=[${deleted_receivable_balance}], cashFlowSummary=[${deleted_cash_flow_summary}], payableFlowSummary=[${deleted_payable_flow_summary}], receivableFlowSummary=[${deleted_receivable_flow_summary}]`)
 }

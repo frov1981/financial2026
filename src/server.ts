@@ -19,6 +19,7 @@ AppDataSource.initialize().then(() => {
       service: event.service,
       event_name: event.event_name,
       method_name: event.method_name,
+      user_id: event.user_id,
       message: event.message,
       context: event.context as any,
     })))

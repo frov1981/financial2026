@@ -14,6 +14,8 @@ import {
 } from '../controllers/home/home.controller'
 import { apiForLogout, apiForValidatingLogin } from '../controllers/2fa/2fa.controller'
 import { injectNetBalance } from '../middlewares/inject-net-balance.middleware'
+import { injectPayableBalance } from '../middlewares/inject-payable-balance.middleware'
+import { injectReceivableBalance } from '../middlewares/inject-receivable-balance.middleware'
 import { sessionAuthMiddleware } from '../middlewares/session-auth.middleware'
 import { loginLimiter } from '../config/rate-limiter'
 
@@ -38,7 +40,10 @@ protectedSubRouter.get('/category-kpi', apiForGettingCategoryKpi)
 protectedSubRouter.get('/category-kpi-detail', apiForGettingCategoryKpiDetail)
 protectedSubRouter.get('/category-group-kpi', apiForGettingCategoryGroupKpi)
 protectedSubRouter.get('/category-group-kpi-detail', apiForGettingCategoryGroupKpiDetail)
-protectedSubRouter.get('/home', routeToPageHome)
+protectedSubRouter.get('/home', (req, res, next) => {
+    res.locals.hidePendingBalancesInNavbar = true
+    next()
+}, injectPayableBalance, injectReceivableBalance, routeToPageHome)
 
 router.use(protectedSubRouter)
 

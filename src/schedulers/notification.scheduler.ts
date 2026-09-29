@@ -17,10 +17,12 @@ const log_retention_at = process.env.SCHEDULER_DELETE_LOGS_AT || '01:00'
 const [log_retention_hour, log_retention_minute] = log_retention_at.split(':').map(Number)
 
 let scheduler_running = false
+let notification_check_pending = false
 let log_retention_running = false
 let last_log_retention_day: string | null = null
 let last_notification_check_at: Date | null = null
 let log_retention_timer: NodeJS.Timeout | null = null
+let notification_due_timer: NodeJS.Timeout | null = null
 
 const process_schedule_logger = logger.forMethod('processSchedule', 'SCHEDULER_WEEKLY_NOTIFICATION')
 const notification_scheduler_logger = logger.forMethod('processNotificationSchedules', 'SCHEDULER_WEEKLY_NOTIFICATION')
@@ -37,6 +39,65 @@ const day_values: Record<number, string> = {
   7: 'sunday',
 }
 
+const getNextScheduledAt = (schedule: NotificationSchedule, now: DateTime): DateTime | null => {
+  const local_now = now.setZone(schedule.timezone || 'UTC')
+  const [hour] = schedule.send_time.slice(0, 5).split(':').map(Number)
+
+  for (let days_ahead = 0; days_ahead <= 7; days_ahead += 1) {
+    const scheduled_day = local_now.startOf('day').plus({ days: days_ahead })
+    if (day_values[scheduled_day.weekday] !== schedule.send_day) continue
+
+    const scheduled_at = scheduled_day.set({ hour, minute: 0, second: 0, millisecond: 0 })
+    if (scheduled_at.toMillis() > local_now.toMillis()) return scheduled_at.toUTC()
+  }
+
+  return null
+}
+
+const scheduleNextNotificationDue = (schedules: NotificationSchedule[], now: DateTime): void => {
+  if (notification_due_timer) clearTimeout(notification_due_timer)
+
+  const next_due = schedules
+    .map(schedule => getNextScheduledAt(schedule, now))
+    .filter((scheduled_at): scheduled_at is DateTime => scheduled_at !== null)
+    .sort((left, right) => left.toMillis() - right.toMillis())[0]
+
+  if (!next_due) return
+
+  notification_due_timer = setTimeout(() => {
+    notification_due_timer = null
+    void processNotificationSchedules()
+  }, Math.max(0, next_due.toMillis() - DateTime.utc().toMillis()))
+}
+
+const getEnabledNotificationSchedules = () => AppDataSource.getRepository(NotificationSchedule).find({
+  where: {
+    enabled: true,
+    notification_type: { enabled: true },
+  },
+  relations: {
+    user: true,
+    notification_type: true,
+  },
+})
+
+const getNextNotificationCheckAt = (now: DateTime): DateTime => {
+  const local_now = now.setZone(scheduler_timezone)
+  const next_hour = local_now.startOf('hour').plus({ hours: 1 })
+  const hours_to_add = (notification_interval_in_hours - (next_hour.hour % notification_interval_in_hours)) % notification_interval_in_hours
+  return next_hour.plus({ hours: hours_to_add })
+}
+
+const scheduleNextNotificationCheck = (): void => {
+  const now = DateTime.utc()
+  const next_check = getNextNotificationCheckAt(now)
+
+  setTimeout(() => {
+    void processNotificationSchedules()
+    scheduleNextNotificationCheck()
+  }, Math.max(0, next_check.toMillis() - DateTime.utc().toMillis()))
+}
+
 const isDue = (schedule: NotificationSchedule, checked_after: Date, now: DateTime): boolean => {
   const timezone = schedule.timezone || 'UTC'
   const local_checked_after = DateTime.fromJSDate(checked_after).setZone(timezone)
@@ -47,7 +108,7 @@ const isDue = (schedule: NotificationSchedule, checked_after: Date, now: DateTim
 
   while (scheduled_day.toMillis() <= last_day.toMillis()) {
     if (day_values[scheduled_day.weekday] === schedule.send_day) {
-      const scheduled_at = scheduled_day.set({ hour, minute, second: 0, millisecond: 0 })
+      const scheduled_at = scheduled_day.set({ hour, minute: 0, second: 0, millisecond: 0 })
       if (scheduled_at.toMillis() > local_checked_after.toMillis() && scheduled_at.toMillis() <= local_now.toMillis()) return true
     }
     scheduled_day = scheduled_day.plus({ days: 1 })
@@ -132,23 +193,18 @@ const processSchedule = async (schedule: NotificationSchedule, checked_after: Da
 }
 
 export async function processNotificationSchedules(): Promise<void> {
-  if (scheduler_running || (last_notification_check_at && Date.now() - last_notification_check_at.getTime() < notification_interval_ms)) return
+  if (scheduler_running) {
+    notification_check_pending = true
+    return
+  }
   scheduler_running = true
   const now = DateTime.utc()
   const checked_after = last_notification_check_at ?? now.minus({ milliseconds: notification_interval_ms }).toJSDate()
   let check_completed = false
 
   try {
-    const schedules = await AppDataSource.getRepository(NotificationSchedule).find({
-      where: {
-        enabled: true,
-        notification_type: { enabled: true },
-      },
-      relations: {
-        user: true,
-        notification_type: true,
-      },
-    })
+    const schedules = await getEnabledNotificationSchedules()
+    scheduleNextNotificationDue(schedules, now)
     await Promise.all(schedules.map(schedule => processSchedule(schedule, checked_after, now)))
     check_completed = true
   } catch (error) {
@@ -156,6 +212,19 @@ export async function processNotificationSchedules(): Promise<void> {
   } finally {
     if (check_completed) last_notification_check_at = now.toJSDate()
     scheduler_running = false
+    if (notification_check_pending) {
+      notification_check_pending = false
+      void processNotificationSchedules()
+    }
+  }
+}
+
+export async function refreshNotificationScheduleTimer(): Promise<void> {
+  try {
+    const schedules = await getEnabledNotificationSchedules()
+    scheduleNextNotificationDue(schedules, DateTime.utc())
+  } catch (error) {
+    notification_scheduler_logger.error('Error actualizando la próxima notificación', parseError(error))
   }
 }
 
@@ -194,11 +263,9 @@ export async function processLogRetention(): Promise<void> {
   }
 }
 
-export function startNotificationScheduler(): NodeJS.Timeout {
-  const interval = setInterval(() => {
-    void processNotificationSchedules()
-  }, notification_interval_ms)
+export function startNotificationScheduler(): void {
   void processNotificationSchedules()
+  scheduleNextNotificationCheck()
   const scheduleNextLogRetention = () => {
     const now = DateTime.now().setZone(scheduler_timezone)
     let next_run = now.set({ hour: log_retention_hour, minute: log_retention_minute, second: 0, millisecond: 0 })
@@ -210,5 +277,4 @@ export function startNotificationScheduler(): NodeJS.Timeout {
   }
   scheduleNextLogRetention()
   scheduler_start_logger.info('Programador iniciado')
-  return interval
 }

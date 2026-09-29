@@ -23,7 +23,7 @@ export class NotificationSchedule {
   send_day!: string
 
   @Column({ type: 'time' })
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  @Matches(/^([01]\d|2[0-3]):00$/)
   send_time!: string
 
   @Column({ type: 'varchar', length: 64, default: 'UTC' })

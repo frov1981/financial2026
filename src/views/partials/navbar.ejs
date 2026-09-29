@@ -12,16 +12,20 @@
     <% } %>
 
     
+    <% if (typeof hidePendingBalancesInNavbar === 'undefined' || !hidePendingBalancesInNavbar) { %>
     <% if (typeof payable_balance !== 'undefined') { %>
       <span class="navbar-payable_balance">
       <%= payable_balance.toFixed(2) %>
       </span>
     <% } %>
+    <% } %>
 
+    <% if (typeof hidePendingBalancesInNavbar === 'undefined' || !hidePendingBalancesInNavbar) { %>
     <% if (typeof receivable_balance !== 'undefined') { %>
       <span class="navbar-receivable_balance">
       <%= receivable_balance.toFixed(2) %>
       </span>
+    <% } %>
     <% } %>
 
     <!-- Botón hamburguesa (solo móvil) -->

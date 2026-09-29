@@ -21,14 +21,56 @@
     grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
+.ui-kpi-groups {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.ui-kpi-group {
+    border: 1px solid var(--ui-gray-200);
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+}
+
+.ui-kpi-group:nth-child(1) {
+    background: hsl(var(--ui-group-hue), var(--ui-group-saturation), 96%);
+}
+
+.ui-kpi-group:nth-child(2) {
+    background: hsl(var(--ui-group-hue), var(--ui-group-saturation), 93.33%);
+}
+
+.ui-kpi-group:nth-child(3) {
+    background: hsl(var(--ui-group-hue), var(--ui-group-saturation), 90.67%);
+}
+
+.ui-kpi-group:nth-child(4) {
+    background: hsl(var(--ui-group-hue), var(--ui-group-saturation), 88%);
+}
+
+.ui-kpi-group-title {
+    color: var(--ui-blue-700);
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin: 0 0 0.35rem;
+}
+
 .ui-kpi-item {
-    background: var(--ui-gray-50);
+    background: rgba(255, 255, 255, 0.78);
     border-radius: 0.75rem;
     padding: 0.3rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 60px;
+}
+
+.ui-kpi-pending {
+    display: none;
+}
+
+.ui-kpi-pending.is-visible {
+    display: flex;
 }
 
 .ui-kpi-label {

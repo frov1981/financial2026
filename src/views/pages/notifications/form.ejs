@@ -19,7 +19,11 @@
     </select>
 
     <label for="send_time">Hora de envío</label>
-    <input id="send_time" name="send_time" type="time" value="<%= notification.send_time %>" required>
+    <select id="send_time" name="send_time" required>
+      <% hours.forEach(hour => { %>
+        <option value="<%= hour.value %>" <%= notification.send_time === hour.value ? 'selected' : '' %>><%= hour.label %></option>
+      <% }) %>
+    </select>
 
     <div class="notification-form-actions">
       <a href="/notifications" class="ui-btn">Cancelar</a>

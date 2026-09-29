@@ -5,6 +5,10 @@
   z-index: 1;
 }
 
+.carousel-container.carousel-loading .carousel-nav {
+  visibility: hidden;
+}
+
 .home-carousel {
   display: flex;
   gap: 0;

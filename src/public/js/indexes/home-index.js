@@ -11,19 +11,28 @@ const CARD_IDS = [
 ]
 
 const KPI_CONFIG = [
+    { key: 'total_inflows', label: 'Total de Ingresos', color: 'green', trend: true },
+    { key: 'total_outflows', label: 'Total de Egresos', color: 'red', trend: true },
+    { key: 'net_cash_flow', label: 'Neto', color: 'blue', trend: true },
     { key: 'available_balance', label: 'Disponible', color: 'green', trend: true },
-    { key: 'net_savings', label: 'Ahorrado', color: 'blue', trend: true },
     { key: 'incomes', label: 'Ingresos', color: 'green', trend: true },
     { key: 'expenses', label: 'Egresos', color: 'red', trend: true },
     { key: 'payables', label: 'Cuentas por Pagar', color: 'green', trend: true },
-    { key: 'payable_payments', label: 'Pagos', color: 'red', trend: true },
+    { key: 'payable_payments', label: 'Pagos (Incluye intereses)', color: 'red', trend: true },
+    { key: 'pending_payable_balance', label: 'Pendiente por Pagar', color: 'red', trend: false },
     { key: 'receivables', label: 'Cuentas por Cobrar', color: 'red', trend: true },
-    { key: 'receivable_collections', label: 'Cobros', color: 'green', trend: true },
+    { key: 'receivable_collections', label: 'Cobros (incluye intereses)', color: 'green', trend: true },
+    { key: 'pending_receivable_balance', label: 'Pendiente por Cobrar', color: 'green', trend: false },
     { key: 'savings', label: 'Ahorros', color: 'green', trend: true },
     { key: 'withdrawals', label: 'Retiros', color: 'red', trend: true },
-    { key: 'total_inflows', label: 'Total Ingresos', color: 'green', trend: true },
-    { key: 'total_outflows', label: 'Total Egresos', color: 'red', trend: true },
-    { key: 'net_cash_flow', label: 'Neto', color: 'blue', trend: true },
+    { key: 'net_savings', label: 'Ahorrado', color: 'blue', trend: true },
+]
+
+const KPI_GROUPS = [
+    { label: 'Resumen', keys: ['total_inflows', 'total_outflows', 'net_cash_flow', 'available_balance'] },
+    { label: 'Cuentas por Pagar', keys: ['payables', 'payable_payments', 'pending_payable_balance'] },
+    { label: 'Cuentas por Cobrar', keys: ['receivables', 'receivable_collections', 'pending_receivable_balance'] },
+    { label: 'Ahorros', keys: ['savings', 'withdrawals', 'net_savings'] },
 ]
 
 const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
@@ -238,16 +247,22 @@ function adjustCategoryGroupTableHeight() {
 
 function renderBalanceKpiHtml() {
     const container = document.getElementById('html-balance-kpi')
-    let html = ''
-    let chunk = []
-    KPI_CONFIG.forEach((kpi, index) => {
-        chunk.push(kpi)
-        if (chunk.length === 6 || index === KPI_CONFIG.length - 1) {
-            html += `<div class="ui-kpi-grid cols-6">`
-            chunk.forEach(item => {
+    const kpisByKey = Object.fromEntries(KPI_CONFIG.map(kpi => [kpi.key, kpi]))
+    let html = '<div class="ui-kpi-groups">'
+
+    KPI_GROUPS.forEach(group => {
+        html += `
+            <section class="ui-kpi-group">
+                <h3 class="ui-kpi-group-title">${group.label}</h3>
+                <div class="ui-kpi-grid cols-${group.keys.length}">
+        `
+        group.keys.forEach(key => {
+            const item = kpisByKey[key]
+            if (item) {
                 const id = item.key.replace(/_/g, '-')
+                const pendingClass = item.key.startsWith('pending_') ? ' ui-kpi-pending' : ''
                 html += `
-                    <div class="ui-kpi-item">
+                    <div class="ui-kpi-item${pendingClass}">
                         <p class="ui-kpi-label">${item.label}</p>
                         ${item.trend
                         ? `
@@ -265,11 +280,14 @@ function renderBalanceKpiHtml() {
                     }
                     </div>
                 `
-            })
-            html += `</div>`
-            chunk = []
-        }
+            }
+        })
+        html += `
+                </div>
+            </section>
+        `
     })
+    html += '</div>'
     container.innerHTML = html
 }
 
@@ -279,8 +297,10 @@ function renderKpis(year, balanceKpi, trendKpi) {
         'expenses',
         'payables',
         'payable_payments',
+        'pending_payable_balance',
         'receivables',
         'receivable_collections',
+        'pending_receivable_balance',
         'savings', 'withdrawals',
         'total_inflows',
         'total_outflows',
@@ -290,9 +310,16 @@ function renderKpis(year, balanceKpi, trendKpi) {
         'principal_breakdown',
         'interest_breakdown'
     ]
+    const pendingBalances = {
+        pending_payable_balance: Number(window.PENDING_PAYABLE_BALANCE || 0),
+        pending_receivable_balance: Number(window.PENDING_RECEIVABLE_BALANCE || 0),
+    }
+    document.querySelectorAll('.ui-kpi-pending').forEach(element => {
+        element.classList.toggle('is-visible', year === 0)
+    })
     fields.forEach(field => {
         const el = document.getElementById(`html-balance-kpi-${field.replace(/_/g, '-')}`)
-        if (el) el.textContent = (balanceKpi[field] ?? 0).toFixed(2)
+        if (el) el.textContent = (pendingBalances[field] ?? balanceKpi[field] ?? 0).toFixed(2)
     })
     KPI_CONFIG.forEach(({ key, trend }) => {
         if (!trend) return
@@ -1035,12 +1062,19 @@ function toggleCard(id) {
 function initHomeCarousel() {
     const carousel = document.querySelector('.home-carousel')
     if (!carousel) return
+    const carouselContainer = carousel.closest('.carousel-container')
     const prevBtn = document.getElementById('carousel-prev')
     const nextBtn = document.getElementById('carousel-next')
     const savedPosition = loadFilters(CAROUSEL_POSITION_KEY)
+    const revealCarousel = () => {
+        carouselContainer?.classList.remove('carousel-loading')
+    }
+
     if (savedPosition && typeof savedPosition.scrollLeft === 'number') {
         requestAnimationFrame(() => {
             carousel.scrollLeft = savedPosition.scrollLeft
+            updateCarouselButtons()
+            revealCarousel()
         })
     }
     carousel.addEventListener('scroll', () => {
@@ -1057,7 +1091,10 @@ function initHomeCarousel() {
         nextBtn.disabled = carousel.scrollLeft >= maxScrollLeft - 1
     }
 
-    updateCarouselButtons()
+    if (!savedPosition || typeof savedPosition.scrollLeft !== 'number') {
+        updateCarouselButtons()
+        revealCarousel()
+    }
     window.addEventListener('resize', updateCarouselButtons)
 }
 

@@ -85,7 +85,7 @@ function toggleCategoryGroupCollapse(parentId) {
 }
 
 function getParentBackgroundColor(index, total) {
-  if (total <= 1) return 'hsl(210, 40%, 96%)'
+  if (total <= 1) return 'hsl(var(--ui-group-hue), var(--ui-group-saturation), 96%)'
 
   const startLightness = 96
   const endLightness = 88
@@ -93,7 +93,7 @@ function getParentBackgroundColor(index, total) {
 
   const lightness = startLightness - (step * index)
 
-  return `hsl(140, 35%, ${lightness}%)`
+  return `hsl(var(--ui-group-hue), var(--ui-group-saturation), ${lightness}%)`
 }
 
 /* ============================

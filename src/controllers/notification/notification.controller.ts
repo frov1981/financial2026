@@ -2,10 +2,15 @@ import { RequestHandler } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { NotificationSchedule } from '../../entities/NotificationSchedule.entity'
 import { NotificationType } from '../../entities/NotificationType.entity'
+import { refreshNotificationScheduleTimer } from '../../schedulers/notification.scheduler'
 import { AuthRequest } from '../../types/auth-request'
 
 const notification_key = 'weekly_balance'
 const default_schedule = { send_day: 'monday', send_time: '08:00', enabled: true }
+const hours = Array.from({ length: 24 }, (_, hour) => {
+  const value = `${String(hour).padStart(2, '0')}:00`
+  return { value, label: value }
+})
 const days = [
   { value: 'monday', label: 'Lunes' },
   { value: 'tuesday', label: 'Martes' },
@@ -31,7 +36,7 @@ const viewSchedule = (notification_type: NotificationType, schedule: Notificatio
   notification_key: notification_type.key,
   notification_title: notification_type.name,
   send_day: schedule?.send_day || default_schedule.send_day,
-  send_time: schedule?.send_time?.slice(0, 5) || default_schedule.send_time,
+  send_time: schedule?.send_time ? `${schedule.send_time.slice(0, 2)}:00` : default_schedule.send_time,
   enabled: schedule?.enabled ?? default_schedule.enabled,
 })
 
@@ -46,6 +51,7 @@ export const routeToNotificationsPage: RequestHandler = async (req, res) => {
     USER_ID: auth_req.user.id,
     notification: viewSchedule(notification_type, schedule),
     days,
+    hours,
   })
 }
 
@@ -60,6 +66,7 @@ export const routeToNotificationScheduleForm: RequestHandler = async (req, res) 
     USER_ID: auth_req.user.id,
     notification: viewSchedule(notification_type, schedule),
     days,
+    hours,
     errors: {},
   })
 }
@@ -72,13 +79,14 @@ export const apiForSavingNotificationSchedule: RequestHandler = async (req, res)
   const send_time = String(req.body.send_time || '')
   const timezone = String(req.body.timezone || 'UTC')
 
-  if (!days.some(day => day.value === send_day) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(send_time)) {
+  if (!days.some(day => day.value === send_day) || !/^([01]\d|2[0-3]):00$/.test(send_time)) {
     return res.status(400).render('layouts/main', {
       title: 'Configurar notificación',
       view: 'pages/notifications/form',
       USER_ID: auth_req.user.id,
       notification: { ...viewSchedule(notification_type, null), send_day, send_time, timezone },
       days,
+      hours,
       errors: { schedule: 'Selecciona un día y una hora válidos' },
     })
   }
@@ -100,5 +108,6 @@ export const apiForSavingNotificationSchedule: RequestHandler = async (req, res)
     schedule.timezone = timezone
   }
   await repository.save(schedule)
+  await refreshNotificationScheduleTimer()
   res.redirect('/notifications')
 }

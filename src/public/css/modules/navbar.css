@@ -1,4 +1,6 @@
-.navbar-net-balance {
+.navbar-net-balance,
+.navbar-payable_balance,
+.navbar-receivable_balance {
     display: inline-block;
     margin-left: 12px;
     padding: 5px 12px;
@@ -11,6 +13,13 @@
     transition: all 0.2s ease;
 }
 
+.navbar-net-balance:hover,
+.navbar-payable_balance:hover,
+.navbar-receivable_balance:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
 .navbar-net-balance.positive {
     background-color: #16a34a;
     border-color: #15803d;
@@ -21,45 +30,12 @@
     border-color: #b91c1c;
 }
 
-.navbar-net-balance:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
-
 .navbar-payable_balance {
-    display: inline-block;
-    margin-left: 12px;
-    padding: 5px 12px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #ffffff;
     background-color: #dc2626;
-    border: 1px solid #b91c1c;
-    border-radius: 10px;
-    letter-spacing: 0.3px;
-    transition: all 0.2s ease;
-}
-
-.navbar-payable_balance:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
+    border-color: #b91c1c;
 }
 
 .navbar-receivable_balance {
-    display: inline-block;
-    margin-left: 12px;
-    padding: 5px 12px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #ffffff;
     background-color: #16a34a;
     border: 1px solid #15803d;
-    border-radius: 10px;
-    letter-spacing: 0.3px;
-    transition: all 0.2s ease;
-}
-
-.navbar-receivable_balance:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
 }

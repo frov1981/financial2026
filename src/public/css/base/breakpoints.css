@@ -4,6 +4,19 @@
         font-size: 84%;
     }
 
+    .app-main h1 {
+        font-size: 1.25rem;
+    }
+
+    .app-main h1.ui-title,
+    .app-main h1.mb-4 {
+        margin-bottom: 0.6rem;
+    }
+
+    .app-main h1.mb-6 {
+        margin-bottom: 0.9rem;
+    }
+
     .accounts-mobile,
     .categories-mobile,
     .payables-mobile,
@@ -15,7 +28,8 @@
     }
 
     .navbar-net-balance,
-    .navbar-payable_balance {
+    .navbar-payable_balance,
+    .navbar-receivable_balance {
         font-size: 0.70rem;
         padding: 3px 8px;
         border-radius: 7px;
@@ -51,12 +65,21 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .ui-kpi-grid.cols-3,
+    .ui-kpi-grid.cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .ui-kpi-item {
-        padding: 0.50rem;
+        min-height: 0;
+        padding: 0.3rem;
+        justify-content: flex-start;
+        gap: 0.1rem;
     }
 
     .ui-kpi-label {
         white-space: normal;
+        margin-bottom: 0;
     }
 
     .ui-kpi-value {
@@ -64,6 +87,7 @@
         font-variant-numeric: tabular-nums;
         font-weight: 600;
         font-size: normal;
+        flex: 0 1 auto;
     }
 
     .ui-toolbar .ui-btn-text,
