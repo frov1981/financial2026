@@ -5,8 +5,8 @@ import { app } from './app'
 import { AppDataSource } from './config/typeorm.datasource'
 import { logger } from './utils/logger.util'
 import { parseError } from './utils/error.util'
-import { startNotificationScheduler } from './schedulers/notification.scheduler'
 import { LogEvent } from './entities/LogEvent.entity'
+import { JobQueueService } from './services/job-queue.service'
 
 const PORT = process.env.NODE_PORT ? parseInt(process.env.NODE_PORT, 10) : 3000
 const server_startup_logger = logger.forMethod('serverStartup', 'SERVER_STARTUP')
@@ -31,8 +31,17 @@ AppDataSource.initialize().then(() => {
 
   server_startup_logger.info('Limites de conexion configurado', { ormLimit, sessionLimit, estimatedTotal })
 
-  // Inicializar los programadores o tareas
-  startNotificationScheduler()
+  // Inicializar la cola de trabajos y validar el job del sistema
+  void JobQueueService.migrateLegacyWeeklyBalanceSchedules().then(async migrated_count => {
+    if (migrated_count) server_startup_logger.info('Programaciones semanales migradas a la cola', { migrated_count })
+    await Promise.all([
+      JobQueueService.ensureDailyLogRetentionJob(),
+      JobQueueService.ensureDailyAuthCodeCleanupJob(),
+    ])
+    JobQueueService.startProcessingLoop(30_000)
+  }).catch(error => {
+    server_startup_logger.error('Error inicializando las programaciones de la cola', parseError(error))
+  })
 
   // Inicializar servidor express
   app.listen(PORT, () => { server_startup_logger.info('Sevidor iniciado', { port: PORT }) })

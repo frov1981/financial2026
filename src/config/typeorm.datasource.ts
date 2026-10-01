@@ -16,10 +16,10 @@ import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
 import { FileReference } from '../entities/FileReference.entity'
 import { OneLineSqlLogger } from './typeorm.logger'
-import { NotificationSchedule } from '../entities/NotificationSchedule.entity'
-import { NotificationType } from '../entities/NotificationType.entity'
-import { NotificationDelivery } from '../entities/NotificationDelivery.entity'
 import { LogEvent } from '../entities/LogEvent.entity'
+import { JobSchedule } from '../entities/JobSchedule.entity'
+import { JobQueue } from '../entities/JobQueue.entity'
+import { JobRun } from '../entities/JobRun.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -44,10 +44,10 @@ export const AppDataSource = new DataSource({
     ReceivableCollection,
     ReceivableGroup,
     FileReference,
-    NotificationSchedule,
-    NotificationType,
-    NotificationDelivery,
-    LogEvent
+    LogEvent,
+    JobSchedule,
+    JobQueue,
+    JobRun
   ],
   synchronize: false,
   timezone: 'Z',

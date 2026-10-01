@@ -1,113 +1,147 @@
-import { RequestHandler } from 'express'
+import { RequestHandler, Response } from 'express'
+import { DateTime } from 'luxon'
+import { In } from 'typeorm'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import { NotificationSchedule } from '../../entities/NotificationSchedule.entity'
-import { NotificationType } from '../../entities/NotificationType.entity'
-import { refreshNotificationScheduleTimer } from '../../schedulers/notification.scheduler'
+import { JobSchedule } from '../../entities/JobSchedule.entity'
+import { JobQueueService } from '../../services/job-queue.service'
 import { AuthRequest } from '../../types/auth-request'
+import { parseError } from '../../utils/error.util'
+import { logger } from '../../utils/logger.util'
 
-const notification_key = 'weekly_balance'
-const default_schedule = { send_day: 'monday', send_time: '08:00', enabled: true }
-const hours = Array.from({ length: 24 }, (_, hour) => {
-  const value = `${String(hour).padStart(2, '0')}:00`
-  return { value, label: value }
-})
-const days = [
-  { value: 'monday', label: 'Lunes' },
-  { value: 'tuesday', label: 'Martes' },
-  { value: 'wednesday', label: 'Miércoles' },
-  { value: 'thursday', label: 'Jueves' },
-  { value: 'friday', label: 'Viernes' },
-  { value: 'saturday', label: 'Sábado' },
-  { value: 'sunday', label: 'Domingo' },
+const job_type = 'weekly_balance_email'
+const day_names = [
+  { value: 1, name: 'monday', label: 'Lunes' },
+  { value: 2, name: 'tuesday', label: 'Martes' },
+  { value: 3, name: 'wednesday', label: 'Miércoles' },
+  { value: 4, name: 'thursday', label: 'Jueves' },
+  { value: 5, name: 'friday', label: 'Viernes' },
+  { value: 6, name: 'saturday', label: 'Sábado' },
+  { value: 7, name: 'sunday', label: 'Domingo' },
 ]
+const schedule_logger = logger.forMethod('weeklyBalanceSchedule', 'WEEKLY_BALANCE_SCHEDULE')
 
-const getSchedule = async (user_id: number) => {
-  return AppDataSource.getRepository(NotificationSchedule).findOne({
-    where: { user: { id: user_id }, notification_type: { key: notification_key } },
-    relations: { notification_type: true },
+const logRequestLifecycle = (res: Response, request_name: string, user_id: number): void => {
+  const request_logger = logger.forMethod(request_name, 'WEEKLY_BALANCE_SCHEDULE', user_id)
+  request_logger.debug('Inicio de ejecución de pantalla')
+  res.once('finish', () => {
+    request_logger.debug('Fin de ejecución de pantalla', { status_code: res.statusCode })
   })
 }
 
-const getNotificationType = async () => {
-  return AppDataSource.getRepository(NotificationType).findOneBy({ key: notification_key, enabled: true })
-}
-
-const viewSchedule = (notification_type: NotificationType, schedule: NotificationSchedule | null) => ({
-  notification_key: notification_type.key,
-  notification_title: notification_type.name,
-  send_day: schedule?.send_day || default_schedule.send_day,
-  send_time: schedule?.send_time ? `${schedule.send_time.slice(0, 2)}:00` : default_schedule.send_time,
-  enabled: schedule?.enabled ?? default_schedule.enabled,
+const getSchedule = async (user_id: number) => AppDataSource.getRepository(JobSchedule).findOne({
+  where: {
+    user: { id: user_id },
+    scope: 'user',
+    job_type,
+    status: In(['active', 'paused']),
+  },
+  order: { updated_at: 'DESC' },
 })
 
-export const routeToNotificationsPage: RequestHandler = async (req, res) => {
-  const auth_req = req as AuthRequest
-  const notification_type = await getNotificationType()
-  if (!notification_type) return res.status(500).send('Tipo de notificación no configurado')
-  const schedule = await getSchedule(auth_req.user.id)
-  res.render('layouts/main', {
-    title: 'Notificaciones',
-    view: 'pages/notifications/index',
-    USER_ID: auth_req.user.id,
-    notification: viewSchedule(notification_type, schedule),
-    days,
-    hours,
-  })
+const viewSchedule = (schedule: JobSchedule | null, default_timezone = 'UTC') => {
+  const rule = schedule?.recurrence_rule ?? {}
+  const weekday = Number(rule.weekday ?? 1)
+  const hour = String(Number(rule.hour ?? 8)).padStart(2, '0')
+  const minute = String(Number(rule.minute ?? 0)).padStart(2, '0')
+
+  return {
+    title: 'Notificar balances semanalmente',
+    send_day: day_names.find(day => day.value === weekday)?.name ?? 'monday',
+    send_time: `${hour}:${minute}`,
+    enabled: schedule?.status === 'active',
+    exists: schedule !== null,
+    timezone: schedule?.timezone ?? default_timezone,
+  }
 }
 
-export const routeToNotificationScheduleForm: RequestHandler = async (req, res) => {
+export const routeToNotificationsPage: RequestHandler = async (req, res, next) => {
   const auth_req = req as AuthRequest
-  const notification_type = await getNotificationType()
-  if (!notification_type) return res.status(500).send('Tipo de notificación no configurado')
-  const schedule = await getSchedule(auth_req.user.id)
-  res.render('layouts/main', {
-    title: 'Configurar notificación',
-    view: 'pages/notifications/form',
-    USER_ID: auth_req.user.id,
-    notification: viewSchedule(notification_type, schedule),
-    days,
-    hours,
-    errors: {},
-  })
+  logRequestLifecycle(res, routeToNotificationsPage.name, auth_req.user.id)
+  try {
+    const schedule = await getSchedule(auth_req.user.id)
+    res.render('layouts/main', {
+      title: 'Programación semanal',
+      view: 'pages/notifications/index',
+      USER_ID: auth_req.user.id,
+      notification: viewSchedule(schedule, auth_req.timezone),
+      days: day_names,
+    })
+  } catch (error) {
+    logger.forMethod(routeToNotificationsPage.name, 'WEEKLY_BALANCE_SCHEDULE', auth_req.user.id)
+      .error('Error cargando pantalla de programación semanal', parseError(error))
+    next(error)
+  }
 }
 
-export const apiForSavingNotificationSchedule: RequestHandler = async (req, res) => {
+export const routeToNotificationScheduleForm: RequestHandler = async (req, res, next) => {
   const auth_req = req as AuthRequest
-  const notification_type = await getNotificationType()
-  if (!notification_type) return res.status(500).send('Tipo de notificación no configurado')
-  const send_day = String(req.body.send_day || '')
-  const send_time = String(req.body.send_time || '')
-  const timezone = String(req.body.timezone || 'UTC')
-
-  if (!days.some(day => day.value === send_day) || !/^([01]\d|2[0-3]):00$/.test(send_time)) {
-    return res.status(400).render('layouts/main', {
-      title: 'Configurar notificación',
+  logRequestLifecycle(res, routeToNotificationScheduleForm.name, auth_req.user.id)
+  try {
+    const schedule = await getSchedule(auth_req.user.id)
+    res.render('layouts/main', {
+      title: 'Programar balances',
       view: 'pages/notifications/form',
       USER_ID: auth_req.user.id,
-      notification: { ...viewSchedule(notification_type, null), send_day, send_time, timezone },
-      days,
-      hours,
-      errors: { schedule: 'Selecciona un día y una hora válidos' },
+      notification: viewSchedule(schedule, auth_req.timezone),
+      days: day_names,
+      errors: {},
     })
+  } catch (error) {
+    logger.forMethod(routeToNotificationScheduleForm.name, 'WEEKLY_BALANCE_SCHEDULE', auth_req.user.id)
+      .error('Error cargando formulario de programación semanal', parseError(error))
+    next(error)
   }
+}
 
-  const repository = AppDataSource.getRepository(NotificationSchedule)
-  let schedule = await getSchedule(auth_req.user.id)
-  if (!schedule) {
-    schedule = repository.create({
-      user: auth_req.user,
-      notification_type,
-      send_day,
-      send_time,
+export const apiForSavingNotificationSchedule: RequestHandler = async (req, res, next) => {
+  const auth_req = req as AuthRequest
+  logRequestLifecycle(res, apiForSavingNotificationSchedule.name, auth_req.user.id)
+  try {
+    const schedule = await getSchedule(auth_req.user.id)
+    const send_day = Number(req.body.send_day)
+    const send_time = String(req.body.send_time || '')
+    const [hour, minute] = send_time.split(':').map(Number)
+    const requested_timezone = String(req.body.timezone || auth_req.timezone || schedule?.timezone || 'UTC')
+    const timezone = DateTime.now().setZone(requested_timezone).isValid ? requested_timezone : 'UTC'
+    const mode = String(req.body.mode || '')
+    const valid_mode = ['save', 'enable', 'disable'].includes(mode)
+
+    if (!day_names.some(day => day.value === send_day) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(send_time) || !valid_mode) {
+      return res.status(400).render('layouts/main', {
+        title: 'Programar balances',
+        view: 'pages/notifications/form',
+        USER_ID: auth_req.user.id,
+        notification: { ...viewSchedule(schedule), send_day: String(send_day), send_time, timezone },
+        days: day_names,
+        errors: { schedule: 'Selecciona un día y una hora válidos' },
+      })
+    }
+
+    const enabled = mode === 'enable' || (mode === 'save' && schedule?.status === 'active')
+    const updated_schedule = await JobQueueService.configureWeeklyBalanceSchedule(auth_req.user.id, {
+      weekday: send_day,
+      hour,
+      minute,
       timezone,
-      enabled: true,
+      enabled,
     })
-  } else {
-    schedule.send_day = send_day
-    schedule.send_time = send_time
-    schedule.timezone = timezone
+
+    const action = mode === 'enable' ? 'habilitada' : mode === 'disable' ? 'deshabilitada' : 'ajustada'
+    schedule_logger.info(`Programación semanal de balances ${action}`, {
+      user_id: auth_req.user.id,
+      schedule_id: updated_schedule?.id ?? schedule?.id ?? null,
+      weekday: send_day,
+      hour,
+      minute,
+      timezone,
+      enabled,
+      next_run_at: updated_schedule?.next_run_at?.toISOString() ?? null,
+    })
+
+    res.redirect('/notifications')
+  } catch (error) {
+    logger.forMethod(apiForSavingNotificationSchedule.name, 'WEEKLY_BALANCE_SCHEDULE', auth_req.user.id)
+      .error('Error actualizando la programación semanal de balances', parseError(error))
+    next(error)
   }
-  await repository.save(schedule)
-  await refreshNotificationScheduleTimer()
-  res.redirect('/notifications')
 }

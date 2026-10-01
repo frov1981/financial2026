@@ -8,10 +8,9 @@ import { PayableGroup } from './PayableGroup.entity'
 import { CacheKpiBalance } from './CacheKpiBalance.entity'
 import { ReceivableGroup } from './ReceivableGroup.entity'
 import { Receivable } from './Receivable.entity'
-import { NotificationSchedule } from './NotificationSchedule.entity'
-
+import { JobSchedule } from './JobSchedule.entity'
 @Entity('users')
-//@Unique('UQ_users_email', ['email'])
+
 export class User {
 
   @PrimaryGeneratedColumn()
@@ -59,7 +58,7 @@ export class User {
   @OneToMany(() => Receivable, receivable => receivable.user)
   receivables!: Receivable[]
 
-  @OneToMany(() => NotificationSchedule, schedule => schedule.user)
-  notification_schedules!: NotificationSchedule[]
+  @OneToMany(() => JobSchedule, schedule => schedule.user)
+  job_schedules!: JobSchedule[]
 
 }
