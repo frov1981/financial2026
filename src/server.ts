@@ -11,7 +11,22 @@ import { JobQueueService } from './services/job-queue.service'
 const PORT = process.env.NODE_PORT ? parseInt(process.env.NODE_PORT, 10) : 3000
 const server_startup_logger = logger.forMethod('serverStartup', 'SERVER_STARTUP')
 
-AppDataSource.initialize().then(() => {
+AppDataSource.initialize().then(async () => {
+  await AppDataSource.query(
+    `CREATE TABLE IF NOT EXISTS device_preferences (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      user_id INT NOT NULL,
+      device_id VARCHAR(36) NOT NULL,
+      state JSON NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_device_preferences_user_device (user_id, device_id),
+      CONSTRAINT fk_device_preferences_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB`,
+  )
+  server_startup_logger.info('Tabla de preferencias por dispositivo verificada')
+
   logger.setDatabaseSink(async events => {
     await AppDataSource.getRepository(LogEvent).insert(events.map(event => ({
       occurred_at: event.occurred_at,

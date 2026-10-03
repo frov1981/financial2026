@@ -20,6 +20,7 @@ import { LogEvent } from '../entities/LogEvent.entity'
 import { JobSchedule } from '../entities/JobSchedule.entity'
 import { JobQueue } from '../entities/JobQueue.entity'
 import { JobRun } from '../entities/JobRun.entity'
+import { DevicePreference } from '../entities/DevicePreference.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -47,7 +48,8 @@ export const AppDataSource = new DataSource({
     LogEvent,
     JobSchedule,
     JobQueue,
-    JobRun
+    JobRun,
+    DevicePreference
   ],
   synchronize: false,
   timezone: 'Z',

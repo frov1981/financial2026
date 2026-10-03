@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
     <title>
         <%= title || 'SSR App' %>
     </title>
@@ -15,6 +16,7 @@
     <script src="/js/helpers/viewport-height-helper.js"></script>
     <script src="/js/helpers/logger-helper.js"></script>
     <script src="/js/helpers/storage-helper.js"></script>
+    <script src="/js/helpers/device-preferences-helper.js"></script>
     <script src="/js/helpers/timezone-helper.js"></script>
     <script src="/js/vendor/chart.js/global/chart.umd.js"></script>
     <script src="/js/vendor/luxon/global/luxon.min.js"></script>
