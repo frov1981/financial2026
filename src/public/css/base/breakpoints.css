@@ -107,6 +107,21 @@
 }
 
 @media (min-width: 769px) {
+    .app-main h1 {
+        font-size: 0.9rem;
+        line-height: 1.2rem;
+        padding: 0;
+    }
+
+    .app-main h1.ui-title,
+    .app-main h1.mb-4 {
+        margin-bottom: 0.6rem;
+    }
+
+    .app-main h1.mb-6 {
+        margin-bottom: 0.9rem;
+    }
+
     .ui-table th {
         font-size: 0.65625rem;
     }

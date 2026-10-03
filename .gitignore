@@ -8,6 +8,7 @@ coverage/
 db/
 scripts/
 docs/
+migrations/
 
 # Entornos
 .env

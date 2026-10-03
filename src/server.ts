@@ -38,7 +38,7 @@ AppDataSource.initialize().then(() => {
       JobQueueService.ensureDailyLogRetentionJob(),
       JobQueueService.ensureDailyAuthCodeCleanupJob(),
     ])
-    JobQueueService.startProcessingLoop(30_000)
+    JobQueueService.startProcessingLoop()
   }).catch(error => {
     server_startup_logger.error('Error inicializando las programaciones de la cola', parseError(error))
   })

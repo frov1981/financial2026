@@ -23,27 +23,34 @@ const executeLogRetentionJob = async (job: JobQueue): Promise<void> => {
     table: 'log_events',
   })
 
-  const delete_result = await repository.createQueryBuilder().delete().from(LogEvent)
-    .where('occurred_at < :cutoff', { cutoff })
-    .execute()
+  let deleted_count: number | null = null
+  let status: 'succeeded' | 'failed' = 'failed'
+  try {
+    const delete_result = await repository.createQueryBuilder().delete().from(LogEvent)
+      .where('occurred_at < :cutoff', { cutoff })
+      .execute()
 
-  const deleted_count = Number(delete_result.affected ?? 0)
-  await repository.query('OPTIMIZE TABLE log_events')
+    deleted_count = Number(delete_result.affected ?? 0)
+    await repository.query('OPTIMIZE TABLE log_events')
+    status = 'succeeded'
+  } finally {
+    job_dispatcher_logger.info('Limpieza de logs finalizada', {
+      job_id: job.id,
+      table: 'log_events',
+      deleted_count,
+      retention_days,
+      cutoff,
+      from: new Date(cutoff).toISOString(),
+      status,
+    })
 
-  job_dispatcher_logger.info('Limpieza de logs completada', {
-    job_id: job.id,
-    table: 'log_events',
-    deleted_count,
-    retention_days,
-    cutoff,
-    from: new Date(cutoff).toISOString(),
-  })
-
-  job_dispatcher_logger.debug('Fin de limpieza de logs desde la cola', {
-    job_id: job.id,
-    deleted_count,
-    table: 'log_events',
-  })
+    job_dispatcher_logger.debug('Fin de limpieza de logs desde la cola', {
+      job_id: job.id,
+      deleted_count,
+      table: 'log_events',
+      status,
+    })
+  }
 }
 
 const executeAuthCodeCleanupJob = async (job: JobQueue): Promise<void> => {
@@ -56,26 +63,33 @@ const executeAuthCodeCleanupJob = async (job: JobQueue): Promise<void> => {
     table: 'auth_codes',
   })
 
-  const delete_result = await repository.createQueryBuilder().delete().from(AuthCode)
-    .where('expires_at < :cutoff', { cutoff })
-    .execute()
+  let deleted_count: number | null = null
+  let status: 'succeeded' | 'failed' = 'failed'
+  try {
+    const delete_result = await repository.createQueryBuilder().delete().from(AuthCode)
+      .where('expires_at < :cutoff', { cutoff })
+      .execute()
 
-  const deleted_count = Number(delete_result.affected ?? 0)
-  await repository.query('OPTIMIZE TABLE auth_codes')
+    deleted_count = Number(delete_result.affected ?? 0)
+    await repository.query('OPTIMIZE TABLE auth_codes')
+    status = 'succeeded'
+  } finally {
+    job_dispatcher_logger.info('Limpieza de códigos de autenticación finalizada', {
+      job_id: job.id,
+      table: 'auth_codes',
+      deleted_count,
+      cutoff,
+      from: cutoff.toISOString(),
+      status,
+    })
 
-  job_dispatcher_logger.info('Limpieza de códigos de autenticación completada', {
-    job_id: job.id,
-    table: 'auth_codes',
-    deleted_count,
-    cutoff,
-    from: cutoff.toISOString(),
-  })
-
-  job_dispatcher_logger.debug('Fin de limpieza de códigos de autenticación desde la cola', {
-    job_id: job.id,
-    deleted_count,
-    table: 'auth_codes',
-  })
+    job_dispatcher_logger.debug('Fin de limpieza de códigos de autenticación desde la cola', {
+      job_id: job.id,
+      deleted_count,
+      table: 'auth_codes',
+      status,
+    })
+  }
 }
 
 const executeWeeklyBalanceEmailJob = async (job: JobQueue): Promise<void> => {
@@ -95,7 +109,6 @@ const executeWeeklyBalanceEmailJob = async (job: JobQueue): Promise<void> => {
 
     await sendWeeklyBalanceMail(user, job.schedule?.timezone ?? 'UTC')
     status = 'succeeded'
-    weekly_balance_logger.info('Notificación semanal de balances enviada con éxito', context)
   } catch (error) {
     weekly_balance_logger.error('Error enviando la notificación semanal de balances', {
       ...context,
@@ -103,12 +116,13 @@ const executeWeeklyBalanceEmailJob = async (job: JobQueue): Promise<void> => {
     })
     throw error
   } finally {
+    weekly_balance_logger.info('Notificación semanal de balances finalizada', { ...context, status })
     weekly_balance_logger.debug('Fin de ejecución de notificación semanal', { ...context, status })
   }
 }
 
 const executeTransactionJob = async (job: JobQueue): Promise<void> => {
-  job_dispatcher_logger.info('Transacción programada despachada desde la cola', {
+  job_dispatcher_logger.debug('Transacción programada despachada desde la cola', {
     job_id: job.id,
     entity_type: job.entity_type,
     entity_id: job.entity_id,

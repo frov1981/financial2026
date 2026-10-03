@@ -431,3 +431,29 @@
     text-align: center;
     overflow: visible;
 }
+
+#html-category-kpi-table,
+#html-category-group-kpi-table,
+#html-category-kpi-table td,
+#html-category-group-kpi-table td {
+    font-size: 0.672rem;
+}
+
+#html-category-kpi-table th,
+#html-category-kpi-table td,
+#html-category-group-kpi-table th,
+#html-category-group-kpi-table td {
+    padding: 0.1512rem 0.432rem;
+}
+
+#html-category-kpi-table .category-kpi-action,
+#html-category-group-kpi-table .category-kpi-action {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+#html-category-kpi-table .category-kpi-action svg,
+#html-category-group-kpi-table .category-kpi-action svg {
+    width: 0.75rem;
+    height: 0.75rem;
+}

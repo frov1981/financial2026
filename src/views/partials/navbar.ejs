@@ -1,81 +1,52 @@
-<nav class="bg-blue-600 text-white">
-  <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-14 flex items-center justify-between">
+<nav class="app-navbar" aria-label="Navegación principal">
+  <div class="navbar-inner">
+    <div class="navbar-top">
+      <a class="navbar-brand" href="/home">App Contable <span>V1</span></a>
 
-    <div class="font-semibold text-base sm:text-lg">
-      App Contable V1
+      <div class="navbar-balances" aria-label="Balances">
+        <% if (typeof net_balance !== 'undefined') { %>
+          <span class="navbar-net-balance <%= net_balance > 0 ? 'positive' : 'negative' %>"><%= net_balance.toFixed(2) %></span>
+        <% } %>
+
+        <% if (typeof hidePendingBalancesInNavbar === 'undefined' || !hidePendingBalancesInNavbar) { %>
+          <% if (typeof payable_balance !== 'undefined') { %>
+            <span class="navbar-payable_balance"><%= payable_balance.toFixed(2) %></span>
+          <% } %>
+          <% if (typeof receivable_balance !== 'undefined') { %>
+            <span class="navbar-receivable_balance"><%= receivable_balance.toFixed(2) %></span>
+          <% } %>
+        <% } %>
+      </div>
+
+      <button id="mobile-menu-btn" class="navbar-menu-btn" type="button"
+        aria-label="Abrir menú" aria-controls="navbar-links" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
     </div>
 
-    <% if (typeof net_balance !== 'undefined') { %>
-      <span class="navbar-net-balance <%= net_balance > 0 ? 'positive' : 'negative' %>">
-      <%= net_balance.toFixed(2) %>
-      </span>
-    <% } %>
-
-    
-    <% if (typeof hidePendingBalancesInNavbar === 'undefined' || !hidePendingBalancesInNavbar) { %>
-    <% if (typeof payable_balance !== 'undefined') { %>
-      <span class="navbar-payable_balance">
-      <%= payable_balance.toFixed(2) %>
-      </span>
-    <% } %>
-    <% } %>
-
-    <% if (typeof hidePendingBalancesInNavbar === 'undefined' || !hidePendingBalancesInNavbar) { %>
-    <% if (typeof receivable_balance !== 'undefined') { %>
-      <span class="navbar-receivable_balance">
-      <%= receivable_balance.toFixed(2) %>
-      </span>
-    <% } %>
-    <% } %>
-
-    <!-- Botón hamburguesa (solo móvil) -->
-    <button
-      id="mobile-menu-btn"
-      class="sm:hidden p-1 focus:outline-none"
-      aria-label="Abrir menú">
-
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-        viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M4 6h16M4 12h16M4 18h16"/>
-      </svg>
-    </button>
-
-    <!-- Menú desktop -->
-    <ul class="hidden sm:flex items-center space-x-4 lg:space-x-6 text-sm lg:text-base">
-      <li><a href="/home" class="hover:underline">Inicio</a></li>
-      <li><a href="/accounts" class="hover:underline">Cuentas</a></li>
-      <li><a href="/categories" class="hover:underline">Categorías</a></li>
-      <li><a href="/transactions" class="hover:underline">Transacciones</a></li>
-      <li><a href="/payables" class="hover:underline">Cuentas por Pagar</a></li>
-      <li><a href="/receivables" class="hover:underline">Cuentas por Cobrar</a></li>
-      <li><a href="/notifications" class="hover:underline">Programación</a></li>
-      <li><a href="/logout" class="hover:underline">Cerrar Sesión</a></li>
+    <ul id="navbar-links" class="navbar-links">
+      <li><a href="/home">Inicio</a></li>
+      <li><a href="/accounts">Cuentas</a></li>
+      <li><a href="/categories">Categorías</a></li>
+      <li><a href="/transactions">Transacciones</a></li>
+      <li><a href="/payables">Cuentas por Pagar</a></li>
+      <li><a href="/receivables">Cuentas por Cobrar</a></li>
+      <li><a href="/notifications">Programación</a></li>
+      <li><a href="/logout">Cerrar Sesión</a></li>
     </ul>
   </div>
-
-  <!-- Menú móvil -->
-  <ul
-    id="mobile-menu"
-    class="sm:hidden hidden bg-blue-700 px-3 py-2 space-y-1 text-sm">
-
-    <li><a href="/home" class="block py-2">Inicio</a></li>
-    <li><a href="/accounts" class="block py-2">Cuentas</a></li>
-    <li><a href="/categories" class="block py-2">Categorías</a></li>
-    <li><a href="/transactions" class="block py-2">Transacciones</a></li>
-    <li><a href="/payables" class="block py-2">Cuentas por Pagar</a></li>
-    <li><a href="/receivables" class="block py-2">Cuentas por Cobrar</a></li>
-    <li><a href="/notifications" class="block py-2">Notificaciones</a></li>
-      <li><a href="/notifications" class="block py-2">Programación</a></li>
-    <li><a href="/logout" class="block py-2">Cerrar Sesión</a></li>
-  </ul>
 </nav>
 
 <script>
   const btn = document.getElementById('mobile-menu-btn')
-  const menu = document.getElementById('mobile-menu')
+  const menu = document.getElementById('navbar-links')
 
   btn.addEventListener('click', () => {
-    menu.classList.toggle('hidden')
+    const isExpanded = btn.getAttribute('aria-expanded') === 'true'
+    btn.setAttribute('aria-expanded', String(!isExpanded))
+    btn.setAttribute('aria-label', isExpanded ? 'Abrir menú' : 'Cerrar menú')
+    menu.classList.toggle('is-open', !isExpanded)
   })
 </script>

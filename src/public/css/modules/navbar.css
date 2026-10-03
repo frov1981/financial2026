@@ -1,41 +1,212 @@
+.app-navbar {
+    position: relative;
+    z-index: 20;
+    color: #ffffff;
+    background: #1d4ed8;
+    box-shadow: 0 2px 8px rgb(17 24 39 / 16%);
+}
+
+.navbar-inner {
+    width: min(100%, 1280px);
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.navbar-top {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+}
+
+.navbar-brand {
+    color: inherit;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.navbar-brand span {
+    margin-left: 3px;
+    color: #bfdbfe;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.navbar-balances {
+    display: flex;
+    grid-column: 2;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+}
+
 .navbar-net-balance,
 .navbar-payable_balance,
 .navbar-receivable_balance {
-    display: inline-block;
-    margin-left: 12px;
-    padding: 5px 12px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 9px;
     color: #ffffff;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    letter-spacing: 0.3px;
-    transition: all 0.2s ease;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
-.navbar-net-balance:hover,
-.navbar-payable_balance:hover,
-.navbar-receivable_balance:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
-
-.navbar-net-balance.positive {
-    background-color: #16a34a;
-    border-color: #15803d;
-}
-
-.navbar-net-balance.negative {
-    background-color: #dc2626;
-    border-color: #b91c1c;
-}
-
-.navbar-payable_balance {
-    background-color: #dc2626;
-    border-color: #b91c1c;
-}
-
+.navbar-net-balance.positive,
 .navbar-receivable_balance {
-    background-color: #16a34a;
-    border: 1px solid #15803d;
+    background: #047857;
+}
+
+.navbar-net-balance.negative,
+.navbar-payable_balance {
+    background: #b91c1c;
+}
+
+.navbar-menu-btn {
+    display: inline-flex;
+    grid-column: 3;
+    grid-row: 1;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    background: transparent;
+    border: 1px solid rgb(255 255 255 / 28%);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.navbar-menu-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+.navbar-menu-btn:hover,
+.navbar-menu-btn:focus-visible {
+    background: rgb(255 255 255 / 12%);
+}
+
+.navbar-links {
+    display: flex;
+    max-height: 0;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    list-style: none;
+    visibility: hidden;
+    transition: max-height 180ms ease, padding 180ms ease;
+}
+
+.navbar-links.is-open {
+    max-height: 420px;
+    padding: 0 0 10px;
+    visibility: visible;
+}
+
+.navbar-links a {
+    display: block;
+    padding: 10px 12px;
+    color: inherit;
+    border-radius: 5px;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.navbar-links a:hover,
+.navbar-links a:focus-visible {
+    background: rgb(255 255 255 / 12%);
+}
+
+@media (min-width: 1024px) {
+    .navbar-inner {
+        padding-right: 9.6px;
+        padding-left: 9.6px;
+    }
+
+    .navbar-top {
+        grid-template-columns: auto 1fr;
+        gap: 4.8px;
+        min-height: 23.2px;
+    }
+
+    .navbar-balances {
+        grid-column: 2;
+        justify-content: flex-end;
+        gap: 2.8px;
+    }
+
+    .navbar-net-balance,
+    .navbar-payable_balance,
+    .navbar-receivable_balance {
+        min-height: 11.2px;
+        padding: 1.6px 3.6px;
+    }
+
+    .navbar-menu-btn {
+        display: none;
+    }
+
+    .navbar-links,
+    .navbar-links.is-open {
+        max-height: none;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 1.6px;
+        padding: 0 0 3.2px;
+        overflow: visible;
+        visibility: visible;
+    }
+
+    .navbar-links a {
+        padding: 3.6px 4px;
+        font-size: 0.84rem;
+        white-space: nowrap;
+    }
+
+    .navbar-brand span {
+        margin-left: 1.2px;
+    }
+}
+
+@media (max-width: 360px) {
+    .navbar-inner {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .navbar-top {
+        gap: 6px;
+    }
+
+    .navbar-balances {
+        gap: 3px;
+    }
+
+    .navbar-top .navbar-balances .navbar-net-balance,
+    .navbar-top .navbar-balances .navbar-payable_balance,
+    .navbar-top .navbar-balances .navbar-receivable_balance {
+        padding: 2px 4px;
+        font-size: 0.64rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .navbar-brand {
+        font-size: 0.86rem;
+    }
+
+    .navbar-brand span {
+        display: none;
+    }
 }

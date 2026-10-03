@@ -1,6 +1,8 @@
 <button
-  id="btn-batch-accept"
-  type="button"
+  id="<%= typeof id !== 'undefined' && id ? id : 'btn-batch-accept' %>"
+  type="<%= typeof type !== 'undefined' && type ? type : 'button' %>"
+  <% if (typeof name !== 'undefined' && name) { %>name="<%= name %>"<% } %>
+  <% if (typeof value !== 'undefined' && value) { %>value="<%= value %>"<% } %>
   class="ui-btn ui-btn-primary"
   title="<%= title || 'Aceptar' %>"
 >

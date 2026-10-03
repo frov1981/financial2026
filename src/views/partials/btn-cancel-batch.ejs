@@ -1,19 +1,36 @@
-<button
-  id="btn-batch-cancel"
-  type="button"
-  class="ui-btn ui-btn-default"
-  title="<%= title || 'Cancelar' %>"
->
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor">
-    <path 
-      stroke-linecap="round" 
-      stroke-linejoin="round" 
-      stroke-width="2" 
-      d="M6 18L18 6M6 6l12 12" />
-  </svg>
-  <span class="ui-btn-text"><%= text || 'Cancelar' %></span>
-</button>
+<% if (typeof href !== 'undefined' && href) { %>
+  <a href="<%= href %>" class="ui-btn ui-btn-default" title="<%= title || 'Cancelar' %>">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M6 18L18 6M6 6l12 12" />
+    </svg>
+    <span class="ui-btn-text"><%= text || 'Cancelar' %></span>
+  </a>
+<% } else { %>
+  <button
+    id="btn-batch-cancel"
+    type="button"
+    class="ui-btn ui-btn-default"
+    title="<%= title || 'Cancelar' %>"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M6 18L18 6M6 6l12 12" />
+    </svg>
+    <span class="ui-btn-text"><%= text || 'Cancelar' %></span>
+  </button>
+<% } %>

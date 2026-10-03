@@ -523,16 +523,29 @@ export class JobQueueService {
     const enqueued_jobs = await this.enqueueDueJobs(now)
     const dispatched = await this.dispatchNextAvailableJob(now)
 
-    this.logger.info('Procesamiento de cola completado', {
+    const processing_context = {
       now: now.toISOString(),
       enqueued_count: enqueued_jobs.length,
       dispatched_id: dispatched?.id ?? null,
-    })
+      job_type: dispatched?.job_type ?? null,
+    }
+
+    if (dispatched) {
+      this.logger.info('Procesamiento de cola completado', processing_context)
+    } else {
+      this.logger.debug('Procesamiento de cola completado', processing_context)
+    }
 
     return { enqueued: enqueued_jobs.length, dispatched }
   }
 
-  static startProcessingLoop(interval_ms = 30_000): NodeJS.Timeout {
+  static startProcessingLoop(
+    interval_ms = Number(process.env.JOB_FREQUENCY_RUN ?? 60) * 1000,
+  ): NodeJS.Timeout {
+    if (!Number.isFinite(interval_ms) || interval_ms <= 0) {
+      throw new Error('JOB_FREQUENCY_RUN debe ser un número de segundos mayor que cero')
+    }
+
     const tick = async () => {
       try {
         await this.processQueue(new Date())

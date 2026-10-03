@@ -56,6 +56,10 @@
     margin-top: 0.5rem;
 }
 
+.notification-form-actions .ui-btn-text {
+    display: inline;
+}
+
 .form-error {
     color: var(--ui-red-700, #b91c1c);
 }
