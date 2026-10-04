@@ -40,6 +40,13 @@
           data_btn: 'categorize'
         }) %>
 
+        <select id="transactions-page-size" class="ui-btn ui-btn-default" aria-label="Registros por página">
+          <option value="10">10 por página</option>
+          <option value="25">25 por página</option>
+          <option value="50">50 por página</option>
+          <option value="100">100 por página</option>
+        </select>
+
         <%- include('../../partials/searchs/search-box', {
           placeholder: 'Buscar transacciones...'
         }) %>

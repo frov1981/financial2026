@@ -24,6 +24,7 @@ import transactionRoutes from './routes/transaction.route'
 import fileReferenceRoutes from './routes/file-reference.route'
 import notificationRoutes from './routes/notification.route'
 import devicePreferencesRoutes from './routes/device-preferences.route'
+import settingsRoutes from './routes/settings.route'
 
 export const app = express()
 const isProd = process.env.NODE_ENV === 'production'
@@ -101,6 +102,7 @@ protectedRouter.use(injectNetBalance)
 protectedRouter.use(apiLimiter)
 protectedRouter.use(csrfProtection) // Aplicar CSRF a rutas protegidas
 protectedRouter.use('/device-preferences', devicePreferencesRoutes)
+protectedRouter.use('/settings', settingsRoutes)
 protectedRouter.use('/accounts', accountRoutes)
 protectedRouter.use('/categories', categoryRoutes)
 protectedRouter.use('/category-groups', categoryGroupRoutes)

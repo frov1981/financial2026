@@ -20,11 +20,12 @@
 1. Constantes globales
 ========================================================= */
 const API_BASE = '/payables/list'
-const FILTER_KEY = `payables.filters.${window.USER_ID}`
-const SELECTED_KEY = `payables.selected.${window.USER_ID}`
-const SCROLL_KEY = `payables.scroll.${window.USER_ID}`
-const STATUS_FILTER_KEY = `payables.statusFilter.${window.USER_ID}`
-const COLLAPSE_KEY = `payables.collapse.${window.USER_ID}`
+
+const PAYABLE_FILTERS_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:payables:filters`
+const PAYABLE_SELECTED_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:payables:selected-row`
+const PAYABLE_SCROLL_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:payables:scroll-position`
+const PAYABLE_STATUS_FILTER_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:payables:status-filter`
+const PAYABLE_COLLAPSE_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:payables:collapsed-groups`
 
 /* =========================================================
 2. Variables de estado
@@ -74,14 +75,14 @@ function debounce(fn, delay) {
 }
 
 function isPayableGroupCollapsed(groupId) {
-  const state = loadFilters(COLLAPSE_KEY) || {}
+  const state = loadFilters(PAYABLE_COLLAPSE_STORAGE_KEY) || {}
   return !!state[groupId]
 }
 
 function togglePayableGroupCollapse(groupId) {
-  const state = loadFilters(COLLAPSE_KEY) || {}
+  const state = loadFilters(PAYABLE_COLLAPSE_STORAGE_KEY) || {}
   state[groupId] = !state[groupId]
-  saveFilters(COLLAPSE_KEY, state)
+  saveFilters(PAYABLE_COLLAPSE_STORAGE_KEY, state)
   applyAllFilters()
 }
 
@@ -327,7 +328,7 @@ function renderTable(data) {
 
   tableBody.innerHTML = html
 
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(PAYABLE_SELECTED_STORAGE_KEY)
   if (selected?.id) {
     const row = document.getElementById(`payable-${selected.id}`)
     if (row) row.classList.add('tr-selected')
@@ -405,7 +406,7 @@ function renderCards(data) {
 
   container.innerHTML = html
 
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(PAYABLE_SELECTED_STORAGE_KEY)
   if (selected?.id) {
     const card = container.querySelector(`[data-id="${selected.id}"]`)
     if (card) card.classList.add('card-selected')
@@ -427,8 +428,8 @@ async function loadPayables() {
   allPayables = data.payables || []
   groupTotals = data.group_totals || []
 
-  const cachedText = loadFilters(FILTER_KEY)
-  const cachedStatus = loadFilters(STATUS_FILTER_KEY)
+  const cachedText = loadFilters(PAYABLE_FILTERS_STORAGE_KEY)
+  const cachedStatus = loadFilters(PAYABLE_STATUS_FILTER_STORAGE_KEY)
 
   if (cachedText?.term) {
     searchInput.value = cachedText.term
@@ -443,8 +444,8 @@ async function loadPayables() {
 9. Filtros (texto + estado)
 ========================================================= */
 function getFilteredPayables() {
-  const cached = loadFilters(FILTER_KEY)
-  const statusCached = loadFilters(STATUS_FILTER_KEY)
+  const cached = loadFilters(PAYABLE_FILTERS_STORAGE_KEY)
+  const statusCached = loadFilters(PAYABLE_STATUS_FILTER_STORAGE_KEY)
 
   const term = cached?.term?.toLowerCase() || ''
   const status = statusCached?.status || 'all'
@@ -469,8 +470,8 @@ function applyAllFilters() {
 
 function filterPayables() {
   const term = searchInput.value.trim().toLowerCase()
-  saveFilters(FILTER_KEY, { term })
-  saveFilters(SCROLL_KEY, { y: 0 })
+  saveFilters(PAYABLE_FILTERS_STORAGE_KEY, { term })
+  saveFilters(PAYABLE_SCROLL_STORAGE_KEY, { y: 0 })
   applyAllFilters()
 }
 
@@ -498,7 +499,7 @@ function syncStatusFilterButton(status) {
 }
 
 function applyStatusFilter(status) {
-  saveFilters(STATUS_FILTER_KEY, { status })
+  saveFilters(PAYABLE_STATUS_FILTER_STORAGE_KEY, { status })
   syncStatusFilterButton(status)
   applyAllFilters()
 }
@@ -525,7 +526,7 @@ function selectPayableCard(event, id) {
     .forEach(card => card.classList.remove('card-selected'))
 
   event.currentTarget.classList.add('card-selected')
-  saveFilters(SELECTED_KEY, { id })
+  saveFilters(PAYABLE_SELECTED_STORAGE_KEY, { id })
 }
 
 function goToPayableGroupInsert() {
@@ -556,8 +557,8 @@ searchInput?.addEventListener('input', () => {
 clearBtn?.addEventListener('click', () => {
   searchInput.value = ''
   clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
+  clearFilters(PAYABLE_FILTERS_STORAGE_KEY)
+  clearFilters(PAYABLE_SELECTED_STORAGE_KEY)
   applyAllFilters()
 })
 
@@ -570,6 +571,22 @@ statusToggleBtn?.addEventListener('click', () => {
 
   applyStatusFilter(next)
 })
+
+document
+  .querySelector('.ui-table')
+  ?.addEventListener('click', event => {
+    if (event.target.closest('button') || event.target.closest('a')) return
+
+    const row = event.target.closest('tr[id^="payable-"]')
+    if (!row) return
+
+    document
+      .querySelectorAll('#payables-table tr')
+      .forEach(tr => tr.classList.remove('tr-selected'))
+
+    row.classList.add('tr-selected')
+    saveFilters(PAYABLE_SELECTED_STORAGE_KEY, { id: row.id.replace('payable-', '') })
+  })
 
 /* ============================
    Modal Nuevo (Grupo o Hija)
@@ -615,7 +632,7 @@ document.addEventListener('keydown', (e) => {
 ========================================================= */
 function restoreScroll() {
   if (!scrollContainer) return
-  const saved = loadFilters(SCROLL_KEY)
+  const saved = loadFilters(PAYABLE_SCROLL_STORAGE_KEY)
   if (!saved?.y) return
 
   requestAnimationFrame(() => {
@@ -624,7 +641,7 @@ function restoreScroll() {
 }
 
 scrollContainer?.addEventListener('scroll', () => {
-  saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+  saveFilters(PAYABLE_SCROLL_STORAGE_KEY, { y: scrollContainer.scrollTop })
 })
 
 /* =========================================================

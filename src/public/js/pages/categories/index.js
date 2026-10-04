@@ -20,11 +20,12 @@
    1. Constantes globales
 ============================ */
 const API_BASE = '/categories/list'
-const FILTER_KEY = `categories.filters.${window.USER_ID}`
-const SELECTED_KEY = `categories.selected.${window.USER_ID}`
-const SCROLL_KEY = `categories.scroll.${window.USER_ID}`
-const STATUS_FILTER_KEY = `categories.statusFilter.${window.USER_ID}`
-const COLLAPSE_KEY = `categories.collapse.${window.USER_ID}`
+
+const CATEGORY_FILTERS_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:categories:filters`
+const CATEGORY_SELECTED_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:categories:selected-row`
+const CATEGORY_SCROLL_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:categories:scroll-position`
+const CATEGORY_STATUS_FILTER_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:categories:status-filter`
+const CATEGORY_COLLAPSE_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:categories:collapsed-groups`
 
 /* ============================
    2. Variables de estado
@@ -73,14 +74,14 @@ function debounce(fn, delay) {
 }
 
 function isCategoryGroupCollapsed(parentId) {
-  const state = loadFilters(COLLAPSE_KEY) || {}
+  const state = loadFilters(CATEGORY_COLLAPSE_STORAGE_KEY) || {}
   return !!state[parentId]
 }
 
 function toggleCategoryGroupCollapse(parentId) {
-  const state = loadFilters(COLLAPSE_KEY) || {}
+  const state = loadFilters(CATEGORY_COLLAPSE_STORAGE_KEY) || {}
   state[parentId] = !state[parentId]
-  saveFilters(COLLAPSE_KEY, state)
+  saveFilters(CATEGORY_COLLAPSE_STORAGE_KEY, state)
   applyAllFilters()
 }
 
@@ -211,7 +212,7 @@ function renderCard(category) {
    7. Render principal
 ============================ */
 function renderTable(data) {
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(CATEGORY_SELECTED_STORAGE_KEY)
 
   if (!data.length) {
     tableBody.innerHTML = `
@@ -354,8 +355,8 @@ async function loadCategories() {
   const res = await fetch(API_BASE)
   allCategories = await res.json()
 
-  const cached = loadFilters(FILTER_KEY)
-  const statusCached = loadFilters(STATUS_FILTER_KEY)
+  const cached = loadFilters(CATEGORY_FILTERS_STORAGE_KEY)
+  const statusCached = loadFilters(CATEGORY_STATUS_FILTER_STORAGE_KEY)
   const status = statusCached?.status || 'all'
 
   if (cached?.term) {
@@ -371,8 +372,8 @@ async function loadCategories() {
    9. Filtros (texto + estado)
 ============================ */
 function getFilteredCategories() {
-  const cached = loadFilters(FILTER_KEY)
-  const statusCached = loadFilters(STATUS_FILTER_KEY)
+  const cached = loadFilters(CATEGORY_FILTERS_STORAGE_KEY)
+  const statusCached = loadFilters(CATEGORY_STATUS_FILTER_STORAGE_KEY)
 
   const term = cached?.term?.toLowerCase() || ''
   const status = statusCached?.status || 'all'
@@ -399,8 +400,8 @@ function applyAllFilters() {
 
 function filterCategories() {
   const term = searchInput.value.trim().toLowerCase()
-  saveFilters(FILTER_KEY, { term })
-  saveFilters(SCROLL_KEY, { y: 0 })
+  saveFilters(CATEGORY_FILTERS_STORAGE_KEY, { term })
+  saveFilters(CATEGORY_SCROLL_STORAGE_KEY, { y: 0 })
   applyAllFilters()
 }
 
@@ -428,7 +429,7 @@ function syncStatusFilterButton(status) {
 }
 
 function applyStatusFilter(status) {
-  saveFilters(STATUS_FILTER_KEY, { status })
+  saveFilters(CATEGORY_STATUS_FILTER_STORAGE_KEY, { status })
   syncStatusFilterButton(status)
   applyAllFilters()
 }
@@ -460,7 +461,7 @@ function selectCategoryCard(event, id) {
     .forEach(c => c.classList.remove('card-selected'))
 
   event.currentTarget.classList.add('card-selected')
-  saveFilters(SELECTED_KEY, { id })
+  saveFilters(CATEGORY_SELECTED_STORAGE_KEY, { id })
 }
 
 function goToCategoryGroupInsert() {
@@ -490,8 +491,8 @@ searchInput?.addEventListener('input', () => {
 clearBtn?.addEventListener('click', () => {
   searchInput.value = ''
   clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
+  clearFilters(CATEGORY_FILTERS_STORAGE_KEY)
+  clearFilters(CATEGORY_SELECTED_STORAGE_KEY)
   applyAllFilters()
 })
 
@@ -547,7 +548,7 @@ document.addEventListener('keydown', (e) => {
    13. Scroll
 ============================ */
 function restoreScroll() {
-  const saved = loadFilters(SCROLL_KEY)
+  const saved = loadFilters(CATEGORY_SCROLL_STORAGE_KEY)
   if (!saved?.y || !scrollContainer) return
 
   requestAnimationFrame(() => {
@@ -556,7 +557,7 @@ function restoreScroll() {
 }
 
 scrollContainer?.addEventListener('scroll', () => {
-  saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+  saveFilters(CATEGORY_SCROLL_STORAGE_KEY, { y: scrollContainer.scrollTop })
 })
 
 /* ============================

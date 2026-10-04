@@ -20,10 +20,11 @@
    1. Constantes globales
 ============================ */
 const API_BASE = '/accounts/list'
-const FILTER_KEY = `accounts.filters.${window.USER_ID}`
-const SELECTED_KEY = `accounts.selected.${window.USER_ID}`
-const SCROLL_KEY = `accounts.scroll.${window.USER_ID}`
-const STATUS_FILTER_KEY = `accounts.statusFilter.${window.USER_ID}`
+
+const ACCOUNT_FILTERS_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:accounts:filters`
+const ACCOUNT_SELECTED_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:accounts:selected-row`
+const ACCOUNT_SCROLL_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:accounts:scroll-position`
+const ACCOUNT_STATUS_FILTER_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:accounts:status-filter`
 
 /* ============================
    2. Variables de estado
@@ -203,7 +204,7 @@ function renderTable(data) {
 
   tableBody.innerHTML = data.map(renderRow).join('')
 
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(ACCOUNT_SELECTED_STORAGE_KEY)
   if (selected?.id) {
     const row = document.getElementById(`account-${selected.id}`)
     row?.classList.add('tr-selected')
@@ -220,7 +221,7 @@ function renderCards(data) {
     ? data.map(renderCard).join('')
     : `<div class="ui-empty">No se encontraron cuentas</div>`
 
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(ACCOUNT_SELECTED_STORAGE_KEY)
   if (selected?.id) {
     container
       .querySelector(`[data-id="${selected.id}"]`)
@@ -243,8 +244,8 @@ async function loadAccounts() {
   const res = await fetch(API_BASE)
   allAccounts = await res.json()
 
-  const cached = loadFilters(FILTER_KEY)
-  const statusCached = loadFilters(STATUS_FILTER_KEY)
+  const cached = loadFilters(ACCOUNT_FILTERS_STORAGE_KEY)
+  const statusCached = loadFilters(ACCOUNT_STATUS_FILTER_STORAGE_KEY)
   const status = statusCached?.status || 'all'
 
   if (cached?.term) {
@@ -260,8 +261,8 @@ async function loadAccounts() {
    9. Filtros (texto + estado)
 ============================ */
 function getFilteredAccounts() {
-  const cached = loadFilters(FILTER_KEY)
-  const statusCached = loadFilters(STATUS_FILTER_KEY)
+  const cached = loadFilters(ACCOUNT_FILTERS_STORAGE_KEY)
+  const statusCached = loadFilters(ACCOUNT_STATUS_FILTER_STORAGE_KEY)
 
   const term = cached?.term?.toLowerCase() || ''
   const status = statusCached?.status || 'all'
@@ -287,8 +288,8 @@ function applyAllFilters() {
 
 function filterAccounts() {
   const term = searchInput.value.trim().toLowerCase()
-  saveFilters(FILTER_KEY, { term })
-  saveFilters(SCROLL_KEY, { y: 0 })
+  saveFilters(ACCOUNT_FILTERS_STORAGE_KEY, { term })
+  saveFilters(ACCOUNT_SCROLL_STORAGE_KEY, { y: 0 })
   applyAllFilters()
 }						   
 													 
@@ -316,7 +317,7 @@ function syncStatusFilterButton(status) {
 }
 
 function applyStatusFilter(status) {
-  saveFilters(STATUS_FILTER_KEY, { status })
+  saveFilters(ACCOUNT_STATUS_FILTER_STORAGE_KEY, { status })
   syncStatusFilterButton(status)
   applyAllFilters()
 }
@@ -344,7 +345,7 @@ function selectAccountCard(event, id) {
     .forEach(c => c.classList.remove('card-selected'))
 
   event.currentTarget.classList.add('card-selected')
-  saveFilters(SELECTED_KEY, { id })
+  saveFilters(ACCOUNT_SELECTED_STORAGE_KEY, { id })
 }
 
 /* ============================
@@ -362,8 +363,8 @@ searchInput?.addEventListener('input', () => {
 clearBtn?.addEventListener('click', () => {
   searchInput.value = ''
   clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
+  clearFilters(ACCOUNT_FILTERS_STORAGE_KEY)
+  clearFilters(ACCOUNT_SELECTED_STORAGE_KEY)
   applyAllFilters()
 })
 
@@ -389,14 +390,14 @@ document
       .forEach(tr => tr.classList.remove('tr-selected'))
 
     row.classList.add('tr-selected')
-    saveFilters(SELECTED_KEY, { id: row.id.replace('account-', '') })
+    saveFilters(ACCOUNT_SELECTED_STORAGE_KEY, { id: row.id.replace('account-', '') })
   })
 
 /* ============================
    13. Scroll
 ============================ */
 function restoreScroll() {
-  const saved = loadFilters(SCROLL_KEY)
+  const saved = loadFilters(ACCOUNT_SCROLL_STORAGE_KEY)
   if (!saved?.y || !scrollContainer) return
 
   requestAnimationFrame(() => {
@@ -405,7 +406,7 @@ function restoreScroll() {
 }
 
 scrollContainer?.addEventListener('scroll', () => {
-  saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+  saveFilters(ACCOUNT_SCROLL_STORAGE_KEY, { y: scrollContainer.scrollTop })
 })
 
 /* ============================

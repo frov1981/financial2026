@@ -1,0 +1,21 @@
+.settings-card {
+    max-width: 36rem;
+    margin: 0 auto;
+}
+
+.settings-card-title {
+    margin: 0 0 1rem;
+    color: var(--ui-gray-900);
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.settings-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.settings-actions .ui-btn {
+    min-height: 2.75rem;
+}

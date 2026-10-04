@@ -20,9 +20,10 @@
    1. Constantes globales
 ============================ */
 const API_BASE = `/payments/list/${window.PAYABLE_ID}/payable`
-const FILTER_KEY = `payments.filters.${window.USER_ID}.${window.PAYABLE_ID}`
-const SELECTED_KEY = `payments.selected.${window.USER_ID}.${window.PAYABLE_ID}`
-const SCROLL_KEY = `payments.scroll.${window.USER_ID}.${window.PAYABLE_ID}`
+
+const PAYABLE_PAYMENT_FILTERS_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:payable-payments:filters:${window.PAYABLE_ID}`
+const PAYABLE_PAYMENT_SELECTED_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:payable-payments:selected-row:${window.PAYABLE_ID}`
+const PAYABLE_PAYMENT_SCROLL_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:payable-payments:scroll-position:${window.PAYABLE_ID}`
 
 /* ============================
    2. Variables de estado
@@ -206,7 +207,7 @@ function renderTable(data) {
 
   tableBody.innerHTML = data.map(renderRow).join('')
 
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(PAYABLE_PAYMENT_SELECTED_STORAGE_KEY)
   if (selected?.id) {
     const row = document.getElementById(`payment-${selected.id}`)
     if (row) row.classList.add('tr-selected')
@@ -223,7 +224,7 @@ function renderCards(data) {
     ? data.map(renderCard).join('')
     : `<div class="ui-empty">No se encontraron pagos</div>`
 
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(PAYABLE_PAYMENT_SELECTED_STORAGE_KEY)
   if (selected?.id) {
     const card = container.querySelector(`[data-id="${selected.id}"]`)
     if (card) card.classList.add('card-selected')
@@ -250,7 +251,7 @@ async function loadPayments() {
   const res = await fetch(API_BASE)
   allPayments = await res.json()
 
-  const cached = loadFilters(FILTER_KEY)
+  const cached = loadFilters(PAYABLE_PAYMENT_FILTERS_STORAGE_KEY)
   if (cached?.term) {
     searchInput.value = cached.term
     clearBtn.classList.remove('hidden')
@@ -265,8 +266,8 @@ async function loadPayments() {
 ============================ */
 function filterPayments() {
   const term = searchInput.value.trim().toLowerCase()
-  saveFilters(FILTER_KEY, { term })
-  saveFilters(SCROLL_KEY, { y: 0 })
+  saveFilters(PAYABLE_PAYMENT_FILTERS_STORAGE_KEY, { term })
+  saveFilters(PAYABLE_PAYMENT_SCROLL_STORAGE_KEY, { y: 0 })
 
   render(
     !term
@@ -307,7 +308,7 @@ function selectPaymentCard(event, id) {
     .forEach(card => card.classList.remove('card-selected'))
 
   event.currentTarget.classList.add('card-selected')
-  saveFilters(SELECTED_KEY, { id })
+  saveFilters(PAYABLE_PAYMENT_SELECTED_STORAGE_KEY, { id })
 }
 
 /* ============================
@@ -323,8 +324,8 @@ searchInput.addEventListener('input', () => {
 clearBtn.addEventListener('click', () => {
   searchInput.value = ''
   clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
+  clearFilters(PAYABLE_PAYMENT_FILTERS_STORAGE_KEY)
+  clearFilters(PAYABLE_PAYMENT_SELECTED_STORAGE_KEY)
   render(allPayments)
 })
 
@@ -344,7 +345,7 @@ document
     row.classList.add('tr-selected')
 
     const id = row.id.replace('payment-', '')
-    saveFilters(SELECTED_KEY, { id })
+    saveFilters(PAYABLE_PAYMENT_SELECTED_STORAGE_KEY, { id })
   })
 
 /* ============================
@@ -353,7 +354,7 @@ document
 function restoreScroll() {
   if (!scrollContainer) return
 
-  const saved = loadFilters(SCROLL_KEY)
+  const saved = loadFilters(PAYABLE_PAYMENT_SCROLL_STORAGE_KEY)
   if (!saved?.y) return
 
   requestAnimationFrame(() => {
@@ -362,7 +363,7 @@ function restoreScroll() {
 }
 
 scrollContainer?.addEventListener('scroll', () => {
-  saveFilters(SCROLL_KEY, { y: scrollContainer.scrollTop })
+  saveFilters(PAYABLE_PAYMENT_SCROLL_STORAGE_KEY, { y: scrollContainer.scrollTop })
 })
 
 /* ============================

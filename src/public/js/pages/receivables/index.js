@@ -1,9 +1,10 @@
 (() => {
 const API_BASE = '/receivables/list'
-const FILTER_KEY = `receivables.filters.${window.USER_ID}`
-const SELECTED_KEY = `receivables.selected.${window.USER_ID}`
-const SCROLL_KEY = `receivables.scroll.${window.USER_ID}`
-const COLLAPSE_KEY = `receivables.collapse.${window.USER_ID}`
+
+const RECEIVABLE_FILTERS_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:filters`
+const RECEIVABLE_SELECTED_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:selected-row`
+const RECEIVABLE_SCROLL_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:scroll-position`
+const RECEIVABLE_COLLAPSE_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:collapsed-groups`
 
 let allReceivables = []
 let groupTotals = []
@@ -39,27 +40,15 @@ function debounce(fn, delay) {
   }
 }
 
-function loadFilters() {
-  try {
-    return JSON.parse(localStorage.getItem(FILTER_KEY) || '{}')
-  } catch {
-    return {}
-  }
-}
-
-function saveFilters(value) {
-  localStorage.setItem(FILTER_KEY, JSON.stringify(value))
-}
-
 function isReceivableGroupCollapsed(groupId) {
-  const state = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '{}') || {}
+  const state = window.loadFilters(RECEIVABLE_COLLAPSE_STORAGE_KEY) || {}
   return !!state[groupId]
 }
 
 function toggleReceivableGroupCollapse(groupId) {
-  const state = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '{}') || {}
+  const state = window.loadFilters(RECEIVABLE_COLLAPSE_STORAGE_KEY) || {}
   state[groupId] = !state[groupId]
-  localStorage.setItem(COLLAPSE_KEY, JSON.stringify(state))
+  window.saveFilters(RECEIVABLE_COLLAPSE_STORAGE_KEY, state)
   applyAllFilters()
 }
 
@@ -82,8 +71,8 @@ function getParentBackgroundColor(index, total) {
 }
 
 function getSearchText() {
-  const filters = loadFilters()
-  return (filters.search || '').toLowerCase()
+  const filters = window.loadFilters(RECEIVABLE_FILTERS_STORAGE_KEY) || {}
+  return (typeof filters.term === 'string' ? filters.term : '').toLowerCase()
 }
 
 function renderRow(receivable) {
@@ -126,7 +115,7 @@ function renderCard(receivable) {
   if (group_id && isReceivableGroupCollapsed(group_id)) return ''
 
   return `
-    <div class="payable-card ${receivable.is_active ? '' : 'inactive'}" data-id="${receivable.id}">
+    <div class="payable-card ${receivable.is_active ? '' : 'inactive'}" data-id="${receivable.id}" onclick="selectReceivableCard(event, ${receivable.id})">
       <div class="card-header">
         <div class="card-title">${receivable.name}</div>
         <div class="card-actions">
@@ -174,25 +163,21 @@ function loadReceivables() {
 }
 
 function updateSearchValue() {
-  const filters = loadFilters()
-  if (searchInput) searchInput.value = filters.search || ''
+  const filters = window.loadFilters(RECEIVABLE_FILTERS_STORAGE_KEY) || {}
+  if (searchInput) searchInput.value = typeof filters.term === 'string' ? filters.term : ''
 }
 
 function bindEvents() {
   if (searchInput) {
     searchInput.addEventListener('input', debounce(event => {
-      const filters = loadFilters()
-      filters.search = event.target.value
-      saveFilters(filters)
+      window.saveFilters(RECEIVABLE_FILTERS_STORAGE_KEY, { term: event.target.value })
       applyAllFilters()
     }, 200))
   }
 
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
-      const filters = loadFilters()
-      filters.search = ''
-      saveFilters(filters)
+      window.clearFilters(RECEIVABLE_FILTERS_STORAGE_KEY)
       updateSearchValue()
       applyAllFilters()
     })
@@ -218,15 +203,13 @@ if (insertChildBtn) insertChildBtn.addEventListener('click', () => { location.hr
 if (insertModal) insertModal.addEventListener('click', (e) => { if (!insertModalContent?.contains(e.target)) insertModal.classList.add('hidden') })
 
 function restoreScroll() {
-  const saved = JSON.parse(localStorage.getItem(SCROLL_KEY) || '{}')
+  const saved = window.loadFilters(RECEIVABLE_SCROLL_STORAGE_KEY)
   if (!saved?.y || !scrollContainer) return
   requestAnimationFrame(() => { scrollContainer.scrollTop = saved.y })
 }
 
 scrollContainer?.addEventListener('scroll', () => {
-  const state = JSON.parse(localStorage.getItem(SCROLL_KEY) || '{}') || {}
-  state.y = scrollContainer.scrollTop
-  localStorage.setItem(SCROLL_KEY, JSON.stringify(state))
+  window.saveFilters(RECEIVABLE_SCROLL_STORAGE_KEY, { y: scrollContainer.scrollTop })
 })
 
 function renderTable(data) {
@@ -285,6 +268,13 @@ function renderTable(data) {
   }).join('')
 
   tableBody.innerHTML = html
+
+  const selected = window.loadFilters(RECEIVABLE_SELECTED_STORAGE_KEY)
+  if (selected?.id) {
+    const row = document.getElementById(`receivable-${selected.id}`)
+    if (row) row.classList.add('tr-selected')
+  }
+
   restoreScroll()
 }
 
@@ -336,11 +326,40 @@ function renderCards(data) {
   }).join('')
 
   container.innerHTML = html
+
+  const selected = window.loadFilters(RECEIVABLE_SELECTED_STORAGE_KEY)
+  if (selected?.id) {
+    const card = container.querySelector(`[data-id="${selected.id}"]`)
+    if (card) card.classList.add('card-selected')
+  }
+}
+
+function selectReceivableCard(event, id) {
+  if (event.target.closest('button')) return
+
+  mobileContainer?.querySelectorAll('.payable-card')
+    .forEach(card => card.classList.remove('card-selected'))
+
+  event.currentTarget.classList.add('card-selected')
+  window.saveFilters(RECEIVABLE_SELECTED_STORAGE_KEY, { id })
 }
 
 function render(data) {
   window.innerWidth <= 768 ? renderCards(data) : renderTable(data)
 }
+
+tableBody?.addEventListener('click', event => {
+  if (event.target.closest('button') || event.target.closest('a')) return
+
+  const row = event.target.closest('tr[id^="receivable-"]')
+  if (!row) return
+
+  tableBody.querySelectorAll('tr').forEach(tr => tr.classList.remove('tr-selected'))
+  row.classList.add('tr-selected')
+  window.saveFilters(RECEIVABLE_SELECTED_STORAGE_KEY, {
+    id: row.id.replace('receivable-', ''),
+  })
+})
 
 window.goToReceivableUpdate = function (id) { window.location.href = `/receivables/update/${id}` }
 window.goToReceivableDelete = function (id) { window.location.href = `/receivables/delete/${id}` }
@@ -348,6 +367,7 @@ window.goToReceivableView = function (id) { window.location.href = `/receivables
 window.goToReceivableGroupUpdate = function (id) { window.location.href = `/receivables-groups/update/${id}` }
 window.goToReceivableGroupDelete = function (id) { window.location.href = `/receivables-groups/delete/${id}` }
 window.toggleReceivableGroupCollapse = toggleReceivableGroupCollapse
+window.selectReceivableCard = selectReceivableCard
 
 bindEvents()
 updateSearchValue()

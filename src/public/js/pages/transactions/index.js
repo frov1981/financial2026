@@ -3,18 +3,22 @@
 1. Constantes globales
 ============================================================================ */
 const API_BASE = '/transactions/list'
-const FILTER_KEY = `transactions.filters.${window.USER_ID}`
-const SELECTED_KEY = `transactions.selected.${window.USER_ID}`
-const PAGE_SIZE = 10
 
 const context = window.TRANSACTIONS_CONTEXT || {}
 const CATEGORY_ID = context.category_id || null
 const SAVED_BATCH = context.saved_batch || false
 
+const TRANSACTION_FILTERS_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:transactions:filters`
+const TRANSACTION_SELECTED_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:transactions:selected-row`
+const TRANSACTION_PAGE_SIZE_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:transactions:page-size:${CATEGORY_ID || 'all'}`
+const DEFAULT_PAGE_SIZE = 10
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
+
 /* ============================================================================
 2. Variables de estado
 ============================================================================ */
 let currentPage = 1
+let pageSize = DEFAULT_PAGE_SIZE
 let currentSearch = ''
 let totalPages = 1
 let allItems = []
@@ -36,6 +40,15 @@ function getLayoutMode() {
   return 'mobile'
 }
 
+function updatePageSizeOptionLabels() {
+  if (!pageSizeSelect) return
+
+  const isMobile = window.innerWidth <= 768
+  Array.from(pageSizeSelect.options).forEach(option => {
+    option.textContent = isMobile ? option.value : `${option.value} por página`
+  })
+}
+
 let currentLayout = getLayoutMode()
 
 /* ============================================================================
@@ -44,8 +57,10 @@ let currentLayout = getLayoutMode()
 const searchInput = document.getElementById('search-input')
 const clearBtn = document.getElementById('clear-search-btn')
 const searchBtn = document.getElementById('search-btn')
+const pageSizeSelect = document.getElementById('transactions-page-size')
 const tableBody = document.getElementById('transactions-table')
 const table = document.querySelector('.ui-table')
+const scrollContainer = document.querySelector('.ui-scroll-area')
 const transactionImagesModal = document.getElementById('transaction-images-modal')
 const transactionImagesViewer = document.getElementById('transaction-images-viewer')
 const transactionImagesEmpty = document.getElementById('transaction-images-empty')
@@ -164,12 +179,13 @@ function renderTable(data) {
         </td>
       </tr>
     `
+    restoreScroll()
     return
   }
 
   tableBody.innerHTML = data.map(renderRow).join('')
 
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(TRANSACTION_SELECTED_STORAGE_KEY)
   if (selected?.id) {
     const row = document.getElementById(`transaction-${selected.id}`)
     if (row) {
@@ -177,6 +193,7 @@ function renderTable(data) {
       showTransactionDetail(selected.id)
     }
   }
+  restoreScroll()
 }
 
 function renderCards(data) {
@@ -187,7 +204,7 @@ function renderCards(data) {
     ? data.map(renderCard).join('')
     : `<div class="ui-empty">No se encontraron transacciones</div>`
 
-  const selected = loadFilters(SELECTED_KEY)
+  const selected = loadFilters(TRANSACTION_SELECTED_STORAGE_KEY)
   if (selected?.id) {
     const card = container.querySelector(`[data-id="${selected.id}"]`)
     if (card) {
@@ -195,6 +212,7 @@ function renderCards(data) {
       showTransactionCardDetail(selected.id)
     }
   }
+  restoreScroll()
 }
 
 function updateTransactionImageCount(transactionId, count) {
@@ -636,9 +654,17 @@ function updatePaginationInfo() {
     `Página ${currentPage} de ${totalPages}`
 }
 
+function getPaginationStorageKey() {
+  return `ssrfinan:v1:user:${window.USER_ID}:transactions:page:${CATEGORY_ID || 'all'}:${pageSize}`
+}
+
+function getScrollStorageKey() {
+  return `ssrfinan:v1:user:${window.USER_ID}:transactions:scroll-position:${CATEGORY_ID || 'all'}:${pageSize}`
+}
+
 async function loadTransactions(page = 1) {
   try {
-    const params = new URLSearchParams({ page, limit: PAGE_SIZE })
+    const params = new URLSearchParams({ page, limit: pageSize })
     if (currentSearch) params.append('search', currentSearch)
     if (CATEGORY_ID) params.append('category_id', CATEGORY_ID)
 
@@ -658,12 +684,16 @@ async function loadTransactions(page = 1) {
 
     const data = await res.json()
 
+    totalPages = Math.max(1, Math.ceil(data.total / pageSize))
+    if (page > totalPages) {
+      return loadTransactions(totalPages)
+    }
+
     allItems = data.items
-    totalPages = Math.ceil(data.total / PAGE_SIZE)
     currentPage = page
 
-    // 🔹 Guardar filtros incluyendo página
-    saveFilters(FILTER_KEY, { term: currentSearch, page: currentPage })
+    saveFilters(TRANSACTION_FILTERS_STORAGE_KEY, { term: currentSearch })
+    saveFilters(getPaginationStorageKey(), currentPage)
 
     render(allItems)
     updatePaginationInfo()
@@ -686,10 +716,10 @@ function applySearch() {
   currentSearch = searchInput.value.trim()
   currentPage = 1   // 🔹 Siempre volver a página 1 en nueva búsqueda
 
-  saveFilters(FILTER_KEY, {
+  saveFilters(TRANSACTION_FILTERS_STORAGE_KEY, {
     term: currentSearch,
-    page: currentPage
   })
+  saveFilters(getPaginationStorageKey(), currentPage)
 
   clearBtn.classList.toggle('hidden', !currentSearch)
   loadTransactions(currentPage)
@@ -764,7 +794,7 @@ function selectTransactionCard(event, id) {
   if (is_open) {
     card.classList.remove('card-selected')
     detail.classList.add('hidden')
-    clearFilters(SELECTED_KEY)
+    clearFilters(TRANSACTION_SELECTED_STORAGE_KEY)
     return
   }
 
@@ -777,7 +807,7 @@ function selectTransactionCard(event, id) {
   card.classList.add('card-selected')
   detail?.classList.remove('hidden')
 
-  saveFilters(SELECTED_KEY, { id })
+  saveFilters(TRANSACTION_SELECTED_STORAGE_KEY, { id })
 }
 
 /* ============================================================================
@@ -785,12 +815,24 @@ function selectTransactionCard(event, id) {
 ============================================================================ */
 searchInput.addEventListener('input', debounce(applySearch, 300))
 
+pageSizeSelect?.addEventListener('change', () => {
+  const nextPageSize = Number(pageSizeSelect.value)
+  if (!PAGE_SIZE_OPTIONS.includes(nextPageSize) || nextPageSize === pageSize) return
+
+  pageSize = nextPageSize
+  saveFilters(TRANSACTION_PAGE_SIZE_STORAGE_KEY, pageSize)
+  currentPage = 1
+  saveFilters(getPaginationStorageKey(), currentPage)
+  saveFilters(getScrollStorageKey(), { y: 0 })
+  loadTransactions(currentPage)
+})
+
 clearBtn.addEventListener('click', () => {
   searchInput.value = ''
   currentSearch = ''
   clearBtn.classList.add('hidden')
-  clearFilters(FILTER_KEY)
-  clearFilters(SELECTED_KEY)
+  clearFilters(TRANSACTION_FILTERS_STORAGE_KEY)
+  clearFilters(TRANSACTION_SELECTED_STORAGE_KEY)
   loadTransactions(1)
 })
 
@@ -817,7 +859,7 @@ if (table) {
     if (is_open) {
       row.classList.remove('tr-selected')
       detail_row.classList.add('hidden')
-      clearFilters(SELECTED_KEY)
+      clearFilters(TRANSACTION_SELECTED_STORAGE_KEY)
       return
     }
 
@@ -830,19 +872,30 @@ if (table) {
     row.classList.add('tr-selected')
     detail_row?.classList.remove('hidden')
 
-    saveFilters(SELECTED_KEY, { id })
+    saveFilters(TRANSACTION_SELECTED_STORAGE_KEY, { id })
   })
 }
 
 /* ============================================================================
 13. Scroll
 ============================================================================ */
-/* (no implementado todavía) */
+function restoreScroll() {
+  const saved = loadFilters(getScrollStorageKey())
+  if (typeof saved?.y !== 'number' || !scrollContainer) return
+
+  requestAnimationFrame(() => {
+    scrollContainer.scrollTop = saved.y
+  })
+}
+
+scrollContainer?.addEventListener('scroll', () => {
+  saveFilters(getScrollStorageKey(), { y: scrollContainer.scrollTop })
+})
 
 /* ============================================================================
 14. Init
 ============================================================================ */
-const savedFilters = loadFilters(FILTER_KEY)
+const savedFilters = loadFilters(TRANSACTION_FILTERS_STORAGE_KEY)
 if (savedFilters?.term) {
   currentSearch = savedFilters.term
   searchInput.value = savedFilters.term
@@ -850,7 +903,11 @@ if (savedFilters?.term) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const savedFilters = loadFilters(FILTER_KEY)
+  const savedFilters = loadFilters(TRANSACTION_FILTERS_STORAGE_KEY)
+  const savedPageSize = Number(loadFilters(TRANSACTION_PAGE_SIZE_STORAGE_KEY))
+  pageSize = PAGE_SIZE_OPTIONS.includes(savedPageSize) ? savedPageSize : DEFAULT_PAGE_SIZE
+  if (pageSizeSelect) pageSizeSelect.value = String(pageSize)
+  updatePageSizeOptionLabels()
 
   if (savedFilters?.term) {
     currentSearch = savedFilters.term
@@ -858,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearBtn.classList.remove('hidden')
   }
 
-  const savedPage = savedFilters?.page || 1
+  const savedPage = Number(loadFilters(getPaginationStorageKey())) || 1
   currentPage = savedPage
 
   loadTransactions(currentPage)
@@ -876,6 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.addEventListener('resize', () => {
+    updatePageSizeOptionLabels()
     const nextLayout = getLayoutMode()
 
     if (nextLayout !== currentLayout) {

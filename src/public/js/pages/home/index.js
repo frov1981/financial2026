@@ -35,18 +35,18 @@ const KPI_GROUPS = [
     { label: 'Ahorros', keys: ['savings', 'withdrawals', 'net_savings'] },
 ]
 
-const CARD_STATE_KEY = `home.cards.state.${window.USER_ID}`
-const CAROUSEL_POSITION_KEY = `home.carousel.position.${window.USER_ID}`
-const KPI_YEAR_STATE_KEY = `home.kpi.year.${window.USER_ID}`
-const CASH_FLOW_YEAR_STATE_KEY = `home.cash.flow.year.${window.USER_ID}`
-const PAYABLE_FLOW_YEAR_STATE_KEY = `home.payable.flow.year.${window.USER_ID}`
-const RECEIVABLE_FLOW_YEAR_STATE_KEY = `home.receivable.flow.year.${window.USER_ID}`
-const CATEGORY_KPI_YEAR_STATE_KEY = `home.category.year.${window.USER_ID}`
-const CATEGORY_TABLE_SCROLL_KEY = `home.category.table.scroll.${window.USER_ID}`
-const CATEGORY_SORT_KEY = `home.category.sort.${window.USER_ID}`
-const CATEGORY_GROUP_KPI_YEAR_STATE_KEY = `home.category.group.year.${window.USER_ID}`
-const CATEGORY_GROUP_TABLE_SCROLL_KEY = `home.category.group.table.scroll.${window.USER_ID}`
-const CATEGORY_GROUP_SORT_KEY = `home.category.group.sort.${window.USER_ID}`
+const HOME_CARDS_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:cards`
+const HOME_CAROUSEL_POSITION_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:carousel-position`
+const HOME_KPI_YEAR_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:kpi-year`
+const HOME_CASH_FLOW_YEAR_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:cash-flow-year`
+const HOME_PAYABLE_FLOW_YEAR_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:payable-flow-year`
+const HOME_RECEIVABLE_FLOW_YEAR_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:receivable-flow-year`
+const HOME_CATEGORY_YEAR_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:category-year`
+const HOME_CATEGORY_TABLE_SCROLL_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:category-table-scroll`
+const HOME_CATEGORY_SORT_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:category-sort`
+const HOME_CATEGORY_GROUP_YEAR_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:category-group-year`
+const HOME_CATEGORY_GROUP_TABLE_SCROLL_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:category-group-table-scroll`
+const HOME_CATEGORY_GROUP_SORT_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:home:category-group-sort`
 
 const labelForKpi = 'KPIs'
 const labelForTrendBalance = 'Balances'
@@ -76,7 +76,7 @@ let categoryGroupKpiDetailYear = 0
    DOM Ready
 ============================ */
 document.addEventListener('DOMContentLoaded', async () => {
-    const savedState = loadFilters(CARD_STATE_KEY) || {}
+    const savedState = loadFilters(HOME_CARDS_STORAGE_KEY) || {}
     CARD_IDS.forEach(id => {
         const body = document.getElementById(id)
         const icon = document.getElementById(`icon-${id}`)
@@ -142,13 +142,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { availableYearsKpi, } = await res_kpi.json()
 
         kpi_years = availableYearsKpi || [0]
-        const savedYearRawKpi = loadFilters(KPI_YEAR_STATE_KEY)
-        const savedYearRawCashFlow = loadFilters(CASH_FLOW_YEAR_STATE_KEY)
+        const savedYearRawKpi = loadFilters(HOME_KPI_YEAR_STORAGE_KEY)
+        const savedYearRawCashFlow = loadFilters(HOME_CASH_FLOW_YEAR_STORAGE_KEY)
         const savedYearKpi = savedYearRawKpi !== null ? Number(savedYearRawKpi) : null
         const savedYearCashFlow = savedYearRawCashFlow !== null ? Number(savedYearRawCashFlow) : null
-        const savedYearRawCategory = loadFilters(CATEGORY_KPI_YEAR_STATE_KEY)
+        const savedYearRawCategory = loadFilters(HOME_CATEGORY_YEAR_STORAGE_KEY)
         const savedYearCategory = savedYearRawCategory !== null ? Number(savedYearRawCategory) : null
-        const savedYearRawCategoryGroup = loadFilters(CATEGORY_GROUP_KPI_YEAR_STATE_KEY)
+        const savedYearRawCategoryGroup = loadFilters(HOME_CATEGORY_GROUP_YEAR_STORAGE_KEY)
         const savedYearCategoryGroup = savedYearRawCategoryGroup !== null ? Number(savedYearRawCategoryGroup) : null
 
         kpi_year_index = kpi_years.includes(savedYearKpi) ? kpi_years.indexOf(savedYearKpi) : 0
@@ -160,12 +160,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const current_year_category = kpi_years[category_year_index]
         const current_year_category_group = kpi_years[category_group_year_index]
 
-        const savedYearRawPayableFlow = loadFilters(PAYABLE_FLOW_YEAR_STATE_KEY)
+        const savedYearRawPayableFlow = loadFilters(HOME_PAYABLE_FLOW_YEAR_STORAGE_KEY)
         const savedYearPayableFlow = savedYearRawPayableFlow !== null ? Number(savedYearRawPayableFlow) : null
         payable_flow_year_index = kpi_years.includes(savedYearPayableFlow) ? kpi_years.indexOf(savedYearPayableFlow) : 0
         const current_year_payable_flow = kpi_years[payable_flow_year_index]
 
-        const savedYearRawReceivableFlow = loadFilters(RECEIVABLE_FLOW_YEAR_STATE_KEY)
+        const savedYearRawReceivableFlow = loadFilters(HOME_RECEIVABLE_FLOW_YEAR_STORAGE_KEY)
         const savedYearReceivableFlow = savedYearRawReceivableFlow !== null ? Number(savedYearRawReceivableFlow) : null
         receivable_flow_year_index = kpi_years.includes(savedYearReceivableFlow) ? kpi_years.indexOf(savedYearReceivableFlow) : 0
         const current_year_receivable_flow = kpi_years[receivable_flow_year_index]
@@ -376,7 +376,7 @@ function initYearNavForBalanceKpi() {
 
 async function changeYearForBalanceKpi() {
     const year = kpi_years[kpi_year_index]
-    saveFilters(KPI_YEAR_STATE_KEY, year)
+    saveFilters(HOME_KPI_YEAR_STORAGE_KEY, year)
     updateLabelForBalanceKpi(year)
     updateYearNavForBalanceKpi()
     const res = await fetch(`/kpis?year_period_for_kpi=${year}&month_period_for_kpi=0`, { credentials: 'same-origin' })
@@ -438,7 +438,7 @@ function renderPayableFlowSummChart(data) {
 async function changeYearForCashFlowSumm() {
     const year = kpi_years[cash_flow_year_index]
 
-    saveFilters(CASH_FLOW_YEAR_STATE_KEY, year)
+    saveFilters(HOME_CASH_FLOW_YEAR_STORAGE_KEY, year)
     updateLabelForCashFlowSumm(year)
     updateYearNavForCashFlowSumm()
 
@@ -452,7 +452,7 @@ async function changeYearForCashFlowSumm() {
 async function changeYearForPayableFlowSumm() {
     const year = kpi_years[payable_flow_year_index]
 
-    saveFilters(PAYABLE_FLOW_YEAR_STATE_KEY, year)
+    saveFilters(HOME_PAYABLE_FLOW_YEAR_STORAGE_KEY, year)
     updateLabelForPayableFlowSumm(year)
     updateYearNavForPayableFlowSumm()
 
@@ -466,7 +466,7 @@ async function changeYearForPayableFlowSumm() {
 async function changeYearForReceivableFlowSumm() {
     const year = kpi_years[receivable_flow_year_index]
 
-    saveFilters(RECEIVABLE_FLOW_YEAR_STATE_KEY, year)
+    saveFilters(HOME_RECEIVABLE_FLOW_YEAR_STORAGE_KEY, year)
     updateLabelForReceivableFlowSumm(year)
     updateYearNavForReceivableFlowSumm()
 
@@ -609,7 +609,7 @@ function initYearNavForCategory() {
 
 async function changeYearForCategory() {
     const year = kpi_years[category_year_index]
-    saveFilters(CATEGORY_KPI_YEAR_STATE_KEY, year)
+    saveFilters(HOME_CATEGORY_YEAR_STORAGE_KEY, year)
     updateLabelForCategory(year)
     updateYearNavForCategory()
 
@@ -621,12 +621,12 @@ async function changeYearForCategory() {
 
     const wrapper = document.getElementById('html-category-kpi-body')
     if (wrapper) {
-        const saved = loadFilters(CATEGORY_TABLE_SCROLL_KEY)
+        const saved = loadFilters(HOME_CATEGORY_TABLE_SCROLL_STORAGE_KEY)
         if (saved && typeof saved.scrollTop === 'number') {
             wrapper.scrollTop = saved.scrollTop
         }
         wrapper.addEventListener('scroll', () => {
-            saveFilters(CATEGORY_TABLE_SCROLL_KEY, { scrollTop: wrapper.scrollTop })
+            saveFilters(HOME_CATEGORY_TABLE_SCROLL_STORAGE_KEY, { scrollTop: wrapper.scrollTop })
         })
     }
 }
@@ -803,7 +803,7 @@ function initYearNavForCategoryGroup() {
 
 async function changeYearForCategoryGroup() {
     const year = kpi_years[category_group_year_index]
-    saveFilters(CATEGORY_GROUP_KPI_YEAR_STATE_KEY, year)
+    saveFilters(HOME_CATEGORY_GROUP_YEAR_STORAGE_KEY, year)
     updateLabelForCategoryGroup(year)
     updateYearNavForCategoryGroup()
 
@@ -815,9 +815,9 @@ async function changeYearForCategoryGroup() {
 
     const wrapper = document.getElementById('html-category-group-kpi-body')
     if (wrapper) {
-        const saved = loadFilters(CATEGORY_GROUP_TABLE_SCROLL_KEY)
+        const saved = loadFilters(HOME_CATEGORY_GROUP_TABLE_SCROLL_STORAGE_KEY)
         if (saved && typeof saved.scrollTop === 'number') wrapper.scrollTop = saved.scrollTop
-        wrapper.onscroll = () => saveFilters(CATEGORY_GROUP_TABLE_SCROLL_KEY, { scrollTop: wrapper.scrollTop })
+        wrapper.onscroll = () => saveFilters(HOME_CATEGORY_GROUP_TABLE_SCROLL_STORAGE_KEY, { scrollTop: wrapper.scrollTop })
     }
 }
 
@@ -925,12 +925,12 @@ document.getElementById('category-group-kpi-detail-next')?.addEventListener('cli
 })
 
 function loadCategoryGroupSort() {
-    const raw = loadFilters(CATEGORY_GROUP_SORT_KEY)
+    const raw = loadFilters(HOME_CATEGORY_GROUP_SORT_STORAGE_KEY)
     return raw?.key ? raw : { key: 'amount', dir: 'desc' }
 }
 
 function saveCategoryGroupSort(sort) {
-    saveFilters(CATEGORY_GROUP_SORT_KEY, sort)
+    saveFilters(HOME_CATEGORY_GROUP_SORT_STORAGE_KEY, sort)
 }
 
 function applyCategoryGroupSort(rows, sort) {
@@ -974,13 +974,13 @@ function updateCategoryGroupHeaderIndicators(sort) {
 }
 
 function loadCategorySort() {
-    const raw = loadFilters(CATEGORY_SORT_KEY)
+    const raw = loadFilters(HOME_CATEGORY_SORT_STORAGE_KEY)
     if (!raw || !raw.key) return { key: 'amount', dir: 'desc' }
     return raw
 }
 
 function saveCategorySort(sort) {
-    saveFilters(CATEGORY_SORT_KEY, sort)
+    saveFilters(HOME_CATEGORY_SORT_STORAGE_KEY, sort)
 }
 
 function applyCategorySort(rows, sort) {
@@ -1054,9 +1054,9 @@ function toggleCard(id) {
     const isOpen = !body.classList.contains('collapsed')
     body.classList.toggle('collapsed', isOpen)
     icon.innerHTML = isOpen ? iconChevronOpen() : iconChevronClose()
-    const state = loadFilters(CARD_STATE_KEY) || {}
+    const state = loadFilters(HOME_CARDS_STORAGE_KEY) || {}
     state[id] = !isOpen
-    saveFilters(CARD_STATE_KEY, state)
+    saveFilters(HOME_CARDS_STORAGE_KEY, state)
 }
 
 function initHomeCarousel() {
@@ -1065,7 +1065,7 @@ function initHomeCarousel() {
     const carouselContainer = carousel.closest('.carousel-container')
     const prevBtn = document.getElementById('carousel-prev')
     const nextBtn = document.getElementById('carousel-next')
-    const savedPosition = loadFilters(CAROUSEL_POSITION_KEY)
+    const savedPosition = loadFilters(HOME_CAROUSEL_POSITION_STORAGE_KEY)
     const revealCarousel = () => {
         carouselContainer?.classList.remove('carousel-loading')
     }
@@ -1078,7 +1078,7 @@ function initHomeCarousel() {
         })
     }
     carousel.addEventListener('scroll', () => {
-        saveFilters(CAROUSEL_POSITION_KEY, {
+        saveFilters(HOME_CAROUSEL_POSITION_STORAGE_KEY, {
             scrollLeft: carousel.scrollLeft
         })
         updateCarouselButtons()

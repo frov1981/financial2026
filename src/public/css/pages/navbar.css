@@ -98,7 +98,7 @@
     display: flex;
     max-height: 0;
     flex-direction: column;
-    gap: 2px;
+    gap: 1.5px;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -115,7 +115,7 @@
 
 .navbar-links a {
     display: block;
-    padding: 10px 12px;
+    padding: 7.5px 9px;
     color: inherit;
     border-radius: 5px;
     font-size: 0.92rem;
@@ -162,14 +162,14 @@
         max-height: none;
         flex-direction: row;
         justify-content: space-between;
-        gap: 1.6px;
+        gap: 1.2px;
         padding: 0 0 3.2px;
         overflow: visible;
         visibility: visible;
     }
 
     .navbar-links a {
-        padding: 3.6px 4px;
+        padding: 2.7px 3px;
         font-size: 0.84rem;
         white-space: nowrap;
     }
