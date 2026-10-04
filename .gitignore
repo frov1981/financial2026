@@ -9,6 +9,7 @@ db/
 scripts/
 docs/
 migrations/
+data/
 
 # Entornos
 .env

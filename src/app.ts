@@ -8,7 +8,6 @@ import { csrfProtection, csrfTokenMiddleware } from './middlewares/csrf.middlewa
 import { injectPayableBalance } from './middlewares/inject-payable-balance.middleware'
 import { injectReceivableBalance } from './middlewares/inject-receivable-balance.middleware'
 import { injectNetBalance } from './middlewares/inject-net-balance.middleware'
-import { httpLogger } from './middlewares/logger.middleware'
 import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
 import accountRoutes from './routes/account.route'
 import authRoutes from './routes/auth.route'
@@ -34,7 +33,6 @@ const isProd = process.env.NODE_ENV === 'production'
 ======================= */
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-app.use(httpLogger)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {

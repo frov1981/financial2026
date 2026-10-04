@@ -23,13 +23,13 @@
     <input id="send_time" name="send_time" type="time" step="60" value="<%= notification.send_time %>" required>
 
     <div class="notification-form-actions">
-      <%- include('../../partials/btn-cancel-batch', {
+      <%- include('../../partials/buttons/btn-cancel-batch', {
         href: '/notifications',
         title: 'Cancelar programación',
         text: 'Cancelar'
       }) %>
       <% if (notification.exists) { %>
-        <%- include('../../partials/btn-accept-batch', {
+        <%- include('../../partials/buttons/btn-accept-batch', {
           id: 'notification-save',
           type: 'submit',
           name: 'mode',

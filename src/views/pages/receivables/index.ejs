@@ -7,19 +7,19 @@
     <h1 class="ui-title">Cuentas por Cobrar</h1>
 
     <div class="ui-toolbar">
-      <%- include('../../partials/btn-new', {
+      <%- include('../../partials/buttons/btn-new', {
         href: '#',
         title: 'Nueva cuenta por cobrar',
         text: 'Nuevo',
         data_btn: 'new'
       }) %>
 
-      <%- include('../../partials/search-box', {
+      <%- include('../../partials/searchs/search-box', {
         placeholder: 'Buscar cuentas por cobrar...'
       }) %>
 
     <!-- Modal Insertar -->
-    <%- include('../../partials/ui-modal',{
+    <%- include('../../partials/modals/modal',{
       modal_id:'insert-modal',
       title:'¿Qué desea insertar?',
       buttons:[

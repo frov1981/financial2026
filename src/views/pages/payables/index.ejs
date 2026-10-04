@@ -9,24 +9,24 @@
     <h1 class="ui-title">Cuentas por Pagar</h1>
 
     <div class="ui-toolbar">
-      <%- include('../../partials/btn-new', {
+      <%- include('../../partials/buttons/btn-new', {
         href: '#',
         title: 'Nuevo Cuentas por Pagar',
         text: 'Nuevo',
         data_btn: 'new'
       }) %>
 
-      <%- include('../../partials/btn-toggle-status.ejs', {
+      <%- include('../../partials/buttons/btn-toggle-status.ejs', {
         initialStatus: 'all'
       }) %>
 
-      <%- include('../../partials/search-box', {
+      <%- include('../../partials/searchs/search-box', {
         placeholder: 'Buscar Cuentas por Pagar...'
       }) %>
     </div>
 
     <!-- Modal Insertar -->
-    <%- include('../../partials/ui-modal',{
+    <%- include('../../partials/modals/modal',{
       modal_id:'insert-modal',
       title:'¿Qué desea insertar?',
       buttons:[

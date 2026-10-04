@@ -8,20 +8,20 @@
     <h1 class="ui-title">Cobros – <%= receivable.name %></h1>
 
     <div class="ui-toolbar">
-      <%- include('../../partials/btn-back', {
+      <%- include('../../partials/buttons/btn-back', {
         href: '/receivables',
         title: 'Volver a Cuentas por Cobrar',
         text: 'Volver'
       }) %>
 
-      <%- include('../../partials/btn-new', {
+      <%- include('../../partials/buttons/btn-new', {
         href: `/receivables-collections/insert/${receivable.id}`,
         title: 'Nuevo cobro',
         text: 'Nuevo',
         data_btn: 'new'
       }) %>
 
-      <%- include('../../partials/search-box', {
+      <%- include('../../partials/searchs/search-box', {
         placeholder: 'Buscar cobros...'
       }) %>
     </div>

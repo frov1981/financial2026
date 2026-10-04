@@ -13,20 +13,20 @@
 
     <div class="ui-toolbar">
 
-      <%- include('../../partials/btn-back', {
+      <%- include('../../partials/buttons/btn-back', {
         href: '/payables',
         title: 'Volver a Cuentas por Pagar',
         text: 'Volver'
       }) %>
 
-      <%- include('../../partials/btn-new', {
+      <%- include('../../partials/buttons/btn-new', {
         href: `/payments/insert/${payable.id}`,
         title: 'Nuevo pago',
         text: 'Nuevo',
         data_btn: 'new'
       }) %>
 
-      <%- include('../../partials/search-box', {
+      <%- include('../../partials/searchs/search-box', {
         placeholder: 'Buscar pagos...'
       }) %>
 

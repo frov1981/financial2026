@@ -194,17 +194,6 @@ export class JobQueueService {
     return migrated_count
   }
 
-  static getLogRetentionRunTime(timezone = 'UTC'): { hour: number, minute: number } {
-    const raw = process.env.JOB_LOG_RETENTION_RUN_AT || '01:00'
-    const [hour, minute] = raw.split(':').map(value => Number(value))
-
-    if (Number.isFinite(hour) && Number.isFinite(minute)) {
-      return { hour, minute }
-    }
-
-    return { hour: 1, minute: 0 }
-  }
-
   static getAuthCodeCleanupRunTime(timezone = 'UTC'): { hour: number, minute: number } {
     const raw = process.env.JOB_AUTH_CODES_CLEANUP_RUN_AT || '01:00'
     const [hour, minute] = raw.split(':').map(value => Number(value))
@@ -216,48 +205,27 @@ export class JobQueueService {
     return { hour: 1, minute: 0 }
   }
 
-  static async ensureDailyLogRetentionJob(): Promise<JobSchedule | null> {
-    const repository = AppDataSource.getRepository(JobSchedule)
+  static async cancelLogRetentionJobs(): Promise<{ schedules: number, jobs: number }> {
     const now = new Date()
+    return AppDataSource.transaction(async manager => {
+      const schedule_result = await manager.getRepository(JobSchedule).update(
+        { scope: 'system', job_type: 'log_retention', status: In(['active', 'paused']) },
+        { status: 'cancelled' },
+      )
+      const job_result = await manager.getRepository(JobQueue).update(
+        { job_type: 'log_retention', status: In(['scheduled', 'queued']) },
+        {
+          status: 'cancelled',
+          finished_at: now,
+          error_message: 'Job de retención de logs retirado; los archivos se rotan por Pino.',
+        },
+      )
 
-    const existing = await repository.findOne({
-      where: {
-        scope: 'system',
-        job_type: 'log_retention',
-        status: 'active',
-      },
-      order: { created_at: 'DESC' },
-    })
-
-    const run_time = this.getLogRetentionRunTime(existing?.timezone || 'UTC')
-
-    if (existing) {
-      const next_run = this.getNextDailyRunAt(now, run_time.hour, run_time.minute, existing.timezone || 'UTC')
-      if (existing.next_run_at.getTime() !== next_run.getTime()) {
-        existing.next_run_at = next_run
-        await repository.save(existing)
+      return {
+        schedules: schedule_result.affected ?? 0,
+        jobs: job_result.affected ?? 0,
       }
-      return existing
-    }
-
-    const next_run_at = this.getNextDailyRunAt(now, run_time.hour, run_time.minute, 'UTC')
-    const schedule = repository.create({
-      user: null,
-      scope: 'system' as JobScope,
-      job_type: 'log_retention',
-      entity_type: 'log_events',
-      entity_id: null,
-      name: 'Limpieza diaria de logs',
-      recurrence_type: 'daily',
-      recurrence_rule: { hour: run_time.hour, minute: run_time.minute, target_table: 'log_events' },
-      timezone: 'UTC',
-      start_at: now,
-      next_run_at,
-      last_run_at: null,
-      status: 'active',
     })
-
-    return repository.save(schedule)
   }
 
   static async ensureDailyAuthCodeCleanupJob(): Promise<JobSchedule | null> {

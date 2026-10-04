@@ -1,8 +1,6 @@
-import { DateTime } from 'luxon'
 import { AppDataSource } from '../config/typeorm.datasource'
 import { AuthCode } from '../entities/AuthCode.entity'
 import { JobQueue } from '../entities/JobQueue.entity'
-import { LogEvent } from '../entities/LogEvent.entity'
 import { sendWeeklyBalanceMail } from './send-weekly-balance-mail.service'
 import { parseError } from '../utils/error.util'
 import { logger } from '../utils/logger.util'
@@ -10,48 +8,6 @@ import { logger } from '../utils/logger.util'
 const job_dispatcher_logger = logger.forMethod('dispatchJob', 'JOB_DISPATCHER')
 
 type JobHandler = (job: JobQueue) => Promise<void>
-
-const executeLogRetentionJob = async (job: JobQueue): Promise<void> => {
-  const repository = AppDataSource.getRepository(LogEvent)
-  const retention_days = Number(job.payload?.retention_days ?? process.env.LOG_RETENTION_MAX_DAYS ?? 30)
-  const cutoff = DateTime.utc().minus({ days: retention_days }).toJSDate()
-
-  job_dispatcher_logger.debug('Inicio de limpieza de logs desde la cola', {
-    job_id: job.id,
-    retention_days,
-    cutoff,
-    table: 'log_events',
-  })
-
-  let deleted_count: number | null = null
-  let status: 'succeeded' | 'failed' = 'failed'
-  try {
-    const delete_result = await repository.createQueryBuilder().delete().from(LogEvent)
-      .where('occurred_at < :cutoff', { cutoff })
-      .execute()
-
-    deleted_count = Number(delete_result.affected ?? 0)
-    await repository.query('OPTIMIZE TABLE log_events')
-    status = 'succeeded'
-  } finally {
-    job_dispatcher_logger.info('Limpieza de logs finalizada', {
-      job_id: job.id,
-      table: 'log_events',
-      deleted_count,
-      retention_days,
-      cutoff,
-      from: new Date(cutoff).toISOString(),
-      status,
-    })
-
-    job_dispatcher_logger.debug('Fin de limpieza de logs desde la cola', {
-      job_id: job.id,
-      deleted_count,
-      table: 'log_events',
-      status,
-    })
-  }
-}
 
 const executeAuthCodeCleanupJob = async (job: JobQueue): Promise<void> => {
   const repository = AppDataSource.getRepository(AuthCode)
@@ -130,7 +86,6 @@ const executeTransactionJob = async (job: JobQueue): Promise<void> => {
 }
 
 const handlers: Record<string, JobHandler> = {
-  log_retention: executeLogRetentionJob,
   auth_code_cleanup: executeAuthCodeCleanupJob,
   weekly_balance_email: executeWeeklyBalanceEmailJob,
   transaction: executeTransactionJob,

@@ -10,18 +10,18 @@
 
     <!-- Toolbar -->
     <div class="ui-toolbar">
-      <%- include('../../partials/btn-new', {
+      <%- include('../../partials/buttons/btn-new', {
         href: '/accounts/insert',
         title: 'Nueva cuenta',
         text: 'Nuevo',
         data_btn: 'new'
       }) %>
 
-      <%- include('../../partials/btn-toggle-status.ejs', {
+      <%- include('../../partials/buttons/btn-toggle-status.ejs', {
         initialStatus: 'all'
       }) %>
 
-      <%- include('../../partials/search-box', {
+      <%- include('../../partials/searchs/search-box', {
         placeholder: 'Buscar cuentas...'
       }) %>
     </div>

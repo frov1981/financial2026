@@ -17,14 +17,14 @@
 
       <div id="toolbar-normal-actions" class="flex gap-2">
         <% if (context?.from === 'categories') { %>
-          <%- include('../../partials/btn-back', {
+          <%- include('../../partials/buttons/btn-back', {
             href: `/categories`,
             title: 'Volver a categorías',
             text: 'Volver'
           }) %>
         <% } %>
 
-        <%- include('../../partials/btn-new', {
+        <%- include('../../partials/buttons/btn-new', {
           href:
             context?.from === 'categories' && context?.category_id
               ? `/transactions/insert?from=categories&category_id=${context.category_id}`
@@ -34,24 +34,24 @@
           data_btn: 'new'
         }) %>
 
-        <%- include('../../partials/btn-categorize-batch', {
+        <%- include('../../partials/buttons/btn-categorize-batch', {
           title: 'Categorizar Transacciones',
           text: 'Categorizar',
           data_btn: 'categorize'
         }) %>
 
-        <%- include('../../partials/search-box', {
+        <%- include('../../partials/searchs/search-box', {
           placeholder: 'Buscar transacciones...'
         }) %>
       </div>
 
       <div id="toolbar-batch-actions" class="flex gap-2 hidden">
-        <%- include('../../partials/btn-accept-batch', {
+        <%- include('../../partials/buttons/btn-accept-batch', {
           title: 'Aceptar Lote',
           text: 'Aceptar'
         }) %>
 
-        <%- include('../../partials/btn-cancel-batch', {
+        <%- include('../../partials/buttons/btn-cancel-batch', {
           title: 'Cancelar Lote',
           text: 'Cancelar'
         }) %>
