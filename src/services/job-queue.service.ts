@@ -491,19 +491,6 @@ export class JobQueueService {
     const enqueued_jobs = await this.enqueueDueJobs(now)
     const dispatched = await this.dispatchNextAvailableJob(now)
 
-    const processing_context = {
-      now: now.toISOString(),
-      enqueued_count: enqueued_jobs.length,
-      dispatched_id: dispatched?.id ?? null,
-      job_type: dispatched?.job_type ?? null,
-    }
-
-    if (dispatched) {
-      this.logger.info('Procesamiento de cola completado', processing_context)
-    } else {
-      this.logger.debug('Procesamiento de cola completado', processing_context)
-    }
-
     return { enqueued: enqueued_jobs.length, dispatched }
   }
 

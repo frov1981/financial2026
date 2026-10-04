@@ -1,0 +1,54 @@
+<section class="admin-page">
+  <script>window.USER_ID = "<%= USER_ID %>"</script>
+  <h1>Administración del servidor</h1>
+
+  <% if (levelUpdated) { %>
+    <p class="admin-success" role="status">El nivel de registro se actualizó en caliente.</p>
+  <% } %>
+
+  <article class="admin-card">
+    <h2>Nivel configurado en el servidor</h2>
+    <div class="admin-level-grid">
+      <div>
+        <span class="admin-field-label">Nivel actual</span>
+        <strong class="admin-level-value"><%= logLevel %></strong>
+      </div>
+      <form action="/admin/level" method="post" class="admin-level-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label for="log-level">Cambiar nivel</label>
+        <div class="admin-level-controls">
+          <select id="log-level" name="level">
+            <% ['TRACE', 'DEBUG', 'INFO'].forEach(level => { %>
+              <option value="<%= level %>" <%= logLevel === level ? 'selected' : '' %>><%= level %></option>
+            <% }) %>
+          </select>
+          <button type="submit" class="ui-btn ui-btn-primary">Cambiar nivel</button>
+        </div>
+      </form>
+    </div>
+  </article>
+
+  <article class="admin-card">
+    <h2>Archivos de registro recientes</h2>
+    <% if (logFiles.length === 0) { %>
+      <p>No hay archivos de registro disponibles.</p>
+    <% } else { %>
+      <form action="/admin/logs" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <fieldset class="admin-log-files">
+          <legend class="sr-only">Selecciona un archivo de registro</legend>
+          <% logFiles.forEach((file, index) => { %>
+            <label class="admin-log-file">
+              <input type="radio" name="fileNumber" value="<%= index + 1 %>" <%= index === 0 ? 'checked' : '' %>>
+              <span class="admin-log-number">#<%= index + 1 %></span>
+              <span class="admin-log-filename"><%= file.name %></span>
+              <time datetime="<%= file.modifiedAt.toISOString() %>"><%= file.modifiedAt.toLocaleString('es') %></time>
+            </label>
+          <% }) %>
+        </fieldset>
+        <button type="submit" class="ui-btn ui-btn-primary">Continuar</button>
+      </form>
+    <% } %>
+  </article>
+</section>
+<script src="/js/pages/admin/index.js"></script>

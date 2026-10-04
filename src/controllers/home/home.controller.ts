@@ -7,7 +7,7 @@ import { logger } from '../../utils/logger.util'
 import { getAvailableYearsKpi, getBalanceKpi, getCashSummary, getChartDataLast6MonthsBalance, getChartDataLast6YearsBalance, getChartDataLast6YearsPayable, getKpisGlobalBalance, getKpisLast6MonthsBalance, getPayableSummary, getTrendKpi, getReceivableSummary, getCategoryKpi, getCategoryKpiDetail, getCategoryGroupKpi, getCategoryGroupKpiDetail } from './home.auxiliar'
 
 export const routeToPageRoot = (req: Request, res: Response) => {
-  if ((req.session as any)?.user_id) {
+  if ((req.session as any)?.user_id != null) {
     return res.redirect('/home')
   }
   res.redirect('/login')
@@ -19,7 +19,7 @@ export const routeToPageLogin = (req: Request, res: Response) => {
 
 export const routeToPageHome = async (req: Request, res: Response) => {
   const user_id = (req.session as any)?.user_id
-  if (!user_id) {
+  if (user_id == null) {
     return res.redirect('/login')
   }
   const user_repo = AppDataSource.getRepository(User)
@@ -32,7 +32,7 @@ export const routeToPageHome = async (req: Request, res: Response) => {
     {
       title: 'Inicio',
       view: 'pages/home/index',
-      USER_ID: user?.id || 'guest',
+      USER_ID: user?.id ?? 'guest',
       user,
     })
 }

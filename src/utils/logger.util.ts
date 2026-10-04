@@ -3,6 +3,7 @@ import pino from 'pino'
 import path from 'path'
 
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
+export type ConfigurableLogLevel = 'TRACE' | 'DEBUG' | 'INFO'
 export interface LogDetails {
   event_name: string
   method_name?: string
@@ -59,8 +60,7 @@ class Logger {
     }
 
     this.outputLogger = pino({
-      // Level filtering stays in this adapter so elapsedTime keeps its existing behavior.
-      level: 'trace',
+      level: envLevel.toLowerCase(),
       base: { service: process.env.NODE_LOG_SERVICE || 'ssrfinan-api' },
       timestamp: pino.stdTimeFunctions.isoTime,
       formatters: {
@@ -71,6 +71,15 @@ class Logger {
 
   private shouldLog(level: LogLevel) {
     return LEVELS[level] >= this.currentLevel
+  }
+
+  getLevel(): ConfigurableLogLevel {
+    return this.outputLogger.level.toUpperCase() as ConfigurableLogLevel
+  }
+
+  setLevel(level: ConfigurableLogLevel) {
+    this.outputLogger.level = level.toLowerCase()
+    this.currentLevel = level === 'INFO' ? LEVELS.INFO : LEVELS.DEBUG
   }
 
   private serialize(value: unknown): unknown {

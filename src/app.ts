@@ -25,6 +25,7 @@ import fileReferenceRoutes from './routes/file-reference.route'
 import notificationRoutes from './routes/notification.route'
 import devicePreferencesRoutes from './routes/device-preferences.route'
 import settingsRoutes from './routes/settings.route'
+import adminRoutes from './routes/admin.route'
 
 export const app = express()
 const isProd = process.env.NODE_ENV === 'production'
@@ -103,6 +104,7 @@ protectedRouter.use(apiLimiter)
 protectedRouter.use(csrfProtection) // Aplicar CSRF a rutas protegidas
 protectedRouter.use('/device-preferences', devicePreferencesRoutes)
 protectedRouter.use('/settings', settingsRoutes)
+protectedRouter.use('/admin', adminRoutes)
 protectedRouter.use('/accounts', accountRoutes)
 protectedRouter.use('/categories', categoryRoutes)
 protectedRouter.use('/category-groups', categoryGroupRoutes)

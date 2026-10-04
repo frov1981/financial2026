@@ -128,6 +128,16 @@
     background: rgb(255 255 255 / 12%);
 }
 
+.navbar-links .navbar-admin-item {
+    background: #1f2937;
+    color: #f9fafb;
+}
+
+.navbar-links .navbar-admin-item:hover,
+.navbar-links .navbar-admin-item:focus-visible {
+    background: #111827;
+}
+
 @media (min-width: 1024px) {
     .navbar-inner {
         padding-right: 9.6px;

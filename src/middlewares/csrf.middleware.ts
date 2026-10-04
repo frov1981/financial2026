@@ -39,9 +39,6 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
         error: 'Token CSRF inválido o faltante'
       })
     }
-
-    // Rotar token después de uso exitoso
-    session.csrfToken = generateCSRFToken()
   }
 
   // Agregar token a res.locals para que esté disponible en las vistas

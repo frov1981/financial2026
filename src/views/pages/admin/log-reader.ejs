@@ -1,0 +1,91 @@
+<section class="admin-page admin-log-reader">
+  <script>window.USER_ID = "<%= USER_ID %>"</script>
+  <script>window.ADMIN_LOG_FILE_NUMBER = <%= selectedFileNumber %></script>
+  <div class="admin-reader-heading">
+    <h1>Visor <span class="admin-selected-file"><%= selectedFile %></span></h1>
+  </div>
+
+  <form action="/admin/logs" method="get" class="admin-log-filter">
+    <input type="hidden" name="fileNumber" value="<%= selectedFileNumber %>">
+    <%- include('../../partials/buttons/btn-back', {
+      href: '/admin',
+      title: 'Volver a los archivos de registro',
+      text: 'Volver'
+    }) %>
+    <button id="log-type-filter-button" class="ui-btn ui-btn-default admin-log-toolbar-button" type="button"
+      aria-haspopup="dialog" title="Filtrar por tipo de log" aria-label="Filtrar por tipo de log">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16l-6.5 7.5V19l-3 1v-7.5L4 5z"/>
+      </svg>
+      <span class="ui-btn-text">Filtrar</span>
+    </button>
+    <label class="sr-only" for="log-filter">Filtrar líneas del registro</label>
+    <input id="log-filter" type="search" name="filter" value="<%= filter %>"
+      placeholder="Filtrar registros..." aria-label="Filtrar registros">
+    <button id="log-refresh-button" class="ui-btn ui-btn-default admin-log-toolbar-button" type="button"
+      title="Actualizar registros" aria-label="Actualizar registros">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7v5h-5M4 17v-5h5m10-1a7 7 0 0 0-12.2-4.7L4 8m16 8-2.8 2.7A7 7 0 0 1 5 13"/>
+      </svg>
+      <span class="ui-btn-text">Actualizar</span>
+    </button>
+  </form>
+
+  <dialog id="log-type-filter-modal" class="admin-log-type-modal" aria-labelledby="log-type-filter-title">
+    <div class="admin-log-type-modal-content">
+      <h2 id="log-type-filter-title">Tipos de log</h2>
+      <fieldset class="admin-log-type-options">
+        <legend class="sr-only">Selecciona uno o varios tipos de log</legend>
+        <% ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'].forEach(type => { %>
+          <label>
+            <input type="checkbox" name="log-type" value="<%= type %>"
+              <%= selectedLogTypes.length === 0 || selectedLogTypes.includes(type) ? 'checked' : '' %>>
+            <span><%= type %></span>
+          </label>
+        <% }) %>
+      </fieldset>
+      <div class="admin-log-type-modal-actions">
+        <button id="log-type-filter-cancel" class="ui-modal-btn ui-modal-btn-neutral" type="button">Cancelar</button>
+        <button id="log-type-filter-apply" class="ui-modal-btn ui-modal-btn-primary" type="button">Aplicar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <p id="log-reader-status" class="admin-reader-status" role="status"><%= displayedLines %> de <%= totalLines %> líneas</p>
+  <div id="log-content" class="admin-log-content ui-table-wrapper" role="region" aria-label="Registros, del más reciente al más antiguo" tabindex="0">
+    <table class="ui-table admin-log-table">
+      <thead>
+        <tr>
+          <th class="ui-th col-left" scope="col">Detalle</th>
+          <th class="ui-th col-left" scope="col">Hora local</th>
+          <th class="ui-th col-left" scope="col">Mensaje</th>
+        </tr>
+      </thead>
+      <tbody id="admin-log-records">
+        <% records.forEach((record, index) => { %>
+          <tr class="admin-log-row <%= record.level ? `admin-log-level-${record.level.toLowerCase()}` : '' %>">
+            <td>
+              <button class="admin-log-expand" type="button" aria-expanded="false" aria-controls="admin-log-detail-<%= index %>" aria-label="Expandir propiedades del registro">
+                <span aria-hidden="true">+</span>
+              </button>
+            </td>
+            <td class="admin-log-time" data-time="<%= record.time || '' %>"><%= record.time || '—' %></td>
+            <td class="admin-log-message"><%= record.message %></td>
+          </tr>
+          <tr id="admin-log-detail-<%= index %>" class="admin-log-detail-row" hidden>
+            <td colspan="3">
+              <table class="ui-table admin-log-properties">
+                <tbody>
+                  <% record.properties.forEach(property => { %>
+                    <tr><th scope="row"><%= property.name %></th><td><%= property.value %></td></tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+<script src="/js/pages/admin/log-reader.js"></script>

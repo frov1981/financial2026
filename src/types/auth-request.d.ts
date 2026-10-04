@@ -7,6 +7,7 @@ export interface SessionUser {
   email: string
   name: string
   created_at: Date
+  role: 'ADMIN' | 'USER'
 }
 
 

@@ -13,7 +13,7 @@ import { logger } from '../../utils/logger.util'
 import { regenerateSession, saveSession } from './2fa.auxiliar'
 
 export const show2FA = (req: Request, res: Response) => {
-  if (!req.session.pending2FAUserId) {
+  if (req.session.pending2FAUserId == null) {
     return res.redirect('/login')
   }
 
@@ -25,7 +25,7 @@ export const verify2FA = async (req: Request, res: Response) => {
   const verify2FA_logger = logger.forMethod(verify2FA.name, 'VERIFY_2FA', pendingUserId ?? null)
   try {
     const { code } = req.body
-    if (!pendingUserId) return res.redirect('/login')
+    if (pendingUserId == null) return res.redirect('/login')
     const repo = AppDataSource.getRepository(AuthCode)
 
     const authCode = await repo.findOne({
