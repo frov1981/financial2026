@@ -18,17 +18,17 @@
 @import url('./components/modal.css');
 
 /* =========================
-   MODULES
+   PAGES
 ========================= */
-@import url('./modules/accounts.css');
-@import url('./modules/categories.css');
-@import url('./modules/payables.css');
-@import url('./modules/payable-payments.css');
-@import url('./modules/transactions.css');
-@import url('./modules/dashboard.css');
-@import url('./modules/navbar.css');
-@import url('./modules/notifications.css');
-@import url('./modules/carousel.css');
+@import url('./pages/accounts.css');
+@import url('./pages/categories.css');
+@import url('./pages/payables.css');
+@import url('./pages/payable-payments.css');
+@import url('./pages/transactions.css');
+@import url('./pages/dashboard.css');
+@import url('./pages/navbar.css');
+@import url('./pages/notifications.css');
+@import url('./pages/carousel.css');
 
 /* =========================
    RESPONSIVE (SIEMPRE AL FINAL)

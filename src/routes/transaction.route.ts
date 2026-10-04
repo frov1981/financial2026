@@ -2,7 +2,7 @@ import { Router } from 'express'
 import {
   apiForBatchCategorize,
   apiForGettingCategorizeTransactions
-} from '../controllers/transaction/batch-categorize.controller'
+} from '../controllers/transaction-categorize-batch/transaction-categorize-batch.controller'
 import {
   apiForGettingTransactions,
   apiForSavingTransaction,

@@ -126,7 +126,7 @@ function batchClearUiSelection() {
 function batchStartCategorize() {
   batchSetState({ active: true })
   batchApplyUi(true)
-  render(allItems)
+  window.renderTransactions()
   batchToggleActionButtons(true)
   batchRestoreSelection()
 }
@@ -152,7 +152,7 @@ function batchCancelCategorize() {
   batchClearState()
   batchClearSelected()
   batchApplyUi(false)
-  render(allItems)
+  window.renderTransactions()
   batchToggleActionButtons(false)
   batchClearUiSelection()
 }

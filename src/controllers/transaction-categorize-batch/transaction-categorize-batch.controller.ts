@@ -46,7 +46,7 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
         'layouts/main',
         {
             title: 'Categorizar Transacciones',
-            view: 'pages/transactions/batch-categorize',
+            view: 'pages/transaction-categorize-batch/index',
             active_income_categories,
             active_expense_categories,
             transactions,
@@ -187,7 +187,7 @@ export const apiForBatchCategorize: RequestHandler = async (req: Request, res: R
 
         return res.status(500).render('layouts/main', {
             title: 'Categorizar Transacciones',
-            view: 'pages/transactions/batch-categorize',
+            view: 'pages/transaction-categorize-batch/index',
             active_income_categories,
             active_expense_categories,
             transactions: [],

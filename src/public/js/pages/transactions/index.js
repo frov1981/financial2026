@@ -626,6 +626,8 @@ function render(data) {
   window.innerWidth <= 768 ? renderCards(data) : renderTable(data)
 }
 
+window.renderTransactions = () => render(allItems)
+
 /* ============================================================================
 8. Data (loadCategories / loadTransactions)
 ============================================================================ */
