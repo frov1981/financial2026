@@ -134,7 +134,7 @@ function batchStartCategorize() {
 function batchAcceptCategorize() {
   const ids = batchGetSelected()
   if (!ids.length) {
-    alert('Debe seleccionar al menos una transacción')
+    MessageBox.warn('Debe seleccionar al menos una transacción')
     return
   }
   const params = new URLSearchParams(window.location.search)

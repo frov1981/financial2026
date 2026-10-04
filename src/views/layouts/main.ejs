@@ -37,12 +37,15 @@
         class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">
     </div>
 
+    <%- include('../partials/modals/message-box') %>
+    <%- include('../partials/modals/question-box') %>
+    <script src="/js/helpers/message-box-helper.js"></script>
+
     <%- include('../partials/bars/navbar') %>
 
         <main class="app-main max-w-7xl mx-auto px-2 py-3 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
             <%- include('../' + view) %>
         </main>
-        <script src="/js/helpers/message-box-helper.js"></script>
 
 </body>
 

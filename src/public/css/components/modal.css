@@ -21,6 +21,66 @@
     animation: uiFadeIn .15s ease-out
 }
 
+.message-box-modal {
+    z-index: 60;
+}
+
+.question-box-modal {
+    z-index: 60;
+}
+
+.message-box-content {
+    width: min(24rem, calc(100vw - 2rem));
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .15);
+    text-align: center;
+    animation: uiFadeIn .15s ease-out;
+}
+
+.message-box-icons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.message-box-icon {
+    width: 3rem;
+    height: 3rem;
+}
+
+.message-box-icon-info {
+    color: #2563eb;
+}
+
+.message-box-icon-warn {
+    color: #d97706;
+}
+
+.message-box-icon-error {
+    color: #dc2626;
+}
+
+.message-box-message {
+    margin-bottom: 1.25rem;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.message-box-content .ui-modal-btn {
+    width: 100%;
+}
+
+.question-box-actions {
+    display: flex;
+    gap: .75rem;
+}
+
+.question-box-actions .ui-modal-btn {
+    flex: 1;
+}
+
 @keyframes uiFadeIn {
     from {
         opacity: 0;

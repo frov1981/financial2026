@@ -268,7 +268,7 @@ async function openTransactionImages(transactionId) {
     renderTransactionImageModal()
   } catch (error) {
     console.error('Error cargando imágenes:', error)
-    alert('No fue posible cargar las imágenes de la transacción.')
+    MessageBox.error('No fue posible cargar las imágenes de la transacción.')
   }
 }
 
@@ -296,7 +296,7 @@ async function uploadTransactionImages() {
     renderTransactionImageModal()
   } catch (error) {
     console.error('Error insertando imágenes:', error)
-    alert(error.message || 'No fue posible insertar las imágenes.')
+    MessageBox.error(error.message || 'No fue posible insertar las imágenes.')
   } finally {
     transactionImagesInput.value = ''
   }
@@ -305,7 +305,7 @@ async function uploadTransactionImages() {
 async function deleteCurrentTransactionImage() {
   const { files, currentIndex, transactionId } = transactionImagesState
   const file = files[currentIndex]
-  if (!file || !transactionId || !confirm('¿Eliminar esta imagen?')) return
+  if (!file || !transactionId || !await QuestionBox.ask('¿Está seguro de que desea eliminar esta imagen?')) return
 
   try {
     const response = await fetch(`/files/item/${file.id}`, {
@@ -323,7 +323,7 @@ async function deleteCurrentTransactionImage() {
     renderTransactionImageModal()
   } catch (error) {
     console.error('Error eliminando imagen:', error)
-    alert(error.message || 'No fue posible eliminar la imagen.')
+    MessageBox.error(error.message || 'No fue posible eliminar la imagen.')
   }
 }
 
@@ -674,7 +674,7 @@ async function loadTransactions(page = 1) {
     if (res.status === 429) {
       const errorData = await res.json().catch(() => ({}))
       const retryAfter = errorData.retryAfter || 60
-      alert(`⏱️ Límite de solicitudes excedido.\n\nEspera ${retryAfter} segundos antes de intentar nuevamente.`)
+      MessageBox.warn(`⏱️ Límite de solicitudes excedido.\n\nEspera ${retryAfter} segundos antes de intentar nuevamente.`)
       return
     }
 
@@ -705,7 +705,7 @@ async function loadTransactions(page = 1) {
     }
   } catch (error) {
     console.error('Error cargando transacciones:', error)
-    alert('Error al cargar transacciones. Intenta nuevamente.')
+    MessageBox.error('Error al cargar transacciones. Intenta nuevamente.')
   }
 }
 

@@ -18,8 +18,7 @@ export const routeToPageLogin = (req: Request, res: Response) => {
 }
 
 export const routeToPageHome = async (req: Request, res: Response) => {
-  const skip_login = process.env.NODE_SKIP_LOGIN === 'true'
-  const user_id = skip_login ? 1 : (req.session as any)?.user_id
+  const user_id = (req.session as any)?.user_id
   if (!user_id) {
     return res.redirect('/login')
   }
@@ -195,4 +194,3 @@ export const apiForGettingCategoryGroupKpiDetail: RequestHandler = async (req: R
     apiForGettingCategoryGroupKpiDetail_logger.elapsedTime('Elapsed time', { elapsed_ms })
   }
 }
-

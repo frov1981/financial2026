@@ -83,20 +83,6 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
   try {
     const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
     const timezone = String(req.body.timezone || 'UTC')
-    if (process.env.NODE_SKIP_LOGIN === 'true') {
-      const user_repo = AppDataSource.getRepository(User)
-      const dev_user = await user_repo.findOne({
-        where: { id: Number(process.env.NODE_DEV_USER_ID) || 1 },
-        select: selected_fields
-      })
-      if (dev_user) {
-        req.session.user_id = dev_user.id
-        req.session.timezone = timezone
-        apiForValidatingLogin_logger.info('Modo desarrollo habilitado', { user_id: dev_user.id, timezone })
-        return res.redirect('/home')
-      }
-    }
-
     const { username, password } = req.body
     const user_repo = AppDataSource.getRepository(User)
     const user = await user_repo.findOne({
@@ -111,8 +97,17 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
       return res.render('pages/login/form', { error: 'Contraseña incorrecta' })
     }
 
+    if (process.env.MAIL_SKIP_2FA === 'true') {
+      await regenerateSession(req)
+      req.session.user_id = user.id
+      req.session.timezone = timezone
+      await saveSession(req)
+      apiForValidatingLogin_logger.info('Inicio de sesión sin 2FA por configuración', { user_id: user.id, timezone })
+      return res.redirect('/home')
+    }
+
     req.session.timezone = timezone
-    apiForValidatingLogin_logger.info('Modo produccion habilitado', { user_id: user.id, timezone })
+    apiForValidatingLogin_logger.info('Inicio de sesión con 2FA', { user_id: user.id, timezone })
     await send2FACode(user)
     req.session.pending2FAUserId = user.id
     await saveSession(req)

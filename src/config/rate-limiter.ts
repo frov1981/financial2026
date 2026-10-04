@@ -29,10 +29,7 @@ export const loginLimiter = rateLimit({
   message: 'Demasiados intentos de login. Intenta nuevamente en 15 minutos.',
   standardHeaders: true,
   legacyHeaders: false,
-  handler: createJsonHandler('Demasiados intentos de login. Espera antes de intentar nuevamente.'),
-  skip: (req) => {
-    return process.env.NODE_SKIP_LOGIN === 'true'
-  }
+  handler: createJsonHandler('Demasiados intentos de login. Espera antes de intentar nuevamente.')
 })
 
 /**
@@ -45,10 +42,7 @@ export const twoFALimiter = rateLimit({
   message: 'Demasiados intentos de 2FA. Intenta nuevamente en 15 minutos.',
   standardHeaders: true,
   legacyHeaders: false,
-  handler: createJsonHandler('Demasiados intentos de 2FA. Espera antes de intentar nuevamente.'),
-  skip: (req) => {
-    return process.env.NODE_SKIP_LOGIN === 'true'
-  }
+  handler: createJsonHandler('Demasiados intentos de 2FA. Espera antes de intentar nuevamente.')
 })
 
 /**

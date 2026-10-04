@@ -8,10 +8,10 @@
     try {
       const saved = await window.saveDevicePreferences()
       if (!saved) throw new Error('El servidor no confirmó el guardado de preferencias')
-      alert('Se guardo las prefencias')
+      MessageBox.info('Se guardo las prefencias')
     } catch (error) {
       console.error('No se pudieron guardar las preferencias', error)
-      alert('No se pudieron guardar las preferencias')
+      MessageBox.error('No se pudieron guardar las preferencias')
     } finally {
       window.log.info('Tiempo de exportación de preferencias de usuario', {
         elapsed_ms: performance.now() - startedAt,
@@ -26,14 +26,14 @@
     try {
       const restored = await window.restoreDevicePreferences()
       if (!restored) {
-        alert('Nada que restaurar')
+        MessageBox.warn('Nada que restaurar')
         return
       }
-      alert('Restaurado con exito')
+      await MessageBox.info('Restaurado con exito')
       window.location.reload()
     } catch (error) {
       console.error('No se pudieron restaurar las preferencias', error)
-      alert('Nada que restaurar')
+      MessageBox.error('Nada que restaurar')
     } finally {
       window.log.info('Tiempo de importación de preferencias de usuario', {
         elapsed_ms: performance.now() - startedAt,

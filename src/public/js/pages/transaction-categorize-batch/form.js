@@ -295,7 +295,7 @@ function validateBatch() {
 }
 
 function showError(message) {
-  alert(message)
+  MessageBox.warn(message)
 }
 
 if (form) {
