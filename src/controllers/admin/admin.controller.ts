@@ -137,12 +137,13 @@ function parseLogRecord(line: string): LogRecord {
       'method_name',
       'service',
       'time',
+      'event_name',
+      'ex_event_type',
     ])
     const propertyLabels: Record<string, string> = {
       user_id: 'Usuario',
       context: 'Contexto',
       msg: 'Mensaje',
-      ex_event_type: 'Tipo de evento',
     }
     const properties = Object.entries(parsed)
       .filter(([name]) => !hiddenProperties.has(name))

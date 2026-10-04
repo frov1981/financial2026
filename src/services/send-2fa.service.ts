@@ -24,5 +24,5 @@ export async function send2FACode(user: User): Promise<void> {
 
     await repo.save(authCode)
     await send2FACodeMail(user.email, user.name, code)
-    send_2fa_logger.info(`[2FA] Código enviado por correo a [${user.email}], codigo: [${code}]`)
+    send_2fa_logger.info(`[2FA] Código enviado por correo a [${user.email}]`)
 }

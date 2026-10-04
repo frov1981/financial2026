@@ -434,7 +434,7 @@
 }
 
 .admin-log-properties > tbody > tr > th {
-    width: 35%;
+    width: 22%;
     min-width: 0;
     color: #374151;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -443,7 +443,7 @@
 }
 
 .admin-log-properties > tbody > tr > td {
-    width: 65%;
+    width: 78%;
     min-width: 0;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
@@ -621,11 +621,7 @@
 
     .admin-log-properties > tbody > tr > th,
     .admin-log-properties > tbody > tr > td {
-        padding: 3px 6px;
+        padding: 3px 4px;
     }
 
-    .admin-log-properties > tbody > tr > th {
-        width: 35%;
-        min-width: 0;
-    }
 }
