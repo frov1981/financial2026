@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { validate } from 'class-validator'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Account } from '../../entities/Account.entity'
@@ -7,7 +8,7 @@ import { AuthRequest } from '../../types/auth-request'
 import { logger } from '../../utils/logger.util'
 
 export const validateSaveTransaction = async (transaction: Transaction, auth_req: AuthRequest, old_transaction?: Transaction): Promise<Record<string, string> | null> => {
-    const validateSaveTransaction_logger = logger.forMethod(validateSaveTransaction.name, 'TRANSACTION_VALIDATE_SAVE', auth_req.user.id)
+    const validateSaveTransaction_logger = logger.forMethod(validateSaveTransaction.name, LOGGER_EVENTS.TRANSACTION, auth_req.user.id)
     const errors = await validate(transaction)
     const field_errors: Record<string, string> = {}
 
@@ -128,7 +129,7 @@ export const validateSaveTransaction = async (transaction: Transaction, auth_req
 }
 
 export const validateDeleteTransaction = async (transaction: Transaction, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
-    const validateDeleteTransaction_logger = logger.forMethod(validateDeleteTransaction.name, 'TRANSACTION_VALIDATE_DELETE', auth_req.user.id)
+    const validateDeleteTransaction_logger = logger.forMethod(validateDeleteTransaction.name, LOGGER_EVENTS.TRANSACTION, auth_req.user.id)
     const field_errors: Record<string, string> = {}
 
     if (!transaction.date) {
@@ -149,7 +150,7 @@ export const validateDeleteTransaction = async (transaction: Transaction, auth_r
 }
 
 export const validateActiveCategoryTransaction = async (transaction: Transaction, auth_req: AuthRequest): Promise<Record<string, string> | null> => {
-    const validateActiveCategoryTransaction_logger = logger.forMethod(validateActiveCategoryTransaction.name, 'TRANSACTION_VALIDATE_CATEGORY', auth_req.user.id)
+    const validateActiveCategoryTransaction_logger = logger.forMethod(validateActiveCategoryTransaction.name, LOGGER_EVENTS.TRANSACTION, auth_req.user.id)
     const field_errors: Record<string, string> = {}
 
     if (!transaction.category || !transaction.category.id) {

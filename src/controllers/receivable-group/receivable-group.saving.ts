@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { deleteAll } from '../../cache/cache-key.service';
@@ -55,7 +56,7 @@ export const saveReceivableGroup: RequestHandler = async (req: Request, res: Res
     const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
-    const saveReceivableGroup_logger = logger.forMethod(saveReceivableGroup.name, 'RECEIVABLE_GROUP_SAVE', user_id)
+    const saveReceivableGroup_logger = logger.forMethod(saveReceivableGroup.name, LOGGER_EVENTS.RECEIVABLE_GROUP, user_id)
     const receivable_group_id = Number(req.body.id)
     const mode: ReceivableGroupFormMode = req.body.mode || 'insert'
     const repo_receivable_group = AppDataSource.getRepository(ReceivableGroup)

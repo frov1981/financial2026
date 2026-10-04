@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import pino from 'pino'
 import path from 'path'
+import { LOGGER_EVENTS, LoggerEventName } from './logger-events'
 
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
 export type ConfigurableLogLevel = 'TRACE' | 'DEBUG' | 'INFO'
@@ -128,7 +129,7 @@ class Logger {
 
   }
 
-  forMethod(method_name: string, event_name = 'APPLICATION', user_id: number | null = null): ScopedLogger {
+  forMethod(method_name: string, event_name: LoggerEventName = LOGGER_EVENTS.APPLICATION, user_id: number | null = null): ScopedLogger {
     return {
       debug: (message, context) => this.debug({ event_name, method_name, user_id, message, context }),
       info: (message, context) => this.info({ event_name, method_name, user_id, message, context }),

@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import fs from 'fs/promises'
 import path from 'path'
 import { Request, RequestHandler, Response } from 'express'
@@ -83,7 +84,7 @@ function imageUrls(reference: FileReference) {
 
 export const apiForUploadingFiles: RequestHandler = async (req: Request, res: Response) => {
   const authRequest = req as AuthRequest
-  const apiForUploadingFiles_logger = logger.forMethod(apiForUploadingFiles.name, 'FILE_UPLOAD', authRequest.user.id)
+  const apiForUploadingFiles_logger = logger.forMethod(apiForUploadingFiles.name, LOGGER_EVENTS.FILE_REFERENCE, authRequest.user.id)
   try {
     const tableName = parseTableName(req.params.tableName)
     const recordId = parseRecordId(req.params.recordId)
@@ -122,7 +123,7 @@ export const apiForUploadingFiles: RequestHandler = async (req: Request, res: Re
 
 export const apiForGettingFiles: RequestHandler = async (req: Request, res: Response) => {
   const authRequest = req as AuthRequest
-  const apiForGettingFiles_logger = logger.forMethod(apiForGettingFiles.name, 'FILE_LIST', authRequest.user.id)
+  const apiForGettingFiles_logger = logger.forMethod(apiForGettingFiles.name, LOGGER_EVENTS.FILE_REFERENCE, authRequest.user.id)
   try {
     const tableName = parseTableName(req.params.tableName)
     const recordId = parseRecordId(req.params.recordId)
@@ -154,7 +155,7 @@ async function findOwnedReference(req: Request): Promise<FileReference | null> {
 
 export const apiForServingFile: RequestHandler = async (req: Request, res: Response) => {
   const authRequest = req as AuthRequest
-  const apiForServingFile_logger = logger.forMethod(apiForServingFile.name, 'FILE_SERVE', authRequest.user.id)
+  const apiForServingFile_logger = logger.forMethod(apiForServingFile.name, LOGGER_EVENTS.FILE_REFERENCE, authRequest.user.id)
   try {
     const reference = await findOwnedReference(req)
     if (!reference) return res.status(404).send('Archivo no encontrado')
@@ -174,7 +175,7 @@ export const apiForServingFile: RequestHandler = async (req: Request, res: Respo
 
 export const apiForDeletingFile: RequestHandler = async (req: Request, res: Response) => {
   const authRequest = req as AuthRequest
-  const apiForDeletingFile_logger = logger.forMethod(apiForDeletingFile.name, 'FILE_DELETE', authRequest.user.id)
+  const apiForDeletingFile_logger = logger.forMethod(apiForDeletingFile.name, LOGGER_EVENTS.FILE_REFERENCE, authRequest.user.id)
   try {
     const reference = await findOwnedReference(req)
     if (!reference) return res.status(404).json({ error: 'Archivo no encontrado' })

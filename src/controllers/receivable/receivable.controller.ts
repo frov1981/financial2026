@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getActiveCategoriesForReceivablesByUser, getReceivableById, getReceivablesForApi } from '../../cache/cache-receivables.service'
@@ -144,7 +145,7 @@ Api para devolver el DTO Receivable en JSON
 ==================================================*/
 export const apiForGettingReceivables: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingReceivables_logger = logger.forMethod(apiForGettingReceivables.name, 'RECEIVABLE_LIST', auth_req.user.id)
+  const apiForGettingReceivables_logger = logger.forMethod(apiForGettingReceivables.name, LOGGER_EVENTS.RECEIVABLE, auth_req.user.id)
   const started_at = performance.now()
   try {
     const result = await getReceivablesForApi(auth_req)

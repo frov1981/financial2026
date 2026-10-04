@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
 import type { DTOCategory } from '../../dto/dto'
@@ -97,7 +98,7 @@ Api para devolver el DTO Category en JSON
 ==================================================*/
 export const apiForGettingCategories: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingCategories_logger = logger.forMethod(apiForGettingCategories.name, 'CATEGORY_LIST', auth_req.user.id)
+  const apiForGettingCategories_logger = logger.forMethod(apiForGettingCategories.name, LOGGER_EVENTS.CATEGORY, auth_req.user.id)
   const started_at = performance.now()
   try {
     apiForGettingCategories_logger.debug('Obteniendo categorías para el usuario')

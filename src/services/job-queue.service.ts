@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { In, LessThanOrEqual, Repository } from 'typeorm'
 import { DateTime } from 'luxon'
 import { AppDataSource } from '../config/typeorm.datasource'
@@ -10,7 +11,7 @@ import { CreateJobScheduleInput, JobScope, JobStatus } from '../types/job-queue.
 import { dispatchJob } from './job-dispatcher.service'
 
 export class JobQueueService {
-  private static readonly logger = logger.forMethod('JobQueueService', 'JOB_QUEUE_SERVICE')
+  private static readonly logger = logger.forMethod('JobQueueService', LOGGER_EVENTS.JOB)
 
   static async createSchedule(input: CreateJobScheduleInput): Promise<JobSchedule> {
     const schedule = AppDataSource.getRepository(JobSchedule).create({

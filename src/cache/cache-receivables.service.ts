@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
@@ -89,7 +90,7 @@ export const getInactiveReceivables = async (auth_req: AuthRequest): Promise<Rec
 
 export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<DTOReceivablesResponse> => {
     const user_id = auth_req.user.id
-    const cache_receivables_logger = root_logger.forMethod('getReceivablesForApi', 'CACHE_RECEIVABLES', user_id)
+    const cache_receivables_logger = root_logger.forMethod('getReceivablesForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.receivablesByUserForApi(user_id)
     const cached_receivables = cache.get<DTOReceivablesResponse>(cache_key)
     if (cached_receivables !== undefined) {

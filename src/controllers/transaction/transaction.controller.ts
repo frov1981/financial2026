@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts, getActiveAccountsForTransfer, getActiveAccountsForTransferIncludeCurrentAccount, getActiveAccountsIncludeCurrentAccount } from '../../cache/cache-accounts.service'
 import { getActiveCategoryById, getActiveExpenseCategories, getActiveExpenseCategoriesIncludeCurrentCategory, getActiveIncomeCategories, getActiveIncomeCategoriesIncludeCurrentCategory, getCategoryById } from '../../cache/cache-categories.service'
@@ -52,7 +53,7 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
 
 export const apiForGettingTransactions: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingTransactions_logger = logger.forMethod(apiForGettingTransactions.name, 'TRANSACTION_LIST', auth_req.user.id)
+  const apiForGettingTransactions_logger = logger.forMethod(apiForGettingTransactions.name, LOGGER_EVENTS.TRANSACTION, auth_req.user.id)
   const started_at = performance.now()
   try {
     const page = Number(auth_req.query.page) || 1

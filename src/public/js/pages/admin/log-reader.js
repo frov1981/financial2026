@@ -1,5 +1,6 @@
 const logReaderForm = document.querySelector('.admin-log-filter')
 const logFilterInput = document.getElementById('log-filter')
+const logEventFilter = document.getElementById('log-event-filter')
 const logContent = document.getElementById('log-content')
 const logRecords = document.getElementById('admin-log-records')
 const logReaderStatus = document.getElementById('log-reader-status')
@@ -7,10 +8,13 @@ const logTypeFilterModal = document.getElementById('log-type-filter-modal')
 const logTypeFilterButton = document.getElementById('log-type-filter-button')
 const logTypeFilterApply = document.getElementById('log-type-filter-apply')
 const logTypeFilterCancel = document.getElementById('log-type-filter-cancel')
+const logUserFilter = document.getElementById('log-user-filter')
 const logRefreshButton = document.getElementById('log-refresh-button')
 const logPageSize = 100
 const LEGACY_ADMIN_LOG_FILE_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:admin:selected-log-file`
-const logReaderStorageKey = `ssrfinan:v1:user:${window.USER_ID}:admin:log-number:${window.ADMIN_LOG_FILE_NUMBER}:state`
+const logReaderFiltersStorageKey = `ssrfinan:v1:user:${window.USER_ID}:admin:log-reader-filters`
+const logReaderPositionStorageKey = `ssrfinan:v1:user:${window.USER_ID}:admin:log-number:${window.ADMIN_LOG_FILE_NUMBER}:position`
+const legacyLogReaderStorageKey = `ssrfinan:v1:user:${window.USER_ID}:admin:log-number:${window.ADMIN_LOG_FILE_NUMBER}:state`
 let displayedLines = logRecords?.querySelectorAll('.admin-log-row').length || 0
 let totalLines = Number(logReaderStatus?.textContent.match(/\d+\s+de\s+(\d+)/)?.[1] || 0)
 let requestSequence = 0
@@ -31,9 +35,13 @@ function getSelectedLogTypes() {
 }
 
 function saveLogReaderState() {
-  window.saveFilters(logReaderStorageKey, {
+  window.saveFilters(logReaderFiltersStorageKey, {
     filter: logFilterInput?.value || '',
+    eventFilter: logEventFilter?.value || 'all',
     levels: getSelectedLogTypes(),
+    userId: logUserFilter?.value || 'all',
+  })
+  window.saveFilters(logReaderPositionStorageKey, {
     displayedLines,
     scrollTop: logContent?.scrollTop || 0,
   })
@@ -42,7 +50,11 @@ function saveLogReaderState() {
 function formatLocalTime(value) {
   if (!value) return '—'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
+  if (Number.isNaN(date.getTime())) return value
+
+  const pad = number => String(number).padStart(2, '0')
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}:${milliseconds}`
 }
 
 function appendLogRecords(records) {
@@ -65,7 +77,7 @@ function appendLogRecords(records) {
     expandButton.setAttribute('aria-label', 'Expandir propiedades del registro')
     const icon = document.createElement('span')
     icon.setAttribute('aria-hidden', 'true')
-    icon.textContent = '+'
+    icon.innerHTML = iconChevronOpen()
     expandButton.append(icon)
     expandCell.append(expandButton)
 
@@ -74,22 +86,36 @@ function appendLogRecords(records) {
     timeCell.dataset.time = record.time || ''
     timeCell.textContent = formatLocalTime(record.time)
 
-    const messageCell = document.createElement('td')
-    messageCell.className = 'admin-log-message'
-    messageCell.textContent = record.message
-    row.append(expandCell, timeCell, messageCell)
+    const levelCell = document.createElement('td')
+    levelCell.className = 'admin-log-level-name'
+    levelCell.textContent = record.levelName || '—'
+
+    const eventCell = document.createElement('td')
+    eventCell.className = 'admin-log-event-name'
+    eventCell.textContent = record.eventName || '—'
+
+    const methodCell = document.createElement('td')
+    methodCell.className = 'admin-log-method'
+    methodCell.textContent = record.method || '—'
+    row.dataset.detailId = detailId
+    row.append(expandCell, timeCell, levelCell, eventCell, methodCell)
 
     const detailRow = document.createElement('tr')
     detailRow.id = detailId
     detailRow.className = 'admin-log-detail-row'
     detailRow.hidden = true
     const detailCell = document.createElement('td')
-    detailCell.colSpan = 3
+    detailCell.colSpan = 5
+    const detailContent = document.createElement('div')
+    detailContent.className = 'admin-log-detail-content'
     const propertiesTable = document.createElement('table')
     propertiesTable.className = 'admin-log-properties'
     const propertiesBody = document.createElement('tbody')
     record.properties.forEach(property => {
       const propertyRow = document.createElement('tr')
+      if (property.name === 'Evento') {
+        propertyRow.className = 'admin-log-event-property'
+      }
       const nameCell = document.createElement('th')
       nameCell.scope = 'row'
       nameCell.textContent = property.name
@@ -99,7 +125,8 @@ function appendLogRecords(records) {
       propertiesBody.append(propertyRow)
     })
     propertiesTable.append(propertiesBody)
-    detailCell.append(propertiesTable)
+    detailContent.append(propertiesTable)
+    detailCell.append(detailContent)
     detailRow.append(detailCell)
     logRecords.append(row, detailRow)
   })
@@ -111,15 +138,25 @@ logRecords?.querySelectorAll('.admin-log-time').forEach(cell => {
 
 logRecords?.addEventListener('click', event => {
   if (!(event.target instanceof Element)) return
-  const button = event.target.closest('.admin-log-expand')
-  if (!button) return
-  const detailRow = document.getElementById(button.getAttribute('aria-controls'))
+  const row = event.target.closest('.admin-log-row')
+  if (!row) return
+  const button = row.querySelector('.admin-log-expand')
+  const detailId = row.dataset.detailId
+  const detailRow = detailId ? document.getElementById(detailId) : null
   if (!detailRow) return
   const expanded = button.getAttribute('aria-expanded') === 'true'
   button.setAttribute('aria-expanded', String(!expanded))
   button.setAttribute('aria-label', expanded ? 'Expandir propiedades del registro' : 'Contraer propiedades del registro')
-  button.querySelector('span').textContent = expanded ? '+' : '−'
+  button.querySelector('span').innerHTML = expanded ? iconChevronOpen() : iconChevronClose()
   detailRow.hidden = expanded
+})
+
+logRecords?.addEventListener('keydown', event => {
+  if (!(event.target instanceof Element) || !['Enter', ' '].includes(event.key)) return
+  const row = event.target.closest('.admin-log-row')
+  if (!row || event.target.closest('.admin-log-expand')) return
+  event.preventDefault()
+  row.querySelector('.admin-log-expand')?.click()
 })
 
 function getRequestParams() {
@@ -234,15 +271,49 @@ logTypeFilterApply?.addEventListener('click', () => {
 })
 logRefreshButton?.addEventListener('click', refreshLogReader)
 
-const savedLogReaderState = window.loadFilters(logReaderStorageKey)
+const savedLogReaderPosition = window.loadFilters(logReaderPositionStorageKey)
+const savedLogReaderFilters = window.loadFilters(logReaderFiltersStorageKey)
+const legacyLogReaderState = window.loadFilters(legacyLogReaderStorageKey)
+const savedLogReaderState = savedLogReaderFilters || legacyLogReaderState
 if (savedLogReaderState && typeof savedLogReaderState === 'object') {
   if (typeof savedLogReaderState.filter === 'string') {
     logFilterInput.value = savedLogReaderState.filter
+  }
+  if (typeof savedLogReaderState.eventFilter === 'string' && logEventFilter) {
+    const eventFilterContainer = logEventFilter.closest('.autocomplete')
+    if (eventFilterContainer) {
+      const eventOptions = JSON.parse(eventFilterContainer.dataset.items || '[]')
+      const savedEventFilter = eventOptions.some(option => String(option.id) === savedLogReaderState.eventFilter)
+        ? savedLogReaderState.eventFilter
+        : 'all'
+      logEventFilter.value = savedEventFilter
+      eventFilterContainer.dataset.defaultId = savedEventFilter
+    }
   }
   if (Array.isArray(savedLogReaderState.levels) && savedLogReaderState.levels.length > 0) {
     document.querySelectorAll('input[name="log-type"]').forEach(input => {
       input.checked = savedLogReaderState.levels.includes(input.value)
     })
+  }
+  if (
+    typeof savedLogReaderState.userId === 'string'
+    && (savedLogReaderState.userId === 'all'
+      || savedLogReaderState.userId === 'null'
+      || /^(0|[1-9]\d*)$/.test(savedLogReaderState.userId))
+  ) {
+    const userFilterContainer = logUserFilter?.closest('.autocomplete')
+    if (logUserFilter && userFilterContainer) {
+      const userOptions = JSON.parse(userFilterContainer.dataset.items || '[]')
+      if (!userOptions.some(option => String(option.id) === savedLogReaderState.userId)) {
+        userOptions.push({
+          id: savedLogReaderState.userId,
+          name: `Usuario ${savedLogReaderState.userId}`,
+        })
+        userFilterContainer.dataset.items = JSON.stringify(userOptions)
+      }
+      logUserFilter.value = savedLogReaderState.userId
+      userFilterContainer.dataset.defaultId = savedLogReaderState.userId
+    }
   }
 
   const queryParams = new URLSearchParams(window.location.search)
@@ -251,15 +322,23 @@ if (savedLogReaderState && typeof savedLogReaderState === 'object') {
     ? queryLevels
     : ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL']
   const selectedLevels = getSelectedLogTypes()
+  const selectedUserId = logUserFilter?.value || 'all'
+  const selectedEvent = logEventFilter?.value || 'all'
   const stateMatchesUrl = savedLogReaderState.filter === (queryParams.get('filter') || '')
+    && selectedEvent === (queryParams.get('eventFilter') || 'all')
     && effectiveQueryLevels.length === selectedLevels.length
     && effectiveQueryLevels.every(level => selectedLevels.includes(level))
-  const targetLines = Number.isSafeInteger(savedLogReaderState.displayedLines)
-    ? savedLogReaderState.displayedLines
-    : displayedLines
-  const targetScrollTop = Number.isFinite(savedLogReaderState.scrollTop)
-    ? savedLogReaderState.scrollTop
-    : 0
+    && selectedUserId === (queryParams.get('userId') || 'all')
+  const targetLines = Number.isSafeInteger(savedLogReaderPosition?.displayedLines)
+    ? savedLogReaderPosition.displayedLines
+    : Number.isSafeInteger(legacyLogReaderState?.displayedLines)
+      ? legacyLogReaderState.displayedLines
+      : displayedLines
+  const targetScrollTop = Number.isFinite(savedLogReaderPosition?.scrollTop)
+    ? savedLogReaderPosition.scrollTop
+    : Number.isFinite(legacyLogReaderState?.scrollTop)
+      ? legacyLogReaderState.scrollTop
+      : 0
 
   const restorePosition = async () => {
     if (!stateMatchesUrl) {

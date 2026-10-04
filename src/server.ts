@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from './utils/logger-events'
 import 'reflect-metadata'
 import 'dotenv/config'
 
@@ -8,7 +9,7 @@ import { parseError } from './utils/error.util'
 import { JobQueueService } from './services/job-queue.service'
 
 const PORT = process.env.NODE_PORT ? parseInt(process.env.NODE_PORT, 10) : 3000
-const server_startup_logger = logger.forMethod('serverStartup', 'SERVER_STARTUP')
+const server_startup_logger = logger.forMethod('serverStartup', LOGGER_EVENTS.SERVER_STARTUP)
 
 AppDataSource.initialize().then(async () => {
   await AppDataSource.query(

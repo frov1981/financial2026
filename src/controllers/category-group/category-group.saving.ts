@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getCategoryGroupById } from '../../cache/cache-category-groups.service';
@@ -55,7 +56,7 @@ export const saveCategoryGroup: RequestHandler = async (req: Request, res: Respo
   const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
-  const saveCategoryGroup_logger = logger.forMethod(saveCategoryGroup.name, 'CATEGORY_GROUP_SAVE', user_id)
+  const saveCategoryGroup_logger = logger.forMethod(saveCategoryGroup.name, LOGGER_EVENTS.CATEGORY_GROUP, user_id)
   const category_group_id = Number(req.body.id)
   const mode: CategoryGroupFormMode = req.body.mode || 'insert'
   const repo_category_group = AppDataSource.getRepository(CategoryGroup)

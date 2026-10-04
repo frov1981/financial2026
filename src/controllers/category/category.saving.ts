@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getCategoryById } from '../../cache/cache-categories.service';
@@ -59,7 +60,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
   const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
-  const saveCategory_logger = logger.forMethod(saveCategory.name, 'CATEGORY_SAVE', user_id)
+  const saveCategory_logger = logger.forMethod(saveCategory.name, LOGGER_EVENTS.CATEGORY, user_id)
   saveCategory_logger.debug('Inicio proceso de guardado de categoría')
   saveCategory_logger.info('Parametros recibidos', { body: req.body, param: req.params })
   const mode: CategoryFormMode = req.body.mode || 'insert'

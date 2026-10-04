@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getActiveCategoriesForPayablesByUser, getPayableById, getPayablesForApi } from '../../cache/cache-payables.service'
@@ -144,7 +145,7 @@ Api para devolver el DTO Payable en JSON
 ==================================================*/
 export const apiForGettingPayables: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingPayables_logger = logger.forMethod(apiForGettingPayables.name, 'PAYABLE_LIST', auth_req.user.id)
+  const apiForGettingPayables_logger = logger.forMethod(apiForGettingPayables.name, LOGGER_EVENTS.PAYABLE, auth_req.user.id)
   const started_at = performance.now()
   try {
     const result = await getPayablesForApi(auth_req)

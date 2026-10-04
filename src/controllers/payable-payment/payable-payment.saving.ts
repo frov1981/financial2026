@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getAccountById, getActiveAccounts } from '../../cache/cache-accounts.service';
@@ -98,7 +99,7 @@ export const savePayment: RequestHandler = async (req: Request, res: Response) =
     const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
-    const savePayment_logger = logger.forMethod(savePayment.name, 'PAYABLE_PAYMENT_SAVE', user_id)
+    const savePayment_logger = logger.forMethod(savePayment.name, LOGGER_EVENTS.PAYABLE_PAYMENT, user_id)
     const timezone = auth_req.timezone || 'UTC'
     const payment_id = Number(req.body.id)
     const payable_id = Number(req.body.payable_id)

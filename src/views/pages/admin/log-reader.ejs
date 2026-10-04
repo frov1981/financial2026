@@ -5,7 +5,7 @@
     <h1>Visor <span class="admin-selected-file"><%= selectedFile %></span></h1>
   </div>
 
-  <form action="/admin/logs" method="get" class="admin-log-filter">
+  <form id="log-reader-filter-form" action="/admin/logs" method="get" class="admin-log-filter">
     <input type="hidden" name="fileNumber" value="<%= selectedFileNumber %>">
     <%- include('../../partials/buttons/btn-back', {
       href: '/admin',
@@ -13,7 +13,7 @@
       text: 'Volver'
     }) %>
     <button id="log-type-filter-button" class="ui-btn ui-btn-default admin-log-toolbar-button" type="button"
-      aria-haspopup="dialog" title="Filtrar por tipo de log" aria-label="Filtrar por tipo de log">
+      aria-haspopup="dialog" title="Filtrar registros" aria-label="Filtrar registros">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16l-6.5 7.5V19l-3 1v-7.5L4 5z"/>
       </svg>
@@ -33,9 +33,33 @@
 
   <dialog id="log-type-filter-modal" class="admin-log-type-modal" aria-labelledby="log-type-filter-title">
     <div class="admin-log-type-modal-content">
-      <h2 id="log-type-filter-title">Tipos de log</h2>
+      <h2 id="log-type-filter-title">Filtros de registros</h2>
+      <div class="admin-log-user-filter">
+        <label for="log-user-filter-input">Usuario</label>
+        <div class="autocomplete" data-items='<%= JSON.stringify(logUserOptions) %>'
+          data-default-id="<%= selectedLogUser %>" data-placeholder="Todos">
+          <input id="log-user-filter-input" type="text" class="autocomplete-input" autocomplete="off"
+            value="<%= logUserOptions.find(option => option.id === selectedLogUser)?.name || '' %>"
+            aria-label="Filtrar por usuario">
+          <input id="log-user-filter" class="autocomplete-hidden" type="hidden" name="userId"
+            value="<%= selectedLogUser %>" form="log-reader-filter-form">
+          <div class="autocomplete-panel"></div>
+        </div>
+      </div>
+      <div class="admin-log-user-filter">
+        <label for="log-event-filter-input">Evento</label>
+        <div class="autocomplete" data-items='<%= JSON.stringify(logEventOptions) %>'
+          data-default-id="<%= eventFilter || 'all' %>" data-placeholder="Todos los eventos">
+          <input id="log-event-filter-input" type="text" class="autocomplete-input" autocomplete="off"
+            value="<%= logEventOptions.find(option => option.id === eventFilter)?.name || 'Todos' %>"
+            aria-label="Filtrar por evento">
+          <input id="log-event-filter" class="autocomplete-hidden" type="hidden" name="eventFilter"
+            value="<%= eventFilter || 'all' %>" form="log-reader-filter-form">
+          <div class="autocomplete-panel"></div>
+        </div>
+      </div>
       <fieldset class="admin-log-type-options">
-        <legend class="sr-only">Selecciona uno o varios tipos de log</legend>
+        <legend>Niveles del log</legend>
         <% ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'].forEach(type => { %>
           <label>
             <input type="checkbox" name="log-type" value="<%= type %>"
@@ -54,33 +78,48 @@
   <p id="log-reader-status" class="admin-reader-status" role="status"><%= displayedLines %> de <%= totalLines %> líneas</p>
   <div id="log-content" class="admin-log-content ui-table-wrapper" role="region" aria-label="Registros, del más reciente al más antiguo" tabindex="0">
     <table class="ui-table admin-log-table">
+      <colgroup>
+        <col class="admin-log-expand-column">
+        <col class="admin-log-time-column">
+        <col class="admin-log-level-column">
+        <col class="admin-log-event-column">
+        <col class="admin-log-method-column">
+      </colgroup>
       <thead>
         <tr>
-          <th class="ui-th col-left" scope="col">Detalle</th>
-          <th class="ui-th col-left" scope="col">Hora local</th>
-          <th class="ui-th col-left" scope="col">Mensaje</th>
+          <th class="ui-th col-left admin-log-detail-heading" scope="col" aria-label="Detalle">•</th>
+          <th class="ui-th col-left" scope="col">Tiempo</th>
+          <th class="ui-th col-left" scope="col">Nivel</th>
+          <th class="ui-th col-left" scope="col">Evento</th>
+          <th class="ui-th col-left" scope="col">Método</th>
         </tr>
       </thead>
       <tbody id="admin-log-records">
         <% records.forEach((record, index) => { %>
-          <tr class="admin-log-row <%= record.level ? `admin-log-level-${record.level.toLowerCase()}` : '' %>">
+          <tr class="admin-log-row <%= record.level ? `admin-log-level-${record.level.toLowerCase()}` : '' %>" data-detail-id="admin-log-detail-<%= index %>">
             <td>
               <button class="admin-log-expand" type="button" aria-expanded="false" aria-controls="admin-log-detail-<%= index %>" aria-label="Expandir propiedades del registro">
-                <span aria-hidden="true">+</span>
+                <span aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
               </button>
             </td>
             <td class="admin-log-time" data-time="<%= record.time || '' %>"><%= record.time || '—' %></td>
-            <td class="admin-log-message"><%= record.message %></td>
+            <td class="admin-log-level-name"><%= record.levelName || '—' %></td>
+            <td class="admin-log-event-name"><%= record.eventName || '—' %></td>
+            <td class="admin-log-method"><%= record.method || '—' %></td>
           </tr>
           <tr id="admin-log-detail-<%= index %>" class="admin-log-detail-row" hidden>
-            <td colspan="3">
-              <table class="ui-table admin-log-properties">
-                <tbody>
-                  <% record.properties.forEach(property => { %>
-                    <tr><th scope="row"><%= property.name %></th><td><%= property.value %></td></tr>
-                  <% }) %>
-                </tbody>
-              </table>
+            <td colspan="5">
+              <div class="admin-log-detail-content">
+                <table class="ui-table admin-log-properties">
+                  <tbody>
+                    <% record.properties.forEach(property => { %>
+                      <tr class="<%= property.name === 'Evento' ? 'admin-log-event-property' : '' %>"><th scope="row"><%= property.name %></th><td><%= property.value %></td></tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
             </td>
           </tr>
         <% }) %>
@@ -88,4 +127,6 @@
     </table>
   </div>
 </section>
+<script src="/js/helpers/icon-helper.js"></script>
+<script src="/js/helpers/autocomplete-helper.js"></script>
 <script src="/js/pages/admin/log-reader.js"></script>

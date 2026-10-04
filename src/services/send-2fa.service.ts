@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { IsNull } from 'typeorm'
 import { AppDataSource } from '../config/typeorm.datasource'
 import { AuthCode } from '../entities/AuthCode.entity'
@@ -8,7 +9,7 @@ import { logger as root_logger } from '../utils/logger.util'
 import { send2FACodeMail } from './send-2fa-mail.service'
 
 export async function send2FACode(user: User): Promise<void> {
-    const send_2fa_logger = root_logger.forMethod('send2FACode', 'SEND_2FA', user.id)
+    const send_2fa_logger = root_logger.forMethod('send2FACode', LOGGER_EVENTS.AUTH, user.id)
     const repo = AppDataSource.getRepository(AuthCode)
 
     await repo.delete({ user: { id: user.id }, used_at: IsNull() })

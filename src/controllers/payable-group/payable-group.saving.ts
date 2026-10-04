@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { performance } from 'perf_hooks';
 import { deleteAll } from '../../cache/cache-key.service'
@@ -55,7 +56,7 @@ export const savePayableGroup: RequestHandler = async (req: Request, res: Respon
     const started_at = performance.now()
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
-    const savePayableGroup_logger = logger.forMethod(savePayableGroup.name, 'PAYABLE_GROUP_SAVE', user_id)
+    const savePayableGroup_logger = logger.forMethod(savePayableGroup.name, LOGGER_EVENTS.PAYABLE_GROUP, user_id)
     const payable_group_id = Number(req.body.id)
     const mode: PayableGroupFormMode = req.body.mode || 'insert'
     const repo_payable_group = AppDataSource.getRepository(PayableGroup)

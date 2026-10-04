@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { Request, Response, NextFunction } from 'express'
 import { AuthRequest } from '../types/auth-request'
 import { ReceivableBalanceService } from '../services/receivable-balance.service'
@@ -8,7 +9,7 @@ const lastReceivableBalanceByUser = new Map<number, number>()
 
 export const injectReceivableBalance = async (req: Request, res: Response, next: NextFunction) => {
     const auth_req = req as AuthRequest
-    const injectReceivableBalance_logger = logger.forMethod(injectReceivableBalance.name, 'INJECT_RECEIVABLE_BALANCE', auth_req.user?.id ?? null)
+    const injectReceivableBalance_logger = logger.forMethod(injectReceivableBalance.name, LOGGER_EVENTS.MIDDLEWARE, auth_req.user?.id ?? null)
     try {
         if (!auth_req.user) return next()
         const receivable_balance = await ReceivableBalanceService.getPendingReceivableBalance(auth_req.user.id)

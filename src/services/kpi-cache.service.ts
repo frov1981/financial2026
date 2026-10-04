@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { AppDataSource } from '../config/typeorm.datasource'
 import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
 import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
@@ -59,7 +60,7 @@ export class KpiCacheService {
     const started_at = performance.now()
 
     const user_id = auth_req.user.id
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', user_id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', LOGGER_EVENTS.CACHE, user_id)
     const timezone = auth_req.timezone || 'UTC'
 
     try {
@@ -155,7 +156,7 @@ export class KpiCacheService {
 
   private static async recalculateAllBalanceKPI(user_id: number, timezone: string) {
     const started_at = performance.now()
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', user_id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', LOGGER_EVENTS.CACHE, user_id)
 
     try {
 
@@ -241,7 +242,7 @@ export class KpiCacheService {
   }
 
   static async recalculateBalanceKPIByTransaction(auth_req: AuthRequest, transaction: any) {
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', auth_req.user.id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', LOGGER_EVENTS.CACHE, auth_req.user.id)
     kpi_cache_logger.debug('recalculateBalanceKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, trx_created_at: transaction.created_at, amount: transaction.amount, timezone: auth_req.timezone })
     const started_at = performance.now()
 
@@ -288,7 +289,7 @@ export class KpiCacheService {
   ============================ */
   private static async recalculateCurrMonthCategoryKPI(auth_req: AuthRequest, period_year: number, period_month: number) {
     const user_id = auth_req.user.id
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', user_id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', LOGGER_EVENTS.CACHE, user_id)
     const started_at = performance.now()
     const timezone = auth_req.timezone || 'UTC'
 
@@ -333,7 +334,7 @@ export class KpiCacheService {
   }
 
   private static async recalculateAllCategoryKPI(user_id: number, timezone: string) {
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', user_id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', LOGGER_EVENTS.CACHE, user_id)
     const started_at = performance.now()
     try {
       const repo = AppDataSource.getRepository(CacheKpiCategory)
@@ -387,7 +388,7 @@ export class KpiCacheService {
   }
 
   static async recalculateCategoryKPIByTransaction(auth_req: AuthRequest, transaction: any) {
-    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', 'CACHE_KPI', auth_req.user.id)
+    const kpi_cache_logger = root_logger.forMethod('KpiCacheService', LOGGER_EVENTS.CACHE, auth_req.user.id)
     kpi_cache_logger.debug('recalculateCategoryKPIByTransaction', { trx_id: transaction.id, trx_date: transaction.date, timezone: auth_req.timezone })
     const started_at = performance.now()
 

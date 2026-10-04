@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { AuthRequest } from "../types/auth-request"
 import { logger as root_logger } from "../utils/logger.util"
 import { cache } from "./cache.service"
@@ -124,7 +125,7 @@ export const deleteTransactionFilterCache = (user_id: number): number => {
 
 export const deleteAll = (auth_req: AuthRequest, source: TypeSource): void => {
   const user_id = auth_req.user.id
-  const cache_key_logger = root_logger.forMethod('deleteAll', 'CACHE_KEYS', user_id)
+  const cache_key_logger = root_logger.forMethod('deleteAll', LOGGER_EVENTS.CACHE, user_id)
   const deleted = cache.del(cacheKeys.allByUser(user_id))
   const deleted_kpis = delByPrefix(cacheKeys.homeBalanceKpiPrefix(user_id))
   const deleted_category_kpi = delByPrefix(cacheKeys.homeCategoryKpiPrefix(user_id))

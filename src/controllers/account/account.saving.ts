@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getAccountById } from '../../cache/cache-accounts.service';
@@ -52,7 +53,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
   const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
-  const saveAccount_logger = logger.forMethod(saveAccount.name, 'ACCOUNT_SAVE', user_id)
+  const saveAccount_logger = logger.forMethod(saveAccount.name, LOGGER_EVENTS.ACCOUNT, user_id)
   saveAccount_logger.debug('Inicio proceso de guardado de cuenta')
   saveAccount_logger.debug('Parametros recibidos', { body: req.body, param: req.params })
   const account_id = req.body.id ? Number(req.body.id) : undefined

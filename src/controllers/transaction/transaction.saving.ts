@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service';
@@ -60,7 +61,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
-  const saveTransaction_logger = logger.forMethod(saveTransaction.name, 'TRANSACTION_SAVE', user_id)
+  const saveTransaction_logger = logger.forMethod(saveTransaction.name, LOGGER_EVENTS.TRANSACTION, user_id)
   const timezone = req.body.timezone || 'UTC'
   const mode: TransactionFormMode = req.body.mode || 'insert'
   const transaction_id = Number(req.body.id)

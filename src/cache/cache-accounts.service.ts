@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import type { DTOAccount } from "../dto/dto";
@@ -103,7 +104,7 @@ export const getActiveAccountsForDisbursement = async (auth_req: AuthRequest): P
 
 export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccount[]> => {
     const user_id = auth_req.user.id
-    const cache_accounts_logger = root_logger.forMethod('getAccountsForApi', 'CACHE_ACCOUNTS', user_id)
+    const cache_accounts_logger = root_logger.forMethod('getAccountsForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.accountsByUserForApi(user_id)
     const cached_accounts = cache.get<DTOAccount[]>(cache_key)
     if (cached_accounts !== undefined) {

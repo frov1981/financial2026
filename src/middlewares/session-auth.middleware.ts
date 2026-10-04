@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { NextFunction, Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../config/typeorm.datasource'
 import { User } from '../entities/User.entity'
@@ -9,7 +10,7 @@ import { parseError } from '../utils/error.util'
 
 export const sessionAuthMiddleware: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   const session_user_id = (req.session as any)?.user_id
-  const sessionAuthMiddleware_logger = logger.forMethod(sessionAuthMiddleware.name, 'SESSION_AUTH', session_user_id ?? null)
+  const sessionAuthMiddleware_logger = logger.forMethod(sessionAuthMiddleware.name, LOGGER_EVENTS.MIDDLEWARE, session_user_id ?? null)
   try {
     if (session_user_id == null) return res.redirect('/login')
 

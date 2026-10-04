@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { RequestHandler, Response } from 'express'
 import { DateTime } from 'luxon'
 import { In } from 'typeorm'
@@ -18,10 +19,10 @@ const day_names = [
   { value: 6, name: 'saturday', label: 'Sábado' },
   { value: 7, name: 'sunday', label: 'Domingo' },
 ]
-const schedule_logger = logger.forMethod('weeklyBalanceSchedule', 'WEEKLY_BALANCE_SCHEDULE')
+const schedule_logger = logger.forMethod('weeklyBalanceSchedule', LOGGER_EVENTS.JOB)
 
 const logRequestLifecycle = (res: Response, request_name: string, user_id: number): void => {
-  const request_logger = logger.forMethod(request_name, 'WEEKLY_BALANCE_SCHEDULE', user_id)
+  const request_logger = logger.forMethod(request_name, LOGGER_EVENTS.JOB, user_id)
   request_logger.debug('Inicio de ejecución de pantalla')
   res.once('finish', () => {
     request_logger.debug('Fin de ejecución de pantalla', { status_code: res.statusCode })
@@ -67,7 +68,7 @@ export const routeToNotificationsPage: RequestHandler = async (req, res, next) =
       days: day_names,
     })
   } catch (error) {
-    logger.forMethod(routeToNotificationsPage.name, 'WEEKLY_BALANCE_SCHEDULE', auth_req.user.id)
+    logger.forMethod(routeToNotificationsPage.name, LOGGER_EVENTS.JOB, auth_req.user.id)
       .error('Error cargando pantalla de programación semanal', parseError(error))
     next(error)
   }
@@ -87,7 +88,7 @@ export const routeToNotificationScheduleForm: RequestHandler = async (req, res, 
       errors: {},
     })
   } catch (error) {
-    logger.forMethod(routeToNotificationScheduleForm.name, 'WEEKLY_BALANCE_SCHEDULE', auth_req.user.id)
+    logger.forMethod(routeToNotificationScheduleForm.name, LOGGER_EVENTS.JOB, auth_req.user.id)
       .error('Error cargando formulario de programación semanal', parseError(error))
     next(error)
   }
@@ -140,7 +141,7 @@ export const apiForSavingNotificationSchedule: RequestHandler = async (req, res,
 
     res.redirect('/notifications')
   } catch (error) {
-    logger.forMethod(apiForSavingNotificationSchedule.name, 'WEEKLY_BALANCE_SCHEDULE', auth_req.user.id)
+    logger.forMethod(apiForSavingNotificationSchedule.name, LOGGER_EVENTS.JOB, auth_req.user.id)
       .error('Error actualizando la programación semanal de balances', parseError(error))
     next(error)
   }

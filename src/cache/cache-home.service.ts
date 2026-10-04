@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { CacheKpiBalance } from "../entities/CacheKpiBalance.entity";
@@ -126,7 +127,7 @@ const calcTrendObject = (current: DTOHomeKpiBalance, previous: DTOHomeKpiBalance
  *******************************************************************************************/
 export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Promise<number[]> => {
   const user_id = auth_req.user.id
-  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', LOGGER_EVENTS.CACHE, user_id)
   const cache_key = cacheKeys.homeAvailableYearsKpi(user_id)
   const cached_available_kpi_years = cache.get<number[]>(cache_key)
   if (cached_available_kpi_years !== undefined) return cached_available_kpi_years
@@ -154,7 +155,7 @@ export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Prom
 
 export const getHomeBalanceKpiCache = async (auth_req: AuthRequest): Promise<DTOHomeKpiBalance> => {
   const user_id = auth_req.user.id
-  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', LOGGER_EVENTS.CACHE, user_id)
   const year_period_for_kpi = Number(auth_req.query.year_period_for_kpi || 0)
   const month_period_for_kpi = Number(auth_req.query.month_period_for_kpi || 0)
   const cache_key = cacheKeys.homeBalanceKpi(user_id, year_period_for_kpi, month_period_for_kpi)
@@ -435,7 +436,7 @@ export const getHomeReceivableFlowSummaryCache = async (auth_req: AuthRequest): 
 
 export const getHomeCategoryKpiCache = async (auth_req: AuthRequest): Promise<DTOHomeCategoryKpi[]> => {
   const user_id = auth_req.user.id
-  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', LOGGER_EVENTS.CACHE, user_id)
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   const cache_key = cacheKeys.homeCategoryKpi(user_id, year)
   const cached = cache.get<DTOHomeCategoryKpi[]>(cache_key)
@@ -487,7 +488,7 @@ export const getHomeCategoryKpiCache = async (auth_req: AuthRequest): Promise<DT
 
 export const getHomeCategoryKpiDetail = async (auth_req: AuthRequest): Promise<DTOHomeCategoryKpiDetail[]> => {
   const user_id = auth_req.user.id
-  const cache_home_logger = root_logger.forMethod('homeKpiCache', 'CACHE_HOME', user_id)
+  const cache_home_logger = root_logger.forMethod('homeKpiCache', LOGGER_EVENTS.CACHE, user_id)
   const category_id = Number(auth_req.query.category_id || 0)
   const year = Number(auth_req.query.year_period_for_kpi || 0)
   if (!category_id) return []

@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import nodemailer from 'nodemailer'
 import { User } from '../entities/User.entity'
 import { parseError } from '../utils/error.util'
@@ -16,7 +17,7 @@ const transporter = nodemailer.createTransport({
 })
 
 export async function sendWeeklyBalanceMail(user: User, timezone = 'UTC'): Promise<void> {
-  const weekly_balance_mail_logger = root_logger.forMethod('sendWeeklyBalanceMail', 'SEND_WEEKLY_BALANCE_MAIL', user.id)
+  const weekly_balance_mail_logger = root_logger.forMethod('sendWeeklyBalanceMail', LOGGER_EVENTS.MAIL, user.id)
   const started_at = performance.now()
 
   try {

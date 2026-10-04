@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import bcrypt from 'bcryptjs'
 import { Request, RequestHandler, Response } from 'express'
 import { IsNull, MoreThan } from 'typeorm'
@@ -22,7 +23,7 @@ export const show2FA = (req: Request, res: Response) => {
 
 export const verify2FA = async (req: Request, res: Response) => {
   const pendingUserId = req.session.pending2FAUserId
-  const verify2FA_logger = logger.forMethod(verify2FA.name, 'VERIFY_2FA', pendingUserId ?? null)
+  const verify2FA_logger = logger.forMethod(verify2FA.name, LOGGER_EVENTS.AUTH, pendingUserId ?? null)
   try {
     const { code } = req.body
     if (pendingUserId == null) return res.redirect('/login')
@@ -79,7 +80,7 @@ export const verify2FA = async (req: Request, res: Response) => {
 }
 
 export const apiForValidatingLogin = async (req: Request, res: Response) => {
-  const apiForValidatingLogin_logger = logger.forMethod(apiForValidatingLogin.name, 'LOGIN')
+  const apiForValidatingLogin_logger = logger.forMethod(apiForValidatingLogin.name, LOGGER_EVENTS.AUTH)
   try {
     const selected_fields: (keyof User)[] = ['id', 'email', 'password_hash', 'name', 'created_at']
     const timezone = String(req.body.timezone || 'UTC')
@@ -120,7 +121,7 @@ export const apiForValidatingLogin = async (req: Request, res: Response) => {
 
 export const apiForLogout: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForLogout_logger = logger.forMethod(apiForLogout.name, 'LOGOUT', auth_req.user.id)
+  const apiForLogout_logger = logger.forMethod(apiForLogout.name, LOGGER_EVENTS.AUTH, auth_req.user.id)
   const started_at = performance.now()
   try {
     req.session.destroy(err => {

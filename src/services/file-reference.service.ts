@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import fs from 'fs/promises'
 import path from 'path'
 import sharp from 'sharp'
@@ -72,7 +73,7 @@ async function inspectImage(buffer: Buffer): Promise<{ extension: string, mimeTy
 }
 
 export async function saveFileReference(input: SaveFileReferenceInput): Promise<FileReference> {
-  const saveFileReference_logger = logger.forMethod(saveFileReference.name, 'SAVE_FILE_REFERENCE', null)
+  const saveFileReference_logger = logger.forMethod(saveFileReference.name, LOGGER_EVENTS.FILE_REFERENCE, null)
   const started_at = performance.now()
   if (!Number.isInteger(input.recordId) || input.recordId <= 0) {
     throw new Error('El id del registro debe ser un entero positivo')

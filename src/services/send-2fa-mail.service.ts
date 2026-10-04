@@ -1,8 +1,10 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import nodemailer from 'nodemailer'
 import { logger as root_logger } from '../utils/logger.util'
 
-const send_2fa_mail_logger = root_logger.forMethod('send2FACodeByEmail', 'SEND_2FA_MAIL')
 import { parseError } from '../utils/error.util'
+
+const send_2fa_mail_logger = root_logger.forMethod('send2FACodeByEmail', LOGGER_EVENTS.AUTH)
 
 const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST,

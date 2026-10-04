@@ -1,9 +1,12 @@
+import { LOGGER_EVENTS, LoggerEventName } from '../../utils/logger-events'
 import { RequestHandler } from 'express'
 import { readdir, readFile, stat } from 'fs/promises'
 import path from 'path'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { ConfigurableLogLevel, logger } from '../../utils/logger.util'
+import { AppDataSource } from '../../config/typeorm.datasource'
+import { User } from '../../entities/User.entity'
 
 const configurableLevels: ConfigurableLogLevel[] = ['TRACE', 'DEBUG', 'INFO']
 const logPageSize = 100
@@ -13,13 +16,25 @@ type LogType = typeof logTypes[number]
 interface LogRecord {
   level: LogType | null
   time: string | null
-  message: string
+  levelName: string | null
+  eventName: string | null
+  method: string | null
   properties: Array<{ name: string; value: string }>
 }
 
 interface LogFile {
   name: string
   modifiedAt: Date
+}
+
+interface LogUserOption {
+  id: string
+  name: string
+}
+
+interface LogEventOption {
+  id: string
+  name: string
 }
 
 function logDirectory(): string {
@@ -56,6 +71,36 @@ function requestedLogTypes(value: unknown): LogType[] | null {
   return [...new Set(values as LogType[])]
 }
 
+function requestedLogUser(value: unknown): string | null {
+  if (value === undefined || value === '') return 'all'
+  if (typeof value !== 'string') return null
+  if (value === 'all' || value === 'null') return value
+  if (!/^(0|[1-9]\d*)$/.test(value) || !Number.isSafeInteger(Number(value))) return null
+  return value
+}
+
+function requestedLogEvent(value: unknown): string | null {
+  if (value === undefined || value === '' || value === 'all') return ''
+  if (typeof value !== 'string' || !Object.values(LOGGER_EVENTS).includes(value as LoggerEventName)) return null
+  return value
+}
+
+function getLogUserId(line: string): string | null {
+  try {
+    const parsed = JSON.parse(line) as Record<string, unknown>
+    const userId = parsed.user_id
+    if (typeof userId === 'number' && Number.isSafeInteger(userId) && userId >= 0) {
+      return String(userId)
+    }
+    if (typeof userId === 'string' && /^(0|[1-9]\d*)$/.test(userId)) {
+      return userId
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 function getLogType(line: string): LogType | null {
   try {
     const log = JSON.parse(line) as { level_name?: unknown; level?: unknown }
@@ -83,23 +128,43 @@ function parseLogRecord(line: string): LogRecord {
     const time = typeof parsed.time === 'string' || typeof parsed.time === 'number'
       ? String(parsed.time)
       : null
-    const messageValue = parsed.msg ?? parsed.message
-    const message = typeof messageValue === 'string'
-      ? messageValue
-      : messageValue === undefined
-        ? line
-        : JSON.stringify(messageValue)
-    const hiddenProperties = new Set(['level', 'level_name', 'service', 'msg', 'message', 'time'])
+    const levelName = typeof parsed.level_name === 'string' ? parsed.level_name : null
+    const eventName = typeof parsed.event_name === 'string' ? parsed.event_name : null
+    const method = typeof parsed.method_name === 'string' ? parsed.method_name : null
+    const hiddenProperties = new Set([
+      'level',
+      'level_name',
+      'method_name',
+      'service',
+      'time',
+    ])
+    const propertyLabels: Record<string, string> = {
+      user_id: 'Usuario',
+      context: 'Contexto',
+      msg: 'Mensaje',
+      ex_event_type: 'Tipo de evento',
+    }
     const properties = Object.entries(parsed)
       .filter(([name]) => !hiddenProperties.has(name))
       .map(([name, value]) => ({
-        name,
+        name: propertyLabels[name] ?? name,
         value: typeof value === 'string' ? value : JSON.stringify(value) ?? String(value),
       }))
+    if (levelName) {
+      properties.unshift({ name: 'Nivel', value: levelName })
+    }
+    properties.unshift({ name: 'Evento', value: eventName || '—' })
 
-    return { level: getLogType(line), time, message, properties }
+    return { level: getLogType(line), time, levelName, eventName, method, properties }
   } catch {
-    return { level: null, time: null, message: line, properties: [] }
+    return {
+      level: null,
+      time: null,
+      levelName: null,
+      eventName: null,
+      method: null,
+      properties: [{ name: 'raw', value: line }],
+    }
   }
 }
 
@@ -109,7 +174,11 @@ function renderReader(
   selectedFileNumber: number,
   selectedFile: string,
   filter: string,
+  eventFilter: string,
   selectedLogTypes: LogType[],
+  selectedLogUser: string,
+  logUserOptions: LogUserOption[],
+  logEventOptions: LogEventOption[],
   records: LogRecord[],
   totalLines: number,
   displayedLines: number
@@ -121,7 +190,11 @@ function renderReader(
     selectedFileNumber,
     selectedFile,
     filter,
+    eventFilter,
     selectedLogTypes,
+    selectedLogUser,
+    logUserOptions,
+    logEventOptions,
     records,
     totalLines,
     displayedLines,
@@ -130,7 +203,7 @@ function renderReader(
 
 export const routeToAdminPage: RequestHandler = async (req, res, next) => {
   const auth_req = req as AuthRequest
-  const admin_logger = logger.forMethod(routeToAdminPage.name, 'ADMIN', auth_req.user.id)
+  const admin_logger = logger.forMethod(routeToAdminPage.name, LOGGER_EVENTS.ADMIN, auth_req.user.id)
 
   try {
     const logFiles = await getRecentLogFiles()
@@ -160,7 +233,7 @@ export const apiForChangingLogLevel: RequestHandler = (req, res) => {
 
 export const apiForOpeningLogFile: RequestHandler = async (req, res, next) => {
   const auth_req = req as AuthRequest
-  const admin_logger = logger.forMethod(apiForOpeningLogFile.name, 'ADMIN', auth_req.user.id)
+  const admin_logger = logger.forMethod(apiForOpeningLogFile.name, LOGGER_EVENTS.ADMIN, auth_req.user.id)
   const rawFileNumber = requestedString(req.body?.fileNumber)
   const fileNumber = Number(rawFileNumber)
 
@@ -178,15 +251,23 @@ export const apiForOpeningLogFile: RequestHandler = async (req, res, next) => {
 
 export const routeToLogReader: RequestHandler = async (req, res, next) => {
   const auth_req = req as AuthRequest
-  const admin_logger = logger.forMethod(routeToLogReader.name, 'ADMIN', auth_req.user.id)
+  const admin_logger = logger.forMethod(routeToLogReader.name, LOGGER_EVENTS.ADMIN, auth_req.user.id)
   const rawFileNumber = requestedString(req.query.fileNumber)
   const selectedFileNumber = Number(rawFileNumber)
   const filter = requestedString(req.query.filter)
+  const eventFilter = requestedLogEvent(req.query.eventFilter)
   const selectedLogTypes = requestedLogTypes(req.query.level)
+  const selectedLogUser = requestedLogUser(req.query.userId)
   const rawOffset = requestedString(req.query.offset)
   const offset = rawOffset === '' ? 0 : Number(rawOffset)
   if (!selectedLogTypes) {
     return res.status(400).send('El tipo de registro seleccionado no es válido.')
+  }
+  if (!selectedLogUser) {
+    return res.status(400).send('El usuario seleccionado no es válido.')
+  }
+  if (eventFilter === null) {
+    return res.status(400).send('El evento seleccionado no es válido.')
   }
   if (!Number.isSafeInteger(offset) || offset < 0) {
     return res.status(400).send('El desplazamiento del registro no es válido.')
@@ -211,6 +292,16 @@ export const routeToLogReader: RequestHandler = async (req, res, next) => {
       .reverse()
       .filter(line => {
         if (filter && !line.toLocaleLowerCase().includes(filter.toLocaleLowerCase())) return false
+        if (eventFilter) {
+          try {
+            const eventName = (JSON.parse(line) as Record<string, unknown>).event_name
+            if (eventName !== eventFilter) return false
+          } catch {
+            return false
+          }
+        }
+        if (selectedLogUser === 'null' && getLogUserId(line) !== null) return false
+        if (selectedLogUser !== 'all' && selectedLogUser !== 'null' && getLogUserId(line) !== selectedLogUser) return false
         if (selectedLogTypes.length === 0) return true
         const lineType = getLogType(line)
         return lineType !== null && selectedLogTypes.includes(lineType)
@@ -228,13 +319,40 @@ export const routeToLogReader: RequestHandler = async (req, res, next) => {
         hasMore: displayedLines < matchingLines.length,
       })
     }
+    const users = await AppDataSource.getRepository(User)
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.name'])
+      .orderBy('user.name', 'ASC')
+      .getMany()
+    const logUserOptions: LogUserOption[] = [
+      { id: 'all', name: 'Todos' },
+      { id: 'null', name: 'Nulos' },
+      ...users.map(user => ({ id: String(user.id), name: user.name })),
+    ]
+    const logEventOptions: LogEventOption[] = [
+      { id: 'all', name: 'Todos' },
+      ...Object.values(LOGGER_EVENTS)
+        .sort((first, second) => first.localeCompare(second))
+        .map(eventName => ({ id: eventName, name: eventName })),
+    ]
+    if (
+      selectedLogUser !== 'all'
+      && selectedLogUser !== 'null'
+      && !logUserOptions.some(option => option.id === selectedLogUser)
+    ) {
+      logUserOptions.push({ id: selectedLogUser, name: `Usuario ${selectedLogUser}` })
+    }
     return renderReader(
       res,
       auth_req.user.id,
       selectedFileNumber,
       selectedFile,
       filter,
+      eventFilter,
       selectedLogTypes,
+      selectedLogUser,
+      logUserOptions,
+      logEventOptions,
       records,
       matchingLines.length,
       displayedLines

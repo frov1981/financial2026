@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import NodeCache from 'node-cache'
 import { logger } from '../utils/logger.util'
 
@@ -42,7 +43,7 @@ class LoggedNodeCache extends NodeCache {
             : super.set(key, value, ttl)
 
         if (stored) {
-            logger.forMethod('set', 'CACHE', getCacheUserId(key)).debug('Entrada guardada en caché', {
+            logger.forMethod('set', LOGGER_EVENTS.CACHE, getCacheUserId(key)).debug('Entrada guardada en caché', {
                 cache_key: summarizeCacheKey(key),
                 ...summarizeCacheValue(value),
             })

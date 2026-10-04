@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { Request, Response, NextFunction } from 'express'
 import { AuthRequest } from '../types/auth-request'
 import { PayableBalanceService } from '../services/payable-balance.service'
@@ -8,7 +9,7 @@ const lastPayableBalanceByUser = new Map<number, number>()
 
 export const injectPayableBalance = async (req: Request, res: Response, next: NextFunction) => {
     const auth_req = req as AuthRequest
-    const injectPayableBalance_logger = logger.forMethod(injectPayableBalance.name, 'INJECT_PAYABLE_BALANCE', auth_req.user?.id ?? null)
+    const injectPayableBalance_logger = logger.forMethod(injectPayableBalance.name, LOGGER_EVENTS.MIDDLEWARE, auth_req.user?.id ?? null)
     try {
         if (!auth_req.user) return next()
         const payable_balance = await PayableBalanceService.getPendingPayableBalance(auth_req.user.id)

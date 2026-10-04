@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import { Category } from "../entities/Category.entity";
@@ -89,7 +90,7 @@ export const getInactivePayables = async (auth_req: AuthRequest): Promise<Payabl
 
 export const getPayablesForApi = async (auth_req: AuthRequest): Promise<DTOPayablesResponse> => {
     const user_id = auth_req.user.id
-    const cache_payables_logger = root_logger.forMethod('getPayablesForApi', 'CACHE_PAYABLES', user_id)
+    const cache_payables_logger = root_logger.forMethod('getPayablesForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.payablesByUserForApi(user_id)
     const cached_payables = cache.get<DTOPayablesResponse>(cache_key)
     if (cached_payables !== undefined) {

@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
 import type { DTOCategory } from "../dto/dto";
@@ -111,7 +112,7 @@ export const getActivePaymentCategories = async (auth_req: AuthRequest): Promise
 
 export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCategory[]> => {
     const user_id = auth_req.user.id
-    const cache_categories_logger = root_logger.forMethod('getCategoriesForApi', 'CACHE_CATEGORIES', user_id)
+    const cache_categories_logger = root_logger.forMethod('getCategoriesForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.categoriesByUserForApi(user_id)
     const cached_categories = cache.get<DTOCategory[]>(cache_key)
     if (cached_categories !== undefined) {

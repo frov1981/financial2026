@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/cache-accounts.service';
@@ -73,7 +74,7 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
   const started_at = performance.now()
   const auth_req = req as AuthRequest
   const user_id = auth_req.user.id
-  const saveReceivable_logger = logger.forMethod(saveReceivable.name, 'RECEIVABLE_SAVE', user_id)
+  const saveReceivable_logger = logger.forMethod(saveReceivable.name, LOGGER_EVENTS.RECEIVABLE, user_id)
   const mode: ReceivableFormMode = req.body.mode || 'insert'
   const timezone = auth_req.timezone || 'UTC'
   const receivable_id = Number(req.body.id)

@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
 import type { DTOAccount } from '../../dto/dto'
@@ -92,7 +93,7 @@ Api para devolver el DTO Account en JSON
 ==================================================*/
 export const apiForGettingAccounts: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingAccounts_logger = logger.forMethod(apiForGettingAccounts.name, 'ACCOUNT_LIST', auth_req.user.id)
+  const apiForGettingAccounts_logger = logger.forMethod(apiForGettingAccounts.name, LOGGER_EVENTS.ACCOUNT, auth_req.user.id)
   const started_at = performance.now()
   try {
     apiForGettingAccounts_logger.debug('Obteniendo cuentas')

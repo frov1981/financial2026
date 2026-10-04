@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
@@ -60,7 +61,7 @@ export const getCollectionById = async (auth_req: AuthRequest, collection_id: nu
 
 export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id: number): Promise<DTOReceivableCollection[]> => {
     const user_id = auth_req.user.id
-    const cache_receivable_collections_logger = root_logger.forMethod('getCollectionsForApi', 'CACHE_RECEIVABLE_COLLECTIONS', user_id)
+    const cache_receivable_collections_logger = root_logger.forMethod('getCollectionsForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.receivableCollectionsByCollectionForApi(user_id, collection_id)
 
     const cached = cache.get<DTOReceivableCollection[]>(cache_key)

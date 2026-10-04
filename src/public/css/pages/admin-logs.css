@@ -185,48 +185,82 @@
 }
 
 .admin-log-type-modal-content {
-    padding: 22px;
+    padding: 16px;
     background: #ffffff;
     border-radius: 12px;
     box-shadow: 0 10px 25px rgb(0 0 0 / 18%);
 }
 
 .admin-log-type-modal-content h2 {
-    margin: 0 0 16px;
-    font-size: 1.15rem;
+    margin: 0 0 10px;
+    font-size: 1rem;
     font-weight: 700;
 }
 
 .admin-log-type-options {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin: 0 0 20px;
+    column-gap: 6px;
+    row-gap: 3px;
+    margin: 0 0 10px;
     padding: 0;
     border: 0;
+}
+
+.admin-log-type-options legend {
+    grid-column: 1 / -1;
+    margin-bottom: 5px;
+    color: #374151;
+    font-size: 0.8rem;
+    font-weight: 600;
 }
 
 .admin-log-type-options label {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 9px 10px;
+    gap: 4px;
+    min-width: 0;
+    padding: 2px 5px;
     background: #f3f4f6;
     border-radius: 6px;
     cursor: pointer;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
 }
 
 .admin-log-type-options input {
-    width: 17px;
-    height: 17px;
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
     accent-color: #1d4ed8;
+}
+
+.admin-log-user-filter {
+    margin-bottom: 12px;
+}
+
+.admin-log-user-filter > label {
+    display: block;
+    margin-bottom: 4px;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.admin-log-user-filter .autocomplete-input,
+.admin-log-user-filter .autocomplete-panel {
+    text-transform: uppercase;
 }
 
 .admin-log-type-modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
+}
+
+.admin-log-type-modal-actions .ui-modal-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
 }
 
 .admin-page .admin-log-content {
@@ -239,13 +273,17 @@
 
 .admin-log-table {
     width: 100%;
-    min-width: 640px;
+    min-width: 720px;
     table-layout: fixed;
 }
 
 .admin-log-table > thead > tr > th,
 .admin-log-table > tbody > tr > td {
     vertical-align: top;
+}
+
+.admin-log-table .admin-log-row {
+    cursor: pointer;
 }
 
 .admin-log-table > thead > tr > th {
@@ -256,14 +294,34 @@
 
 .admin-log-table > thead > tr > th:first-child,
 .admin-log-table > tbody > tr.admin-log-row > td:first-child {
-    width: 48px;
+    width: 32px;
     text-align: center;
+}
+
+.admin-log-table > colgroup > .admin-log-expand-column {
+    width: 32px;
 }
 
 .admin-log-table > thead > tr > th:nth-child(2),
 .admin-log-table > tbody > tr.admin-log-row > .admin-log-time {
-    width: 190px;
+    width: 115px;
     white-space: nowrap;
+}
+
+.admin-log-table > thead > tr > th:nth-child(3),
+.admin-log-table > tbody > tr.admin-log-row > .admin-log-level-name {
+    width: 85px;
+}
+
+.admin-log-table > thead > tr > th:nth-child(4),
+.admin-log-table > tbody > tr.admin-log-row > .admin-log-event-name {
+    width: 150px;
+}
+
+.admin-log-table > thead > tr > th.admin-log-detail-heading {
+    padding-right: 2px;
+    padding-left: 2px;
+    text-align: center;
 }
 
 .admin-log-row.admin-log-level-trace {
@@ -317,23 +375,32 @@
 .admin-log-time {
     color: #4b5563;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.8rem;
 }
 
-.admin-log-message {
+.admin-log-level-name,
+.admin-log-event-name,
+.admin-log-method {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .admin-log-expand {
-    width: 28px;
-    height: 28px;
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
     color: #1f2937;
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
-    border-radius: 5px;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
     cursor: pointer;
+}
+
+.admin-log-expand svg {
+    width: 18px;
+    height: 18px;
 }
 
 .admin-log-expand:hover,
@@ -342,14 +409,23 @@
 }
 
 .admin-log-detail-row > td {
-    padding: 0 12px 12px 58px;
+    padding: 0;
     background: #f9fafb;
+}
+
+.admin-log-detail-content {
+    width: calc(100% - 32px);
+    min-width: 0;
+    margin-left: 32px;
+    padding: 0 12px 12px;
+    box-sizing: border-box;
 }
 
 .admin-log-properties {
     width: 100%;
+    min-width: 0;
+    table-layout: fixed;
     font-size: 0.85rem;
-    table-layout: auto;
 }
 
 .admin-log-properties > tbody > tr > th,
@@ -358,18 +434,23 @@
 }
 
 .admin-log-properties > tbody > tr > th {
-    width: 220px;
-    min-width: 140px;
-    max-width: 35%;
+    width: 35%;
+    min-width: 0;
     color: #374151;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
 .admin-log-properties > tbody > tr > td {
     width: 65%;
+    min-width: 0;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
+}
+
+.admin-log-properties > tbody > tr.admin-log-event-property {
+    display: none;
 }
 
 .admin-reader-status {
@@ -418,10 +499,15 @@
     }
 
     .admin-log-toolbar-button {
-        width: 40px;
-        min-width: 40px;
-        height: 40px;
-        padding: 7px;
+        width: auto;
+        min-width: 0;
+        height: auto;
+        padding: 0.5rem;
+    }
+
+    .admin-log-toolbar-button svg {
+        width: 1.25rem;
+        height: 1.25rem;
     }
 
     .admin-log-content {
@@ -429,18 +515,117 @@
         min-height: 280px;
     }
 
+    .admin-log-table {
+        min-width: 0;
+        font-size: 0.77rem;
+    }
+
+    .admin-log-table > thead > tr > th,
+    .admin-log-table > tbody > tr.admin-log-row > td,
+    .admin-log-properties > tbody > tr > th,
+    .admin-log-properties > tbody > tr > td {
+        font-size: 0.77rem;
+    }
+
+    .admin-log-table .admin-log-time {
+        font-size: 0.77rem;
+    }
+
     .admin-log-table > thead > tr > th,
     .admin-log-table > tbody > tr > td {
-        padding: 7px 6px;
+        padding: 5px 3px;
+    }
+
+    .admin-log-table > tbody > tr.admin-log-row > td {
+        vertical-align: middle;
+    }
+
+    .admin-log-table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .admin-log-table > colgroup > .admin-log-expand-column {
+        width: 7%;
+    }
+
+    .admin-log-table > colgroup > .admin-log-time-column {
+        width: 31%;
+    }
+
+    .admin-log-table > colgroup > .admin-log-method-column {
+        width: 62%;
+    }
+
+    .admin-log-table > colgroup > .admin-log-level-column,
+    .admin-log-table > colgroup > .admin-log-event-column {
+        display: none;
+        width: 0;
+    }
+
+    .admin-log-table > tbody > tr.admin-log-row > td {
+        min-width: 0;
     }
 
     .admin-log-table > thead > tr > th:nth-child(2),
     .admin-log-table > tbody > tr.admin-log-row > .admin-log-time {
-        width: 160px;
-        font-size: 0.72rem;
+        white-space: nowrap;
     }
 
-    .admin-log-detail-row > td {
-        padding-left: 12px;
+    .admin-log-table > colgroup > .admin-log-level-column {
+        display: none;
+        width: 0;
+    }
+
+    .admin-log-table > thead > tr > th:nth-child(3),
+    .admin-log-table > tbody > tr.admin-log-row > .admin-log-level-name {
+        display: none;
+    }
+
+    .admin-log-table > thead > tr > th:nth-child(4),
+    .admin-log-table > tbody > tr.admin-log-row > .admin-log-event-name {
+        display: none;
+    }
+
+    .admin-log-table > thead > tr > th:nth-child(5),
+    .admin-log-table > tbody > tr.admin-log-row > .admin-log-method {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .admin-log-expand {
+        width: 20px;
+        height: 20px;
+        padding: 0;
+    }
+
+    .admin-log-expand svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .admin-log-detail-content {
+        width: calc(100% - 24px);
+        margin-left: 24px;
+        padding-bottom: 6px;
+    }
+
+    .admin-log-properties {
+        font-size: 0.77rem;
+    }
+
+    .admin-log-properties > tbody > tr.admin-log-event-property {
+        display: table-row;
+    }
+
+    .admin-log-properties > tbody > tr > th,
+    .admin-log-properties > tbody > tr > td {
+        padding: 3px 6px;
+    }
+
+    .admin-log-properties > tbody > tr > th {
+        width: 35%;
+        min-width: 0;
     }
 }

@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { RequestHandler } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { DevicePreference } from '../../entities/DevicePreference.entity'
@@ -16,7 +17,7 @@ const getDeviceId = (value: unknown): string | null => {
 
 export const getDevicePreferences: RequestHandler = async (req, res) => {
   const auth_req = req as AuthRequest
-  const get_logger = logger.forMethod(getDevicePreferences.name, 'DEVICE_PREFERENCES', auth_req.user.id)
+  const get_logger = logger.forMethod(getDevicePreferences.name, LOGGER_EVENTS.DEVICE_PREFERENCES, auth_req.user.id)
   const started_at = performance.now()
   const device_id = getDeviceId(req.query.device_id)
   let has_preferences = false
@@ -56,7 +57,7 @@ export const getDevicePreferences: RequestHandler = async (req, res) => {
 
 export const saveDevicePreferences: RequestHandler = async (req, res) => {
   const auth_req = req as AuthRequest
-  const save_logger = logger.forMethod(saveDevicePreferences.name, 'DEVICE_PREFERENCES', auth_req.user.id)
+  const save_logger = logger.forMethod(saveDevicePreferences.name, LOGGER_EVENTS.DEVICE_PREFERENCES, auth_req.user.id)
   const started_at = performance.now()
   let device_id: string | null = null
   save_logger.debug('Inicio del guardado explícito de preferencias del dispositivo', { user_id: auth_req.user.id })

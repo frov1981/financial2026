@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { AppDataSource } from '../config/typeorm.datasource'
 import { AuthCode } from '../entities/AuthCode.entity'
 import { JobQueue } from '../entities/JobQueue.entity'
@@ -5,7 +6,7 @@ import { sendWeeklyBalanceMail } from './send-weekly-balance-mail.service'
 import { parseError } from '../utils/error.util'
 import { logger } from '../utils/logger.util'
 
-const job_dispatcher_logger = logger.forMethod('dispatchJob', 'JOB_DISPATCHER')
+const job_dispatcher_logger = logger.forMethod('dispatchJob', LOGGER_EVENTS.JOB)
 
 type JobHandler = (job: JobQueue) => Promise<void>
 
@@ -50,7 +51,7 @@ const executeAuthCodeCleanupJob = async (job: JobQueue): Promise<void> => {
 
 const executeWeeklyBalanceEmailJob = async (job: JobQueue): Promise<void> => {
   const user = job.schedule?.user
-  const weekly_balance_logger = logger.forMethod('executeWeeklyBalanceEmailJob', 'WEEKLY_BALANCE_SCHEDULER', user?.id ?? null)
+  const weekly_balance_logger = logger.forMethod('executeWeeklyBalanceEmailJob', LOGGER_EVENTS.JOB, user?.id ?? null)
   const context = {
     job_id: job.id,
     schedule_id: job.schedule?.id ?? null,

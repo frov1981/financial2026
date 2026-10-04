@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { In } from 'typeorm';
 import { getActiveExpenseCategories, getActiveIncomeCategories } from '../../cache/cache-categories.service';
@@ -64,7 +65,7 @@ export const apiForGettingCategorizeTransactions: RequestHandler = async (req: R
 export const apiForBatchCategorize: RequestHandler = async (req: Request, res: Response) => {
     const auth_req = req as AuthRequest
     const user_id = auth_req.user.id
-    const apiForBatchCategorize_logger = logger.forMethod(apiForBatchCategorize.name, 'BATCH_CATEGORIZE', user_id)
+    const apiForBatchCategorize_logger = logger.forMethod(apiForBatchCategorize.name, LOGGER_EVENTS.TRANSACTION_BATCH_CATEGORIZE, user_id)
     const started_at = performance.now()
     const return_from = req.body.return_from
     const return_category_id = req.body.return_category_id ? Number(req.body.return_category_id) : null

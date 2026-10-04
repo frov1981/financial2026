@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../utils/logger-events'
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { PayablePayment } from "../entities/PayablePayment.entity"
@@ -59,7 +60,7 @@ export const getPaymentById = async (auth_req: AuthRequest, payment_id: number):
 
 export const getPaymentsForApi = async (auth_req: AuthRequest, payable_id: number): Promise<DTOPayablePayment[]> => {
     const user_id = auth_req.user.id
-    const cache_payable_payments_logger = root_logger.forMethod('getPaymentsForApi', 'CACHE_PAYABLE_PAYMENTS', user_id)
+    const cache_payable_payments_logger = root_logger.forMethod('getPaymentsForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.payablePaymentsByPayableForApi(user_id, payable_id)
 
     const cached = cache.get<DTOPayablePayment[]>(cache_key)

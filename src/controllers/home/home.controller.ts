@@ -1,3 +1,4 @@
+import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { User } from '../../entities/User.entity'
@@ -39,7 +40,7 @@ export const routeToPageHome = async (req: Request, res: Response) => {
 
 export const apiForGettingKpis: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingKpis_logger = logger.forMethod(apiForGettingKpis.name, 'HOME_KPIS', auth_req.user.id)
+  const apiForGettingKpis_logger = logger.forMethod(apiForGettingKpis.name, LOGGER_EVENTS.KPI, auth_req.user.id)
   const started_at = performance.now()
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
@@ -62,7 +63,7 @@ export const apiForGettingKpis: RequestHandler = async (req: Request, res: Respo
 
 export const apiForGettingCashSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingCashSummary_logger = logger.forMethod(apiForGettingCashSummary.name, 'CASH_SUMMARY', auth_req.user.id)
+  const apiForGettingCashSummary_logger = logger.forMethod(apiForGettingCashSummary.name, LOGGER_EVENTS.DASHBOARD, auth_req.user.id)
   const started_at = performance.now()
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
@@ -83,7 +84,7 @@ export const apiForGettingCashSummary: RequestHandler = async (req: Request, res
 
 export const apiForGettingPayableSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingPayableSummary_logger = logger.forMethod(apiForGettingPayableSummary.name, 'PAYABLE_SUMMARY', auth_req.user.id)
+  const apiForGettingPayableSummary_logger = logger.forMethod(apiForGettingPayableSummary.name, LOGGER_EVENTS.DASHBOARD, auth_req.user.id)
   const started_at = performance.now()
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
@@ -104,7 +105,7 @@ export const apiForGettingPayableSummary: RequestHandler = async (req: Request, 
 
 export const apiForGettingReceivableSummary: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingReceivableSummary_logger = logger.forMethod(apiForGettingReceivableSummary.name, 'RECEIVABLE_SUMMARY', auth_req.user.id)
+  const apiForGettingReceivableSummary_logger = logger.forMethod(apiForGettingReceivableSummary.name, LOGGER_EVENTS.DASHBOARD, auth_req.user.id)
   const started_at = performance.now()
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
@@ -125,7 +126,7 @@ export const apiForGettingReceivableSummary: RequestHandler = async (req: Reques
 
 export const apiForGettingCategoryKpi: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingCategoryKpi_logger = logger.forMethod(apiForGettingCategoryKpi.name, 'CATEGORY_KPI', auth_req.user.id)
+  const apiForGettingCategoryKpi_logger = logger.forMethod(apiForGettingCategoryKpi.name, LOGGER_EVENTS.KPI, auth_req.user.id)
   const started_at = performance.now()
   try {
     const availableYearsKpi = await getAvailableYearsKpi(auth_req)
@@ -146,7 +147,7 @@ export const apiForGettingCategoryKpi: RequestHandler = async (req: Request, res
 
 export const apiForGettingCategoryKpiDetail: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingCategoryKpiDetail_logger = logger.forMethod(apiForGettingCategoryKpiDetail.name, 'CATEGORY_KPI_DETAIL', auth_req.user.id)
+  const apiForGettingCategoryKpiDetail_logger = logger.forMethod(apiForGettingCategoryKpiDetail.name, LOGGER_EVENTS.KPI, auth_req.user.id)
   const started_at = performance.now()
   try {
     const categoryKpiDetail = await getCategoryKpiDetail(auth_req)
@@ -163,7 +164,7 @@ export const apiForGettingCategoryKpiDetail: RequestHandler = async (req: Reques
 
 export const apiForGettingCategoryGroupKpi: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingCategoryGroupKpi_logger = logger.forMethod(apiForGettingCategoryGroupKpi.name, 'CATEGORY_GROUP_KPI', auth_req.user.id)
+  const apiForGettingCategoryGroupKpi_logger = logger.forMethod(apiForGettingCategoryGroupKpi.name, LOGGER_EVENTS.KPI, auth_req.user.id)
   const started_at = performance.now()
   try {
     const categoryGroupKpi = await getCategoryGroupKpi(auth_req)
@@ -180,7 +181,7 @@ export const apiForGettingCategoryGroupKpi: RequestHandler = async (req: Request
 
 export const apiForGettingCategoryGroupKpiDetail: RequestHandler = async (req: Request, res: Response) => {
   const auth_req = req as AuthRequest
-  const apiForGettingCategoryGroupKpiDetail_logger = logger.forMethod(apiForGettingCategoryGroupKpiDetail.name, 'CATEGORY_GROUP_KPI_DETAIL', auth_req.user.id)
+  const apiForGettingCategoryGroupKpiDetail_logger = logger.forMethod(apiForGettingCategoryGroupKpiDetail.name, LOGGER_EVENTS.KPI, auth_req.user.id)
   const started_at = performance.now()
   try {
     const categoryGroupKpiDetail = await getCategoryGroupKpiDetail(auth_req)
