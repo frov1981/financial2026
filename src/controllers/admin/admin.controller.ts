@@ -14,6 +14,7 @@ const logTypes = ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'] as const
 type LogType = typeof logTypes[number]
 
 interface LogRecord {
+  rawLine: string
   level: LogType | null
   time: string | null
   levelName: string | null
@@ -156,9 +157,10 @@ function parseLogRecord(line: string): LogRecord {
     }
     properties.unshift({ name: 'Evento', value: eventName || '—' })
 
-    return { level: getLogType(line), time, levelName, eventName, method, properties }
+    return { rawLine: line, level: getLogType(line), time, levelName, eventName, method, properties }
   } catch {
     return {
+      rawLine: line,
       level: null,
       time: null,
       levelName: null,

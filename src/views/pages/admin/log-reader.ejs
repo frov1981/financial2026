@@ -84,6 +84,7 @@
         <col class="admin-log-level-column">
         <col class="admin-log-event-column">
         <col class="admin-log-method-column">
+        <col class="admin-log-copy-column">
       </colgroup>
       <thead>
         <tr>
@@ -92,11 +93,12 @@
           <th class="ui-th col-left" scope="col">Nivel</th>
           <th class="ui-th col-left" scope="col">Evento</th>
           <th class="ui-th col-left" scope="col">Método</th>
+          <th class="ui-th col-left admin-log-copy-heading" scope="col">JSON</th>
         </tr>
       </thead>
       <tbody id="admin-log-records">
         <% records.forEach((record, index) => { %>
-          <tr class="admin-log-row <%= record.level ? `admin-log-level-${record.level.toLowerCase()}` : '' %>" data-detail-id="admin-log-detail-<%= index %>">
+          <tr class="admin-log-row <%= record.level ? `admin-log-level-${record.level.toLowerCase()}` : '' %>" data-detail-id="admin-log-detail-<%= index %>" data-raw-json="<%= encodeURIComponent(record.rawLine) %>">
             <td>
               <button class="admin-log-expand" type="button" aria-expanded="false" aria-controls="admin-log-detail-<%= index %>" aria-label="Expandir propiedades del registro">
                 <span aria-hidden="true">
@@ -108,9 +110,14 @@
             <td class="admin-log-level-name"><%= record.levelName || '—' %></td>
             <td class="admin-log-event-name"><%= record.eventName || '—' %></td>
             <td class="admin-log-method"><%= record.method || '—' %></td>
+            <td class="admin-log-copy-cell">
+              <button class="admin-log-copy" type="button" aria-label="Copiar registro JSON" title="Copiar JSON">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>
+              </button>
+            </td>
           </tr>
           <tr id="admin-log-detail-<%= index %>" class="admin-log-detail-row" hidden>
-            <td colspan="5">
+            <td colspan="6">
               <div class="admin-log-detail-content">
                 <table class="ui-table admin-log-properties">
                   <tbody>

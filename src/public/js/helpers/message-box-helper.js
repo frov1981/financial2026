@@ -14,8 +14,8 @@ class MessageBox {
     return this.showModal(message, 'error')
   }
 
-  static success(message) {
-    this.show(message, 'bg-green-600')
+  static success(message, options) {
+    this.show(message, 'bg-green-600', options)
   }
 
   static showModal(message, type) {
@@ -93,20 +93,25 @@ class MessageBox {
     this.showNextModal()
   }
 
-  static show(message, bgClass) {
+  static show(message, bgClass, { duration = 10000, showCountdown = true, compact = false } = {}) {
     const container = document.getElementById('message-container')
 
     const box = document.createElement('div')
-    box.className = `${bgClass} text-white px-4 py-3 rounded shadow mb-2`
-    box.style.minWidth = '260px'
+    box.className = `${bgClass} text-white rounded shadow mb-2 ${compact ? 'px-2 py-1 text-xs' : 'px-4 py-3'}`
+    if (!compact) box.style.minWidth = '260px'
 
-    let seconds = 10
+    let seconds = Math.ceil(duration / 1000)
 
     const text = document.createElement('div')
-    text.textContent = `${message} (${seconds}s)`
+    text.textContent = showCountdown ? `${message} (${seconds}s)` : message
     box.appendChild(text)
 
     container.appendChild(box)
+
+    if (!showCountdown) {
+      setTimeout(() => box.remove(), duration)
+      return
+    }
 
     const interval = setInterval(() => {
       seconds--

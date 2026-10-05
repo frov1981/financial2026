@@ -302,6 +302,10 @@
     width: 32px;
 }
 
+.admin-log-table > colgroup > .admin-log-copy-column {
+    width: 42px;
+}
+
 .admin-log-table > thead > tr > th:nth-child(2),
 .admin-log-table > tbody > tr.admin-log-row > .admin-log-time {
     width: 115px;
@@ -322,6 +326,57 @@
     padding-right: 2px;
     padding-left: 2px;
     text-align: center;
+}
+
+.admin-log-table > thead > tr > th.admin-log-copy-heading,
+.admin-log-table > tbody > tr.admin-log-row > .admin-log-copy-cell {
+    padding-right: 2px;
+    padding-left: 2px;
+    text-align: center;
+}
+
+.admin-log-copy {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #1f2937;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.admin-log-copy:hover,
+.admin-log-copy:focus-visible {
+    background: #e5e7eb;
+}
+
+.admin-log-copy svg {
+    width: 16px;
+    height: 16px;
+}
+
+.admin-log-copy-feedback {
+    position: fixed;
+    z-index: 10;
+    padding: 3px 8px;
+    color: #fff;
+    background: rgb(22 101 52 / 92%);
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+    font-size: 0.75rem;
+    line-height: 1.25;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    animation: admin-log-copy-feedback-fade 2s ease-out forwards;
+}
+
+@keyframes admin-log-copy-feedback-fade {
+    0%, 70% { opacity: 1; }
+    100% { opacity: 0; }
 }
 
 .admin-log-row.admin-log-level-trace {
@@ -554,7 +609,11 @@
     }
 
     .admin-log-table > colgroup > .admin-log-method-column {
-        width: 62%;
+        width: 53%;
+    }
+
+    .admin-log-table > colgroup > .admin-log-copy-column {
+        width: 9%;
     }
 
     .admin-log-table > colgroup > .admin-log-level-column,
@@ -603,6 +662,16 @@
     .admin-log-expand svg {
         width: 16px;
         height: 16px;
+    }
+
+    .admin-log-copy {
+        width: 20px;
+        height: 20px;
+    }
+
+    .admin-log-copy svg {
+        width: 15px;
+        height: 15px;
     }
 
     .admin-log-detail-content {

@@ -57,6 +57,29 @@ function formatLocalTime(value) {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}:${milliseconds}`
 }
 
+async function copyLogRecord(row) {
+  const encodedRawJson = row.dataset.rawJson
+  if (encodedRawJson === undefined) {
+    throw new Error('No se encontró el JSON original del registro.')
+  }
+  if (!navigator.clipboard?.writeText) {
+    throw new Error('El navegador no permite copiar al portapapeles en esta página.')
+  }
+  await navigator.clipboard.writeText(decodeURIComponent(encodedRawJson))
+}
+
+function showCopiedFeedback(row) {
+  const bounds = row.getBoundingClientRect()
+  const feedback = document.createElement('span')
+  feedback.className = 'admin-log-copy-feedback'
+  feedback.setAttribute('role', 'status')
+  feedback.textContent = 'Copiado'
+  feedback.style.left = `${bounds.left + bounds.width / 2}px`
+  feedback.style.top = `${bounds.top + bounds.height / 2}px`
+  document.body.append(feedback)
+  setTimeout(() => feedback.remove(), 2000)
+}
+
 function appendLogRecords(records) {
   if (!logRecords) return
   records.forEach(record => {
@@ -64,6 +87,7 @@ function appendLogRecords(records) {
     const detailId = `admin-log-detail-${index}`
     const row = document.createElement('tr')
     row.className = 'admin-log-row'
+    row.dataset.rawJson = encodeURIComponent(record.rawLine)
     if (record.level) {
       row.classList.add(`admin-log-level-${record.level.toLowerCase()}`)
     }
@@ -97,15 +121,24 @@ function appendLogRecords(records) {
     const methodCell = document.createElement('td')
     methodCell.className = 'admin-log-method'
     methodCell.textContent = record.method || '—'
+    const copyCell = document.createElement('td')
+    copyCell.className = 'admin-log-copy-cell'
+    const copyButton = document.createElement('button')
+    copyButton.className = 'admin-log-copy'
+    copyButton.type = 'button'
+    copyButton.setAttribute('aria-label', 'Copiar registro JSON')
+    copyButton.title = 'Copiar JSON'
+    copyButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'
+    copyCell.append(copyButton)
     row.dataset.detailId = detailId
-    row.append(expandCell, timeCell, levelCell, eventCell, methodCell)
+    row.append(expandCell, timeCell, levelCell, eventCell, methodCell, copyCell)
 
     const detailRow = document.createElement('tr')
     detailRow.id = detailId
     detailRow.className = 'admin-log-detail-row'
     detailRow.hidden = true
     const detailCell = document.createElement('td')
-    detailCell.colSpan = 5
+    detailCell.colSpan = 6
     const detailContent = document.createElement('div')
     detailContent.className = 'admin-log-detail-content'
     const propertiesTable = document.createElement('table')
@@ -140,6 +173,16 @@ logRecords?.addEventListener('click', event => {
   if (!(event.target instanceof Element)) return
   const row = event.target.closest('.admin-log-row')
   if (!row) return
+  if (event.target.closest('.admin-log-copy')) {
+    event.preventDefault()
+    event.stopPropagation()
+    copyLogRecord(row)
+      .then(() => showCopiedFeedback(row))
+      .catch(error => {
+        window.MessageBox.error(error instanceof Error ? error.message : 'No se pudo copiar el JSON.')
+      })
+    return
+  }
   const button = row.querySelector('.admin-log-expand')
   const detailId = row.dataset.detailId
   const detailRow = detailId ? document.getElementById(detailId) : null
