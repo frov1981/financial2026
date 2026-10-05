@@ -23,7 +23,7 @@ export class JobQueueService {
       name: input.name,
       recurrence_type: input.recurrence_type,
       recurrence_rule: input.recurrence_rule ?? null,
-      timezone: input.timezone ?? 'UTC',
+      timezone: input.timezone ?? (input.scope === 'system' ? this.getAppTimezone() : 'UTC'),
       start_at: input.start_at ?? new Date(),
       next_run_at: input.next_run_at ?? (input.start_at ?? new Date()),
       last_run_at: null,
@@ -33,7 +33,7 @@ export class JobQueueService {
     return AppDataSource.getRepository(JobSchedule).save(schedule)
   }
 
-  static getNextDailyRunAt(now: Date, hour = 1, minute = 0, timezone = 'UTC'): Date {
+  static getNextDailyRunAt(now: Date, hour = 1, minute = 0, timezone = process.env.TZ || 'America/Guayaquil'): Date {
     const local_now = DateTime.fromJSDate(now).setZone(timezone)
     let next_run = local_now.set({ hour, minute, second: 0, millisecond: 0 })
 
@@ -44,7 +44,7 @@ export class JobQueueService {
     return next_run.toUTC().toJSDate()
   }
 
-  static getNextWeeklyRunAt(now: Date, weekday: number, hour: number, minute: number, timezone = 'UTC'): Date {
+  static getNextWeeklyRunAt(now: Date, weekday: number, hour: number, minute: number, timezone = process.env.TZ || 'America/Guayaquil'): Date {
     const local_now = DateTime.fromJSDate(now).setZone(timezone)
     let days_ahead = (weekday - local_now.weekday + 7) % 7
     let next_run = local_now.startOf('day').plus({ days: days_ahead }).set({ hour, minute, second: 0, millisecond: 0 })
@@ -55,6 +55,14 @@ export class JobQueueService {
     }
 
     return next_run.toUTC().toJSDate()
+  }
+
+  private static getAppTimezone(): string {
+    const timezone = process.env.TZ || 'America/Guayaquil'
+    if (!DateTime.now().setZone(timezone).isValid) {
+      throw new Error(`La zona horaria configurada en TZ no es válida: ${timezone}`)
+    }
+    return timezone
   }
 
   static async configureWeeklyBalanceSchedule(
@@ -195,15 +203,11 @@ export class JobQueueService {
     return migrated_count
   }
 
-  static getAuthCodeCleanupRunTime(timezone = 'UTC'): { hour: number, minute: number } {
+  static getAuthCodeCleanupRunTime(): { hour: number, minute: number } {
     const raw = process.env.JOB_AUTH_CODES_CLEANUP_RUN_AT || '01:00'
-    const [hour, minute] = raw.split(':').map(value => Number(value))
-
-    if (Number.isFinite(hour) && Number.isFinite(minute)) {
-      return { hour, minute }
-    }
-
-    return { hour: 1, minute: 0 }
+    const match = raw.match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    if (!match) throw new Error('JOB_AUTH_CODES_CLEANUP_RUN_AT debe tener el formato HH:mm')
+    return { hour: Number(match[1]), minute: Number(match[2]) }
   }
 
   static async cancelLogRetentionJobs(): Promise<{ schedules: number, jobs: number }> {
@@ -230,47 +234,71 @@ export class JobQueueService {
   }
 
   static async ensureDailyAuthCodeCleanupJob(): Promise<JobSchedule | null> {
-    const repository = AppDataSource.getRepository(JobSchedule)
+    const timezone = this.getAppTimezone()
+    const { hour, minute } = this.getAuthCodeCleanupRunTime()
     const now = new Date()
+    const next_run_at = this.getNextDailyRunAt(now, hour, minute, timezone)
 
-    const existing = await repository.findOne({
-      where: {
-        scope: 'system',
-        job_type: 'auth_code_cleanup',
-        status: 'active',
-      },
-      order: { created_at: 'DESC' },
-    })
+    return AppDataSource.transaction(async manager => {
+      const schedule_repository = manager.getRepository(JobSchedule)
+      const queue_repository = manager.getRepository(JobQueue)
+      let schedule = await schedule_repository.findOne({
+        where: {
+          scope: 'system',
+          job_type: 'auth_code_cleanup',
+          status: In(['active', 'paused']),
+        },
+        order: { created_at: 'DESC' },
+      })
 
-    const run_time = this.getAuthCodeCleanupRunTime(existing?.timezone || 'UTC')
+      if (schedule) {
+        const config_changed = schedule.timezone !== timezone
+          || schedule.recurrence_type !== 'daily'
+          || Number(schedule.recurrence_rule?.hour) !== hour
+          || Number(schedule.recurrence_rule?.minute) !== minute
 
-    if (existing) {
-      const next_run = this.getNextDailyRunAt(now, run_time.hour, run_time.minute, existing.timezone || 'UTC')
-      if (existing.next_run_at.getTime() !== next_run.getTime()) {
-        existing.next_run_at = next_run
-        await repository.save(existing)
+        if (config_changed) {
+          const pending_jobs = await queue_repository.find({
+            where: {
+              schedule: { id: schedule.id },
+              status: In(['scheduled', 'queued']),
+            },
+          })
+          for (const pending_job of pending_jobs) {
+            pending_job.status = 'cancelled'
+            pending_job.finished_at = now
+            pending_job.error_message = 'Programación actualizada según la zona horaria de la aplicación'
+          }
+          if (pending_jobs.length) await queue_repository.save(pending_jobs)
+          schedule.next_run_at = next_run_at
+        }
+
+        schedule.timezone = timezone
+        schedule.recurrence_type = 'daily'
+        schedule.recurrence_rule = { ...schedule.recurrence_rule, hour, minute, target_table: 'auth_codes' }
+        schedule.status = 'active'
+        schedule = await schedule_repository.save(schedule)
+      } else {
+        schedule = await schedule_repository.save(schedule_repository.create({
+          user: null,
+          scope: 'system' as JobScope,
+          job_type: 'auth_code_cleanup',
+          entity_type: 'auth_codes',
+          entity_id: null,
+          name: 'Limpieza diaria de códigos de autenticación',
+          recurrence_type: 'daily',
+          recurrence_rule: { hour, minute, target_table: 'auth_codes' },
+          timezone,
+          start_at: now,
+          next_run_at,
+          last_run_at: null,
+          status: 'active',
+        }))
       }
-      return existing
-    }
 
-    const next_run_at = this.getNextDailyRunAt(now, run_time.hour, run_time.minute, 'UTC')
-    const schedule = repository.create({
-      user: null,
-      scope: 'system' as JobScope,
-      job_type: 'auth_code_cleanup',
-      entity_type: 'auth_codes',
-      entity_id: null,
-      name: 'Limpieza diaria de códigos de autenticación',
-      recurrence_type: 'daily',
-      recurrence_rule: { hour: run_time.hour, minute: run_time.minute, target_table: 'auth_codes' },
-      timezone: 'UTC',
-      start_at: now,
-      next_run_at,
-      last_run_at: null,
-      status: 'active',
+      await this.enqueueSchedule(schedule, queue_repository)
+      return schedule
     })
-
-    return repository.save(schedule)
   }
 
   static calculateNextRunAt(schedule: JobSchedule, from_date = new Date()): Date {
@@ -280,7 +308,17 @@ export class JobQueueService {
       case 'once':
         return new Date(schedule.next_run_at)
       case 'daily':
-        return base.plus({ days: 1 }).toJSDate()
+      {
+        const start = DateTime.fromJSDate(schedule.start_at).setZone(schedule.timezone || 'UTC')
+        let next_run = base.set({
+          hour: Number(schedule.recurrence_rule?.hour ?? start.hour),
+          minute: Number(schedule.recurrence_rule?.minute ?? start.minute),
+          second: 0,
+          millisecond: 0,
+        })
+        if (next_run.toMillis() <= base.toMillis()) next_run = next_run.plus({ days: 1 })
+        return next_run.toUTC().toJSDate()
+      }
       case 'weekly':
         return this.getNextWeeklyRunAt(
           from_date,

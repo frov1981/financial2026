@@ -22,6 +22,7 @@ type ScopedLogger = {
 }
 
 const LEVELS: Record<LogLevel, number> = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 }
+const APP_TIME_ZONE = process.env.TZ || 'America/Guayaquil'
 
 class Logger {
   private readonly outputLogger: pino.Logger
@@ -67,7 +68,10 @@ class Logger {
       formatters: {
         level: (label, number) => ({ level: number, level_name: label.toUpperCase() }),
       },
-    }, transportTargets.length ? pino.transport({ targets: transportTargets }) : undefined)
+    }, transportTargets.length ? pino.transport({
+      targets: transportTargets,
+      worker: { env: { ...process.env, TZ: APP_TIME_ZONE } },
+    }) : undefined)
   }
 
   private shouldLog(level: LogLevel) {
