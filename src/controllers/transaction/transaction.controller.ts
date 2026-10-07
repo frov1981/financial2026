@@ -2,9 +2,11 @@ import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts, getActiveAccountsForTransfer, getActiveAccountsForTransferIncludeCurrentAccount, getActiveAccountsIncludeCurrentAccount } from '../../cache/cache-accounts.service'
 import { getActiveCategoryById, getActiveExpenseCategories, getActiveExpenseCategoriesIncludeCurrentCategory, getActiveIncomeCategories, getActiveIncomeCategoriesIncludeCurrentCategory, getCategoryById } from '../../cache/cache-categories.service'
+import { getActiveSuppliersIncludeCurrentSupplier } from '../../cache/cache-suppliers.service'
 import { cacheKeys, deleteTransactionFilterCache } from '../../cache/cache-key.service'
 import { cache } from '../../cache/cache.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
+import type { DTOTransactionListItem } from '../../dto/dto'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
@@ -28,6 +30,7 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
   const active_accounts_for_transfer = await getActiveAccountsForTransferIncludeCurrentAccount(auth_req, transaction?.account?.id)
   const active_income_categories = await getActiveIncomeCategoriesIncludeCurrentCategory(auth_req, transaction?.category?.id)
   const active_expense_categories = await getActiveExpenseCategoriesIncludeCurrentCategory(auth_req, transaction?.category?.id)
+  const active_suppliers = await getActiveSuppliersIncludeCurrentSupplier(auth_req, transaction?.supplier?.id)
 
   const category_id = auth_req.query.category_id || null
   const from = auth_req.query.from || null
@@ -46,6 +49,7 @@ const renderTransactionForm = async (res: Response, params: TransactionFormViewP
       active_accounts_for_transfer,
       active_income_categories,
       active_expense_categories,
+      active_suppliers,
       context: { category_id, from },
     }
   )
@@ -64,7 +68,7 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
     const category_id = Number(auth_req.query.category_id) || null
     if (!search) deleteTransactionFilterCache(user_id)
     const cache_key = cacheKeys.transactionsPage(user_id, page, limit, category_id, search)
-    const cached_response = cache.get<{ items: Transaction[], total: number, page: number, limit: number, category_id: number | null }>(cache_key)
+    const cached_response = cache.get<{ items: DTOTransactionListItem[], total: number, page: number, limit: number, category_id: number | null }>(cache_key)
     if (cached_response !== undefined) {
       res.json(cached_response)
       return
@@ -76,6 +80,7 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .leftJoinAndSelect('t.account', 'account')
       .leftJoinAndSelect('t.to_account', 'to_account')
       .leftJoinAndSelect('t.category', 'category')
+      .leftJoinAndSelect('t.supplier', 'supplier')
       .leftJoinAndSelect('t.payable', 'payable')
       .leftJoinAndSelect('t.payable_payment', 'payable_payment')
       .leftJoinAndSelect('payable_payment.payable', 'paymentPayable')
@@ -93,6 +98,7 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
           account.name LIKE :search OR
           to_account.name LIKE :search OR
           category.name LIKE :search OR
+          supplier.business_name LIKE :search OR
           t.description LIKE :search 
         )`,
         { search: `%${search.toLowerCase()}%` }
@@ -105,7 +111,25 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .take(limit)
       .getManyAndCount()
 
-    const response = { items, total, page, limit, category_id }
+    const response = {
+      items: items.map(transaction => ({
+        ...transaction,
+        supplier: transaction.supplier
+          ? {
+              id: transaction.supplier.id,
+              business_name: transaction.supplier.business_name,
+              email_1: transaction.supplier.email_1,
+              email_2: transaction.supplier.email_2,
+              whatsapp_1: transaction.supplier.whatsapp_1,
+              whatsapp_2: transaction.supplier.whatsapp_2
+            }
+          : null
+      })),
+      total,
+      page,
+      limit,
+      category_id
+    }
     cache.set(cache_key, response)
     res.json(response)
   } catch (error) {
@@ -169,7 +193,7 @@ export const routeToFormUpdateTransaction: RequestHandler = async (req: Request,
   const repo_transaction = AppDataSource.getRepository(Transaction)
   const transaction = await repo_transaction.findOne({
     where: { id: transaction_id, user: { id: auth_req.user.id } },
-    relations: { account: true, to_account: true, category: true }
+    relations: { account: true, to_account: true, category: true, supplier: true }
   })
   if (!transaction) {
     return res.redirect('/transactions')
@@ -195,7 +219,7 @@ export const routeToFormCloneTransaction: RequestHandler = async (req: Request, 
   const repo_transaction = AppDataSource.getRepository(Transaction)
   const transaction = await repo_transaction.findOne({
     where: { id: transaction_id, user: { id: auth_req.user.id } },
-    relations: { account: true, to_account: true, category: true }
+    relations: { account: true, to_account: true, category: true, supplier: true }
   })
   if (!transaction) {
     return res.redirect('/transactions')
@@ -225,7 +249,7 @@ export const routeToFormDeleteTransaction: RequestHandler = async (req: Request,
   const repo_transaction = AppDataSource.getRepository(Transaction)
   const transaction = await repo_transaction.findOne({
     where: { id: transaction_id, user: { id: auth_req.user.id } },
-    relations: { account: true, to_account: true, category: true }
+    relations: { account: true, to_account: true, category: true, supplier: true }
   })
   if (!transaction) {
     return res.redirect('/transactions')

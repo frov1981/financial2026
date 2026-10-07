@@ -3,6 +3,7 @@ import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { getAccountById, getActiveAccounts, getActiveAccountsForTransfer } from '../../cache/cache-accounts.service';
 import { getActiveExpenseCategories, getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
+import { getActiveSuppliers, getSupplierById } from '../../cache/cache-suppliers.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
@@ -47,9 +48,12 @@ const sanitizeByPolicy = (mode: TransactionFormMode, body: any) => {
 /* ============================
    Construir objeto para la vista
 ============================ */
-const buildTransactionView = (auth_req: AuthRequest, body: any) => {
+const buildTransactionView = async (auth_req: AuthRequest, body: any) => {
+  const supplier_id = Number(body.supplier)
+  const supplier = supplier_id ? await getSupplierById(auth_req, supplier_id) : null
   return {
-    ...body
+    ...body,
+    supplier
   }
 }
 
@@ -73,14 +77,16 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
   const active_accounts_for_transfer = await getActiveAccountsForTransfer(auth_req)
   const active_income_categories = await getActiveIncomeCategories(auth_req)
   const active_expense_categories = await getActiveExpenseCategories(auth_req)
+  const active_suppliers = await getActiveSuppliers(auth_req)
 
   const form_state = {
-    transaction: buildTransactionView(auth_req, req.body),
+    transaction: await buildTransactionView(auth_req, req.body),
     transaction_form_policy: transactionFormMatrix[mode],
     active_accounts,
     active_accounts_for_transfer,
     active_income_categories,
     active_expense_categories,
+    active_suppliers,
     mode,
     context: { from: return_from, category_id: return_category_id }
   }
@@ -96,7 +102,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     if (transaction_id) {
       existing = await repo_transaction.findOne({
         where: { id: transaction_id, user: { id: auth_req.user.id } },
-        relations: { account: true, to_account: true, category: true }
+        relations: { account: true, to_account: true, category: true, supplier: true }
       })
       if (!existing) throw new Error('Transacción no encontrada')
     }
@@ -151,7 +157,8 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
         amount: existing.amount,
         account: existing.account,
         to_account: existing.to_account,
-        category: existing.category
+        category: existing.category,
+        supplier: existing.supplier
       })
       transaction = existing
     }
@@ -163,6 +170,21 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
     if (clean.account !== undefined) { transaction.account = await getAccountById(auth_req, Number(clean.account)) }
     if (clean.to_account !== undefined) { transaction.to_account = await getAccountById(auth_req, Number(clean.to_account)) }
     if (clean.category !== undefined) { transaction.category = await getCategoryById(auth_req, Number(clean.category)) }
+    if (clean.supplier !== undefined) {
+      const supplier_id = Number(clean.supplier)
+      if (!supplier_id) {
+        transaction.supplier = null
+      } else {
+        const supplier = await getSupplierById(auth_req, supplier_id)
+        if (!supplier) {
+          throw { validationErrors: { supplier: 'El proveedor seleccionado no es válido' } }
+        }
+        if (!supplier.is_active && existing?.supplier?.id !== supplier.id) {
+          throw { validationErrors: { supplier: 'Solo se pueden asignar proveedores activos' } }
+        }
+        transaction.supplier = supplier
+      }
+    }
     if (clean.date) { transaction.date = parseLocalDateToUTC(clean.date, timezone) }
     if (clean.amount !== undefined) { transaction.amount = Number(clean.amount) }
     if (clean.description !== undefined) { transaction.description = clean.description }
@@ -247,6 +269,7 @@ export const saveTransaction: RequestHandler = async (req: Request, res: Respons
       active_accounts,
       active_income_categories,
       active_expense_categories,
+      active_suppliers,
       context: { from: return_from, category_id: return_category_id },
       errors: validation_errors || { general: 'Ocurrió un error inesperado. Intenta nuevamente.\n' + getSqlErrorMessage(error) }
     })

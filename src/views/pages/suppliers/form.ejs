@@ -1,0 +1,90 @@
+<%
+  const rules = supplier_form_policy
+  const isHidden = field => rules[field] === 'hidden'
+  const isReadOnly = field => rules[field] === 'readonly'
+%>
+
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6">
+    <%= mode === 'insert' ? 'Insertar Proveedor' : mode === 'update' ? 'Editar Proveedor' : 'Eliminar Proveedor' %>
+  </h1>
+
+  <form method="post" action="/suppliers/">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <% if (errors?.general) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <%= errors.general %>
+      </div>
+    <% } %>
+
+    <input type="hidden" name="id" value="<%= supplier?.id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
+
+    <% const textFields = [
+      ['business_name', 'Razón social', 255, true],
+      ['tax_id', 'RUC', 20],
+      ['address_1', 'Dirección 1', 255],
+      ['address_2', 'Dirección 2', 255],
+      ['mobile_1', 'Móvil 1', 30],
+      ['mobile_2', 'Móvil 2', 30],
+      ['whatsapp_1', 'WhatsApp 1', 30],
+      ['whatsapp_2', 'WhatsApp 2', 30],
+      ['email_1', 'Correo 1', 254, false, 'email'],
+      ['email_2', 'Correo 2', 254, false, 'email']
+    ] %>
+
+    <% for (const [field, label, maxLength, required, inputType] of textFields) { %>
+      <% if (!isHidden(field)) { %>
+        <div class="mb-4">
+          <label class="block font-medium mb-1" for="<%= field %>"><%= label %></label>
+          <input
+            id="<%= field %>"
+            type="<%= inputType || 'text' %>"
+            name="<%= field %>"
+            class="w-full border rounded px-3 py-2"
+            maxlength="<%= maxLength %>"
+            value="<%= supplier?.[field] || '' %>"
+            <%= isReadOnly(field) ? 'readonly' : '' %>
+            <%= required ? 'required' : '' %>
+          >
+          <% if (errors?.[field]) { %>
+            <p class="text-red-600 text-sm mt-1"><%= errors[field] %></p>
+          <% } %>
+        </div>
+      <% } %>
+    <% } %>
+
+    <% if (!isHidden('is_active')) { %>
+      <div class="mb-6">
+        <label class="block font-medium mb-1" for="is_active">Estado</label>
+        <select
+          id="is_active"
+          name="is_active"
+          class="w-full border rounded px-3 py-2"
+          <%= isReadOnly('is_active') ? 'disabled' : '' %>
+        >
+          <option value="true" <%= supplier?.is_active !== false ? 'selected' : '' %>>Activo</option>
+          <option value="false" <%= supplier?.is_active === false ? 'selected' : '' %>>Inactivo</option>
+        </select>
+        <% if (isReadOnly('is_active')) { %>
+          <input type="hidden" name="is_active" value="<%= supplier?.is_active !== false %>">
+        <% } %>
+        <% if (errors?.is_active) { %>
+          <p class="text-red-600 text-sm mt-1"><%= errors.is_active %></p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <div class="flex justify-end gap-2">
+      <a href="/suppliers" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+      <% if (mode === 'delete') { %>
+        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
+      <% } else { %>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<script src="/js/pages/suppliers/form.js"></script>

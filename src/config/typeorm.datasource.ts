@@ -6,19 +6,20 @@ import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
 import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { Category } from '../entities/Category.entity'
 import { CategoryGroup } from '../entities/CategoryGroups.entity'
+import { DevicePreference } from '../entities/DevicePreference.entity'
+import { FileReference } from '../entities/FileReference.entity'
+import { JobQueue } from '../entities/JobQueue.entity'
+import { JobRun } from '../entities/JobRun.entity'
+import { JobSchedule } from '../entities/JobSchedule.entity'
 import { Payable } from '../entities/Payable.entity'
 import { PayableGroup } from '../entities/PayableGroup.entity'
 import { PayablePayment } from '../entities/PayablePayment.entity'
 import { Receivable } from '../entities/Receivable.entity'
 import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
 import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
+import { Supplier } from '../entities/Supplier.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
-import { FileReference } from '../entities/FileReference.entity'
-import { JobSchedule } from '../entities/JobSchedule.entity'
-import { JobQueue } from '../entities/JobQueue.entity'
-import { JobRun } from '../entities/JobRun.entity'
-import { DevicePreference } from '../entities/DevicePreference.entity'
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -46,7 +47,8 @@ export const AppDataSource = new DataSource({
     JobSchedule,
     JobQueue,
     JobRun,
-    DevicePreference
+    DevicePreference,
+    Supplier
   ],
   synchronize: false,
   timezone: 'Z',

@@ -1,0 +1,50 @@
+<script>
+  window.USER_ID = <%- JSON.stringify(String(USER_ID)) %>
+</script>
+
+<div class="max-w-4xl mx-auto ui-page">
+  <div class="ui-header">
+    <h1 class="ui-title">Proveedores</h1>
+
+    <div class="ui-toolbar">
+      <%- include('../../partials/buttons/btn-new', {
+        href: '/suppliers/insert',
+        title: 'Nuevo proveedor',
+        text: 'Nuevo',
+        data_btn: 'new'
+      }) %>
+
+      <%- include('../../partials/buttons/btn-toggle-status.ejs', {
+        initialStatus: 'all'
+      }) %>
+
+      <%- include('../../partials/searchs/search-box', {
+        placeholder: 'Buscar proveedores...'
+      }) %>
+    </div>
+  </div>
+
+  <div class="ui-scroll-area">
+    <div id="suppliers-mobile" class="suppliers-mobile"></div>
+
+    <div class="ui-table-wrapper">
+      <table class="ui-table suppliers-table">
+        <thead>
+          <tr>
+            <th class="ui-th col-left">Razón social</th>
+            <th class="ui-th col-left">Correo</th>
+            <th class="ui-th col-left">WhatsApp</th>
+            <th class="ui-th col-left">RUC</th>
+            <th class="ui-th col-left">Estado</th>
+            <th class="ui-th col-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="suppliers-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="/js/pages/suppliers/index.js"></script>
+<script src="/js/helpers/icon-helper.js"></script>
+<script src="/js/helpers/status-toggle-helper.js"></script>

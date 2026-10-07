@@ -104,6 +104,42 @@
         display: table-cell;
     }
 
+    .transaction-card-detail {
+        box-sizing: border-box;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .transaction-card {
+        padding: 2px;
+    }
+
+    .transaction-card-detail .transaction-description-summary,
+    .transaction-card-detail .transaction-supplier-summary {
+        box-sizing: border-box;
+        width: 100%;
+        margin: 0;
+        padding: 2px !important;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .transaction-card-detail .transaction-description-summary h3,
+    .transaction-card-detail .transaction-supplier-summary h3 {
+        margin: 0 0 2px;
+    }
+
+    .transaction-card-detail .transaction-supplier-summary {
+        margin-top: 2px;
+        padding-top: 2px !important;
+        border-top: 1px solid var(--ui-gray-200);
+    }
+
 }
 
 @media (min-width: 769px) {

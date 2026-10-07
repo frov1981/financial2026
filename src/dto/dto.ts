@@ -1,5 +1,6 @@
 import { CategoryType } from '../types/category-type'
 import { CategoryTypeForPayableOrReceivable } from '../types/category-type-for-payable-or-receivable'
+import type { Transaction } from '../entities/Transaction.entity'
 
 export type DTOAccount = {
     id: number
@@ -8,6 +9,32 @@ export type DTOAccount = {
     balance: number
     is_active: boolean
     transaction_count: number
+}
+
+export type DTOSupplier = {
+    id: number
+    business_name: string
+    tax_id: string | null
+    address_1: string | null
+    address_2: string | null
+    mobile_1: string | null
+    mobile_2: string | null
+    whatsapp_1: string | null
+    whatsapp_2: string | null
+    email_1: string | null
+    email_2: string | null
+    is_active: boolean
+    created_at: Date
+    updated_at: Date
+}
+
+export type DTOSupplierTransaction = Pick<
+    DTOSupplier,
+    'id' | 'business_name' | 'email_1' | 'email_2' | 'whatsapp_1' | 'whatsapp_2'
+>
+
+export type DTOTransactionListItem = Omit<Transaction, 'supplier'> & {
+    supplier: DTOSupplierTransaction | null
 }
 
 export type DTOCategory = {

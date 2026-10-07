@@ -9,6 +9,7 @@ import { CacheKpiBalance } from './CacheKpiBalance.entity'
 import { ReceivableGroup } from './ReceivableGroup.entity'
 import { Receivable } from './Receivable.entity'
 import { JobSchedule } from './JobSchedule.entity'
+import { Supplier } from './Supplier.entity'
 @Entity('users')
 
 export class User {
@@ -60,5 +61,8 @@ export class User {
 
   @OneToMany(() => JobSchedule, schedule => schedule.user)
   job_schedules!: JobSchedule[]
+
+  @OneToMany(() => Supplier, supplier => supplier.user)
+  suppliers!: Supplier[]
 
 }

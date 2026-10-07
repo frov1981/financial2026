@@ -38,6 +38,74 @@
     border-color: #d8c8f6;
 }
 
+.transactions-list-table {
+    table-layout: fixed;
+}
+
+.transactions-list-table th:nth-child(1),
+.transactions-list-table td:nth-child(1) {
+    width: 17%;
+}
+
+.transactions-list-table th:nth-child(2),
+.transactions-list-table td:nth-child(2) {
+    width: 13%;
+}
+
+.transactions-list-table th:nth-child(3),
+.transactions-list-table td:nth-child(3) {
+    width: 14%;
+}
+
+.transactions-list-table th:nth-child(4),
+.transactions-list-table td:nth-child(4) {
+    width: 20%;
+}
+
+.transactions-list-table th:nth-child(5),
+.transactions-list-table td:nth-child(5) {
+    width: 20%;
+}
+
+.transactions-list-table th:nth-child(6),
+.transactions-list-table td:nth-child(6) {
+    width: 16%;
+}
+
+.transactions-list-table th,
+.transactions-list-table td {
+    padding-right: 0.45rem;
+    padding-left: 0.45rem;
+}
+
+.transaction-account-cell,
+.transaction-category-cell {
+    overflow: hidden;
+}
+
+.transaction-account-cell .grouped-icon-line,
+.transaction-category-cell .grouped-icon-line {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.transaction-account-cell .grouped-icon-line > span:last-child,
+.transaction-category-cell .grouped-icon-line > span:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.transaction-actions-cell,
+.transaction-actions-cell .icon-actions {
+    white-space: nowrap;
+}
+
+.transactions-list-table .transaction-actions-cell .icon-btn {
+    min-width: 1.5rem;
+    padding: 0.25rem;
+}
+
 /* Origin badge */
 .tx-origin {
         display: inline-block;
@@ -152,7 +220,7 @@
     font-style: italic;
     color: var(--ui-gray-500);
     line-height: 1.2;
-    white-space: pre-line;
+    white-space: pre-wrap;
 }
 
 .transaction-card .card-amount {
@@ -197,8 +265,57 @@
   line-height: 1.4;
   color: var(--ui-gray-700);
 
-  white-space: pre-line;
+  white-space: normal;
   word-break: break-word;
+}
+
+.transaction-detail-content {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+    gap: 10px;
+}
+
+.transaction-description-summary,
+.transaction-supplier-summary {
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--ui-gray-200);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.65);
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.transaction-description-summary h3,
+.transaction-supplier-summary h3 {
+    margin: 0 0 4px;
+    color: var(--ui-gray-600);
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.transaction-description-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.transaction-supplier-summary {
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.transaction-supplier-summary > div > span {
+    color: var(--ui-gray-500);
+}
+
+.transaction-supplier-name {
+    margin-bottom: 3px;
+    color: var(--ui-gray-900);
+    font-weight: 600;
+}
+
+.transaction-card-detail .transaction-supplier-summary {
+    margin-top: 8px;
 }
 
 .transaction-detail-row.hidden {
@@ -214,6 +331,49 @@
   color: var(--ui-gray-700);
 
   border-top: 1px solid var(--ui-gray-200);
+}
+
+.transaction-expand-chevron {
+    display: inline-flex;
+    flex: 0 0 24px;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--ui-gray-600);
+    cursor: pointer;
+}
+
+.transaction-date-cell {
+    white-space: nowrap;
+}
+
+.transaction-date-values {
+    display: inline-block;
+    min-width: 76px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.transaction-expand-chevron:hover {
+    background: var(--ui-gray-100);
+}
+
+.transaction-expand-chevron span {
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+}
+
+.transaction-expand-chevron[aria-expanded="true"] span {
+    transform: rotate(45deg);
 }
 
 .transaction-images-btn.has-images {

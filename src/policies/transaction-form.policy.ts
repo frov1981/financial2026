@@ -6,6 +6,7 @@ export const transactionFormMatrix: TransactionFormMatrix = {
         account: 'editable',
         to_account: 'editable',
         category: 'editable',
+        supplier: 'editable',
         amount: 'editable',
         date: 'editable',
         description: 'editable'
@@ -15,6 +16,7 @@ export const transactionFormMatrix: TransactionFormMatrix = {
         account: 'editable',
         to_account: 'editable',
         category: 'editable',
+        supplier: 'editable',
         amount: 'editable',
         date: 'editable',
         description: 'editable'
@@ -24,6 +26,7 @@ export const transactionFormMatrix: TransactionFormMatrix = {
         account: 'readonly',
         to_account: 'readonly',
         category: 'readonly',
+        supplier: 'readonly',
         amount: 'readonly',
         date: 'readonly',
         description: 'readonly'

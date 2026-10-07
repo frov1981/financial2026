@@ -9,6 +9,7 @@ import { PayablePayment } from './PayablePayment.entity'
 import { User } from './User.entity'
 import { Receivable } from './Receivable.entity'
 import { ReceivableCollection } from './ReceivableCollection.entity'
+import { Supplier } from './Supplier.entity'
 
 @Entity('transactions')
 export class Transaction {
@@ -81,5 +82,9 @@ export class Transaction {
 
   @OneToOne(() => ReceivableCollection, collection => collection.transaction)
   receivable_collection!: ReceivableCollection | null
+
+  @ManyToOne(() => Supplier, supplier => supplier.transactions, { nullable: true })
+  @JoinColumn({ name: 'supplier_id', foreignKeyConstraintName: 'fk_transactions_supplier' })
+  supplier!: Supplier | null
 
 }

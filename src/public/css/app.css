@@ -21,6 +21,7 @@
    PAGES
 ========================= */
 @import url('./pages/accounts.css');
+@import url('./pages/suppliers.css');
 @import url('./pages/categories.css');
 @import url('./pages/payables.css');
 @import url('./pages/payable-payments.css');

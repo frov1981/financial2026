@@ -10,6 +10,7 @@ import { injectReceivableBalance } from './middlewares/inject-receivable-balance
 import { injectNetBalance } from './middlewares/inject-net-balance.middleware'
 import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
 import accountRoutes from './routes/account.route'
+import supplierRoutes from './routes/supplier.route'
 import authRoutes from './routes/auth.route'
 import categoryGroupRoutes from './routes/category-group.route'
 import categoryRoutes from './routes/category.route'
@@ -106,6 +107,7 @@ protectedRouter.use('/device-preferences', devicePreferencesRoutes)
 protectedRouter.use('/settings', settingsRoutes)
 protectedRouter.use('/admin', adminRoutes)
 protectedRouter.use('/accounts', accountRoutes)
+protectedRouter.use('/suppliers', supplierRoutes)
 protectedRouter.use('/categories', categoryRoutes)
 protectedRouter.use('/category-groups', categoryGroupRoutes)
 protectedRouter.use('/transactions', transactionRoutes)

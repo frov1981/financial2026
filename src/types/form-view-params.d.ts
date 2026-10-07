@@ -50,6 +50,11 @@ export type ReceivableCollectionFormMode = 'insert' | 'update' | 'delete'
 type ReceivableCollectionFieldMatrix = Record<string, ReceivableCollectionFieldMode>
 type ReceivableCollectionFormMatrix = Record<ReceivableCollectionFormMode, ReceivableCollectionFieldMatrix>
 
+export type SupplierFieldMode = 'hidden' | 'readonly' | 'editable'
+export type SupplierFormMode = 'insert' | 'update' | 'delete'
+export type SupplierFieldMatrix = Record<string, SupplierFieldMode>
+export type SupplierFormMatrix = Record<SupplierFormMode, SupplierFieldMatrix>
+
 export type BaseFormViewParams = {
     title: string
     view: string

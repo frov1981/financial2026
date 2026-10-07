@@ -3,6 +3,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const originalType = document.getElementById('original-transaction-type')?.value || ''
 
   const radios = document.querySelectorAll('input[name="type"]')
+  const supplierHiddenInput = document.querySelector('input[name="supplier"]')
+  const supplierTextInput = supplierHiddenInput?.closest('.autocomplete')
+    ?.querySelector('.autocomplete-input')
+
+  supplierTextInput?.addEventListener('input', () => {
+    if (supplierHiddenInput) supplierHiddenInput.value = ''
+  })
 
   /* Bloque Cuenta destino */
   const toAccountHiddenInput = document.querySelector('input[name="to_account"]')

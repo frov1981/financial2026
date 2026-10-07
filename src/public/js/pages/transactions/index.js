@@ -134,16 +134,47 @@ function moduleOriginLabel(transaction) {
 function hideAllTransactionDetails() {
   document.querySelectorAll('.transaction-detail-row')
     .forEach(row => row.classList.add('hidden'))
+  document.querySelectorAll('.transaction-expand-chevron')
+    .forEach(button => {
+      button.setAttribute('aria-expanded', 'false')
+      button.setAttribute('aria-label', 'Ampliar descripción')
+    })
 }
 
 function showTransactionDetail(id) {
   hideAllTransactionDetails()
 
   const detail_row = document.getElementById(`transaction-detail-${id}`)
+  const expand_button = document.querySelector(`.transaction-expand-chevron[data-transaction-id="${id}"]`)
 
   if (detail_row) {
     detail_row.classList.remove('hidden')
   }
+  if (expand_button) {
+    expand_button.setAttribute('aria-expanded', 'true')
+    expand_button.setAttribute('aria-label', 'Reducir descripción')
+  }
+}
+
+function toggleTransactionDetail(id) {
+  const detail_row = document.getElementById(`transaction-detail-${id}`)
+  const is_open = detail_row && !detail_row.classList.contains('hidden')
+
+  if (is_open) {
+    detail_row.classList.add('hidden')
+    const expand_button = document.querySelector(`.transaction-expand-chevron[data-transaction-id="${id}"]`)
+    expand_button?.setAttribute('aria-expanded', 'false')
+    expand_button?.setAttribute('aria-label', 'Ampliar descripción')
+    document.getElementById(`transaction-${id}`)?.classList.remove('tr-selected')
+    clearFilters(TRANSACTION_SELECTED_STORAGE_KEY)
+    return
+  }
+
+  document.querySelectorAll('#transactions-table tr[id^="transaction-"]')
+    .forEach(row => row.classList.remove('tr-selected'))
+  showTransactionDetail(id)
+  document.getElementById(`transaction-${id}`)?.classList.add('tr-selected')
+  saveFilters(TRANSACTION_SELECTED_STORAGE_KEY, { id })
 }
 
 function showTransactionCardDetail(id) {
@@ -167,6 +198,30 @@ function transactionImagesButton(transaction) {
       onclick="event.stopPropagation(); openTransactionImages(${transaction.id})">
       ${hasImages ? iconImage() : iconImageOff()}
     </button>
+  `
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character])
+}
+
+function renderSupplierSummary(supplier) {
+  if (!supplier) return ''
+  const email = supplier.email_1 || supplier.email_2 || '-'
+  const whatsapp = supplier.whatsapp_1 || supplier.whatsapp_2 || '-'
+  return `
+    <section class="transaction-supplier-summary" aria-label="Proveedor">
+      <h3>Proveedor</h3>
+      <div class="transaction-supplier-name">${escapeHtml(supplier.business_name || '-')}</div>
+      <div><span>Correo:</span> ${escapeHtml(email)}</div>
+      <div><span>WhatsApp:</span> ${escapeHtml(whatsapp)}</div>
+    </section>
   `
 }
 
@@ -384,17 +439,29 @@ function renderRow(transaction) {
 
   return `
     <tr id="transaction-${transaction.id}" class="${rowClassByType(transaction)}">
-      <td class="px-4 py-2 text-center col-nowrap">
-        <div>${date}</div>
-        <div class="text-xs text-gray-600">${time}</div>
-        <div class="text-xs text-gray-600">${weekday}</div>
+      <td class="px-4 py-2 text-center col-nowrap transaction-date-cell">
+        <button
+          type="button"
+          class="transaction-expand-chevron"
+          data-transaction-id="${transaction.id}"
+          aria-expanded="false"
+          aria-label="Ampliar descripción"
+          title="Ampliar o reducir descripción"
+        >
+          <span aria-hidden="true"></span>
+        </button>
+        <div class="transaction-date-values">
+          <div>${date}</div>
+          <div class="text-xs text-gray-600">${time}</div>
+          <div class="text-xs text-gray-600">${weekday}</div>
+        </div>
       </td>
       <td class="ui-td col-left">
         ${transactionTypeTag(transaction.type)}
         ${isModuleManaged(transaction) ? `<span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>` : ''}
       </td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
-      <td class="ui-td col-left col-nowrap">
+      <td class="ui-td col-left transaction-account-cell">
         ${transaction.type === 'transfer'
       ? `
             <div class="grouped-icon-line">
@@ -423,7 +490,7 @@ function renderRow(transaction) {
           : '-'
     }
       </td>
-      <td class="ui-td col-left col-nowrap">
+      <td class="ui-td col-left transaction-category-cell">
       ${transaction.category?.name
       ? `
         <div class="grouped-icon-line">
@@ -450,7 +517,7 @@ function renderRow(transaction) {
     }
       </td>
       
-      <td class="ui-td col-center col-nowrap">
+      <td class="ui-td col-center col-nowrap transaction-actions-cell">
         <div class="icon-actions">
 
           ${isBatchActive() ? `
@@ -496,8 +563,13 @@ function renderRow(transaction) {
     </tr> 
 
     <tr id="transaction-detail-${transaction.id}" class="transaction-detail-row hidden">
-      <td colspan="8">
-        ${transaction.description || '-'}
+      <td colspan="6">
+        <div class="transaction-detail-content">
+          <section class="transaction-description-summary">
+            <h3>Descripción</h3><div class="transaction-description-text">${escapeHtml(transaction.description?.trim() || '-')}</div>
+          </section>
+          ${renderSupplierSummary(transaction.supplier)}
+        </div>
       </td>
     </tr>
   `
@@ -624,14 +696,18 @@ function renderCard(transaction) {
               </div>
             ` : ''
     }
-          <div id="transaction-card-detail-${transaction.id}" class="transaction-card-detail hidden" >
-            ${transaction.description}
-          </div>
         </div>
 
         <div class="card-amount">
           ${amountBox(transaction.amount)}
         </div>
+      </div>
+
+      <div id="transaction-card-detail-${transaction.id}" class="transaction-card-detail hidden">
+        <section class="transaction-description-summary">
+          <h3>Descripción</h3><div class="transaction-description-text">${escapeHtml(transaction.description?.trim() || '-')}</div>
+        </section>
+        ${renderSupplierSummary(transaction.supplier)}
       </div>
     </div>
   `
@@ -846,6 +922,14 @@ document.getElementById('next-page-top')?.addEventListener('click', () => {
 
 if (table) {
   table.addEventListener('click', event => {
+    const expand_button = event.target.closest('.transaction-expand-chevron')
+    if (!expand_button) return
+
+    event.stopPropagation()
+    toggleTransactionDetail(Number(expand_button.dataset.transactionId))
+  })
+
+  table.addEventListener('click', event => {
     if (event.target.closest('button') || event.target.closest('a')) return
 
     const row = event.target.closest('tr[id^="transaction-"]')
@@ -859,6 +943,9 @@ if (table) {
     if (is_open) {
       row.classList.remove('tr-selected')
       detail_row.classList.add('hidden')
+      const expand_button = row.querySelector('.transaction-expand-chevron')
+      expand_button?.setAttribute('aria-expanded', 'false')
+      expand_button?.setAttribute('aria-label', 'Ampliar descripción')
       clearFilters(TRANSACTION_SELECTED_STORAGE_KEY)
       return
     }
@@ -870,7 +957,7 @@ if (table) {
       .forEach(tr => tr.classList.add('hidden'))
 
     row.classList.add('tr-selected')
-    detail_row?.classList.remove('hidden')
+    showTransactionDetail(id)
 
     saveFilters(TRANSACTION_SELECTED_STORAGE_KEY, { id })
   })

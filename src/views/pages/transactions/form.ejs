@@ -1,7 +1,7 @@
 <%
   const rules = transaction_form_policy
   const isHidden = field => rules[field] === 'hidden'
-  const isReadOnly = field => rules[field] === 'read'
+  const isReadOnly = field => rules[field] === 'readonly'
   const isEditable = field => rules[field] === 'edit'
 
 %>
@@ -200,6 +200,41 @@
     </div>
     <% } %>
 
+    <!-- Proveedor -->
+    <% if (!isHidden('supplier')) { %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1">Proveedor</label>
+
+      <div
+        class="autocomplete"
+        data-items='<%- JSON.stringify(active_suppliers.map(supplier => ({ id: supplier.id, name: supplier.business_name }))) %>'
+        data-default-id="<%= transaction?.supplier?.id || '' %>"
+        data-placeholder="-- Sin proveedor --"
+      >
+        <input
+          type="text"
+          class="autocomplete-input"
+          autocomplete="off"
+          value="<%= transaction?.supplier?.business_name || '' %>"
+          <%= isReadOnly('supplier') ? 'readonly' : '' %>
+        >
+        <input
+          type="hidden"
+          class="autocomplete-hidden"
+          name="supplier"
+          value="<%= transaction?.supplier?.id || '' %>"
+        >
+        <% if (!isReadOnly('supplier')) { %>
+        <div class="autocomplete-panel"></div>
+        <% } %>
+      </div>
+
+      <% if (errors?.supplier) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.supplier %></p>
+      <% } %>
+    </div>
+    <% } %>
+
     <!-- Monto -->
     <% if (!isHidden('amount')) { %>
     <div class="mb-4">
@@ -246,7 +281,7 @@
       <label class="block font-medium mb-1">Descripción</label>
       <textarea
         name="description"
-        rows="3"
+        rows="4"
         class="w-full border rounded px-3 py-2"
         <%= isReadOnly('description') ? 'readonly' : '' %>
       ><%= transaction?.description || '' %></textarea>

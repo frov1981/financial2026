@@ -3,12 +3,15 @@ import { AuthRequest } from "../types/auth-request"
 import { logger as root_logger } from "../utils/logger.util"
 import { cache } from "./cache.service"
 
-export type TypeSource = 'account' | 'category' | 'category_group' | 'payable' | 'payable_group' | 'payable_payment' | 'receivable' | 'receivable_group' | 'receivable_collection' | 'transaction' | 'home'
+export type TypeSource = 'account' | 'supplier' | 'category' | 'category_group' | 'payable' | 'payable_group' | 'payable_payment' | 'receivable' | 'receivable_group' | 'receivable_collection' | 'transaction' | 'home'
 
 export const cacheKeys = {
   /*Accounts*/
   accountsByUser: (user_id: number) => `accounts_user_${user_id}`,
   accountsByUserForApi: (user_id: number) => `accounts_api_user_${user_id}`,
+  /*Suppliers*/
+  suppliersByUser: (user_id: number) => `suppliers_user_${user_id}`,
+  suppliersByUserForApi: (user_id: number) => `suppliers_api_user_${user_id}`,
   /*Categories*/
   categoriesByUser: (user_id: number) => `categories_user_${user_id}`,
   categoriesByUserForApi: (user_id: number) => `categories_api_user_${user_id}`,
@@ -81,6 +84,9 @@ export const cacheKeys = {
     /*Accounts*/
     `accounts_user_${user_id}`,
     `accounts_api_user_${user_id}`,
+    /*Suppliers*/
+    `suppliers_user_${user_id}`,
+    `suppliers_api_user_${user_id}`,
     /*Categories*/
     `categories_user_${user_id}`,
     `categories_api_user_${user_id}`,
