@@ -3,6 +3,7 @@ import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getActiveCategoriesForReceivablesByUser, getReceivableById, getReceivablesForApi } from '../../cache/cache-receivables.service'
 import { getActiveParentReceivablesByUser } from '../../cache/cache-receivable-groups.service'
+import type { DTOReceivablesResponse } from '../../dto/dto'
 import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
 import { BaseFormViewParams } from '../../types/form-view-params'
@@ -148,8 +149,9 @@ export const apiForGettingReceivables: RequestHandler = async (req: Request, res
   const apiForGettingReceivables_logger = logger.forMethod(apiForGettingReceivables.name, LOGGER_EVENTS.RECEIVABLE, auth_req.user.id)
   const started_at = performance.now()
   try {
-    const result = await getReceivablesForApi(auth_req)
-    res.json(result)
+    const response: DTOReceivablesResponse = await getReceivablesForApi(auth_req)
+    apiForGettingReceivables_logger.info(`Cuentas por cobrar obtenidas desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+    res.json({ receivables: response.receivables, group_totals: response.group_totals })
   } catch (error) {
     apiForGettingReceivables_logger.error('Error al listar cuentas por cobrar', parseError(error))
     res.status(500).json({ error: 'Error al listar Cuentas por Cobrar' })

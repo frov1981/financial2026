@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
-import type { DTOCategory } from "../dto/dto";
+import type { DTOCategoriesResponse, DTOCategory } from "../dto/dto";
 import { Category } from "../entities/Category.entity";
 import { AuthRequest } from "../types/auth-request";
 import { logger as root_logger } from '../utils/logger.util';
@@ -110,13 +110,13 @@ export const getActivePaymentCategories = async (auth_req: AuthRequest): Promise
     return active_payment_categories
 }
 
-export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCategory[]> => {
+export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCategoriesResponse> => {
     const user_id = auth_req.user.id
     const cache_categories_logger = root_logger.forMethod('getCategoriesForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.categoriesByUserForApi(user_id)
     const cached_categories = cache.get<DTOCategory[]>(cache_key)
     if (cached_categories !== undefined) {
-        return cached_categories
+        return { categories: cached_categories, metadata: { source: 'cache', number_of_rows: cached_categories.length } }
     }
     const repository = AppDataSource.getRepository(Category)
     const start = performance.now()
@@ -150,5 +150,5 @@ export const getCategoriesForApi = async (auth_req: AuthRequest): Promise<DTOCat
     const duration_sec = (end - start) / 1000
     cache_categories_logger.debug(`method=[${getCategoriesForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[category], count=[${categories.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, categories)
-    return categories
+    return { categories, metadata: { source: 'database', number_of_rows: categories.length } }
 }

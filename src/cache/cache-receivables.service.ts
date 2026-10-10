@@ -94,7 +94,7 @@ export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<DTORe
     const cache_key = cacheKeys.receivablesByUserForApi(user_id)
     const cached_receivables = cache.get<DTOReceivablesResponse>(cache_key)
     if (cached_receivables !== undefined) {
-        return cached_receivables
+        return { ...cached_receivables, metadata: { source: 'cache', number_of_rows: cached_receivables.receivables.length } }
     }
 
     const repository = AppDataSource.getRepository(Receivable)
@@ -144,7 +144,7 @@ export const getReceivablesForApi = async (auth_req: AuthRequest): Promise<DTORe
     }
 
     const group_totals = Object.values(group_totals_map)
-    const response = { receivables, group_totals }
+    const response: DTOReceivablesResponse = { receivables, group_totals, metadata: { source: 'database', number_of_rows: receivables.length } }
     
     const end = performance.now()
     const duration_sec = (end - start) / 1000

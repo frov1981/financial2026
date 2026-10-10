@@ -2,7 +2,7 @@ import { LOGGER_EVENTS } from '../utils/logger-events'
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { PayablePayment } from "../entities/PayablePayment.entity"
-import type { DTOPayablePayment } from "../dto/dto"
+import type { DTOPayablePayment, DTOPayablePaymentsResponse } from "../dto/dto"
 import { AuthRequest } from "../types/auth-request"
 import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
@@ -58,13 +58,13 @@ export const getPaymentById = async (auth_req: AuthRequest, payment_id: number):
     return payment || null
 }
 
-export const getPaymentsForApi = async (auth_req: AuthRequest, payable_id: number): Promise<DTOPayablePayment[]> => {
+export const getPaymentsForApi = async (auth_req: AuthRequest, payable_id: number): Promise<DTOPayablePaymentsResponse> => {
     const user_id = auth_req.user.id
     const cache_payable_payments_logger = root_logger.forMethod('getPaymentsForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.payablePaymentsByPayableForApi(user_id, payable_id)
 
     const cached = cache.get<DTOPayablePayment[]>(cache_key)
-    if (cached !== undefined) return cached
+    if (cached !== undefined) return { payments: cached, metadata: { source: 'cache', number_of_rows: cached.length } }
 
     const repo = AppDataSource.getRepository(PayablePayment)
     const start = performance.now()
@@ -92,5 +92,5 @@ export const getPaymentsForApi = async (auth_req: AuthRequest, payable_id: numbe
     const duration_sec = (end - start) / 1000
     cache_payable_payments_logger.debug(`method=[${getPaymentsForApi.name}], cacheKey=[${cache_key}], payable=[${payable_id}], user=[${user_id}], entity=[payable_payment], count=[${payments.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, payments)
-    return payments
+    return { payments, metadata: { source: 'database', number_of_rows: payments.length } }
 }

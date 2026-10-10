@@ -3,6 +3,7 @@ import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getActiveCategoriesForPayablesByUser, getPayableById, getPayablesForApi } from '../../cache/cache-payables.service'
 import { getActiveParentPayablesByUser } from '../../cache/cache-payable-groups.service'
+import type { DTOPayablesResponse } from '../../dto/dto'
 import { payableFormMatrix } from '../../policies/payable-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
@@ -148,8 +149,9 @@ export const apiForGettingPayables: RequestHandler = async (req: Request, res: R
   const apiForGettingPayables_logger = logger.forMethod(apiForGettingPayables.name, LOGGER_EVENTS.PAYABLE, auth_req.user.id)
   const started_at = performance.now()
   try {
-    const result = await getPayablesForApi(auth_req)
-    res.json(result)
+    const response: DTOPayablesResponse = await getPayablesForApi(auth_req)
+    apiForGettingPayables_logger.info(`Cuentas por pagar obtenidas desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+    res.json({ payables: response.payables, group_totals: response.group_totals })
   } catch (error) {
     apiForGettingPayables_logger.error('Error al listar cuentas por pagar', parseError(error))
     res.status(500).json({ error: 'Error al listar Cuentas por Pagar' })

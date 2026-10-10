@@ -68,6 +68,14 @@
           </label>
         <% }) %>
       </fieldset>
+      <fieldset class="admin-log-other-options">
+        <legend>Otros</legend>
+        <label>
+          <input id="log-elapsed-time-filter" type="checkbox" name="includeElapsedTime" value="true"
+            <%= includeElapsedTime ? 'checked' : '' %>>
+          <span>Habilitar logs "elapsed_time"</span>
+        </label>
+      </fieldset>
       <div class="admin-log-type-modal-actions">
         <button id="log-type-filter-cancel" class="ui-modal-btn ui-modal-btn-neutral" type="button">Cancelar</button>
         <button id="log-type-filter-apply" class="ui-modal-btn ui-modal-btn-primary" type="button">Aplicar</button>

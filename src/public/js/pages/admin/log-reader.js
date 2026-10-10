@@ -9,6 +9,7 @@ const logTypeFilterButton = document.getElementById('log-type-filter-button')
 const logTypeFilterApply = document.getElementById('log-type-filter-apply')
 const logTypeFilterCancel = document.getElementById('log-type-filter-cancel')
 const logUserFilter = document.getElementById('log-user-filter')
+const logElapsedTimeFilter = document.getElementById('log-elapsed-time-filter')
 const logRefreshButton = document.getElementById('log-refresh-button')
 const logPageSize = 100
 const LEGACY_ADMIN_LOG_FILE_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:admin:selected-log-file`
@@ -40,6 +41,7 @@ function saveLogReaderState() {
     eventFilter: logEventFilter?.value || 'all',
     levels: getSelectedLogTypes(),
     userId: logUserFilter?.value || 'all',
+    includeElapsedTime: Boolean(logElapsedTimeFilter?.checked),
   })
   window.saveFilters(logReaderPositionStorageKey, {
     displayedLines,
@@ -322,6 +324,9 @@ if (savedLogReaderState && typeof savedLogReaderState === 'object') {
   if (typeof savedLogReaderState.filter === 'string') {
     logFilterInput.value = savedLogReaderState.filter
   }
+  if (typeof savedLogReaderState.includeElapsedTime === 'boolean' && logElapsedTimeFilter) {
+    logElapsedTimeFilter.checked = savedLogReaderState.includeElapsedTime
+  }
   if (typeof savedLogReaderState.eventFilter === 'string' && logEventFilter) {
     const eventFilterContainer = logEventFilter.closest('.autocomplete')
     if (eventFilterContainer) {
@@ -372,6 +377,7 @@ if (savedLogReaderState && typeof savedLogReaderState === 'object') {
     && effectiveQueryLevels.length === selectedLevels.length
     && effectiveQueryLevels.every(level => selectedLevels.includes(level))
     && selectedUserId === (queryParams.get('userId') || 'all')
+    && Boolean(savedLogReaderState.includeElapsedTime) === (queryParams.get('includeElapsedTime') === 'true')
   const targetLines = Number.isSafeInteger(savedLogReaderPosition?.displayedLines)
     ? savedLogReaderPosition.displayedLines
     : Number.isSafeInteger(legacyLogReaderState?.displayedLines)

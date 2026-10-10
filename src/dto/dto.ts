@@ -11,6 +11,14 @@ export type DTOAccount = {
     transaction_count: number
 }
 
+export type DTOAccountsResponse = {
+    accounts: DTOAccount[]
+    metadata: {
+        source: 'cache' | 'database'
+        number_of_rows: number
+    }
+}
+
 export type DTOSupplier = {
     id: number
     business_name: string
@@ -37,6 +45,18 @@ export type DTOTransactionListItem = Omit<Transaction, 'supplier'> & {
     supplier: DTOSupplierTransaction | null
 }
 
+export type DTOTransactionsResponse = {
+    items: DTOTransactionListItem[]
+    total: number
+    page: number
+    limit: number
+    category_id: number | null
+    metadata: {
+        source: 'cache' | 'database'
+        number_of_rows: number
+    }
+}
+
 export type DTOCategory = {
     id: number
     name: string
@@ -45,6 +65,14 @@ export type DTOCategory = {
     is_active: boolean
     category_group: { id: number, name: string } | null
     transactions_count: number
+}
+
+export type DTOCategoriesResponse = {
+    categories: DTOCategory[]
+    metadata: {
+        source: 'cache' | 'database'
+        number_of_rows: number
+    }
 }
 
 export type DTOPayable = {
@@ -73,6 +101,10 @@ export type DTOPayableGroupTotal = {
 export type DTOPayablesResponse = {
     payables: DTOPayable[]
     group_totals: DTOPayableGroupTotal[]
+    metadata: {
+        source: 'cache' | 'database'
+        number_of_rows: number
+    }
 }
 
 export type DTOPayablePayment = {
@@ -86,6 +118,14 @@ export type DTOPayablePayment = {
     account: { id: number, name: string } | null
     category: { id: number, name: string } | null
     payable: { id: number, name: string } | null
+}
+
+export type DTOPayablePaymentsResponse = {
+    payments: DTOPayablePayment[]
+    metadata: {
+        source: 'cache' | 'database'
+        number_of_rows: number
+    }
 }
 
 export type DTOReceivable = {
@@ -114,6 +154,10 @@ export type DTOReceivableGroupTotal = {
 export type DTOReceivablesResponse = {
     receivables: DTOReceivable[]
     group_totals: DTOReceivableGroupTotal[]
+    metadata: {
+        source: 'cache' | 'database'
+        number_of_rows: number
+    }
 }
 
 export type DTOReceivableCollection = {
@@ -127,6 +171,14 @@ export type DTOReceivableCollection = {
     account: { id: number, name: string } | null
     category: { id: number, name: string } | null
     receivable: { id: number, name: string } | null
+}
+
+export type DTOReceivableCollectionsResponse = {
+    collections: DTOReceivableCollection[]
+    metadata: {
+        source: 'cache' | 'database'
+        number_of_rows: number
+    }
 }
 
 export type DTOHomeCashFlowSummary = {

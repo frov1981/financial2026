@@ -6,7 +6,7 @@ import { getActiveSuppliersIncludeCurrentSupplier } from '../../cache/cache-supp
 import { cacheKeys, deleteTransactionFilterCache } from '../../cache/cache-key.service'
 import { cache } from '../../cache/cache.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
-import type { DTOTransactionListItem } from '../../dto/dto'
+import type { DTOTransactionListItem, DTOTransactionsResponse } from '../../dto/dto'
 import { Transaction } from '../../entities/Transaction.entity'
 import { transactionFormMatrix } from '../../policies/transaction-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
@@ -68,9 +68,11 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
     const category_id = Number(auth_req.query.category_id) || null
     if (!search) deleteTransactionFilterCache(user_id)
     const cache_key = cacheKeys.transactionsPage(user_id, page, limit, category_id, search)
-    const cached_response = cache.get<{ items: DTOTransactionListItem[], total: number, page: number, limit: number, category_id: number | null }>(cache_key)
+    const cached_response = cache.get<DTOTransactionsResponse>(cache_key)
     if (cached_response !== undefined) {
-      res.json(cached_response)
+      const response: DTOTransactionsResponse = { ...cached_response, metadata: { source: 'cache', number_of_rows: cached_response.items.length } }
+      apiForGettingTransactions_logger.info(`Transacciones obtenidas desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+      res.json({ items: response.items, total: response.total, page: response.page, limit: response.limit, category_id: response.category_id })
       return
     }
 
@@ -111,7 +113,7 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       .take(limit)
       .getManyAndCount()
 
-    const response = {
+    const response: DTOTransactionsResponse = {
       items: items.map(transaction => ({
         ...transaction,
         supplier: transaction.supplier
@@ -128,10 +130,12 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       total,
       page,
       limit,
-      category_id
+      category_id,
+      metadata: { source: 'database', number_of_rows: items.length }
     }
     cache.set(cache_key, response)
-    res.json(response)
+    apiForGettingTransactions_logger.info(`Transacciones obtenidas desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+    res.json({ items: response.items, total: response.total, page: response.page, limit: response.limit, category_id: response.category_id })
   } catch (error) {
     apiForGettingTransactions_logger.error('Error al listar transacciones', parseError(error))
     res.status(500).json({ error: 'Error al listar transacciones' })

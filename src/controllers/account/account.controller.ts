@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
-import type { DTOAccount } from '../../dto/dto'
+import type { DTOAccountsResponse } from '../../dto/dto'
 import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
 import { BaseFormViewParams } from '../../types/form-view-params'
@@ -97,8 +97,9 @@ export const apiForGettingAccounts: RequestHandler = async (req: Request, res: R
   const started_at = performance.now()
   try {
     apiForGettingAccounts_logger.debug('Obteniendo cuentas')
-    const accounts: DTOAccount[] = await getAccountsForApi(auth_req)
-    res.json(accounts)
+    const response: DTOAccountsResponse = await getAccountsForApi(auth_req)
+    apiForGettingAccounts_logger.info(`Cuentas obtenidas desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+    res.json(response.accounts)
   } catch (error) {
     apiForGettingAccounts_logger.error('Error al listar cuentas', parseError(error))
     res.status(500).json({ error: 'Error al listar cuentas' })

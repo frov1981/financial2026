@@ -3,6 +3,7 @@ import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
 import { getPaymentById, getPaymentsForApi, getActiveCategoriesForPayablePaymentsByUser } from '../../cache/cache-payable-payments.service'
 import { getPayableById } from '../../cache/cache-payables.service'
+import type { DTOPayablePaymentsResponse } from '../../dto/dto'
 import { payablePaymentFormMatrix } from '../../policies/payable-payment-form.policy'
 import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
 import { AuthRequest } from "../../types/auth-request"
@@ -153,8 +154,9 @@ export const apiForGettingPayablePayments: RequestHandler = async (req: Request,
     const started_at = performance.now()
     const payable_id = Number(req.params.payable_id)
     try {
-        const payments = await getPaymentsForApi(auth_req, payable_id)
-        res.json(payments)
+        const response: DTOPayablePaymentsResponse = await getPaymentsForApi(auth_req, payable_id)
+        apiForGettingPayablePayments_logger.info(`Pagos de cuenta por pagar obtenidos desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+        res.json(response.payments)
     } catch (error) {
         apiForGettingPayablePayments_logger.error('Error al listar pagos', parseError(error))
         res.status(500).json({ error: 'Error al listar pagos' })
@@ -164,5 +166,4 @@ export const apiForGettingPayablePayments: RequestHandler = async (req: Request,
         apiForGettingPayablePayments_logger.elapsedTime('Elapsed time', { elapsed_ms })
     }
 }
-
 

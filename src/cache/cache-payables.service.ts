@@ -94,7 +94,7 @@ export const getPayablesForApi = async (auth_req: AuthRequest): Promise<DTOPayab
     const cache_key = cacheKeys.payablesByUserForApi(user_id)
     const cached_payables = cache.get<DTOPayablesResponse>(cache_key)
     if (cached_payables !== undefined) {
-        return cached_payables
+        return { ...cached_payables, metadata: { source: 'cache', number_of_rows: cached_payables.payables.length } }
     }
 
     const repository = AppDataSource.getRepository(Payable)
@@ -144,7 +144,7 @@ export const getPayablesForApi = async (auth_req: AuthRequest): Promise<DTOPayab
     }
 
     const group_totals = Object.values(group_totals_map)
-    const response = { payables, group_totals }
+    const response: DTOPayablesResponse = { payables, group_totals, metadata: { source: 'database', number_of_rows: payables.length } }
     
     const end = performance.now()
     const duration_sec = (end - start) / 1000

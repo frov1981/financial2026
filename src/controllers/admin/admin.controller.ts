@@ -86,6 +86,21 @@ function requestedLogEvent(value: unknown): string | null {
   return value
 }
 
+function requestedElapsedTime(value: unknown): boolean | null {
+  if (value === undefined || value === 'false') return false
+  if (value === 'true') return true
+  return null
+}
+
+function isElapsedTimeLog(line: string): boolean {
+  try {
+    const exEventType = (JSON.parse(line) as Record<string, unknown>).ex_event_type
+    return typeof exEventType === 'string' && exEventType.toUpperCase() === 'ELAPSED_TIME'
+  } catch {
+    return false
+  }
+}
+
 function getLogUserId(line: string): string | null {
   try {
     const parsed = JSON.parse(line) as Record<string, unknown>
@@ -179,6 +194,7 @@ function renderReader(
   filter: string,
   eventFilter: string,
   selectedLogTypes: LogType[],
+  includeElapsedTime: boolean,
   selectedLogUser: string,
   logUserOptions: LogUserOption[],
   logEventOptions: LogEventOption[],
@@ -195,6 +211,7 @@ function renderReader(
     filter,
     eventFilter,
     selectedLogTypes,
+    includeElapsedTime,
     selectedLogUser,
     logUserOptions,
     logEventOptions,
@@ -260,6 +277,7 @@ export const routeToLogReader: RequestHandler = async (req, res, next) => {
   const filter = requestedString(req.query.filter)
   const eventFilter = requestedLogEvent(req.query.eventFilter)
   const selectedLogTypes = requestedLogTypes(req.query.level)
+  const includeElapsedTime = requestedElapsedTime(req.query.includeElapsedTime)
   const selectedLogUser = requestedLogUser(req.query.userId)
   const rawOffset = requestedString(req.query.offset)
   const offset = rawOffset === '' ? 0 : Number(rawOffset)
@@ -271,6 +289,9 @@ export const routeToLogReader: RequestHandler = async (req, res, next) => {
   }
   if (eventFilter === null) {
     return res.status(400).send('El evento seleccionado no es válido.')
+  }
+  if (includeElapsedTime === null) {
+    return res.status(400).send('El filtro de registros elapsed_time no es válido.')
   }
   if (!Number.isSafeInteger(offset) || offset < 0) {
     return res.status(400).send('El desplazamiento del registro no es válido.')
@@ -294,6 +315,7 @@ export const routeToLogReader: RequestHandler = async (req, res, next) => {
     const matchingLines = allLines
       .reverse()
       .filter(line => {
+        if (!includeElapsedTime && isElapsedTimeLog(line)) return false
         if (filter && !line.toLocaleLowerCase().includes(filter.toLocaleLowerCase())) return false
         if (eventFilter) {
           try {
@@ -353,6 +375,7 @@ export const routeToLogReader: RequestHandler = async (req, res, next) => {
       filter,
       eventFilter,
       selectedLogTypes,
+      includeElapsedTime,
       selectedLogUser,
       logUserOptions,
       logEventOptions,

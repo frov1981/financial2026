@@ -3,7 +3,7 @@ import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource"
 import { Category } from "../entities/Category.entity"
 import { ReceivableCollection } from "../entities/ReceivableCollection.entity"
-import type { DTOReceivableCollection } from "../dto/dto"
+import type { DTOReceivableCollection, DTOReceivableCollectionsResponse } from "../dto/dto"
 import { AuthRequest } from "../types/auth-request"
 import { logger as root_logger } from "../utils/logger.util"
 import { cacheKeys } from "./cache-key.service"
@@ -59,13 +59,13 @@ export const getCollectionById = async (auth_req: AuthRequest, collection_id: nu
     return collection || null
 }
 
-export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id: number): Promise<DTOReceivableCollection[]> => {
+export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id: number): Promise<DTOReceivableCollectionsResponse> => {
     const user_id = auth_req.user.id
     const cache_receivable_collections_logger = root_logger.forMethod('getCollectionsForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.receivableCollectionsByCollectionForApi(user_id, collection_id)
 
     const cached = cache.get<DTOReceivableCollection[]>(cache_key)
-    if (cached !== undefined) return cached
+    if (cached !== undefined) return { collections: cached, metadata: { source: 'cache', number_of_rows: cached.length } }
 
     const repo = AppDataSource.getRepository(ReceivableCollection)
     const start = performance.now()
@@ -93,5 +93,5 @@ export const getCollectionsForApi = async (auth_req: AuthRequest, collection_id:
     const duration_sec = (end - start) / 1000
     cache_receivable_collections_logger.debug(`method=[${getCollectionsForApi.name}], cacheKey=[${cache_key}], receivable=[${collection_id}], user=[${user_id}], entity=[receivable_payment], count=[${collections.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, collections)
-    return collections
+    return { collections, metadata: { source: 'database', number_of_rows: collections.length } }
 }

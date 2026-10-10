@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks';
 import { AppDataSource } from "../config/typeorm.datasource";
-import type { DTOAccount } from "../dto/dto";
+import type { DTOAccount, DTOAccountsResponse } from "../dto/dto";
 import { Account } from "../entities/Account.entity";
 import { AuthRequest } from "../types/auth-request";
 import { logger as root_logger } from '../utils/logger.util';
@@ -102,13 +102,13 @@ export const getActiveAccountsForDisbursement = async (auth_req: AuthRequest): P
     return active_accounts_for_disbursement
 }
 
-export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccount[]> => {
+export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccountsResponse> => {
     const user_id = auth_req.user.id
     const cache_accounts_logger = root_logger.forMethod('getAccountsForApi', LOGGER_EVENTS.CACHE, user_id)
     const cache_key = cacheKeys.accountsByUserForApi(user_id)
     const cached_accounts = cache.get<DTOAccount[]>(cache_key)
     if (cached_accounts !== undefined) {
-        return cached_accounts
+        return { accounts: cached_accounts, metadata: { source: 'cache', number_of_rows: cached_accounts.length } }
     }
     const repository = AppDataSource.getRepository(Account)
     const start = performance.now()
@@ -138,5 +138,5 @@ export const getAccountsForApi = async (auth_req: AuthRequest): Promise<DTOAccou
     const duration_sec = (end - start) / 1000
     cache_accounts_logger.debug(`method=[${getAccountsForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[account], count=[${accounts.length}], elapsedTime=[${duration_sec.toFixed(4)}]`)
     cache.set(cache_key, accounts)
-    return accounts
+    return { accounts, metadata: { source: 'database', number_of_rows: accounts.length } }
 }

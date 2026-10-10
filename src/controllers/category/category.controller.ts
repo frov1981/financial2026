@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
-import type { DTOCategory } from '../../dto/dto'
+import type { DTOCategoriesResponse } from '../../dto/dto'
 import { getActiveCategoryGroup } from '../../cache/cache-category-groups.service'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
 import { AuthRequest } from '../../types/auth-request'
@@ -102,8 +102,9 @@ export const apiForGettingCategories: RequestHandler = async (req: Request, res:
   const started_at = performance.now()
   try {
     apiForGettingCategories_logger.debug('Obteniendo categorías para el usuario')
-    const categories: DTOCategory[] = await getCategoriesForApi(auth_req)
-    res.json(categories)
+    const response: DTOCategoriesResponse = await getCategoriesForApi(auth_req)
+    apiForGettingCategories_logger.info(`Categorías obtenidas desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+    res.json(response.categories)
   } catch (error) {
     apiForGettingCategories_logger.error('Error al listar categorías', parseError(error))
     res.status(500).json({ error: 'Error al listar categorías' })

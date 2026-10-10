@@ -10,6 +10,7 @@ import { parseError } from '../../utils/error.util'
 import { logger } from "../../utils/logger.util"
 import { receivableCollectionFormMatrix } from '../../policies/payable-receivable_collection-form.policy'
 import { getActiveCategoriesForReceivableCollectionsByUser, getCollectionById, getCollectionsForApi } from '../../cache/cache-receivable-collections.service'
+import type { DTOReceivableCollectionsResponse } from '../../dto/dto'
 export { saveReceivableCollection as apiForSavingAccount } from './receivable-collection.saving'
 
 type ReceivableCollectionFormViewParams = BaseFormViewParams & {
@@ -155,8 +156,9 @@ export const apiForGettingReceivableCollections: RequestHandler = async (req: Re
     const started_at = performance.now()
     const payable_id = Number(req.params.payable_id)
     try {
-        const receivable_collections = await getCollectionsForApi(auth_req, payable_id)
-        res.json(receivable_collections)
+        const response: DTOReceivableCollectionsResponse = await getCollectionsForApi(auth_req, payable_id)
+        apiForGettingReceivableCollections_logger.info(`Cobros de cuentas por cobrar obtenidos desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+        res.json(response.collections)
     } catch (error) {
         apiForGettingReceivableCollections_logger.error('Error al listar cobros', parseError(error))
         res.status(500).json({ error: 'Error al listar cobros' })
@@ -167,4 +169,3 @@ export const apiForGettingReceivableCollections: RequestHandler = async (req: Re
         apiForGettingReceivableCollections_logger.debug('Fin de la operación del listado de cobros')
     }
 }
-
