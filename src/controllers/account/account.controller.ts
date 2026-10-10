@@ -1,6 +1,6 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
-import { getAccountById, getAccountsForApi } from '../../cache/cache-accounts.service'
+import { getAccountById, getAccountNameList, getAccountsForApi } from '../../cache/cache-accounts.service'
 import type { DTOAccountsResponse } from '../../dto/dto'
 import { accountFormMatrix } from '../../policies/account-form.policy'
 import { AuthRequest } from '../../types/auth-request'
@@ -15,6 +15,7 @@ type AccountFormViewParams = BaseFormViewParams & {
 
 const renderAccountForm = async (res: Response, params: AccountFormViewParams) => {
   const { title, view, account, errors, mode, auth_req } = params
+  const account_name_list = await getAccountNameList(auth_req)
   const account_form_policy = accountFormMatrix[mode]
   return res.render('layouts/main', {
     title,
@@ -24,6 +25,7 @@ const renderAccountForm = async (res: Response, params: AccountFormViewParams) =
     auth_req,
     account,
     account_form_policy,
+    account_name_list,
   })
 }
 

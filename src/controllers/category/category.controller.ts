@@ -1,6 +1,6 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
-import { getCategoriesForApi, getCategoryById } from '../../cache/cache-categories.service'
+import { getCategoriesForApi, getCategoryById, getCategoryNameList } from '../../cache/cache-categories.service'
 import type { DTOCategoriesResponse } from '../../dto/dto'
 import { getActiveCategoryGroup } from '../../cache/cache-category-groups.service'
 import { categoryFormMatrix } from '../../policies/category-form.policy'
@@ -17,6 +17,7 @@ type CategoryFormViewParams = BaseFormViewParams & {
 const renderCategoryForm = async (res: Response, params: CategoryFormViewParams) => {
   const { title, view, category, errors, mode, auth_req } = params
   const category_group_list = await getActiveCategoryGroup(auth_req)
+  const category_name_list = await getCategoryNameList(auth_req)
   const category_form_policy = categoryFormMatrix[mode]
   return res.render('layouts/main', {
     title,
@@ -27,6 +28,7 @@ const renderCategoryForm = async (res: Response, params: CategoryFormViewParams)
     category,
     category_form_policy,
     category_group_list,
+    category_name_list,
   })
 }
 

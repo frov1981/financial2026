@@ -5,7 +5,7 @@ import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/ca
 import { getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { getActiveReceivableGroup, getReceivableGroupById } from '../../cache/cache-receivable-groups.service';
-import { getReceivableById } from '../../cache/cache-receivables.service';
+import { getReceivableById, getReceivableNameList } from '../../cache/cache-receivables.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
 import { Category } from '../../entities/Category.entity';
@@ -89,6 +89,7 @@ export const saveReceivable: RequestHandler = async (req: Request, res: Response
     receivable_group_list: await getActiveReceivableGroup(auth_req),
     disbursement_account_list: await getActiveAccountsForDisbursement(auth_req),
     active_income_category_list: await getActiveIncomeCategories(auth_req),
+    receivable_name_list: await getReceivableNameList(auth_req),
     receivable_form_policy: receivableFormMatrix[mode],
     mode,
     context: { from: return_from, category_id: return_category_id }

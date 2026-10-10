@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
-import { getActiveCategoriesForPayablesByUser, getPayableById, getPayablesForApi } from '../../cache/cache-payables.service'
+import { getActiveCategoriesForPayablesByUser, getPayableById, getPayableNameList, getPayablesForApi } from '../../cache/cache-payables.service'
 import { getActiveParentPayablesByUser } from '../../cache/cache-payable-groups.service'
 import type { DTOPayablesResponse } from '../../dto/dto'
 import { payableFormMatrix } from '../../policies/payable-form.policy'
@@ -23,6 +23,7 @@ const renderPayableForm = async (res: Response, params: PayableFormViewParams) =
   const disbursement_account_list = await getActiveAccounts(auth_req)
   const payable_group_list = await getActiveParentPayablesByUser(auth_req)
   const active_income_category_list = await getActiveCategoriesForPayablesByUser(auth_req)
+  const payable_name_list = await getPayableNameList(auth_req)
   const category_id = auth_req.query.category_id || null
   const from = auth_req.query.from || null
   return res.render('layouts/main', {
@@ -36,6 +37,7 @@ const renderPayableForm = async (res: Response, params: PayableFormViewParams) =
     disbursement_account_list,
     active_income_category_list,
     payable_group_list,
+    payable_name_list,
     context: { category_id, from },
   })
 }

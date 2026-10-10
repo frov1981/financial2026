@@ -29,6 +29,11 @@ export const getAccounts = async (auth_req: AuthRequest): Promise<Account[]> => 
     return accounts
 }
 
+export const getAccountNameList = async (auth_req: AuthRequest): Promise<Array<{ id: number; name: string }>> => {
+    const accounts = await getAccounts(auth_req)
+    return accounts.map(({ id, name }) => ({ id, name }))
+}
+
 export const getAccountById = async (auth_req: AuthRequest, account_id: number): Promise<Account | null> => {
     const user_id = auth_req.user.id
     const accounts = await getAccountsBase(user_id)

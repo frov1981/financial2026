@@ -31,6 +31,11 @@ export const getReceivables = async (auth_req: AuthRequest): Promise<Receivable[
     return receivables
 }
 
+export const getReceivableNameList = async (auth_req: AuthRequest): Promise<Array<{ id: number; name: string }>> => {
+    const receivables = await getReceivables(auth_req)
+    return receivables.map(({ id, name }) => ({ id, name }))
+}
+
 export const getReceivableById = async (auth_req: AuthRequest, receivable_id: number): Promise<Receivable | null> => {
     const user_id = auth_req.user.id
     const receivables = await getReceivablesBase(user_id)

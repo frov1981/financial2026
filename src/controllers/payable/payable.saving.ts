@@ -5,7 +5,7 @@ import { getAccountById, getActiveAccountsForDisbursement } from '../../cache/ca
 import { getActiveIncomeCategories, getCategoryById } from '../../cache/cache-categories.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { getActivePayableGroup, getPayableGroupById } from '../../cache/cache-payable-groups.service';
-import { getPayableById } from '../../cache/cache-payables.service';
+import { getPayableById, getPayableNameList } from '../../cache/cache-payables.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
 import { Category } from '../../entities/Category.entity';
@@ -90,6 +90,7 @@ export const savePayable: RequestHandler = async (req: Request, res: Response) =
     payable_group_list: await getActivePayableGroup(auth_req),
     disbursement_account_list: await getActiveAccountsForDisbursement(auth_req),
     active_income_category_list: await getActiveIncomeCategories(auth_req),
+    payable_name_list: await getPayableNameList(auth_req),
     payable_form_policy: payableFormMatrix[mode],
     mode,
     context: { from: return_from, category_id: return_category_id }

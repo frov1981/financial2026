@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
-import { getAccountById } from '../../cache/cache-accounts.service';
+import { getAccountById, getAccountNameList } from '../../cache/cache-accounts.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
 import { Account } from '../../entities/Account.entity';
@@ -62,6 +62,7 @@ export const saveAccount: RequestHandler = async (req: Request, res: Response) =
 
   const form_state = {
     account: buildAccountView(req.body),
+    account_name_list: await getAccountNameList(auth_req),
     account_form_policy: accountFormMatrix[mode],
     mode
   }

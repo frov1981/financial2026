@@ -31,6 +31,11 @@ export const getPayables = async (auth_req: AuthRequest): Promise<Payable[]> => 
     return payables
 }
 
+export const getPayableNameList = async (auth_req: AuthRequest): Promise<Array<{ id: number; name: string }>> => {
+    const payables = await getPayables(auth_req)
+    return payables.map(({ id, name }) => ({ id, name }))
+}
+
 export const getPayableById = async (auth_req: AuthRequest, payable_id: number): Promise<Payable | null> => {
     const user_id = auth_req.user.id
     const payables = await getPayablesBase(user_id)

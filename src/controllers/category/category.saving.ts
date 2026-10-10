@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express';
 import { performance } from 'perf_hooks';
-import { getCategoryById } from '../../cache/cache-categories.service';
+import { getCategoryById, getCategoryNameList } from '../../cache/cache-categories.service';
 import { getActiveCategoryGroup, getCategoryGroupById } from '../../cache/cache-category-groups.service';
 import { deleteAll } from '../../cache/cache-key.service';
 import { AppDataSource } from '../../config/typeorm.datasource';
@@ -70,6 +70,7 @@ export const saveCategory: RequestHandler = async (req: Request, res: Response) 
   const form_state = {
     category: await buildCategoryView(auth_req, req.body),
     category_group_list: await getActiveCategoryGroup(auth_req),
+    category_name_list: await getCategoryNameList(auth_req),
     category_form_policy: categoryFormMatrix[mode],
     mode
   }

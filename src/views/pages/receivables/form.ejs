@@ -41,7 +41,34 @@ const cancel_url = context?.from === 'categories' && context?.category_id
     <% if (!isHidden('name')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Nombre</label>
-      <input type="text" name="name" class="w-full border rounded px-3 py-2" value="<%= receivable?.name || '' %>" <%= isReadOnly('name') ? 'readonly' : '' %> required>
+      <div class="record-name-autocomplete">
+        <input
+          type="text"
+          name="name"
+          class="w-full border rounded px-3 py-2"
+          value="<%= receivable?.name || '' %>"
+          autocomplete="off"
+          aria-autocomplete="list"
+          aria-controls="receivable-name-suggestions"
+          <%= isReadOnly('name') ? 'readonly' : '' %>
+          required
+        >
+        <% if (!isReadOnly('name')) { %>
+          <div id="receivable-name-suggestions" class="record-name-suggestions" role="listbox" hidden>
+            <% receivable_name_list.forEach(existing_receivable => { %>
+              <button
+                type="button"
+                class="record-name-suggestion"
+                role="option"
+                data-record-name="<%= existing_receivable.name %>"
+                data-record-id="<%= existing_receivable.id %>"
+              ><%= existing_receivable.name %></button>
+            <% }) %>
+            <p class="record-name-no-results" hidden>No hay cuentas por cobrar con ese nombre.</p>
+          </div>
+          <p class="record-name-duplicate text-red-600 text-sm mt-1" role="status" aria-live="polite" hidden></p>
+        <% } %>
+      </div>
       <% if (errors?.name) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
       <% } %>
@@ -134,4 +161,5 @@ const cancel_url = context?.from === 'categories' && context?.category_id
   </form>
 </div>
 
+<script src="/js/pages/receivables/form.js"></script>
 <script src="/js/helpers/autocomplete-helper.js"></script>

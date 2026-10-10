@@ -30,6 +30,11 @@ export const getCategories = async (auth_req: AuthRequest): Promise<Category[]> 
     return categories
 }
 
+export const getCategoryNameList = async (auth_req: AuthRequest): Promise<Array<{ id: number; name: string }>> => {
+    const categories = await getCategories(auth_req)
+    return categories.map(({ id, name }) => ({ id, name }))
+}
+
 export const getCategoryById = async (auth_req: AuthRequest, category_id: number): Promise<Category | null> => {
     const user_id = auth_req.user.id
     const categories = await getCategoriesBase(user_id)

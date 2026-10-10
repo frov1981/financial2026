@@ -47,14 +47,34 @@ const cancel_url =
     <% if (!isHidden('name')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Nombre</label>
-      <input
-        type="text"
-        name="name"
-        class="w-full border rounded px-3 py-2"
-        value="<%= payable?.name || '' %>"
-        <%= isReadOnly('name') ? 'readonly' : '' %>
-        required
-      >
+      <div class="record-name-autocomplete">
+        <input
+          type="text"
+          name="name"
+          class="w-full border rounded px-3 py-2"
+          value="<%= payable?.name || '' %>"
+          autocomplete="off"
+          aria-autocomplete="list"
+          aria-controls="payable-name-suggestions"
+          <%= isReadOnly('name') ? 'readonly' : '' %>
+          required
+        >
+        <% if (!isReadOnly('name')) { %>
+          <div id="payable-name-suggestions" class="record-name-suggestions" role="listbox" hidden>
+            <% payable_name_list.forEach(existing_payable => { %>
+              <button
+                type="button"
+                class="record-name-suggestion"
+                role="option"
+                data-record-name="<%= existing_payable.name %>"
+                data-record-id="<%= existing_payable.id %>"
+              ><%= existing_payable.name %></button>
+            <% }) %>
+            <p class="record-name-no-results" hidden>No hay cuentas por pagar con ese nombre.</p>
+          </div>
+          <p class="record-name-duplicate text-red-600 text-sm mt-1" role="status" aria-live="polite" hidden></p>
+        <% } %>
+      </div>
 
       <% if (errors?.name) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>

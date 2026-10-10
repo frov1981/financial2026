@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { getActiveAccounts } from '../../cache/cache-accounts.service'
-import { getActiveCategoriesForReceivablesByUser, getReceivableById, getReceivablesForApi } from '../../cache/cache-receivables.service'
+import { getActiveCategoriesForReceivablesByUser, getReceivableById, getReceivableNameList, getReceivablesForApi } from '../../cache/cache-receivables.service'
 import { getActiveParentReceivablesByUser } from '../../cache/cache-receivable-groups.service'
 import type { DTOReceivablesResponse } from '../../dto/dto'
 import { getNextValidTransactionDate } from '../../services/next-valid-transaction-date.service'
@@ -23,6 +23,7 @@ const renderReceivableForm = async (res: Response, params: ReceivableFormViewPar
   const disbursement_account_list = await getActiveAccounts(auth_req)
   const receivable_group_list = await getActiveParentReceivablesByUser(auth_req)
   const active_income_category_list = await getActiveCategoriesForReceivablesByUser(auth_req)
+  const receivable_name_list = await getReceivableNameList(auth_req)
   const category_id = auth_req.query.category_id || null
   const from = auth_req.query.from || null
   return res.render('layouts/main', {
@@ -36,6 +37,7 @@ const renderReceivableForm = async (res: Response, params: ReceivableFormViewPar
     disbursement_account_list,
     active_income_category_list,
     receivable_group_list,
+    receivable_name_list,
     context: { category_id, from },
   })
 }

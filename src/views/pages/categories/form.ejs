@@ -145,14 +145,34 @@
     <% if (!isHidden('name')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Nombre</label>
-      <input
-        type="text"
-        name="name"
-        class="w-full border rounded px-3 py-2"
-        value="<%= category?.name || '' %>"
-        <%= isReadOnly('name') ? 'readonly' : '' %>
-        required
-      >
+      <div class="category-name-autocomplete">
+        <input
+          type="text"
+          name="name"
+          class="w-full border rounded px-3 py-2"
+          value="<%= category?.name || '' %>"
+          autocomplete="off"
+          aria-autocomplete="list"
+          aria-controls="category-name-suggestions"
+          <%= isReadOnly('name') ? 'readonly' : '' %>
+          required
+        >
+        <% if (!isReadOnly('name')) { %>
+          <div id="category-name-suggestions" class="category-name-suggestions" role="listbox" hidden>
+            <% category_name_list.forEach(existing_category => { %>
+              <button
+                type="button"
+                class="category-name-suggestion"
+                role="option"
+                data-category-name="<%= existing_category.name %>"
+                data-category-id="<%= existing_category.id %>"
+              ><%= existing_category.name %></button>
+            <% }) %>
+            <p class="category-name-no-results" hidden>No hay categorías con ese nombre.</p>
+          </div>
+          <p class="category-name-duplicate text-red-600 text-sm mt-1" role="status" aria-live="polite" hidden></p>
+        <% } %>
+      </div>
       <% if (errors?.name) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
       <% } %>

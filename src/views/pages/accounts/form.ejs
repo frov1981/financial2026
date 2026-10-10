@@ -94,14 +94,34 @@
     <% if (!isHidden('name')) { %>
     <div class="mb-4">
       <label class="block font-medium mb-1">Nombre</label>
-      <input
-        type="text"
-        name="name"
-        class="w-full border rounded px-3 py-2"
-        value="<%= account?.name || '' %>"
-        <%= isReadOnly('name') ? 'readonly' : '' %>
-        required
-      >
+      <div class="account-name-autocomplete">
+        <input
+          type="text"
+          name="name"
+          class="w-full border rounded px-3 py-2"
+          value="<%= account?.name || '' %>"
+          autocomplete="off"
+          aria-autocomplete="list"
+          aria-controls="account-name-suggestions"
+          <%= isReadOnly('name') ? 'readonly' : '' %>
+          required
+        >
+        <% if (!isReadOnly('name')) { %>
+          <div id="account-name-suggestions" class="account-name-suggestions" role="listbox" hidden>
+            <% account_name_list.forEach(existing_account => { %>
+              <button
+                type="button"
+                class="account-name-suggestion"
+                role="option"
+                data-account-name="<%= existing_account.name %>"
+                data-account-id="<%= existing_account.id %>"
+              ><%= existing_account.name %></button>
+            <% }) %>
+            <p class="account-name-no-results" hidden>No hay cuentas con ese nombre.</p>
+          </div>
+          <p class="account-name-duplicate text-red-600 text-sm mt-1" role="status" aria-live="polite" hidden></p>
+        <% } %>
+      </div>
 
       <% if (errors?.name) { %>
         <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>

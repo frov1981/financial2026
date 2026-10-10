@@ -1,0 +1,37 @@
+.record-name-autocomplete {
+    position: relative;
+}
+
+.record-name-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--ui-gray-300);
+    border-radius: 4px;
+    background: var(--ui-white);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.record-name-suggestion {
+    display: block;
+    width: 100%;
+    padding: 6px 10px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+
+.record-name-suggestion:hover,
+.record-name-suggestion.active {
+    background: var(--ui-gray-100);
+}
+
+.record-name-no-results {
+    padding: 6px 10px;
+    color: var(--ui-gray-500);
+}
