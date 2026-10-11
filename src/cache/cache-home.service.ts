@@ -148,7 +148,7 @@ export const getHomeAvailableYearsKpiCache = async (auth_req: AuthRequest): Prom
       (_, index) => Math.max(new Date().getFullYear(), ...years) - index
     )]
     : [0]
-  cache_home_logger.info(`${getHomeAvailableYearsKpiCache.name}. Años disponibles: `, { f_year })
+  cache_home_logger.info(`Obteniendo años disponibles para KPI`, { f_year })
   cache.set(cache_key, f_year)
   return f_year
 }

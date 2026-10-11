@@ -71,6 +71,7 @@ const transactionImagesPrev = document.getElementById('transaction-images-prev')
 const transactionImagesNext = document.getElementById('transaction-images-next')
 const transactionImagesInput = document.getElementById('transaction-images-input')
 const transactionImagesInsert = document.getElementById('transaction-images-insert')
+const transactionImagesDownload = document.getElementById('transaction-images-download')
 const transactionImagesDelete = document.getElementById('transaction-images-delete')
 const transactionImagesClose = document.getElementById('transaction-images-close')
 
@@ -289,12 +290,18 @@ function renderTransactionImageModal() {
   if (!file) {
     transactionImagesCurrent.removeAttribute('src')
     transactionImagesCounter.textContent = ''
+    transactionImagesDownload.classList.add('hidden')
+    transactionImagesDownload.removeAttribute('href')
+    transactionImagesDownload.removeAttribute('download')
     transactionImagesPrev.disabled = true
     transactionImagesNext.disabled = true
     return
   }
 
   transactionImagesCurrent.src = enlarged ? file.url : (file.thumbnail_url || file.url)
+  transactionImagesDownload.href = file.url
+  transactionImagesDownload.download = file.original_name || 'imagen'
+  transactionImagesDownload.classList.remove('hidden')
   transactionImagesCounter.textContent = `${currentIndex + 1} de ${files.length}`
   transactionImagesPrev.disabled = files.length < 2
   transactionImagesNext.disabled = files.length < 2

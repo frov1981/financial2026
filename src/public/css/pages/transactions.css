@@ -473,9 +473,23 @@
 }
 
 .transaction-images-actions {
+    flex-wrap: wrap;
     justify-content: flex-end;
     border-top: 1px solid var(--ui-gray-200);
     padding-top: 1rem;
+}
+
+.transaction-images-actions > :is(button, a):not(.hidden) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.transaction-images-actions > :is(button, a) svg {
+    display: none;
+    width: 1.25rem;
+    height: 1.25rem;
 }
 
 @media (max-width: 600px) {
@@ -496,5 +510,37 @@
     .transaction-images-nav {
         width: 2rem;
         height: 2rem;
+    }
+
+    .transaction-images-actions {
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .transaction-images-actions > :is(button, a) {
+        order: 1;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        padding: 0.5rem;
+    }
+
+    #transaction-images-delete {
+        order: 2;
+    }
+
+    #transaction-images-download {
+        order: 3;
+    }
+
+    #transaction-images-close {
+        order: 4;
+    }
+
+    .transaction-images-actions > :is(button, a) svg {
+        display: block;
+    }
+
+    .transaction-images-actions > :is(button, a) span {
+        display: none;
     }
 }
