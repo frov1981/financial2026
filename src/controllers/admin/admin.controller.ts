@@ -1,12 +1,11 @@
 import { LOGGER_EVENTS, LoggerEventName } from '../../utils/logger-events'
 import { RequestHandler } from 'express'
-import { readdir, readFile, stat } from 'fs/promises'
-import path from 'path'
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { ConfigurableLogLevel, logger } from '../../utils/logger.util'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { User } from '../../entities/User.entity'
+import { persistenceAdapter } from '../../persistence'
 
 const configurableLevels: ConfigurableLogLevel[] = ['TRACE', 'DEBUG', 'INFO']
 const logPageSize = 100
@@ -38,24 +37,10 @@ interface LogEventOption {
   name: string
 }
 
-function logDirectory(): string {
-  const storagePath = process.env.STORAGE_PATH || path.join(process.cwd(), 'storage')
-  return path.resolve(storagePath, 'logs')
-}
-
 async function getRecentLogFiles(): Promise<LogFile[]> {
-  const directory = logDirectory()
-  const entries = await readdir(directory, { withFileTypes: true })
-  const logFiles = await Promise.all(entries
-    .filter(entry => entry.isFile() && entry.name.endsWith('.log'))
-    .map(async entry => {
-      const filePath = path.join(directory, entry.name)
-      const fileStats = await stat(filePath)
-      return { name: entry.name, modifiedAt: fileStats.mtime }
-    }))
-
+  const logFiles = await persistenceAdapter.logs.list()
   return logFiles
-    .sort((first, second) => second.modifiedAt.getTime() - first.modifiedAt.getTime())
+    .map(logFile => ({ name: logFile.key.slice('logs/'.length), modifiedAt: logFile.updatedAt }))
     .slice(0, 7)
 }
 
@@ -307,8 +292,7 @@ export const routeToLogReader: RequestHandler = async (req, res, next) => {
     }
     const selectedFile = logFiles[selectedFileNumber - 1].name
 
-    const logPath = path.join(logDirectory(), selectedFile)
-    const rawContent = await readFile(logPath, 'utf8')
+    const rawContent = await persistenceAdapter.logs.read(`logs/${selectedFile}`)
     const allLines = rawContent.split(/\r?\n/)
     if (allLines[allLines.length - 1] === '') allLines.pop()
 

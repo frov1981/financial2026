@@ -1,10 +1,10 @@
 import { LOGGER_EVENTS } from '../utils/logger-events'
-import fs from 'fs/promises'
 import path from 'path'
 import sharp from 'sharp'
 import { AppDataSource } from '../config/typeorm.datasource'
 import { FileReference } from '../entities/FileReference.entity'
 import { Transaction } from '../entities/Transaction.entity'
+import { persistenceAdapter } from '../persistence'
 import { logger } from '../utils/logger.util'
 
 export const fileOwnerTables = [
@@ -28,8 +28,6 @@ export interface SaveFileReferenceInput {
   buffer: Buffer
   originalName: string
 }
-
-const storagePath = () => process.env.STORAGE_PATH || path.join(process.cwd(), 'storage')
 
 const imageFormats = new Map([
   ['avif', { extension: '.avif', mimeType: 'image/avif' }],
@@ -95,13 +93,9 @@ export async function saveFileReference(input: SaveFileReferenceInput): Promise<
   const thumbnailFileName = `${savedReference.id}-${input.tableName}-thumb.webp`
   const relativePath = path.join('images', input.tableName, fileName)
   const relativeThumbnailPath = path.join('images', input.tableName, thumbnailFileName)
-  const absolutePath = path.join(storagePath(), relativePath)
-  const absoluteThumbnailPath = path.join(storagePath(), relativeThumbnailPath)
-
   try {
-    await fs.mkdir(path.dirname(absolutePath), { recursive: true })
-    await fs.writeFile(absolutePath, input.buffer)
-    await fs.writeFile(absoluteThumbnailPath, image.thumbnail)
+    await persistenceAdapter.files.save(relativePath, input.buffer, image.mimeType)
+    await persistenceAdapter.files.save(relativeThumbnailPath, image.thumbnail, 'image/webp')
     savedReference.path = relativePath.split(path.sep).join('/')
     savedReference.thumbnail_path = relativeThumbnailPath.split(path.sep).join('/')
     const result = await repository.save(savedReference)
@@ -112,8 +106,8 @@ export async function saveFileReference(input: SaveFileReferenceInput): Promise<
   } catch (error) {
     saveFileReference_logger.error('Error guardando referencia de archivo', { error: error instanceof Error ? error.message : String(error) })
     await Promise.allSettled([
-      fs.rm(absolutePath, { force: true }),
-      fs.rm(absoluteThumbnailPath, { force: true }),
+      persistenceAdapter.files.delete(relativePath),
+      persistenceAdapter.files.delete(relativeThumbnailPath),
       repository.delete(savedReference.id)
     ])
     throw error

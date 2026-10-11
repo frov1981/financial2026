@@ -1,6 +1,8 @@
 import 'dotenv/config'
 import pino from 'pino'
 import path from 'path'
+import { FirebaseLogDestination } from '../persistence/firebase-log.destination'
+import { persistenceAdapter, persistenceProvider } from '../persistence'
 import { LOGGER_EVENTS, LoggerEventName } from './logger-events'
 
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
@@ -31,23 +33,44 @@ class Logger {
   constructor() {
     const envLevel: LogLevel = process.env.NODE_ENV === 'production' ? 'INFO' : 'DEBUG'
     this.currentLevel = LEVELS[envLevel]
+    const loggerOptions: pino.LoggerOptions = {
+      level: envLevel.toLowerCase(),
+      base: { service: process.env.NODE_LOG_SERVICE || 'ssrfinan-api' },
+      timestamp: pino.stdTimeFunctions.isoTime,
+      formatters: {
+        level: (label, number) => ({ level: number, level_name: label.toUpperCase() }),
+      },
+    }
+
+    if (process.env.NODE_ENV === 'test') {
+      this.outputLogger = pino(loggerOptions)
+      return
+    }
+
+    if (persistenceProvider === 'firebase') {
+      const destination = new FirebaseLogDestination(persistenceAdapter.logs, APP_TIME_ZONE)
+      destination.on('error', error => {
+        console.error('Error escribiendo logs en Firebase', error)
+      })
+      this.outputLogger = pino(loggerOptions, destination)
+      return
+    }
+
     const storagePath = process.env.STORAGE_PATH || path.join(process.cwd(), 'storage')
     const logDirectory = path.resolve(storagePath, 'logs')
-    const transportTargets: pino.TransportTargetOptions[] = process.env.NODE_ENV === 'test'
-      ? []
-      : [{
-        target: 'pino-roll',
-        level: 'trace',
-        options: {
-          file: path.join(path.resolve(logDirectory), 'ssrfinan.log'),
-          frequency: 'daily',
-          dateFormat: 'yyyy-MM-dd',
-          mkdir: true,
-          limit: { count: 7, removeOtherLogFiles: true },
-        },
-      }]
+    const transportTargets: pino.TransportTargetOptions[] = [{
+      target: 'pino-roll',
+      level: 'trace',
+      options: {
+        file: path.join(path.resolve(logDirectory), 'ssrfinan.log'),
+        frequency: 'daily',
+        dateFormat: 'yyyy-MM-dd',
+        mkdir: true,
+        limit: { count: 7, removeOtherLogFiles: true },
+      },
+    }]
 
-    if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+    if (process.env.NODE_ENV !== 'production') {
       transportTargets.push({
         target: 'pino-pretty',
         level: 'trace',
@@ -61,17 +84,10 @@ class Logger {
       })
     }
 
-    this.outputLogger = pino({
-      level: envLevel.toLowerCase(),
-      base: { service: process.env.NODE_LOG_SERVICE || 'ssrfinan-api' },
-      timestamp: pino.stdTimeFunctions.isoTime,
-      formatters: {
-        level: (label, number) => ({ level: number, level_name: label.toUpperCase() }),
-      },
-    }, transportTargets.length ? pino.transport({
+    this.outputLogger = pino(loggerOptions, pino.transport({
       targets: transportTargets,
       worker: { env: { ...process.env, TZ: APP_TIME_ZONE } },
-    }) : undefined)
+    }))
   }
 
   private shouldLog(level: LogLevel) {

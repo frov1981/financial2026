@@ -1,9 +1,8 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
-import fs from 'fs/promises'
-import path from 'path'
 import { Request, RequestHandler, Response } from 'express'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { FileReference } from '../../entities/FileReference.entity'
+import { persistenceAdapter } from '../../persistence'
 import {
   fileOwnerTables,
   FileOwnerTable,
@@ -14,8 +13,6 @@ import {
 import { AuthRequest } from '../../types/auth-request'
 import { parseError } from '../../utils/error.util'
 import { logger } from '../../utils/logger.util'
-
-const storagePath = () => process.env.STORAGE_PATH || path.join(process.cwd(), 'storage')
 
 const directOwnershipTables = new Set<FileOwnerTable>([
   'accounts',
@@ -59,15 +56,6 @@ async function userOwnsRecord(tableName: FileOwnerTable, recordId: number, userI
 async function userOwnsFile(reference: FileReference, userId: number): Promise<boolean> {
   const tableName = parseTableName(reference.table_name)
   return tableName ? userOwnsRecord(tableName, reference.record_id, userId) : false
-}
-
-function absoluteStoragePath(relativePath: string): string {
-  const root = path.resolve(storagePath())
-  const resolved = path.resolve(root, relativePath)
-  if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
-    throw new Error('Ruta de archivo inválida')
-  }
-  return resolved
 }
 
 function imageUrls(reference: FileReference) {
@@ -166,7 +154,9 @@ export const apiForServingFile: RequestHandler = async (req: Request, res: Respo
     if (!relativePath) return res.status(404).send('Archivo no encontrado')
 
     res.setHeader('Cache-Control', 'private, max-age=31536000, immutable')
-    return res.sendFile(absoluteStoragePath(relativePath))
+    const content = await persistenceAdapter.files.read(relativePath)
+    res.type(req.path.endsWith('/thumbnail') ? 'image/webp' : reference.mime_type)
+    return res.send(content)
   } catch (error) {
     apiForServingFile_logger.error('Error', parseError(error))
     return res.status(404).send('Archivo no encontrado')
@@ -180,10 +170,9 @@ export const apiForDeletingFile: RequestHandler = async (req: Request, res: Resp
     const reference = await findOwnedReference(req)
     if (!reference) return res.status(404).json({ error: 'Archivo no encontrado' })
 
-    const paths = [reference.path, reference.thumbnail_path]
-      .filter((filePath): filePath is string => Boolean(filePath))
-      .map(absoluteStoragePath)
-    await Promise.all(paths.map(filePath => fs.rm(filePath, { force: true })))
+    const keys = [reference.path, reference.thumbnail_path]
+      .filter((key): key is string => Boolean(key))
+    await Promise.all(keys.map(key => persistenceAdapter.files.delete(key)))
     await AppDataSource.getRepository(FileReference).delete(reference.id)
     const noImages = reference.table_name === 'transactions'
       ? await syncTransactionImageCount(reference.record_id)
