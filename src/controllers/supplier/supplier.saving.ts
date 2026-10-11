@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { performance } from 'perf_hooks'
-import { getSupplierById } from '../../cache/cache-suppliers.service'
+import { getSupplierById, getSupplierIdentityList } from '../../cache/cache-suppliers.service'
 import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Supplier } from '../../entities/Supplier.entity'
@@ -67,6 +67,7 @@ export const saveSupplier: RequestHandler = async (req: Request, res: Response) 
   const body = req.body as Record<string, unknown>
   const form_state = {
     supplier: buildSupplierView(body),
+    supplier_identity_list: await getSupplierIdentityList(auth_req),
     supplier_form_policy: supplierFormMatrix[mode],
     mode
   }

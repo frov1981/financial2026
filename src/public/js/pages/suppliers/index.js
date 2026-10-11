@@ -85,28 +85,25 @@
   }
 
   function renderSupplierDetails(supplier) {
+    const email = primaryEmail(supplier)
+    const whatsapp = primaryWhatsapp(supplier)
+    const renderAdditionalContact = (label, value, primaryValue) =>
+      value && value !== primaryValue
+        ? `<div><dt>${label}</dt><dd>${displayValue(value)}</dd></div>`
+        : ''
+
     return `
       <dl class="supplier-details-grid">
         <div><dt>RUC</dt><dd>${displayValue(supplier.tax_id)}</dd></div>
         <div><dt>Móvil 1</dt><dd>${displayValue(supplier.mobile_1)}</dd></div>
         <div><dt>Móvil 2</dt><dd>${displayValue(supplier.mobile_2)}</dd></div>
-        <div><dt>WhatsApp 1</dt><dd>${displayValue(supplier.whatsapp_1)}</dd></div>
-        <div><dt>WhatsApp 2</dt><dd>${displayValue(supplier.whatsapp_2)}</dd></div>
-        <div><dt>Correo 1</dt><dd>${displayValue(supplier.email_1)}</dd></div>
-        <div><dt>Correo 2</dt><dd>${displayValue(supplier.email_2)}</dd></div>
+        ${renderAdditionalContact('WhatsApp 2', supplier.whatsapp_2, whatsapp)}
+        ${renderAdditionalContact('Correo 2', supplier.email_2, email)}
         <div class="supplier-address"><dt>Dirección 1</dt><dd>${displayValue(supplier.address_1)}</dd></div>
         <div class="supplier-address"><dt>Dirección 2</dt><dd>${displayValue(supplier.address_2)}</dd></div>
         <div><dt>Estado</dt><dd>${statusTag(supplier.is_active)}</dd></div>
-        <div><dt>Creado</dt><dd>${displayValue(formatDate(supplier.created_at))}</dd></div>
-        <div><dt>Actualizado</dt><dd>${displayValue(formatDate(supplier.updated_at))}</dd></div>
       </dl>
     `
-  }
-
-  function formatDate(value) {
-    if (!value) return ''
-    const date = new Date(value)
-    return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString()
   }
 
   function renderCard(supplier) {
@@ -118,21 +115,21 @@
             <span class="supplier-chevron" aria-hidden="true"></span>
           </button>
           <div class="supplier-primary">
-            <h2 class="supplier-card-title">${displayValue(supplier.business_name)}</h2>
+            <div class="supplier-card-heading">
+              <h2 class="supplier-card-title">${displayValue(supplier.business_name)}</h2>
+              <div class="supplier-card-actions">
+                <button type="button" class="icon-btn edit" aria-label="Editar proveedor"
+                  onclick="goToSupplierUpdate(${supplier.id})">${iconEdit()}</button>
+                <button type="button" class="icon-btn delete" aria-label="Eliminar proveedor"
+                  onclick="goToSupplierDelete(${supplier.id})">${iconDelete()}</button>
+              </div>
+            </div>
             <div class="supplier-primary-line"><span class="supplier-line-label">Correo</span>${displayValue(primaryEmail(supplier))}</div>
             <div class="supplier-primary-line"><span class="supplier-line-label">WhatsApp</span>${displayValue(primaryWhatsapp(supplier))}</div>
           </div>
         </div>
         <div class="supplier-card-details" hidden>
           ${renderSupplierDetails(supplier)}
-          <div class="supplier-card-actions">
-            <button type="button" class="icon-btn edit" onclick="goToSupplierUpdate(${supplier.id})">
-              ${iconEdit()}<span>Editar</span>
-            </button>
-            <button type="button" class="icon-btn delete" onclick="goToSupplierDelete(${supplier.id})">
-              ${iconDelete()}<span>Eliminar</span>
-            </button>
-          </div>
         </div>
       </article>
     `

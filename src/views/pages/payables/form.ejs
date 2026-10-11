@@ -26,7 +26,7 @@ const cancel_url =
     %>
   </h1>
 
-  <form method="post" action="/payables/">
+  <form class="crud-form" method="post" action="/payables/">
     <!-- Token CSRF -->
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
@@ -239,22 +239,24 @@ const cancel_url =
     <% } %>    
 
     <!-- Acciones -->
-    <div class="flex justify-end gap-2">
-      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">
-        Cancelar
-      </a>
+    <div class="crud-form-actions">
+      <div class="crud-form-actions-inner max-w-xl">
+        <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">
+          Cancelar
+        </a>
 
-      <% if (mode === 'delete') { %>
-        <button
-          class="px-4 py-2 bg-red-600 text-white rounded"
-          onclick="this.form.action.value='delete'">
-          Eliminar
-        </button>
-      <% } else { %>
-        <button class="px-4 py-2 bg-blue-600 text-white rounded">
-          Guardar
-        </button>
-      <% } %>
+        <% if (mode === 'delete') { %>
+          <button
+            class="px-4 py-2 bg-red-600 text-white rounded"
+            onclick="this.form.action.value='delete'">
+            Eliminar
+          </button>
+        <% } else { %>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded">
+            Guardar
+          </button>
+        <% } %>
+      </div>
     </div>
 
   </form>

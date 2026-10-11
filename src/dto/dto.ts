@@ -36,6 +36,14 @@ export type DTOSupplier = {
     updated_at: Date
 }
 
+export type DTOSuppliersResponse = {
+    suppliers: DTOSupplier[]
+    metadata: {
+        source: 'cache' | 'database'
+        number_of_rows: number
+    }
+}
+
 export type DTOSupplierTransaction = Pick<
     DTOSupplier,
     'id' | 'business_name' | 'email_1' | 'email_2' | 'whatsapp_1' | 'whatsapp_2'

@@ -1,7 +1,7 @@
 import { LOGGER_EVENTS } from '../utils/logger-events'
 import { performance } from 'perf_hooks'
 import { AppDataSource } from '../config/typeorm.datasource'
-import type { DTOSupplier } from '../dto/dto'
+import type { DTOSupplier, DTOSuppliersResponse } from '../dto/dto'
 import { Supplier } from '../entities/Supplier.entity'
 import { AuthRequest } from '../types/auth-request'
 import { logger as root_logger } from '../utils/logger.util'
@@ -25,6 +25,13 @@ export const getSuppliers = async (auth_req: AuthRequest): Promise<Supplier[]> =
   return getSuppliersBase(auth_req.user.id)
 }
 
+export const getSupplierIdentityList = async (
+  auth_req: AuthRequest
+): Promise<Array<{ id: number; business_name: string; tax_id: string | null }>> => {
+  const suppliers = await getSuppliers(auth_req)
+  return suppliers.map(({ id, business_name, tax_id }) => ({ id, business_name, tax_id }))
+}
+
 export const getSupplierById = async (auth_req: AuthRequest, supplier_id: number): Promise<Supplier | null> => {
   const suppliers = await getSuppliersBase(auth_req.user.id)
   return suppliers.find(supplier => supplier.id === supplier_id) || null
@@ -43,16 +50,33 @@ export const getActiveSuppliersIncludeCurrentSupplier = async (
   return suppliers.filter(supplier => supplier.is_active || supplier.id === supplier_id)
 }
 
-export const getSupplierByTaxId = async (auth_req: AuthRequest, tax_id: string): Promise<Supplier | null> => {
+export const getSupplierByTaxId = async (
+  auth_req: AuthRequest,
+  tax_id: string,
+  excluded_supplier_id?: number
+): Promise<Supplier | null> => {
   const suppliers = await getSuppliersBase(auth_req.user.id)
-  return suppliers.find(supplier => supplier.tax_id === tax_id) || null
+  return suppliers.find(supplier => supplier.tax_id === tax_id && supplier.id !== excluded_supplier_id) || null
 }
 
-export const getSuppliersForApi = async (auth_req: AuthRequest): Promise<DTOSupplier[]> => {
+export const getSupplierByBusinessName = async (
+  auth_req: AuthRequest,
+  business_name: string,
+  excluded_supplier_id?: number
+): Promise<Supplier | null> => {
+  const suppliers = await getSuppliersBase(auth_req.user.id)
+  const normalized_name = business_name.trim().toLowerCase()
+  return suppliers.find(supplier =>
+    supplier.business_name.trim().toLowerCase() === normalized_name &&
+    supplier.id !== excluded_supplier_id
+  ) || null
+}
+
+export const getSuppliersForApi = async (auth_req: AuthRequest): Promise<DTOSuppliersResponse> => {
   const user_id = auth_req.user.id
   const cache_key = cacheKeys.suppliersByUserForApi(user_id)
   const cached_suppliers = cache.get<DTOSupplier[]>(cache_key)
-  if (cached_suppliers !== undefined) return cached_suppliers
+  if (cached_suppliers !== undefined) return { suppliers: cached_suppliers, metadata: { source: 'cache', number_of_rows: cached_suppliers.length } }
 
   const started_at = performance.now()
   const suppliers = await getSuppliersBase(user_id)
@@ -77,5 +101,5 @@ export const getSuppliersForApi = async (auth_req: AuthRequest): Promise<DTOSupp
   const cache_logger = root_logger.forMethod(getSuppliersForApi.name, LOGGER_EVENTS.CACHE, user_id)
   cache_logger.debug(`method=[${getSuppliersForApi.name}], cacheKey=[${cache_key}], user=[${user_id}], entity=[supplier], count=[${result.length}], elapsedTime=[${elapsed_seconds.toFixed(4)}]`)
   cache.set(cache_key, result)
-  return result
+  return { suppliers: result, metadata: { source: 'database', number_of_rows: result.length } }
 }

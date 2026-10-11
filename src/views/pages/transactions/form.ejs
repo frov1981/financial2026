@@ -23,7 +23,7 @@
     %>
   </h1>
 
-  <form method="post" action="/transactions">
+  <form class="crud-form" method="post" action="/transactions">
     <!-- Token CSRF -->
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
@@ -292,29 +292,31 @@
     </div>
     <% } %>
 
-    <div class="flex justify-end gap-2">
-      <%
-        const cancelUrl =
-          context?.from === 'categories' && context?.category_id
-            ? `/transactions?from=categories&category_id=${context.category_id}`
-            : '/transactions'
-      %>
-      <a href="<%= cancelUrl %>" class="px-4 py-2 bg-gray-200 rounded">
-        Cancelar
-      </a>
+    <div class="crud-form-actions">
+      <div class="crud-form-actions-inner max-w-3xl">
+        <%
+          const cancelUrl =
+            context?.from === 'categories' && context?.category_id
+              ? `/transactions?from=categories&category_id=${context.category_id}`
+              : '/transactions'
+        %>
+        <a href="<%= cancelUrl %>" class="px-4 py-2 bg-gray-200 rounded">
+          Cancelar
+        </a>
 
-      <% if (mode === 'delete') { %>
-        <button
-          type="submit"
-          class="px-4 py-2 bg-red-600 text-white rounded"
-        >
-          Eliminar
-        </button>
-      <% } else { %>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
-          Guardar
-        </button>
-      <% } %>
+        <% if (mode === 'delete') { %>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-red-600 text-white rounded"
+          >
+            Eliminar
+          </button>
+        <% } else { %>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+            Guardar
+          </button>
+        <% } %>
+      </div>
     </div>
 
   </form>

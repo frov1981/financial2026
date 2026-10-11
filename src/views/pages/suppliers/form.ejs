@@ -9,7 +9,7 @@
     <%= mode === 'insert' ? 'Insertar Proveedor' : mode === 'update' ? 'Editar Proveedor' : 'Eliminar Proveedor' %>
   </h1>
 
-  <form method="post" action="/suppliers/">
+  <form class="crud-form" method="post" action="/suppliers/">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <% if (errors?.general) { %>
@@ -38,16 +38,50 @@
       <% if (!isHidden(field)) { %>
         <div class="mb-4">
           <label class="block font-medium mb-1" for="<%= field %>"><%= label %></label>
-          <input
-            id="<%= field %>"
-            type="<%= inputType || 'text' %>"
-            name="<%= field %>"
-            class="w-full border rounded px-3 py-2"
-            maxlength="<%= maxLength %>"
-            value="<%= supplier?.[field] || '' %>"
-            <%= isReadOnly(field) ? 'readonly' : '' %>
-            <%= required ? 'required' : '' %>
-          >
+          <% if ((field === 'business_name' || field === 'tax_id') && !isReadOnly(field)) { %>
+            <div class="supplier-identity-autocomplete" data-supplier-field="<%= field %>">
+              <input
+                id="<%= field %>"
+                type="<%= inputType || 'text' %>"
+                name="<%= field %>"
+                class="w-full border rounded px-3 py-2"
+                maxlength="<%= maxLength %>"
+                value="<%= supplier?.[field] || '' %>"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="supplier-<%= field %>-suggestions"
+                data-supplier-autocomplete
+                <%= required ? 'required' : '' %>
+              >
+              <div id="supplier-<%= field %>-suggestions" class="supplier-identity-suggestions" role="listbox" hidden>
+                <% supplier_identity_list.forEach(existing_supplier => { %>
+                  <% const suggestion_value = field === 'business_name' ? existing_supplier.business_name : existing_supplier.tax_id %>
+                  <% if (suggestion_value) { %>
+                    <button
+                      type="button"
+                      class="supplier-identity-suggestion"
+                      role="option"
+                      data-suggestion-value="<%= suggestion_value %>"
+                      data-supplier-id="<%= existing_supplier.id %>"
+                    ><%= suggestion_value %></button>
+                  <% } %>
+                <% }) %>
+                <p class="supplier-identity-no-results" hidden>No hay proveedores con ese valor.</p>
+              </div>
+              <p class="supplier-identity-duplicate text-red-600 text-sm mt-1" role="status" aria-live="polite" hidden></p>
+            </div>
+          <% } else { %>
+            <input
+              id="<%= field %>"
+              type="<%= inputType || 'text' %>"
+              name="<%= field %>"
+              class="w-full border rounded px-3 py-2"
+              maxlength="<%= maxLength %>"
+              value="<%= supplier?.[field] || '' %>"
+              <%= isReadOnly(field) ? 'readonly' : '' %>
+              <%= required ? 'required' : '' %>
+            >
+          <% } %>
           <% if (errors?.[field]) { %>
             <p class="text-red-600 text-sm mt-1"><%= errors[field] %></p>
           <% } %>
@@ -76,13 +110,15 @@
       </div>
     <% } %>
 
-    <div class="flex justify-end gap-2">
-      <a href="/suppliers" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
-      <% if (mode === 'delete') { %>
-        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
-      <% } else { %>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
-      <% } %>
+    <div class="crud-form-actions">
+      <div class="crud-form-actions-inner max-w-xl" role="group" aria-label="Acciones del formulario">
+        <a href="/suppliers" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+        <% if (mode === 'delete') { %>
+          <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
+        <% } else { %>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+        <% } %>
+      </div>
     </div>
   </form>
 </div>

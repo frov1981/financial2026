@@ -1,7 +1,8 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { performance } from 'perf_hooks'
-import { getSupplierById, getSuppliersForApi } from '../../cache/cache-suppliers.service'
+import { getSupplierById, getSupplierIdentityList, getSuppliersForApi } from '../../cache/cache-suppliers.service'
+import type { DTOSuppliersResponse } from '../../dto/dto'
 import { Supplier } from '../../entities/Supplier.entity'
 import { supplierFormMatrix } from '../../policies/supplier-form.policy'
 import { AuthRequest } from '../../types/auth-request'
@@ -15,8 +16,9 @@ type SupplierFormViewParams = BaseFormViewParams & {
   supplier: Partial<Supplier>
 }
 
-const renderSupplierForm = (res: Response, params: SupplierFormViewParams) => {
+const renderSupplierForm = async (res: Response, params: SupplierFormViewParams) => {
   const { title, view, supplier, errors, mode, auth_req } = params
+  const supplier_identity_list = await getSupplierIdentityList(auth_req)
   const supplier_form_policy = supplierFormMatrix[mode]
   return res.render('layouts/main', {
     title,
@@ -25,7 +27,8 @@ const renderSupplierForm = (res: Response, params: SupplierFormViewParams) => {
     mode,
     auth_req,
     supplier,
-    supplier_form_policy
+    supplier_form_policy,
+    supplier_identity_list
   })
 }
 
@@ -38,7 +41,7 @@ export const routeToPageSupplier: RequestHandler = (req: Request, res: Response)
   })
 }
 
-export const routeToFormInsertSupplier: RequestHandler = (req: Request, res: Response) => {
+export const routeToFormInsertSupplier: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
   const auth_req = req as AuthRequest
   return renderSupplierForm(res, {
@@ -87,8 +90,9 @@ export const apiForGettingSuppliers: RequestHandler = async (req: Request, res: 
   const started_at = performance.now()
   try {
     api_logger.debug('Obteniendo proveedores')
-    const result = await getSuppliersForApi(auth_req)
-    return res.json(result)
+    const response: DTOSuppliersResponse = await getSuppliersForApi(auth_req)
+    api_logger.info(`Proveedores obtenidos desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+    return res.json(response.suppliers)
   } catch (error) {
     api_logger.error('Error al listar proveedores', parseError(error))
     return res.status(500).json({ error: 'Error al listar proveedores' })

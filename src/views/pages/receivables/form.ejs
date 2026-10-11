@@ -24,7 +24,7 @@ const cancel_url = context?.from === 'categories' && context?.category_id
     %>
   </h1>
 
-  <form method="post" action="/receivables/">
+  <form class="crud-form" method="post" action="/receivables/">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <% if (errors?.general) { %>
@@ -150,13 +150,15 @@ const cancel_url = context?.from === 'categories' && context?.category_id
     </div>
     <% } %>
 
-    <div class="flex justify-end gap-2">
-      <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
-      <% if (mode === 'delete') { %>
-        <button class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
-      <% } else { %>
-        <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
-      <% } %>
+    <div class="crud-form-actions">
+      <div class="crud-form-actions-inner max-w-xl">
+        <a href="<%= cancel_url %>" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+        <% if (mode === 'delete') { %>
+          <button class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
+        <% } else { %>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+        <% } %>
+      </div>
     </div>
   </form>
 </div>

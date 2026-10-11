@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
-import { getSupplierByTaxId } from '../../cache/cache-suppliers.service'
+import { getSupplierByBusinessName, getSupplierByTaxId } from '../../cache/cache-suppliers.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Supplier } from '../../entities/Supplier.entity'
 import { Transaction } from '../../entities/Transaction.entity'
@@ -11,10 +11,18 @@ export const validateSaveSupplier = async (auth_req: AuthRequest, supplier: Supp
   const errors = await validate(plainToInstance(Supplier, supplier))
   const field_errors = errors.length > 0 ? mapValidationErrors(errors) : {}
 
-  if (supplier.tax_id) {
-    const existing = await getSupplierByTaxId(auth_req, supplier.tax_id)
+  if (supplier.business_name) {
+    const existing = await getSupplierByBusinessName(auth_req, supplier.business_name, supplier.id)
 
-    if (existing && existing.id !== supplier.id) {
+    if (existing) {
+      field_errors.business_name = 'Ya existe un proveedor con esta razón social'
+    }
+  }
+
+  if (supplier.tax_id) {
+    const existing = await getSupplierByTaxId(auth_req, supplier.tax_id, supplier.id)
+
+    if (existing) {
       field_errors.tax_id = 'Ya existe un proveedor con este RUC'
     }
   }
