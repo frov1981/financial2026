@@ -29,6 +29,7 @@ export type DTOSupplier = {
     mobile_2: string | null
     whatsapp_1: string | null
     whatsapp_2: string | null
+    supplier_group: { id: number; name: string; is_active: boolean }
     email_1: string | null
     email_2: string | null
     is_active: boolean

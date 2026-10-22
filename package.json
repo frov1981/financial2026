@@ -8,8 +8,7 @@
     "copy:public": "node -e \"require('fs').cpSync('src/public','dist/public',{ recursive:true })\"",
     "build": "npm run clean && npm run build:ts && npm run copy:views && npm run copy:public",
     "start": "node dist/server.js",
-    "seed": "ts-node src/seeds/seed.ts",
-    "migrate:persistence": "ts-node src/scripts/migrate-persistence.ts"
+    "seed": "ts-node src/seeds/seed.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.4.0",

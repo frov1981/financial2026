@@ -11,6 +11,7 @@ import {
   UpdateDateColumn
 } from 'typeorm'
 import { Transaction } from './Transaction.entity'
+import { SupplierGroup } from './SupplierGroup.entity'
 import { User } from './User.entity'
 
 @Index('idx_suppliers_user', ['user'])
@@ -23,6 +24,10 @@ export class Supplier {
   @ManyToOne(() => User, user => user.suppliers)
   @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_suppliers_user' })
   user!: User
+
+  @ManyToOne(() => SupplierGroup, group => group.suppliers, { nullable: false })
+  @JoinColumn({ name: 'supplier_group_id', foreignKeyConstraintName: 'fk_suppliers_group' })
+  supplier_group!: SupplierGroup
 
   @Column({ type: 'varchar', length: 255 })
   @IsNotEmpty({ message: 'La razón social es obligatoria' })

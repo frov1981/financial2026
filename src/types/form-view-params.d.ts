@@ -55,6 +55,11 @@ export type SupplierFormMode = 'insert' | 'update' | 'delete'
 export type SupplierFieldMatrix = Record<string, SupplierFieldMode>
 export type SupplierFormMatrix = Record<SupplierFormMode, SupplierFieldMatrix>
 
+export type SupplierGroupFieldMode = 'hidden' | 'readonly' | 'editable'
+export type SupplierGroupFormMode = 'insert' | 'update' | 'delete'
+type SupplierGroupFieldMatrix = Record<string, SupplierGroupFieldMode>
+export type SupplierGroupFormMatrix = Record<SupplierGroupFormMode, SupplierGroupFieldMatrix>
+
 export type BaseFormViewParams = {
     title: string
     view: string

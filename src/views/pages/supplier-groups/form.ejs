@@ -1,0 +1,41 @@
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6"><%= title %></h1>
+
+  <form class="crud-form" method="post" action="/supplier-groups/">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="id" value="<%= supplier_group?.id || '' %>">
+    <input type="hidden" name="mode" value="<%= mode %>">
+
+    <% if (errors?.general) { %>
+      <div class="mb-4 p-3 bg-red-100 text-red-700 rounded"><%= errors.general %></div>
+    <% } %>
+
+    <div class="mb-4">
+      <label class="block font-medium mb-1" for="name">Nombre del grupo</label>
+      <input
+        id="name"
+        type="text"
+        name="name"
+        class="w-full border rounded px-3 py-2"
+        maxlength="255"
+        value="<%= supplier_group?.name || '' %>"
+        <%= mode === 'delete' ? 'readonly' : '' %>
+        required
+      >
+      <% if (errors?.name) { %>
+        <p class="text-red-600 text-sm mt-1"><%= errors.name %></p>
+      <% } %>
+    </div>
+
+    <div class="crud-form-actions">
+      <div class="crud-form-actions-inner max-w-xl">
+        <a href="/suppliers" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+        <% if (mode === 'delete') { %>
+          <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
+        <% } else { %>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+        <% } %>
+      </div>
+    </div>
+  </form>
+</div>

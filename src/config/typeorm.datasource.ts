@@ -18,6 +18,7 @@ import { Receivable } from '../entities/Receivable.entity'
 import { ReceivableCollection } from '../entities/ReceivableCollection.entity'
 import { ReceivableGroup } from '../entities/ReceivableGroup.entity'
 import { Supplier } from '../entities/Supplier.entity'
+import { SupplierGroup } from '../entities/SupplierGroup.entity'
 import { Transaction } from '../entities/Transaction.entity'
 import { User } from '../entities/User.entity'
 
@@ -48,7 +49,8 @@ export const AppDataSource = new DataSource({
     JobQueue,
     JobRun,
     DevicePreference,
-    Supplier
+    Supplier,
+    SupplierGroup
   ],
   synchronize: false,
   timezone: 'Z',

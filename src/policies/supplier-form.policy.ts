@@ -3,6 +3,7 @@ import { SupplierFormMatrix } from '../types/form-view-params'
 export const supplierFormMatrix: SupplierFormMatrix = {
   insert: {
     business_name: 'editable',
+    supplier_group_id: 'editable',
     tax_id: 'editable',
     address_1: 'editable',
     address_2: 'editable',
@@ -16,6 +17,7 @@ export const supplierFormMatrix: SupplierFormMatrix = {
   },
   update: {
     business_name: 'editable',
+    supplier_group_id: 'editable',
     tax_id: 'editable',
     address_1: 'editable',
     address_2: 'editable',
@@ -29,6 +31,7 @@ export const supplierFormMatrix: SupplierFormMatrix = {
   },
   delete: {
     business_name: 'readonly',
+    supplier_group_id: 'readonly',
     tax_id: 'readonly',
     address_1: 'readonly',
     address_2: 'readonly',

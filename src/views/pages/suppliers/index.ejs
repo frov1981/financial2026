@@ -8,10 +8,20 @@
 
     <div class="ui-toolbar">
       <%- include('../../partials/buttons/btn-new', {
-        href: '/suppliers/insert',
+        href: '#',
         title: 'Nuevo proveedor',
         text: 'Nuevo',
         data_btn: 'new'
+      }) %>
+
+      <%- include('../../partials/modals/modal', {
+        modal_id: 'insert-supplier-modal',
+        title: '¿Qué desea insertar?',
+        buttons: [
+          { id: 'insert-supplier-group', text: 'Grupo de Proveedores', variant: 'ui-modal-btn-primary' },
+          { id: 'insert-supplier-child', text: 'Proveedor', variant: 'ui-modal-btn-success' },
+          { id: 'close-supplier-modal', text: 'Cancelar', variant: 'ui-modal-btn-neutral' }
+        ]
       }) %>
 
       <%- include('../../partials/buttons/btn-toggle-status.ejs', {

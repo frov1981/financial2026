@@ -17,20 +17,17 @@
         items.forEach(item => item.classList.remove('active'))
       }
       const isDuplicateValue = value => items.some(item => {
-        if (item.dataset.supplierId === currentSupplierId) return false
+        if (field !== 'business_name' || item.dataset.supplierId === currentSupplierId) return false
         const existingValue = item.dataset.suggestionValue.trim()
-        return field === 'business_name'
-          ? existingValue.toLowerCase() === value.toLowerCase()
-          : existingValue === value
+        return existingValue.toLowerCase() === value.toLowerCase()
       })
       const updateDuplicateMessage = () => {
+        if (field !== 'business_name') return
         const value = input.value.trim()
         const duplicateExists = value !== '' && isDuplicateValue(value)
         duplicateMessage.hidden = !duplicateExists
         duplicateMessage.textContent = duplicateExists
-          ? field === 'business_name'
-            ? 'Ya existe un proveedor con esta razón social.'
-            : 'Ya existe un proveedor con este RUC.'
+          ? 'Ya existe un proveedor con esta razón social.'
           : ''
       }
       const filterSuggestions = () => {

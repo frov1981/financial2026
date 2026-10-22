@@ -10,6 +10,7 @@ import { ReceivableGroup } from './ReceivableGroup.entity'
 import { Receivable } from './Receivable.entity'
 import { JobSchedule } from './JobSchedule.entity'
 import { Supplier } from './Supplier.entity'
+import { SupplierGroup } from './SupplierGroup.entity'
 @Entity('users')
 
 export class User {
@@ -64,5 +65,8 @@ export class User {
 
   @OneToMany(() => Supplier, supplier => supplier.user)
   suppliers!: Supplier[]
+
+  @OneToMany(() => SupplierGroup, group => group.user)
+  supplier_groups!: SupplierGroup[]
 
 }

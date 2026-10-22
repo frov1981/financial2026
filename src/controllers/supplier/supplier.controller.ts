@@ -1,7 +1,12 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { performance } from 'perf_hooks'
-import { getSupplierById, getSupplierIdentityList, getSuppliersForApi } from '../../cache/cache-suppliers.service'
+import {
+  getActiveSupplierGroupsIncludeCurrent,
+  getSupplierById,
+  getSupplierIdentityList,
+  getSuppliersForApi
+} from '../../cache/cache-suppliers.service'
 import type { DTOSuppliersResponse } from '../../dto/dto'
 import { Supplier } from '../../entities/Supplier.entity'
 import { supplierFormMatrix } from '../../policies/supplier-form.policy'
@@ -18,6 +23,7 @@ type SupplierFormViewParams = BaseFormViewParams & {
 
 const renderSupplierForm = async (res: Response, params: SupplierFormViewParams) => {
   const { title, view, supplier, errors, mode, auth_req } = params
+  const supplier_group_list = await getActiveSupplierGroupsIncludeCurrent(auth_req, supplier.supplier_group?.id)
   const supplier_identity_list = await getSupplierIdentityList(auth_req)
   const supplier_form_policy = supplierFormMatrix[mode]
   return res.render('layouts/main', {
@@ -27,6 +33,7 @@ const renderSupplierForm = async (res: Response, params: SupplierFormViewParams)
     mode,
     auth_req,
     supplier,
+    supplier_group_list,
     supplier_form_policy,
     supplier_identity_list
   })

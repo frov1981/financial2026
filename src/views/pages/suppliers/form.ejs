@@ -34,6 +34,39 @@
       ['email_2', 'Correo 2', 254, false, 'email']
     ] %>
 
+    <% if (!isHidden('supplier_group_id')) { %>
+      <div class="mb-4">
+        <label class="block font-medium mb-1" for="supplier_group_id">Grupo</label>
+        <% if (!supplier_group_list.length) { %>
+          <p class="mb-2 text-sm text-amber-700">
+            Primero crea un grupo de proveedores.
+            <a class="underline" href="/supplier-groups/insert">Crear grupo</a>
+          </p>
+        <% } %>
+        <select
+          id="supplier_group_id"
+          name="supplier_group_id"
+          class="w-full border rounded px-3 py-2"
+          <%= isReadOnly('supplier_group_id') ? 'disabled' : '' %>
+          required
+        >
+          <option value="">Selecciona un grupo</option>
+          <% supplier_group_list.forEach(group => { %>
+            <option
+              value="<%= group.id %>"
+              <%= Number(supplier?.supplier_group?.id) === group.id ? 'selected' : '' %>
+            ><%= group.name %><%= group.is_active ? '' : ' (Inactivo)' %></option>
+          <% }) %>
+        </select>
+        <% if (isReadOnly('supplier_group_id')) { %>
+          <input type="hidden" name="supplier_group_id" value="<%= supplier?.supplier_group?.id || '' %>">
+        <% } %>
+        <% if (errors?.supplier_group_id) { %>
+          <p class="text-red-600 text-sm mt-1"><%= errors.supplier_group_id %></p>
+        <% } %>
+      </div>
+    <% } %>
+
     <% for (const [field, label, maxLength, required, inputType] of textFields) { %>
       <% if (!isHidden(field)) { %>
         <div class="mb-4">

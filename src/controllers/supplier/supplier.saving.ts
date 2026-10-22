@@ -1,7 +1,12 @@
 import { LOGGER_EVENTS } from '../../utils/logger-events'
 import { Request, RequestHandler, Response } from 'express'
 import { performance } from 'perf_hooks'
-import { getSupplierById, getSupplierIdentityList } from '../../cache/cache-suppliers.service'
+import {
+  getActiveSupplierGroupsIncludeCurrent,
+  getSupplierById,
+  getSupplierGroupById,
+  getSupplierIdentityList
+} from '../../cache/cache-suppliers.service'
 import { deleteAll } from '../../cache/cache-key.service'
 import { AppDataSource } from '../../config/typeorm.datasource'
 import { Supplier } from '../../entities/Supplier.entity'
@@ -41,20 +46,31 @@ const normalizeOptionalString = (value: unknown): string | null => {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
-const buildSupplierView = (body: Record<string, unknown>): Partial<Supplier> => ({
-  id: typeof body.id === 'string' && Number.isSafeInteger(Number(body.id)) ? Number(body.id) : undefined,
-  business_name: typeof body.business_name === 'string' ? body.business_name.trim() : '',
-  tax_id: normalizeOptionalString(body.tax_id),
-  address_1: normalizeOptionalString(body.address_1),
-  address_2: normalizeOptionalString(body.address_2),
-  mobile_1: normalizeOptionalString(body.mobile_1),
-  mobile_2: normalizeOptionalString(body.mobile_2),
-  whatsapp_1: normalizeOptionalString(body.whatsapp_1),
-  whatsapp_2: normalizeOptionalString(body.whatsapp_2),
-  email_1: normalizeOptionalString(body.email_1),
-  email_2: normalizeOptionalString(body.email_2),
-  is_active: parseBoolean(body.is_active)
-})
+const buildSupplierView = async (
+  auth_req: AuthRequest,
+  body: Record<string, unknown>
+): Promise<Partial<Supplier>> => {
+  const group_id = Number(body.supplier_group_id)
+  const supplier_group = Number.isSafeInteger(group_id) && group_id > 0
+    ? await getSupplierGroupById(auth_req, group_id)
+    : null
+
+  return {
+    id: typeof body.id === 'string' && Number.isSafeInteger(Number(body.id)) ? Number(body.id) : undefined,
+    business_name: typeof body.business_name === 'string' ? body.business_name.trim() : '',
+    supplier_group: supplier_group || undefined,
+    tax_id: normalizeOptionalString(body.tax_id),
+    address_1: normalizeOptionalString(body.address_1),
+    address_2: normalizeOptionalString(body.address_2),
+    mobile_1: normalizeOptionalString(body.mobile_1),
+    mobile_2: normalizeOptionalString(body.mobile_2),
+    whatsapp_1: normalizeOptionalString(body.whatsapp_1),
+    whatsapp_2: normalizeOptionalString(body.whatsapp_2),
+    email_1: normalizeOptionalString(body.email_1),
+    email_2: normalizeOptionalString(body.email_2),
+    is_active: parseBoolean(body.is_active)
+  }
+}
 
 export const saveSupplier: RequestHandler = async (req: Request, res: Response) => {
   const started_at = performance.now()
@@ -66,7 +82,11 @@ export const saveSupplier: RequestHandler = async (req: Request, res: Response) 
   const repo_supplier = AppDataSource.getRepository(Supplier)
   const body = req.body as Record<string, unknown>
   const form_state = {
-    supplier: buildSupplierView(body),
+    supplier: await buildSupplierView(auth_req, body),
+    supplier_group_list: await getActiveSupplierGroupsIncludeCurrent(
+      auth_req,
+      Number(body.supplier_group_id) || undefined
+    ),
     supplier_identity_list: await getSupplierIdentityList(auth_req),
     supplier_form_policy: supplierFormMatrix[mode],
     mode
@@ -92,11 +112,23 @@ export const saveSupplier: RequestHandler = async (req: Request, res: Response) 
 
     const supplier = mode === 'insert'
       ? repo_supplier.create({ user: { id: user_id }, is_active: true })
-      : existing
+      : existing ? repo_supplier.create(existing) : null
     if (!supplier) throw new Error('Proveedor no encontrado')
 
     const clean = sanitizeByPolicy(mode, body)
     if (typeof clean.business_name === 'string') supplier.business_name = clean.business_name.trim()
+    if (clean.supplier_group_id !== undefined) {
+      const supplier_group_id = Number(clean.supplier_group_id)
+      const supplier_group = Number.isSafeInteger(supplier_group_id) && supplier_group_id > 0
+        ? await getSupplierGroupById(auth_req, supplier_group_id)
+        : null
+      if (!supplier_group) {
+        throw { validationErrors: { supplier_group_id: 'Selecciona un grupo válido' } }
+      }
+      supplier.supplier_group = supplier_group
+    } else if (mode === 'insert' || !supplier.supplier_group) {
+      throw { validationErrors: { supplier_group_id: 'Crea y selecciona un grupo antes de guardar el proveedor' } }
+    }
     if (clean.tax_id !== undefined) supplier.tax_id = normalizeOptionalString(clean.tax_id)
     if (clean.address_1 !== undefined) supplier.address_1 = normalizeOptionalString(clean.address_1)
     if (clean.address_2 !== undefined) supplier.address_2 = normalizeOptionalString(clean.address_2)

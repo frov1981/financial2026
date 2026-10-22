@@ -11,6 +11,7 @@ import { injectNetBalance } from './middlewares/inject-net-balance.middleware'
 import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
 import accountRoutes from './routes/account.route'
 import supplierRoutes from './routes/supplier.route'
+import supplierGroupRoutes from './routes/supplier-group.route'
 import authRoutes from './routes/auth.route'
 import categoryGroupRoutes from './routes/category-group.route'
 import categoryRoutes from './routes/category.route'
@@ -108,6 +109,7 @@ protectedRouter.use('/settings', settingsRoutes)
 protectedRouter.use('/admin', adminRoutes)
 protectedRouter.use('/accounts', accountRoutes)
 protectedRouter.use('/suppliers', supplierRoutes)
+protectedRouter.use('/supplier-groups', supplierGroupRoutes)
 protectedRouter.use('/categories', categoryRoutes)
 protectedRouter.use('/category-groups', categoryGroupRoutes)
 protectedRouter.use('/transactions', transactionRoutes)
