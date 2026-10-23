@@ -4,6 +4,38 @@
     font-family: sans-serif;
 }
 
+.autocomplete-create-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.autocomplete-create-row > .autocomplete {
+    flex: 1;
+    min-width: 0;
+}
+
+.autocomplete-create-row > select {
+    flex: 1;
+    min-width: 0;
+}
+
+.autocomplete-create-button {
+    flex: 0 0 2.5rem;
+    border: 1px solid var(--ui-gray-300);
+    border-radius: 4px;
+    background: var(--ui-white);
+    color: var(--ui-blue-700);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.autocomplete-create-button:hover,
+.autocomplete-create-button:focus-visible {
+    background: var(--ui-gray-100);
+}
+
 .autocomplete-panel {
     position: absolute;
     top: 100%;

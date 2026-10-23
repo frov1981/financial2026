@@ -44,6 +44,13 @@ export const routeToPageCategory: RequestHandler = (req: Request, res: Response)
 export const routeToFormInsertCategory: RequestHandler = async (req: Request, res: Response) => {
   const mode = 'insert'
   const auth_req = req as AuthRequest
+  const requested_type = req.query.type === 'income' || req.query.type === 'expense'
+    ? req.query.type
+    : null
+  const requested_scope = ['payable', 'payable_payment', 'receivable', 'receivable_collection']
+    .includes(String(req.query.type_for_payable_or_receivable))
+    ? String(req.query.type_for_payable_or_receivable)
+    : null
   return renderCategoryForm(res, {
     title: 'Insertar Categoría',
     view: 'pages/categories/form',
@@ -51,8 +58,8 @@ export const routeToFormInsertCategory: RequestHandler = async (req: Request, re
     mode,
     auth_req,
     category: {
-      type: null,
-      type_for_payable_or_receivable: null,
+      type: requested_type,
+      type_for_payable_or_receivable: requested_scope,
       category_group: null,
       is_active: true
     },

@@ -186,7 +186,7 @@ function initAutocomplete(container) {
       let filtered_items = items
       let active_index = -1
 
-      if (default_id) {
+      if (default_id && !hidden_el.value) {
         const default_item = items.find(it => String(it.id) === String(default_id))
         if (default_item) {
           setInputValue(default_item, input_el)

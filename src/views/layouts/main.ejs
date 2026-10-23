@@ -5,6 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<%= csrfToken %>">
+    <% if (typeof autocompleteCreateContext !== 'undefined' && autocompleteCreateContext) { %>
+    <meta
+        name="autocomplete-create-context"
+        data-return-to="<%= autocompleteCreateContext.returnTo %>"
+        data-return-token="<%= autocompleteCreateContext.token %>"
+        data-return-field="<%= autocompleteCreateContext.field %>"
+    >
+    <% } %>
+    <% if (typeof autocompleteResume !== 'undefined' && autocompleteResume) { %>
+    <meta
+        name="autocomplete-resume"
+        data-token="<%= autocompleteResume.token %>"
+        data-field="<%= autocompleteResume.field %>"
+        data-label="<%= autocompleteResume.label %>"
+    >
+    <% } %>
     <title>
         <%= title || 'SSR App' %>
     </title>
@@ -47,6 +63,7 @@
             <%- include('../' + view) %>
         </main>
 
+    <script src="/js/helpers/autocomplete-create-helper.js"></script>
 </body>
 
 </html>

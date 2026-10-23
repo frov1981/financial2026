@@ -31,6 +31,9 @@
       <div
         id="batch-income-category-autocomplete"
         class="autocomplete"
+        data-autocomplete-create-url="/categories/insert"
+        data-autocomplete-create-label="Crear categoría de ingresos"
+        data-autocomplete-create-type="income"
         data-items='<%- JSON.stringify(active_income_categories || []) %>'
         data-selected-id=""
         data-placeholder="-- Escoja una categoría --"
@@ -61,6 +64,9 @@
       <div
         id="batch-expense-category-autocomplete"
         class="autocomplete"
+        data-autocomplete-create-url="/categories/insert"
+        data-autocomplete-create-label="Crear categoría de gastos"
+        data-autocomplete-create-type="expense"
         data-items='<%- JSON.stringify(active_expense_categories || []) %>'
         data-selected-id=""
         data-placeholder="-- Escoja una categoría --"

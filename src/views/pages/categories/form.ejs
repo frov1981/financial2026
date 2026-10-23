@@ -186,6 +186,8 @@
 
       <div
         class="autocomplete"
+        data-autocomplete-create-url="/category-groups/insert"
+        data-autocomplete-create-label="Crear grupo de categorías"
         data-items='<%- JSON.stringify(category_group_list) %>'
         data-default-id="<%= category?.category_group?.id || '' %>"
         data-placeholder="-- Escoja una opción --"

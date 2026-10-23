@@ -100,6 +100,8 @@
 
       <div
         class="autocomplete"
+        data-autocomplete-create-url="/accounts/insert"
+        data-autocomplete-create-label="Crear cuenta"
         data-items='<%- JSON.stringify(active_accounts) %>'
         data-default-id="<%= transaction?.account?.id || '' %>"
         data-placeholder="-- Escoja una cuenta --"
@@ -135,6 +137,8 @@
 
       <div
         class="autocomplete"
+        data-autocomplete-create-url="/accounts/insert"
+        data-autocomplete-create-label="Crear cuenta destino"
         data-items='<%- JSON.stringify(active_accounts_for_transfer) %>'
         data-default-id="<%= transaction?.to_account?.id || '' %>"
         data-placeholder="-- Escoja una cuenta destino --"
@@ -170,6 +174,8 @@
 
       <div 
         class="autocomplete"
+        data-autocomplete-create-url="/categories/insert"
+        data-autocomplete-create-label="Crear categoría"
         data-items-income='<%- JSON.stringify(active_income_categories) %>'
         data-items-expense='<%- JSON.stringify(active_expense_categories) %>'
         data-default-id="<%= transaction?.category?.id || '' %>"
@@ -207,6 +213,8 @@
 
       <div
         class="autocomplete"
+        data-autocomplete-create-url="/suppliers/insert"
+        data-autocomplete-create-label="Crear proveedor"
         data-items='<%- JSON.stringify(active_suppliers.map(supplier => ({ id: supplier.id, name: supplier.business_name }))) %>'
         data-default-id="<%= transaction?.supplier?.id || '' %>"
         data-placeholder="-- Sin proveedor --"

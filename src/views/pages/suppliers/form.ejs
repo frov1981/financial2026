@@ -40,9 +40,15 @@
         <% if (!supplier_group_list.length) { %>
           <p class="mb-2 text-sm text-amber-700">
             Primero crea un grupo de proveedores.
-            <a class="underline" href="/supplier-groups/insert">Crear grupo</a>
+            Usa el botón + para crear el grupo sin perder este formulario.
           </p>
         <% } %>
+        <div
+          class="autocomplete-create-row"
+          data-autocomplete-create-url="/supplier-groups/insert"
+          data-autocomplete-create-label="Crear grupo de proveedores"
+          data-autocomplete-create-field="supplier_group_id"
+        >
         <select
           id="supplier_group_id"
           name="supplier_group_id"
@@ -58,6 +64,7 @@
             ><%= group.name %><%= group.is_active ? '' : ' (Inactivo)' %></option>
           <% }) %>
         </select>
+        </div>
         <% if (isReadOnly('supplier_group_id')) { %>
           <input type="hidden" name="supplier_group_id" value="<%= supplier?.supplier_group?.id || '' %>">
         <% } %>

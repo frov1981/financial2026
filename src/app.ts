@@ -8,6 +8,7 @@ import { csrfProtection, csrfTokenMiddleware } from './middlewares/csrf.middlewa
 import { injectPayableBalance } from './middlewares/inject-payable-balance.middleware'
 import { injectReceivableBalance } from './middlewares/inject-receivable-balance.middleware'
 import { injectNetBalance } from './middlewares/inject-net-balance.middleware'
+import { autocompleteCreateFlowMiddleware } from './middlewares/autocomplete-create-flow.middleware'
 import { sessionAuthMiddleware } from './middlewares/session-auth.middleware'
 import accountRoutes from './routes/account.route'
 import supplierRoutes from './routes/supplier.route'
@@ -104,6 +105,7 @@ protectedRouter.use(sessionAuthMiddleware)
 protectedRouter.use(injectNetBalance)
 protectedRouter.use(apiLimiter)
 protectedRouter.use(csrfProtection) // Aplicar CSRF a rutas protegidas
+protectedRouter.use(autocompleteCreateFlowMiddleware)
 protectedRouter.use('/device-preferences', devicePreferencesRoutes)
 protectedRouter.use('/settings', settingsRoutes)
 protectedRouter.use('/admin', adminRoutes)

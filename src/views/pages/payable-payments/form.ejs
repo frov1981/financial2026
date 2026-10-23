@@ -51,6 +51,8 @@ const cancel_url =
 
       <div
         class="autocomplete"
+        data-autocomplete-create-url="/accounts/insert"
+        data-autocomplete-create-label="Crear cuenta"
         data-items='<%- JSON.stringify(account_list) %>'
         data-default-id="<%= payment?.account?.id || '' %>"
         data-placeholder="-- Escoja una cuenta --"
@@ -88,6 +90,10 @@ const cancel_url =
 
       <div
         class="autocomplete"
+        data-autocomplete-create-url="/categories/insert"
+        data-autocomplete-create-label="Crear categoría"
+        data-autocomplete-create-type="expense"
+        data-autocomplete-create-scope="payable_payment"
         data-items='<%- JSON.stringify(active_expense_category_list) %>'
         data-default-id="<%= payment?.category?.id || '' %>"
         data-placeholder="-- Escoja una categoría --"
