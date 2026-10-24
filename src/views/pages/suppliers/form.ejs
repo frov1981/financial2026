@@ -44,30 +44,35 @@
           </p>
         <% } %>
         <div
-          class="autocomplete-create-row"
+          class="autocomplete"
+          data-items='<%- JSON.stringify(supplier_group_list.map(group => ({
+            id: group.id,
+            name: `${group.name}${group.is_active ? '' : ' (Inactivo)'}`
+          }))) %>'
+          data-default-id="<%= supplier?.supplier_group?.id || '' %>"
+          data-placeholder="Selecciona un grupo"
           data-autocomplete-create-url="/supplier-groups/insert"
           data-autocomplete-create-label="Crear grupo de proveedores"
-          data-autocomplete-create-field="supplier_group_id"
         >
-        <select
-          id="supplier_group_id"
-          name="supplier_group_id"
-          class="w-full border rounded px-3 py-2"
-          <%= isReadOnly('supplier_group_id') ? 'disabled' : '' %>
-          required
-        >
-          <option value="">Selecciona un grupo</option>
-          <% supplier_group_list.forEach(group => { %>
-            <option
-              value="<%= group.id %>"
-              <%= Number(supplier?.supplier_group?.id) === group.id ? 'selected' : '' %>
-            ><%= group.name %><%= group.is_active ? '' : ' (Inactivo)' %></option>
-          <% }) %>
-        </select>
+          <input
+            id="supplier_group_id"
+            type="text"
+            class="autocomplete-input"
+            autocomplete="off"
+            aria-autocomplete="list"
+            value="<%= supplier?.supplier_group?.name || '' %><%= supplier?.supplier_group && !supplier.supplier_group.is_active ? ' (Inactivo)' : '' %>"
+            <%= isReadOnly('supplier_group_id') ? 'readonly' : 'required' %>
+          >
+          <input
+            type="hidden"
+            class="autocomplete-hidden"
+            name="supplier_group_id"
+            value="<%= supplier?.supplier_group?.id || '' %>"
+          >
+          <% if (!isReadOnly('supplier_group_id')) { %>
+            <div class="autocomplete-panel"></div>
+          <% } %>
         </div>
-        <% if (isReadOnly('supplier_group_id')) { %>
-          <input type="hidden" name="supplier_group_id" value="<%= supplier?.supplier_group?.id || '' %>">
-        <% } %>
         <% if (errors?.supplier_group_id) { %>
           <p class="text-red-600 text-sm mt-1"><%= errors.supplier_group_id %></p>
         <% } %>
@@ -164,3 +169,4 @@
 </div>
 
 <script src="/js/pages/suppliers/form.js"></script>
+<script src="/js/helpers/autocomplete-helper.js"></script>

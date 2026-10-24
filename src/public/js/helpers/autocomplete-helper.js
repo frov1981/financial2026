@@ -203,6 +203,7 @@ function initAutocomplete(container) {
 
       input_el.addEventListener('input', () => {
         const query = input_el.value.toLowerCase()
+        hidden_el.value = ''
         filtered_items = items.filter(it => String(it.name || '').toLowerCase().includes(query))
         active_index = -1
         renderPanel(panel_el, filtered_items)

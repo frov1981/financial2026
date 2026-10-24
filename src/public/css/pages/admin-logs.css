@@ -64,6 +64,76 @@
     border-radius: 6px;
 }
 
+.admin-level-button-short {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .admin-card h2 {
+        margin-bottom: 4px;
+    }
+
+    .admin-level-grid {
+        grid-template-columns: auto auto minmax(0, 1fr);
+        align-items: center;
+        gap: 6px;
+    }
+
+    .admin-level-grid > div {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .admin-level-grid .admin-field-label,
+    .admin-level-form > label {
+        margin: 0;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    .admin-level-value {
+        padding: 4px 6px;
+        font-size: 0.7rem;
+    }
+
+    .admin-level-form {
+        display: contents;
+    }
+
+    .admin-level-controls {
+        display: flex;
+        grid-column: 3;
+        flex-wrap: nowrap;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .admin-level-controls select {
+        flex: 1;
+        width: 1%;
+        min-width: 0;
+        min-height: 32px;
+        padding: 4px;
+        font-size: 0.7rem;
+    }
+
+    .admin-level-controls .ui-btn {
+        flex: 0 0 auto;
+        padding: 6px 8px;
+        font-size: 0.7rem;
+    }
+
+    .admin-level-button-full {
+        display: none;
+    }
+
+    .admin-level-button-short {
+        display: inline;
+    }
+}
+
 .admin-log-files {
     display: grid;
     gap: 0;
@@ -570,10 +640,11 @@
 
     .admin-log-file {
         grid-template-columns: auto auto minmax(0, 1fr);
+        padding: 4px 4px;
     }
 
     .admin-log-file time {
-        grid-column: 3;
+        display: none;
     }
 
     .admin-reader-heading h1 {

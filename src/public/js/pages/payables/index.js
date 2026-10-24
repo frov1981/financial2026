@@ -522,10 +522,17 @@ function goToPayableView(id) {
 function selectPayableCard(event, id) {
   if (event.target.closest('button')) return
 
+  const card = event.currentTarget
+  if (card.classList.contains('card-selected')) {
+    card.classList.remove('card-selected')
+    clearFilters(PAYABLE_SELECTED_STORAGE_KEY)
+    return
+  }
+
   document.querySelectorAll('.payable-card')
     .forEach(card => card.classList.remove('card-selected'))
 
-  event.currentTarget.classList.add('card-selected')
+  card.classList.add('card-selected')
   saveFilters(PAYABLE_SELECTED_STORAGE_KEY, { id })
 }
 

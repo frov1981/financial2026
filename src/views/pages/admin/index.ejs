@@ -22,7 +22,10 @@
               <option value="<%= level %>" <%= logLevel === level ? 'selected' : '' %>><%= level %></option>
             <% }) %>
           </select>
-          <button type="submit" class="ui-btn ui-btn-primary">Cambiar nivel</button>
+          <button type="submit" class="ui-btn ui-btn-primary">
+            <span class="admin-level-button-full">Cambiar nivel</span>
+            <span class="admin-level-button-short">Cambiar</span>
+          </button>
         </div>
       </form>
     </div>

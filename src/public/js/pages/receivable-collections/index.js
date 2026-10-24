@@ -30,6 +30,12 @@ function debounce(fn, delay) {
   }
 }
 
+const formatAmount = value =>
+  Number(value || 0).toLocaleString('es-EC', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+
 function loadCollections() {
   fetch(`${API_BASE}${window.RECEIVABLE_ID}/payable`)
     .then(res => res.json())
@@ -121,7 +127,7 @@ function renderRow(collection) {
 
 function renderCard(collection) {
   return `
-    <div class="payable-card mobile-card" data-id="${collection.id}">
+    <div class="payable-card collection-card mobile-card" data-id="${collection.id}">
       <div class="card-header">
         <div class="card-datetime">
           <div class="card-title">Cobro</div>
@@ -136,17 +142,17 @@ function renderCard(collection) {
       <div class="card-body payment-amounts">
         <div class="amount-item">
           <div class="amount-label">Capital</div>
-          <div class="amount-value">${amountBox(collection.principal_received)}</div>
+          <div class="amount-value">${formatAmount(collection.principal_received)}</div>
         </div>
 
         <div class="amount-item">
           <div class="amount-label">Interés</div>
-          <div class="amount-value">${amountBox(collection.interest_received)}</div>
+          <div class="amount-value">${formatAmount(collection.interest_received)}</div>
         </div>
 
         <div class="amount-item">
           <div class="amount-label">Total</div>
-          <div class="amount-value">${amountBox(Number(collection.principal_received) + Number(collection.interest_received))}</div>
+          <div class="amount-value">${formatAmount(Number(collection.principal_received || 0) + Number(collection.interest_received || 0))}</div>
         </div>
       </div>
 

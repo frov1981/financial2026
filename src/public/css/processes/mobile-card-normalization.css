@@ -21,6 +21,12 @@
         text-transform: uppercase;
     }
 
+    .mobile-card.account-card .card-balance {
+        margin: 4px 0;
+        font-size: 0.875rem;
+        line-height: 1;
+    }
+
     .category-group > .category-group-header .group-header-left > span,
     .supplier-group > .supplier-group-header .supplier-group-heading > span,
     .payable-group > .payable-group-header .payables-group-title {
@@ -40,8 +46,8 @@
     }
 
     .mobile-card.payable-card .card-balance {
-        margin: 0.2rem;
-        font-size: 22px;
+        margin: 4px 0;
+        font-size: 0.875rem;
         font-weight: 700;
     }
 
@@ -54,6 +60,14 @@
     .mobile-card.payable-card .card-footer > .card-tags {
         margin: 0.2rem;
         padding: 0;
+    }
+
+    .mobile-card.payable-card:not(.collection-card) .card-footer {
+        display: none;
+    }
+
+    .mobile-card.payable-card:not(.collection-card).card-selected .card-footer {
+        display: flex;
     }
 
 }

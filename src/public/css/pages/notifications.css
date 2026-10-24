@@ -71,7 +71,16 @@
         padding: 8px;
     }
 
+    .notification-card-title {
+        margin-bottom: 4px;
+    }
+
+    .notification-details {
+        gap: 4px;
+    }
+
     .notification-card .ui-card-body {
         padding: 1rem;
+        font-size: 12px;
     }
 }

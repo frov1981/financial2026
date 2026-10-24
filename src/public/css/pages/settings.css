@@ -10,6 +10,12 @@
     font-weight: 600;
 }
 
+@media (max-width: 768px) {
+    .settings-card-title {
+        margin-bottom: 4px;
+    }
+}
+
 .settings-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -101,26 +101,31 @@
     margin-top: 6px;
 }
 
-.payment-card .payment-amounts {
+.payment-card .payment-amounts,
+.collection-card .payment-amounts {
     display: flex;
     justify-content: space-between;
     gap: 8px;
 }
 
-.payment-card .amount-item {
+.payment-card .amount-item,
+.collection-card .amount-item {
     flex: 1;
 }
 
-.payment-card .amount-label {
+.payment-card .amount-label,
+.collection-card .amount-label {
     font-size: 11px;
     color: var(--ui-gray-500);
     text-align: left;
 }
 
-.payment-card .amount-value {
+.payment-card .amount-value,
+.collection-card .amount-value {
     font-size: 18px;
     font-weight: 600;
     text-align: left;
+    color: var(--ui-gray-900);
 }
 
 .payment-card .card-footer {
