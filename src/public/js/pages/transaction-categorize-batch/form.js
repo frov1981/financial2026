@@ -96,7 +96,7 @@ function renderCard(transaction) {
   const date = formatDate(transaction.date)
 
   return `
-    <div class="transaction-card ${rowClassByType(transaction)}">
+    <div class="transaction-card mobile-card ${rowClassByType(transaction)}">
       <div class="card-header">
         <div class="card-datetime">
           <span class="card-date">${date}</span>

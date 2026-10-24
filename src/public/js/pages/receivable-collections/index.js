@@ -121,7 +121,7 @@ function renderRow(collection) {
 
 function renderCard(collection) {
   return `
-    <div class="payable-card" data-id="${collection.id}">
+    <div class="payable-card mobile-card" data-id="${collection.id}">
       <div class="card-header">
         <div class="card-datetime">
           <div class="card-title">Cobro</div>

@@ -189,7 +189,7 @@ function renderCard(payable) {
 
   return `
     <div 
-      class="payable-card ${payable.is_active ? '' : 'inactive'}"
+      class="payable-card mobile-card ${payable.is_active ? '' : 'inactive'}"
       data-id="${payable.id}"
       onclick="selectPayableCard(event, ${payable.id})">
 
@@ -365,7 +365,7 @@ function renderCards(data) {
     const cards = collapsed ? '' : payables.map(l => renderCard(l)).join('')
 
     return `
-      <div class="payable-group ${collapsed ? 'collapsed' : ''}" style="background:${bgColor};">
+      <div class="payable-group mobile-card ${collapsed ? 'collapsed' : ''}" style="background:${bgColor};">
         <div class="payable-group-header">
 
           <div class="payables-group-header-left">

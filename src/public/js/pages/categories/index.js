@@ -167,7 +167,7 @@ function renderCard(category) {
 
   return `
     <div 
-      class="category-card ${category.is_active ? '' : 'inactive'}"
+      class="category-card mobile-card ${category.is_active ? '' : 'inactive'}"
       data-id="${category.id}"
       onclick="selectCategoryCard(event, ${category.id})">
       <div class="card-header">
@@ -310,7 +310,7 @@ function renderCards(data) {
     const childCards = collapsed ? '' : items.map(c => renderCard(c)).join('')
 
     return `
-      <div class="category-group ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
+      <div class="category-group mobile-card ${collapsed ? 'collapsed' : ''}" style="background: ${bgColor};">
         <div class="category-group-header">
           <div class="group-header-left">
             <button onclick="toggleCategoryGroupCollapse(${group.id})">

@@ -128,7 +128,7 @@ function renderCard(payment) {
   const { date, time, weekday } = formatDateTime(payment.payment_date)
 
   return `
-    <div class="payment-card"
+    <div class="payment-card mobile-card"
          data-id="${payment.id}"
          onclick="selectPaymentCard(event, ${payment.id})">
 

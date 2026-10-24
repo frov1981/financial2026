@@ -95,6 +95,19 @@
     background: rgb(255 255 255 / 12%);
 }
 
+@media (max-width: 768px) {
+    .navbar-menu-btn {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+    }
+
+    .navbar-menu-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
 .navbar-links {
     display: flex;
     max-height: 0;
@@ -122,6 +135,90 @@
     font-size: 0.92rem;
     font-weight: 500;
     text-decoration: none;
+}
+
+.navbar-link-icon {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .navbar-links a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+
+    .navbar-link-icon {
+        display: inline-flex;
+        flex: 0 0 18px;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+    }
+
+    .navbar-link-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .navbar-links a[href="/home"] .navbar-link-icon {
+        color: #fef3c7;
+        background: #92400e;
+    }
+
+    .navbar-links a[href="/accounts"] .navbar-link-icon {
+        color: #dbeafe;
+        background: #1e40af;
+    }
+
+    .navbar-links a[href="/suppliers"] .navbar-link-icon {
+        color: #dcfce7;
+        background: #166534;
+    }
+
+    .navbar-links a[href="/categories"] .navbar-link-icon {
+        color: #f3e8ff;
+        background: #6b21a8;
+    }
+
+    .navbar-links a[href="/transactions"] .navbar-link-icon {
+        color: #cffafe;
+        background: #155e75;
+    }
+
+    .navbar-links a[href="/payables"] .navbar-link-icon {
+        color: #fee2e2;
+        background: #991b1b;
+    }
+
+    .navbar-links a[href="/receivables"] .navbar-link-icon {
+        color: #d1fae5;
+        background: #065f46;
+    }
+
+    .navbar-links a[href="/notifications"] .navbar-link-icon {
+        color: #ffedd5;
+        background: #9a3412;
+    }
+
+    .navbar-links a[href="/settings"] .navbar-link-icon {
+        color: #e0e7ff;
+        background: #3730a3;
+    }
+
+    .navbar-links a[href="/admin"] .navbar-link-icon {
+        color: #e5e7eb;
+        background: #374151;
+    }
+
+    .navbar-links a[href="/logout"] .navbar-link-icon {
+        color: #fecaca;
+        background: #7f1d1d;
+    }
 }
 
 .navbar-links a:hover,

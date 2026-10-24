@@ -136,7 +136,7 @@
   function renderCard(supplier) {
     const selected = loadFilters(SELECTED_KEY)?.id === supplier.id
     return `
-      <article class="supplier-card ${supplier.is_active ? '' : 'inactive'} ${selected ? 'card-selected' : ''}" data-id="${supplier.id}"
+      <article class="supplier-card mobile-card ${supplier.is_active ? '' : 'inactive'} ${selected ? 'card-selected' : ''}" data-id="${supplier.id}"
         onclick="selectSupplierCard(event, ${supplier.id})">
         <div class="supplier-card-main">
           <button type="button" class="supplier-expand" aria-expanded="false"
@@ -223,7 +223,7 @@
       const children = suppliersByGroup.get(group.id) || []
       const background = getGroupBackgroundColor(index, groups.length)
       return `
-        <section class="supplier-group ${collapsed ? 'collapsed' : ''}" style="background: ${background};">
+        <section class="supplier-group mobile-card ${collapsed ? 'collapsed' : ''}" style="background: ${background};">
           <header class="supplier-group-header">
             <div class="supplier-group-heading">
               <button type="button" class="supplier-expand supplier-group-toggle" aria-expanded="${!collapsed}"

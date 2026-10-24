@@ -1,0 +1,83 @@
+@media (max-width: 768px) {
+    .mobile-card {
+        box-sizing: border-box;
+        padding: 6px;
+        border-radius: 12px;
+    }
+
+    .mobile-card.ui-card > .ui-card-header,
+    .mobile-card.ui-card > .ui-card-body {
+        padding: 0;
+    }
+
+    .mobile-card:not(.transaction-card) .card-title,
+    .mobile-card:not(.transaction-card) .supplier-card-title,
+    .mobile-card.payment-card .card-date {
+        color: var(--ui-gray-900);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        line-height: 1.25;
+        text-transform: uppercase;
+    }
+
+    .category-group > .category-group-header .group-header-left > span,
+    .supplier-group > .supplier-group-header .supplier-group-heading > span,
+    .payable-group > .payable-group-header .payables-group-title {
+        color: var(--ui-gray-900);
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        line-height: 1.25;
+        text-transform: uppercase;
+    }
+
+    .category-group .category-card .card-title,
+    .mobile-card.supplier-group .supplier-card-title,
+    .payable-group .payable-card .card-title {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .mobile-card.payable-card .card-balance {
+        margin: 0.2rem;
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .mobile-card.payable-card .card-sub.payable-amounts {
+        margin: 0.2rem;
+        padding: 0;
+    }
+
+    .mobile-card.payable-card .card-footer > span,
+    .mobile-card.payable-card .card-footer > .card-tags {
+        margin: 0.2rem;
+        padding: 0;
+    }
+
+}
+
+@media (max-width: 768px) {
+    .mobile-card .tag,
+    .mobile-card .tx-tag,
+    .mobile-card .acc-tag,
+    .mobile-card .supplier-status {
+        border-radius: 0;
+        padding: 0.2rem 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .category-group-header .group-header-actions .icon-btn,
+    .supplier-group-header .supplier-group-actions .icon-btn,
+    .payable-group-header .payables-group-actions .icon-btn {
+        padding: 0.3rem 0.5rem;
+    }
+
+    .category-group .category-card .card-actions .icon-btn,
+    .supplier-group .supplier-card-actions .icon-btn,
+    .payable-group .payable-card .card-actions .icon-btn {
+        padding: 0.2rem 0.6rem;
+    }
+}

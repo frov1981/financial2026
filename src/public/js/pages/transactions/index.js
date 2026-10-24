@@ -600,7 +600,7 @@ function renderCard(transaction) {
 
   return `
     <div 
-      class="transaction-card ${rowClassByType(transaction)}"
+      class="transaction-card mobile-card ${rowClassByType(transaction)}"
       data-id="${transaction.id}"
       onclick="selectTransactionCard(event, ${transaction.id})">
 

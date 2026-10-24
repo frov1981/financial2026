@@ -115,7 +115,7 @@ function renderCard(receivable) {
   if (group_id && isReceivableGroupCollapsed(group_id)) return ''
 
   return `
-    <div class="payable-card ${receivable.is_active ? '' : 'inactive'}" data-id="${receivable.id}" onclick="selectReceivableCard(event, ${receivable.id})">
+    <div class="payable-card mobile-card ${receivable.is_active ? '' : 'inactive'}" data-id="${receivable.id}" onclick="selectReceivableCard(event, ${receivable.id})">
       <div class="card-header">
         <div class="card-title">${receivable.name}</div>
         <div class="card-actions">
@@ -304,7 +304,7 @@ function renderCards(data) {
     const cards = collapsed ? '' : items.map(i => renderCard(i)).join('')
 
     return `
-      <div class="payable-group ${collapsed ? 'collapsed' : ''}" style="background:${bgColor};">
+      <div class="payable-group mobile-card ${collapsed ? 'collapsed' : ''}" style="background:${bgColor};">
         <div class="payable-group-header">
           <div class="payables-group-header-left">
             <button onclick="toggleReceivableGroupCollapse(${group.id})">

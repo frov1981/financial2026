@@ -27,19 +27,19 @@
     </div>
 
     <ul id="navbar-links" class="navbar-links">
-      <li><a href="/home">Inicio</a></li>
-      <li><a href="/accounts">Cuentas</a></li>
-      <li><a href="/suppliers">Proveedores</a></li>
-      <li><a href="/categories">Categorías</a></li>
-      <li><a href="/transactions">Transacciones</a></li>
-      <li><a href="/payables">Cuentas por Pagar</a></li>
-      <li><a href="/receivables">Cuentas por Cobrar</a></li>
-      <li><a href="/notifications">Programación</a></li>
-      <li><a href="/settings">Configuraciones</a></li>
+      <li><a href="/home"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9M9 20v-7h6v7"/></svg></span>Inicio</a></li>
+      <li><a href="/accounts"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg></span>Cuentas</a></li>
+      <li><a href="/suppliers"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Proveedores</a></li>
+      <li><a href="/categories"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 11 23l-9-9V2h12l9 9a1.8 1.8 0 0 1-.4 2.4Z"/><circle cx="7" cy="7" r="1"/></svg></span>Categorías</a></li>
+      <li><a href="/transactions"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h14l-4-4M17 17H3l4 4"/><path d="M21 7v4M3 17v-4"/></svg></span>Transacciones</a></li>
+      <li><a href="/payables"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13v13"/><path d="m20 7-9 9-4-4-5 5"/></svg></span>Cuentas por Pagar</a></li>
+      <li><a href="/receivables"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17H4V4h13"/><path d="m4 17 9-9 4 4 5-5"/><path d="M17 4h5v5"/></svg></span>Cuentas por Cobrar</a></li>
+      <li><a href="/notifications"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3"/></svg></span>Programación</a></li>
+      <li><a href="/settings"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.5.9L16 20h-3l-.3-1.8a8 8 0 0 1-1.5-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.8l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.5-.9L13 7h3l.3 1.8a8 8 0 0 1 1.5.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1-.1 2.5Z"/></svg></span>Configuraciones</a></li>
       <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-        <li><a class="navbar-admin-item" href="/admin">Servidor</a></li>
+        <li><a class="navbar-admin-item" href="/admin"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></svg></span>Servidor</a></li>
       <% } %>
-      <li><a href="/logout">Cerrar Sesión</a></li>
+      <li><a href="/logout"><span class="navbar-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg></span>Cerrar Sesión</a></li>
     </ul>
   </div>
 </nav>

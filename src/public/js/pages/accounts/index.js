@@ -150,7 +150,7 @@ function renderCard(account) {
 
   return `
     <div 
-      class="account-card ${account.is_active ? '' : 'inactive'}"
+      class="account-card mobile-card ${account.is_active ? '' : 'inactive'}"
       data-id="${account.id}"
       onclick="selectAccountCard(event, ${account.id})">
 
