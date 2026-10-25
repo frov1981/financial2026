@@ -23,6 +23,17 @@ function transactionTypeTag(type) {
   }
 }
 
+function moduleOriginTag(transaction) {
+  const detailedType = transaction?.detailed_type || ''
+  if (detailedType.includes('payable')) {
+    return '<span class="tx-origin payable">Modulo de Pagos</span>'
+  }
+  if (detailedType.includes('receivable')) {
+    return '<span class="tx-origin receivable">Modulo de Cobros</span>'
+  }
+  return ''
+}
+
 function statusTag(isActive) {
   if (isActive) {
     return `<div class="tag tag-active">Activo</div>`
@@ -77,7 +88,7 @@ function categoryTypeForPayableTag(type) {
     case 'payable_payment':
       return `
         <div class="tx-tag ">
-          Cuentas por Pagar
+          Pagos
         </div>
       `
     case 'receivable':
@@ -96,4 +107,3 @@ function categoryTypeForPayableTag(type) {
       return ``
   }
 }
-

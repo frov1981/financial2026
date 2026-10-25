@@ -71,7 +71,14 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
     const cached_response = cache.get<DTOTransactionsResponse>(cache_key)
     if (cached_response !== undefined) {
       const response: DTOTransactionsResponse = { ...cached_response, metadata: { source: 'cache', number_of_rows: cached_response.items.length } }
-      apiForGettingTransactions_logger.info(`Transacciones obtenidas desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+      apiForGettingTransactions_logger.info(`Transacciones obtenidas desde: ${response.metadata.source}`, {
+        number_of_rows: response.metadata.number_of_rows,
+        page,
+        limit,
+        total_rows: cached_response.total,
+        total_pages: Math.max(1, Math.ceil(cached_response.total / limit)),
+        search,
+      })
       res.json({ items: response.items, total: response.total, page: response.page, limit: response.limit, category_id: response.category_id })
       return
     }
@@ -134,7 +141,14 @@ export const apiForGettingTransactions: RequestHandler = async (req: Request, re
       metadata: { source: 'database', number_of_rows: items.length }
     }
     cache.set(cache_key, response)
-    apiForGettingTransactions_logger.info(`Transacciones obtenidas desde: ${response.metadata.source}`, { number_of_rows: response.metadata.number_of_rows })
+    apiForGettingTransactions_logger.info(`Transacciones obtenidas desde: ${response.metadata.source}`, {
+      number_of_rows: response.metadata.number_of_rows,
+      page,
+      limit,
+      total_rows: total,
+      total_pages: Math.max(1, Math.ceil(total / limit)),
+      search,
+    })
     res.json({ items: response.items, total: response.total, page: response.page, limit: response.limit, category_id: response.category_id })
   } catch (error) {
     apiForGettingTransactions_logger.error('Error al listar transacciones', parseError(error))

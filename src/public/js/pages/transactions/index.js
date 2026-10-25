@@ -60,6 +60,7 @@ const searchBtn = document.getElementById('search-btn')
 const pageSizeSelect = document.getElementById('transactions-page-size')
 const tableBody = document.getElementById('transactions-table')
 const table = document.querySelector('.ui-table')
+const mobileTransactions = document.getElementById('transactions-mobile')
 const scrollContainer = document.querySelector('.ui-scroll-area')
 const transactionImagesModal = document.getElementById('transaction-images-modal')
 const transactionImagesViewer = document.getElementById('transaction-images-viewer')
@@ -104,13 +105,6 @@ function rowClassByType(transactionOrType) {
   return ''
 }
 
-function moduleOriginClass(transaction) {
-  const dt = transaction?.detailed_type || ''
-  if (dt.includes('payable')) return 'payable'
-  if (dt.includes('receivable')) return 'receivable'
-  return ''
-}
-
 function isBatchActive() {
   if (typeof window.batchGetState !== 'function') return false
   const state = window.batchGetState()
@@ -120,13 +114,6 @@ function isBatchActive() {
 function isModuleManaged(transaction) {
   const dt = transaction?.detailed_type || ''
   return dt.includes('payable') || dt.includes('receivable')
-}
-
-function moduleOriginLabel(transaction) {
-  const dt = transaction?.detailed_type || ''
-  if (dt.includes('payable')) return 'Modulo de Pagos'
-  if (dt.includes('receivable')) return 'Modulo de Cobros'
-  return ''
 }
 
 /* ============================================================================
@@ -202,6 +189,27 @@ function transactionImagesButton(transaction) {
   `
 }
 
+function transactionCategorySearchButton(transaction) {
+  const categoryName = transaction.category?.name?.trim()
+  if (!categoryName) return ''
+
+  const escapedCategoryName = escapeHtml(categoryName)
+  return `
+    <button
+      class="icon-btn transaction-category-search-btn"
+      type="button"
+      data-category="${escapedCategoryName}"
+      title="Buscar categoría: ${escapedCategoryName}"
+      aria-label="Buscar categoría ${escapedCategoryName}">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="5" r="1.8"/>
+        <circle cx="12" cy="12" r="1.8"/>
+        <circle cx="12" cy="19" r="1.8"/>
+      </svg>
+    </button>
+  `
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({
     '&': '&amp;',
@@ -253,7 +261,7 @@ function renderTable(data) {
 }
 
 function renderCards(data) {
-  const container = document.getElementById('transactions-mobile')
+  const container = mobileTransactions
   if (!container) return
 
   container.innerHTML = data.length
@@ -465,7 +473,7 @@ function renderRow(transaction) {
       </td>
       <td class="ui-td col-left">
         ${transactionTypeTag(transaction.type)}
-        ${isModuleManaged(transaction) ? `<span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>` : ''}
+        ${moduleOriginTag(transaction)}
       </td>
       <td class="ui-td col-right">${amountBox(transaction.amount)}</td>
       <td class="ui-td col-left transaction-account-cell">
@@ -564,6 +572,7 @@ function renderRow(transaction) {
           ` : ''}
 
           ${transactionImagesButton(transaction)}
+          ${transactionCategorySearchButton(transaction)}
 
         </div>
       </td>
@@ -641,13 +650,14 @@ function renderCard(transaction) {
             </button>
           ` : ''}
           ${transactionImagesButton(transaction)}
+          ${transactionCategorySearchButton(transaction)}
         </div>
       </div>
 
       <div class="card-content">
         <div class="card-info">
           <div class="card-account">
-            ${isModuleManaged(transaction) ? `<span class="tx-origin ${moduleOriginClass(transaction)}">${moduleOriginLabel(transaction)}</span>` : ''}
+            ${moduleOriginTag(transaction)}
             ${transaction.type === 'transfer'
       ? `
                 <div class="grouped-icon-line">
@@ -808,6 +818,14 @@ function applySearch() {
   loadTransactions(currentPage)
 }
 
+function searchTransactionsByCategory(categoryName) {
+  const searchTerm = categoryName?.trim()
+  if (!searchTerm) return
+
+  searchInput.value = searchTerm
+  applySearch()
+}
+
 /* ============================================================================
 10. Status Filter UI
 ============================================================================ */
@@ -897,6 +915,17 @@ function selectTransactionCard(event, id) {
 12. Eventos
 ============================================================================ */
 searchInput.addEventListener('input', debounce(applySearch, 300))
+
+function handleCategorySearchClick(event) {
+  const button = event.target.closest('.transaction-category-search-btn')
+  if (!button) return
+
+  event.stopPropagation()
+  searchTransactionsByCategory(button.dataset.category)
+}
+
+table?.addEventListener('click', handleCategorySearchClick)
+mobileTransactions?.addEventListener('click', handleCategorySearchClick)
 
 pageSizeSelect?.addEventListener('change', () => {
   const nextPageSize = Number(pageSizeSelect.value)

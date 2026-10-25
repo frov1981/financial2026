@@ -691,7 +691,7 @@
 
     .admin-log-table > thead > tr > th,
     .admin-log-table > tbody > tr > td {
-        padding: 5px 3px;
+        padding: 2px;
     }
 
     .admin-log-table > tbody > tr.admin-log-row > td {
@@ -703,20 +703,23 @@
         table-layout: fixed;
     }
 
-    .admin-log-table > colgroup > .admin-log-expand-column {
-        width: 7%;
+    .admin-log-table > colgroup > .admin-log-expand-column,
+    .admin-log-table > thead > tr > th.admin-log-detail-heading,
+    .admin-log-table > tbody > tr.admin-log-row > td:first-child {
+        display: none;
+        width: 0;
     }
 
     .admin-log-table > colgroup > .admin-log-time-column {
-        width: 31%;
+        width: 34%;
     }
 
     .admin-log-table > colgroup > .admin-log-method-column {
-        width: 53%;
+        width: 56%;
     }
 
     .admin-log-table > colgroup > .admin-log-copy-column {
-        width: 9%;
+        width: 10%;
     }
 
     .admin-log-table > colgroup > .admin-log-level-column,
@@ -778,9 +781,9 @@
     }
 
     .admin-log-detail-content {
-        width: calc(100% - 24px);
-        margin-left: 24px;
-        padding-bottom: 6px;
+        width: 100%;
+        margin-left: 0;
+        padding: 2px;
     }
 
     .admin-log-properties {
@@ -793,7 +796,7 @@
 
     .admin-log-properties > tbody > tr > th,
     .admin-log-properties > tbody > tr > td {
-        padding: 3px 4px;
+        padding: 1px;
     }
 
 }

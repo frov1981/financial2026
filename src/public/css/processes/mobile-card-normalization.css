@@ -10,6 +10,15 @@
         padding: 0;
     }
 
+    .mobile-card.transaction-card .card-header {
+        margin: 0 0 2px;
+    }
+
+    .mobile-card.transaction-card .tx-origin {
+        margin: 0 0 2px;
+        padding: 2px 2px;
+    }
+
     .mobile-card:not(.transaction-card) .card-title,
     .mobile-card:not(.transaction-card) .supplier-card-title,
     .mobile-card.payment-card .card-date {
@@ -75,6 +84,7 @@
 @media (max-width: 768px) {
     .mobile-card .tag,
     .mobile-card .tx-tag,
+    .mobile-card .tx-origin,
     .mobile-card .acc-tag,
     .mobile-card .supplier-status {
         border-radius: 0;
