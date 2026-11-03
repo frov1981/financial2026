@@ -40,4 +40,4 @@
 @import url('./base/breakpoints.css');
 
 /* Mobile card normalization overrides the legacy per-module card dimensions. */
-@import url('./processes/mobile-card-normalization.css');
+@import url('./normalization/mobil/mobil-normalization.css');
