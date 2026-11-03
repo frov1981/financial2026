@@ -1,15 +1,61 @@
+import { DateTime } from 'luxon'
 import { LOGGER_EVENTS } from '../utils/logger-events'
 import { AppDataSource } from '../config/typeorm.datasource'
 import { CacheKpiBalance } from '../entities/CacheKpiBalance.entity'
 import { CacheKpiCategory } from '../entities/CacheKpiCategory.entity'
 import { AuthRequest } from '../types/auth-request'
-import { formatDateForInputLocal } from '../utils/date.util'
 import { parseError } from '../utils/error.util'
 import { logger as root_logger } from '../utils/logger.util'
 
 
 function money(n: number) {
   return Number(n.toFixed(2))
+}
+
+function getPeriodRange(period_year: number, period_month: number, timezone: string) {
+  const start_local = DateTime.fromObject(
+    { year: period_year, month: period_month, day: 1 },
+    { zone: timezone }
+  )
+
+  if (!start_local.isValid) {
+    throw new Error(`Zona horaria o período inválido: ${timezone} ${period_month}/${period_year}`)
+  }
+
+  return {
+    start_date: start_local.toUTC().toJSDate(),
+    end_date: start_local.plus({ months: 1 }).toUTC().toJSDate()
+  }
+}
+
+async function getTransactionPeriods(user_id: number, timezone: string) {
+  const rows = await AppDataSource.manager.query(`
+    SELECT DISTINCT date
+    FROM transactions
+    WHERE user_id = ?
+  `, [user_id]) as Array<{ date: Date | string }>
+
+  const periods = new Map<string, { year: number; month: number }>()
+
+  for (const row of rows) {
+    const utc_date = row.date instanceof Date
+      ? DateTime.fromJSDate(row.date, { zone: 'utc' })
+      : DateTime.fromSQL(row.date, { zone: 'utc' })
+    const local_date = utc_date.setZone(timezone)
+
+    if (!utc_date.isValid || !local_date.isValid) {
+      throw new Error(`Fecha o zona horaria inválida al reconstruir KPI: ${String(row.date)} ${timezone}`)
+    }
+
+    periods.set(`${local_date.year}-${local_date.month}`, {
+      year: local_date.year,
+      month: local_date.month
+    })
+  }
+
+  return Array.from(periods.values()).sort((first, second) =>
+    first.year - second.year || first.month - second.month
+  )
 }
 
 /* ============================
@@ -65,14 +111,9 @@ export class KpiCacheService {
 
     try {
 
-      const start_local = new Date(period_year, period_month - 1, 1)
-      const end_local = new Date(period_year, period_month, 1)
+      const { start_date, end_date } = getPeriodRange(period_year, period_month, timezone)
 
-
-      const start_date = new Date(formatDateForInputLocal(start_local, timezone))
-      const end_date = new Date(formatDateForInputLocal(end_local, timezone))
-
-      kpi_cache_logger.debug('KPI_DATE_RANGE', { user_id, period_year, period_month, timezone, start_local, end_local, start_date, end_date })
+      kpi_cache_logger.debug('KPI_DATE_RANGE', { user_id, period_year, period_month, timezone, start_date, end_date })
 
       const result = await AppDataSource.manager.query(query_base, [
         user_id,
@@ -164,22 +205,10 @@ export class KpiCacheService {
 
       await repo.delete({ user: { id: user_id } })
 
-      const rows = await AppDataSource.manager.query(`
-        SELECT DISTINCT YEAR(date) as year, MONTH(date) as month
-        FROM transactions
-        WHERE user_id = ?
-      `, [user_id])
+      const periods = await getTransactionPeriods(user_id, timezone)
 
-      for (const row of rows) {
-
-        const year = Number(row.year)
-        const month = Number(row.month)
-
-        const start_local = new Date(year, month - 1, 1)
-        const end_local = new Date(year, month, 1)
-
-        const start_date = new Date(formatDateForInputLocal(start_local, timezone))
-        const end_date = new Date(formatDateForInputLocal(end_local, timezone))
+      for (const { year, month } of periods) {
+        const { start_date, end_date } = getPeriodRange(year, month, timezone)
 
         const result = await AppDataSource.manager.query(query_base, [
           user_id,
@@ -256,13 +285,17 @@ export class KpiCacheService {
         return
       }
 
-      const trx_utc = new Date(formatDateForInputLocal(transaction.date, timezone))
-      const trx_year = trx_utc.getUTCFullYear()
-      const trx_month = trx_utc.getUTCMonth() + 1
+      const trx_local = DateTime.fromJSDate(transaction.date, { zone: 'utc' }).setZone(timezone)
+      const now_local = DateTime.now().setZone(timezone)
 
-      const now_utc = new Date(formatDateForInputLocal(new Date(), timezone))
-      const current_year = now_utc.getUTCFullYear()
-      const current_month = now_utc.getUTCMonth() + 1
+      if (!trx_local.isValid || !now_local.isValid) {
+        throw new Error(`Fecha de transacción o zona horaria inválida: ${timezone}`)
+      }
+
+      const trx_year = trx_local.year
+      const trx_month = trx_local.month
+      const current_year = now_local.year
+      const current_month = now_local.month
 
       const is_current_period = trx_year === current_year && trx_month === current_month
 
@@ -294,11 +327,7 @@ export class KpiCacheService {
     const timezone = auth_req.timezone || 'UTC'
 
     try {
-      const start_local = new Date(period_year, period_month - 1, 1)
-      const end_local = new Date(period_year, period_month, 1)
-
-      const start_date = new Date(formatDateForInputLocal(start_local, timezone))
-      const end_date = new Date(formatDateForInputLocal(end_local, timezone))
+      const { start_date, end_date } = getPeriodRange(period_year, period_month, timezone)
 
       const repo = AppDataSource.getRepository(CacheKpiCategory)
 
@@ -341,21 +370,10 @@ export class KpiCacheService {
 
       await repo.delete({ user: { id: user_id } })
 
-      const rows = await AppDataSource.manager.query(`
-        SELECT DISTINCT YEAR(date) as year, MONTH(date) as month
-        FROM transactions
-        WHERE user_id = ?
-      `, [user_id])
+      const periods = await getTransactionPeriods(user_id, timezone)
 
-      for (const row of rows) {
-        const year = Number(row.year)
-        const month = Number(row.month)
-
-        const start_local = new Date(year, month - 1, 1)
-        const end_local = new Date(year, month, 1)
-
-        const start_date = new Date(formatDateForInputLocal(start_local, timezone))
-        const end_date = new Date(formatDateForInputLocal(end_local, timezone))
+      for (const { year, month } of periods) {
+        const { start_date, end_date } = getPeriodRange(year, month, timezone)
 
         const category_rows = await AppDataSource.manager.query(category_query_base, [
           user_id,
@@ -401,13 +419,17 @@ export class KpiCacheService {
         return
       }
 
-      const trx_utc = new Date(formatDateForInputLocal(transaction.date, timezone))
-      const trx_year = trx_utc.getUTCFullYear()
-      const trx_month = trx_utc.getUTCMonth() + 1
+      const trx_local = DateTime.fromJSDate(transaction.date, { zone: 'utc' }).setZone(timezone)
+      const now_local = DateTime.now().setZone(timezone)
 
-      const now_utc = new Date(formatDateForInputLocal(new Date(), timezone))
-      const current_year = now_utc.getUTCFullYear()
-      const current_month = now_utc.getUTCMonth() + 1
+      if (!trx_local.isValid || !now_local.isValid) {
+        throw new Error(`Fecha de transacción o zona horaria inválida: ${timezone}`)
+      }
+
+      const trx_year = trx_local.year
+      const trx_month = trx_local.month
+      const current_year = now_local.year
+      const current_month = now_local.month
 
       const is_current_period = trx_year === current_year && trx_month === current_month
 
@@ -429,4 +451,3 @@ export class KpiCacheService {
   }
 
 }
-
