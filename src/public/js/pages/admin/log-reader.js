@@ -11,6 +11,9 @@ const logTypeFilterCancel = document.getElementById('log-type-filter-cancel')
 const logUserFilter = document.getElementById('log-user-filter')
 const logElapsedTimeFilter = document.getElementById('log-elapsed-time-filter')
 const logRefreshButton = document.getElementById('log-refresh-button')
+const logDownloadButton = document.getElementById('log-download-button')
+const logPreviousFileButton = document.getElementById('log-previous-file-button')
+const logNextFileButton = document.getElementById('log-next-file-button')
 const logPageSize = 100
 const LEGACY_ADMIN_LOG_FILE_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:admin:selected-log-file`
 const logReaderFiltersStorageKey = `ssrfinan:v1:user:${window.USER_ID}:admin:log-reader-filters`
@@ -68,6 +71,25 @@ async function copyLogRecord(row) {
     throw new Error('El navegador no permite copiar al portapapeles en esta página.')
   }
   await navigator.clipboard.writeText(decodeURIComponent(encodedRawJson))
+}
+
+function downloadVisibleLogRecords() {
+  const rows = logRecords?.querySelectorAll('.admin-log-row') || []
+  const rawLines = Array.from(rows, row => {
+    if (row.dataset.rawJson === undefined) {
+      throw new Error('No se encontró el JSON original de uno de los registros.')
+    }
+    return decodeURIComponent(row.dataset.rawJson)
+  })
+  const content = rawLines.length > 0 ? `${rawLines.join('\n')}\n` : ''
+  const fileName = document.querySelector('.admin-selected-file')?.textContent?.trim() || 'registros'
+  const safeFileName = fileName.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
+  const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${safeFileName}.txt`
+  link.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 function showCopiedFeedback(row) {
@@ -130,7 +152,10 @@ function appendLogRecords(records) {
     copyButton.type = 'button'
     copyButton.setAttribute('aria-label', 'Copiar registro JSON')
     copyButton.title = 'Copiar JSON'
-    copyButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'
+    const copyIcon = document.createElement('span')
+    copyIcon.setAttribute('aria-hidden', 'true')
+    copyIcon.innerHTML = iconCopy()
+    copyButton.append(copyIcon)
     copyCell.append(copyButton)
     row.dataset.detailId = detailId
     row.append(expandCell, timeCell, levelCell, eventCell, methodCell, copyCell)
@@ -166,6 +191,18 @@ function appendLogRecords(records) {
     logRecords.append(row, detailRow)
   })
 }
+
+logTypeFilterButton.querySelector('.admin-log-toolbar-icon').innerHTML = iconFilter()
+logRefreshButton.querySelector('.admin-log-toolbar-icon').innerHTML = iconRefresh()
+logDownloadButton.querySelector('.admin-log-toolbar-icon').innerHTML = iconDownload()
+logPreviousFileButton.querySelector('.admin-log-navigation-icon').innerHTML = iconChevronLeft()
+logNextFileButton.querySelector('.admin-log-navigation-icon').innerHTML = iconChevronRight()
+logRecords?.querySelectorAll('.admin-log-expand span').forEach(icon => {
+  icon.innerHTML = iconChevronOpen()
+})
+logRecords?.querySelectorAll('.admin-log-copy span').forEach(icon => {
+  icon.innerHTML = iconCopy()
+})
 
 logRecords?.querySelectorAll('.admin-log-time').forEach(cell => {
   cell.textContent = formatLocalTime(cell.dataset.time)
@@ -208,6 +245,13 @@ function getRequestParams() {
   const params = new URLSearchParams(new FormData(logReaderForm))
   getSelectedLogTypes().forEach(level => params.append('level', level))
   return params
+}
+
+function navigateToLogFile(fileNumber) {
+  if (!logReaderForm || fileNumber < 1 || fileNumber > window.ADMIN_LOG_FILE_COUNT) return
+  const params = getRequestParams()
+  params.set('fileNumber', String(fileNumber))
+  window.location.assign(`${logReaderForm.action}?${params.toString()}`)
 }
 
 async function updateLogReader({ reset = false } = {}) {
@@ -315,6 +359,19 @@ logTypeFilterApply?.addEventListener('click', () => {
   debouncedFilterLogReader()
 })
 logRefreshButton?.addEventListener('click', refreshLogReader)
+logPreviousFileButton?.addEventListener('click', () => {
+  navigateToLogFile(window.ADMIN_LOG_FILE_NUMBER + 1)
+})
+logNextFileButton?.addEventListener('click', () => {
+  navigateToLogFile(window.ADMIN_LOG_FILE_NUMBER - 1)
+})
+logDownloadButton?.addEventListener('click', () => {
+  try {
+    downloadVisibleLogRecords()
+  } catch (error) {
+    window.MessageBox.error(error instanceof Error ? error.message : 'No se pudieron descargar los registros.')
+  }
+})
 
 const savedLogReaderPosition = window.loadFilters(logReaderPositionStorageKey)
 const savedLogReaderFilters = window.loadFilters(logReaderFiltersStorageKey)

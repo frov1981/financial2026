@@ -106,6 +106,40 @@ function iconRefresh() {
   `
 }
 
+/* Filtrar */
+function iconFilter() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 5h16l-6.5 7.5V19l-3 1v-7.5L4 5z"/>
+    </svg>
+  `
+}
+
+/* Descargar */
+function iconDownload() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/>
+    </svg>
+  `
+}
+
+/* Copiar */
+function iconCopy() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="12" height="12" rx="2"/>
+      <path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
+    </svg>
+  `
+}
+
 /* Flecha derecha (siguiente / avanzar) */
 function iconArrowRight({ size = 4, color = 'currentColor' } = {}) {
     return `
@@ -147,6 +181,28 @@ function iconChevronOpen() {
       <polyline points="9 18 15 12 9 6"/>
     </svg>
   `;
+}
+
+/* Chevron izquierdo */
+function iconChevronLeft() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  `
+}
+
+/* Chevron derecho */
+function iconChevronRight() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  `
 }
 
 /* Chevron cerrado */

@@ -1,35 +1,53 @@
-<section class="admin-page admin-log-reader">
+<section class="admin-page admin-log-reader ui-page">
   <script>window.USER_ID = "<%= USER_ID %>"</script>
   <script>window.ADMIN_LOG_FILE_NUMBER = <%= selectedFileNumber %></script>
-  <div class="admin-reader-heading">
-    <h1>Visor <span class="admin-selected-file"><%= selectedFile %></span></h1>
-  </div>
+  <script>window.ADMIN_LOG_FILE_COUNT = <%= logFileCount %></script>
+  <div class="ui-header admin-log-header">
+    <div class="admin-reader-heading">
+      <div class="admin-log-file-navigation" aria-label="Navegación de archivos de registro">
+        <button id="log-previous-file-button" class="ui-btn ui-btn-default admin-log-navigation-button"
+          type="button" aria-label="Archivo anterior" title="Archivo anterior"
+          <%= selectedFileNumber >= logFileCount ? 'disabled' : '' %>>
+          <span class="admin-log-navigation-icon" aria-hidden="true"></span>
+        </button>
+        <h1 class="admin-selected-file" title="<%= selectedFile %>"><%= selectedFile %></h1>
+        <button id="log-next-file-button" class="ui-btn ui-btn-default admin-log-navigation-button"
+          type="button" aria-label="Archivo siguiente" title="Archivo siguiente"
+          <%= selectedFileNumber <= 1 ? 'disabled' : '' %>>
+          <span class="admin-log-navigation-icon" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
 
-  <form id="log-reader-filter-form" action="/admin/logs" method="get" class="admin-log-filter">
-    <input type="hidden" name="fileNumber" value="<%= selectedFileNumber %>">
-    <%- include('../../partials/buttons/btn-back', {
-      href: '/admin',
-      title: 'Volver a los archivos de registro',
-      text: 'Volver'
-    }) %>
-    <button id="log-type-filter-button" class="ui-btn ui-btn-default admin-log-toolbar-button" type="button"
-      aria-haspopup="dialog" title="Filtrar registros" aria-label="Filtrar registros">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16l-6.5 7.5V19l-3 1v-7.5L4 5z"/>
-      </svg>
-      <span class="ui-btn-text">Filtrar</span>
-    </button>
-    <label class="sr-only" for="log-filter">Filtrar líneas del registro</label>
-    <input id="log-filter" type="search" name="filter" value="<%= filter %>"
-      placeholder="Filtrar registros..." aria-label="Filtrar registros">
-    <button id="log-refresh-button" class="ui-btn ui-btn-default admin-log-toolbar-button" type="button"
-      title="Actualizar registros" aria-label="Actualizar registros">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7v5h-5M4 17v-5h5m10-1a7 7 0 0 0-12.2-4.7L4 8m16 8-2.8 2.7A7 7 0 0 1 5 13"/>
-      </svg>
-      <span class="ui-btn-text">Actualizar</span>
-    </button>
-  </form>
+    <form id="log-reader-filter-form" action="/admin/logs" method="get" class="admin-log-filter">
+      <input type="hidden" name="fileNumber" value="<%= selectedFileNumber %>">
+      <%- include('../../partials/buttons/btn-back', {
+        href: '/admin',
+        title: 'Volver a los archivos de registro',
+        text: 'Volver'
+      }) %>
+      <button id="log-type-filter-button" class="ui-btn ui-btn-default admin-log-toolbar-button" type="button"
+        aria-haspopup="dialog" title="Filtrar registros" aria-label="Filtrar registros">
+        <span class="admin-log-toolbar-icon" aria-hidden="true"></span>
+        <span class="ui-btn-text">Filtrar</span>
+      </button>
+      <label class="sr-only" for="log-filter">Filtrar líneas del registro</label>
+      <input id="log-filter" type="search" name="filter" value="<%= filter %>"
+        placeholder="Filtrar registros..." aria-label="Filtrar registros">
+      <button id="log-refresh-button" class="ui-btn ui-btn-default admin-log-toolbar-button" type="button"
+        title="Actualizar registros" aria-label="Actualizar registros">
+        <span class="admin-log-toolbar-icon" aria-hidden="true"></span>
+        <span class="ui-btn-text">Actualizar</span>
+      </button>
+      <button id="log-download-button" class="ui-btn ui-btn-default admin-log-toolbar-button" type="button"
+        title="Descargar registros cargados" aria-label="Descargar registros cargados">
+        <span class="admin-log-toolbar-icon" aria-hidden="true"></span>
+        <span class="ui-btn-text">Descargar</span>
+      </button>
+    </form>
+
+    <p id="log-reader-status" class="admin-reader-status" role="status"><%= displayedLines %> de <%= totalLines %> líneas</p>
+  </div>
 
   <dialog id="log-type-filter-modal" class="admin-log-type-modal" aria-labelledby="log-type-filter-title">
     <div class="admin-log-type-modal-content">
@@ -72,6 +90,7 @@
         <legend>Otros</legend>
         <label>
           <input id="log-elapsed-time-filter" type="checkbox" name="includeElapsedTime" value="true"
+            form="log-reader-filter-form"
             <%= includeElapsedTime ? 'checked' : '' %>>
           <span>Habilitar logs "elapsed_time"</span>
         </label>
@@ -83,8 +102,7 @@
     </div>
   </dialog>
 
-  <p id="log-reader-status" class="admin-reader-status" role="status"><%= displayedLines %> de <%= totalLines %> líneas</p>
-  <div id="log-content" class="admin-log-content ui-table-wrapper" role="region" aria-label="Registros, del más reciente al más antiguo" tabindex="0">
+  <div id="log-content" class="admin-log-content ui-table-wrapper ui-scroll-area" role="region" aria-label="Registros, del más reciente al más antiguo" tabindex="0">
     <table class="ui-table admin-log-table">
       <colgroup>
         <col class="admin-log-expand-column">
@@ -109,9 +127,7 @@
           <tr class="admin-log-row <%= record.level ? `admin-log-level-${record.level.toLowerCase()}` : '' %>" data-detail-id="admin-log-detail-<%= index %>" data-raw-json="<%= encodeURIComponent(record.rawLine) %>">
             <td>
               <button class="admin-log-expand" type="button" aria-expanded="false" aria-controls="admin-log-detail-<%= index %>" aria-label="Expandir propiedades del registro">
-                <span aria-hidden="true">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                </span>
+                <span aria-hidden="true"></span>
               </button>
             </td>
             <td class="admin-log-time" data-time="<%= record.time || '' %>"><%= record.time || '—' %></td>
@@ -120,7 +136,7 @@
             <td class="admin-log-method"><%= record.method || '—' %></td>
             <td class="admin-log-copy-cell">
               <button class="admin-log-copy" type="button" aria-label="Copiar registro JSON" title="Copiar JSON">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>
+                <span aria-hidden="true"></span>
               </button>
             </td>
           </tr>
