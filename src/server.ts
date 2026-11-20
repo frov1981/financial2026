@@ -11,14 +11,7 @@ import { JobQueueService } from './services/job-queue.service'
 const PORT = process.env.NODE_PORT ? parseInt(process.env.NODE_PORT, 10) : 80
 const server_startup_logger = logger.forMethod('serverStartup', LOGGER_EVENTS.SERVER_STARTUP)
 
-server_startup_logger.info('Iniciando servidor')
-server_startup_logger.info(`Puerto configurado: ${PORT}`)
-server_startup_logger.info(`DB_HOST configurado: ${process.env.DB_HOST ? 'SI' : 'NO'}`)
-server_startup_logger.info('Intentando conectar con MySQL')
-
 AppDataSource.initialize().then(async () => {
-  server_startup_logger.info('MySQL conectado correctamente')
-
   const ormLimit = process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT, 10) : 2
   const sessionLimit = process.env.DB_SESSION_CONNECTION_LIMIT ? parseInt(process.env.DB_SESSION_CONNECTION_LIMIT, 10) : 1
   const estimatedTotal = ormLimit + sessionLimit
@@ -41,13 +34,7 @@ AppDataSource.initialize().then(async () => {
   })
 
   // Inicializar servidor express
-  //app.listen(PORT, '0.0.0.0', () => { server_startup_logger.info(`Servidor iniciado en el puerto ${PORT}`, { port: PORT } )   })  
-  server_startup_logger.info('Iniciando listener HTTP')
-
-  app.listen(PORT, '0.0.0.0', () => {
-    server_startup_logger.info(`Servidor iniciado en el puerto ${PORT}`, { port: PORT })
-  })
-
+  app.listen(PORT, '0.0.0.0', () => { server_startup_logger.info(`Servidor iniciado en el puerto ${PORT}`, { port: PORT }) })
 }).catch(error => {
   server_startup_logger.error('Error inicializando servidor', parseError(error))
 })
