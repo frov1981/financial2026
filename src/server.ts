@@ -8,9 +8,10 @@ import { logger } from './utils/logger.util'
 import { parseError } from './utils/error.util'
 import { JobQueueService } from './services/job-queue.service'
 
-const PORT = process.env.NODE_PORT ? parseInt(process.env.NODE_PORT, 10) : 3000
+const PORT = process.env.NODE_PORT ? parseInt(process.env.NODE_PORT, 10) : 80
 const server_startup_logger = logger.forMethod('serverStartup', LOGGER_EVENTS.SERVER_STARTUP)
 
+server_startup_logger.info('Iniciando conexión con MySQL')
 AppDataSource.initialize().then(async () => {
   const ormLimit = process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT, 10) : 2
   const sessionLimit = process.env.DB_SESSION_CONNECTION_LIMIT ? parseInt(process.env.DB_SESSION_CONNECTION_LIMIT, 10) : 1
