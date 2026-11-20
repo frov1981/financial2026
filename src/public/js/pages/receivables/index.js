@@ -4,6 +4,7 @@ const API_BASE = '/receivables/list'
 const RECEIVABLE_FILTERS_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:filters`
 const RECEIVABLE_SELECTED_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:selected-row`
 const RECEIVABLE_SCROLL_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:scroll-position`
+const RECEIVABLE_STATUS_FILTER_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:status-filter`
 const RECEIVABLE_COLLAPSE_STORAGE_KEY = `ssrfinan:v1:user:${window.USER_ID}:receivables:collapsed-groups`
 
 let allReceivables = []
@@ -24,6 +25,7 @@ const searchBtn = document.getElementById('search-btn')
 const tableBody = document.getElementById('receivables-table')
 const scrollContainer = document.querySelector('.ui-scroll-area')
 const mobileContainer = document.getElementById('receivables-mobile')
+const statusToggleBtn = document.querySelector('.js-status-filter-toggle')
 
 const newBtn = document.querySelector('[data-btn="new"]')
 const insertModal = document.getElementById('insert-modal')
@@ -143,12 +145,47 @@ function renderCard(receivable) {
 
 function applyAllFilters() {
   const searchText = getSearchText()
+  const savedStatus = window.loadFilters(RECEIVABLE_STATUS_FILTER_STORAGE_KEY) || {}
+  const status = savedStatus.status || 'all'
   const filtered = allReceivables.filter(receivable => {
     const haystack = `${receivable.name} ${receivable.category ? receivable.category.name : ''} ${receivable.disbursement_account ? receivable.disbursement_account.name : ''}`.toLowerCase()
-    return haystack.includes(searchText)
+    const matchesText = haystack.includes(searchText)
+    const matchesStatus =
+      status === 'all' ||
+      (status === 'active' && receivable.is_active) ||
+      (status === 'inactive' && !receivable.is_active)
+    return matchesText && matchesStatus
   })
 
   render(filtered)
+}
+
+function syncStatusFilterButton(status) {
+  if (!statusToggleBtn) return
+
+  const icon = statusToggleBtn.querySelector('.ui-btn-icon')
+  const text = statusToggleBtn.querySelector('.ui-btn-text')
+  if (!icon || !text) return
+
+  if (status === 'active') {
+    icon.innerHTML = iconView()
+    text.textContent = 'Activas'
+  } else if (status === 'inactive') {
+    icon.innerHTML = iconViewOff()
+    text.textContent = 'Inactivas'
+  } else {
+    icon.innerHTML = iconList()
+    text.textContent = 'Todas'
+    status = 'all'
+  }
+
+  statusToggleBtn.dataset.status = status
+}
+
+function applyStatusFilter(status) {
+  window.saveFilters(RECEIVABLE_STATUS_FILTER_STORAGE_KEY, { status })
+  syncStatusFilterButton(status)
+  applyAllFilters()
 }
 
 function loadReceivables() {
@@ -168,6 +205,9 @@ function updateSearchValue() {
 }
 
 function bindEvents() {
+  const savedStatus = window.loadFilters(RECEIVABLE_STATUS_FILTER_STORAGE_KEY) || {}
+  syncStatusFilterButton(savedStatus.status || 'all')
+
   if (searchInput) {
     searchInput.addEventListener('input', debounce(event => {
       window.saveFilters(RECEIVABLE_FILTERS_STORAGE_KEY, { term: event.target.value })
@@ -182,6 +222,16 @@ function bindEvents() {
       applyAllFilters()
     })
   }
+
+  statusToggleBtn?.addEventListener('click', () => {
+    const current = statusToggleBtn.dataset.status || 'all'
+    const next =
+      current === 'all' ? 'active'
+        : current === 'active' ? 'inactive'
+          : 'all'
+
+    applyStatusFilter(next)
+  })
 
   window.addEventListener('resize', () => {
     const nextLayout = getLayoutMode()

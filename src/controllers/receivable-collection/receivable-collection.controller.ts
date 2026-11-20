@@ -87,7 +87,7 @@ export const routeToFormUpdateReceivableCollection: RequestHandler = async (req,
     const receivable_collection_id = Number(req.params.id)
     const receivable_collection = await getCollectionById(auth_req, receivable_collection_id)
     if (!receivable_collection) {
-        return res.redirect('/receivable_collections')
+        return res.redirect('/receivables')
     }
     return renderReceivableCollectionForm(res, {
         title: 'Editar Cobro',
@@ -109,7 +109,7 @@ export const routeToFormCloneReceivableCollection: RequestHandler = async (req, 
     const receivable_collection_id = Number(req.params.id)
     const receivable_collection = await getCollectionById(auth_req, receivable_collection_id)
     if (!receivable_collection) {
-        return res.redirect('/receivable_collections')
+        return res.redirect('/receivables')
     }
     const default_date = await getNextValidTransactionDate(auth_req)
     return renderReceivableCollectionForm(res, {
@@ -132,7 +132,7 @@ export const routeToFormDeleteReceivableCollection: RequestHandler = async (req,
     const receivable_collection_id = Number(req.params.id)
     const receivable_collection = await getCollectionById(auth_req, receivable_collection_id)
     if (!receivable_collection) {
-        return res.redirect('/receivable_collections')
+        return res.redirect('/receivables')
     }
     return renderReceivableCollectionForm(res, {
         title: 'Eliminar Cobro',

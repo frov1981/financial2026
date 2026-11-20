@@ -118,6 +118,7 @@ function renderRow(collection) {
       <td class="ui-td col-center">
         <div class="icon-actions">
           <button class="icon-btn edit" onclick="goToCollectionUpdate(${collection.id})">${iconEdit()}<span class="ui-btn-text">Editar</span></button>
+          <button class="icon-btn clone" title="Clonar" onclick="goToCollectionClone(${collection.id})">${iconClone()}<span class="ui-btn-text">Clonar</span></button>
           <button class="icon-btn delete" onclick="goToCollectionDelete(${collection.id})">${iconDelete()}<span class="ui-btn-text">Eliminar</span></button>
         </div>
       </td>
@@ -135,6 +136,7 @@ function renderCard(collection) {
 
         <div class="card-actions">
           <button class="icon-btn edit" onclick="event.stopPropagation(); goToCollectionUpdate(${collection.id})">${iconEdit()}</button>
+          <button class="icon-btn clone" onclick="event.stopPropagation(); goToCollectionClone(${collection.id})">${iconClone()}</button>
           <button class="icon-btn delete" onclick="event.stopPropagation(); goToCollectionDelete(${collection.id})">${iconDelete()}</button>
         </div>
       </div>
@@ -238,6 +240,7 @@ function restoreScroll() {
 }
 
 window.goToCollectionUpdate = function (id) { window.location.href = `/receivables-collections/update/${id}` }
+window.goToCollectionClone = function (id) { window.location.href = `/receivables-collections/clone/${id}` }
 window.goToCollectionDelete = function (id) { window.location.href = `/receivables-collections/delete/${id}` }
 
 bindEvents()
