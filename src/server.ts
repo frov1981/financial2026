@@ -34,7 +34,7 @@ AppDataSource.initialize().then(async () => {
   })
 
   // Inicializar servidor express
-  app.listen(PORT, () => { server_startup_logger.info(`Servidor iniciado en el puerto ${PORT}`, { port: PORT }) })
+  app.listen(PORT, '0.0.0.0', () => { server_startup_logger.info(`Servidor iniciado en el puerto ${PORT}`, { port: PORT }) })
 }).catch(error => {
   server_startup_logger.error('Error inicializando servidor', parseError(error))
 })
